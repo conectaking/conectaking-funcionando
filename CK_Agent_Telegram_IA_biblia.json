@@ -1,34 +1,45 @@
 {
-  "id": "ckAgentTelegramIABiblia",
-  "name": "CK Agent Telegram IA biblia v2",
+  "id": "FnkVNknOa2gV0Tfn",
+  "name": "CK Agent Telegram IA biblia",
+  "description": null,
+  "active": true,
+  "activeVersionId": "72ab868a-3812-4df9-aa9e-0b034072551a",
+  "createdAt": "2026-09-27T19:46:20.148Z",
+  "updatedAt": "2026-09-30T16:28:34.295Z",
+  "isArchived": false,
+  "versionId": "72ab868a-3812-4df9-aa9e-0b034072551a",
+  "versionCounter": 15,
+  "sourceWorkflowId": null,
+  "triggerCount": 1,
   "nodes": [
     {
-      "parameters": {
-        "updates": [
-          "message"
-        ],
-        "additionalFields": {}
-      },
       "id": "tgTriggerBiblia",
       "name": "Telegram Trigger",
+      "webhookId": "ck-agent-telegram-biblia",
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.1,
       "position": [
         -1100,
         400
       ],
-      "webhookId": "ck-agent-telegram-biblia",
+      "parameters": {
+        "updates": [
+          "message",
+          "channel_post",
+          "edited_message",
+          "edited_channel_post",
+          "my_chat_member"
+        ],
+        "additionalFields": {}
+      },
       "credentials": {
         "telegramApi": {
-          "id": "bibliaTelegramAccount",
-          "name": "Telegram Agente Bíblia"
+          "id": "g9e8goMSML0vE2JS",
+          "name": "Telegram account 3"
         }
       }
     },
     {
-      "parameters": {
-        "jsCode": "const raw = $input.first().json;\nconst msg = raw.message || {};\nconst adminId = String($env.ADMIN_TELEGRAM_ID || '0');\nconst senderId = String(msg.from?.id || '');\nconst chatId = String(msg.chat?.id || '');\nconst firstName = msg.from?.first_name || 'Irmão(ã)';\nconst text = String(msg.text || msg.caption || '').trim();\nconst fileId = msg.voice?.file_id || msg.audio?.file_id || msg.video_note?.file_id || null;\nconst hadVoice = !text && !!fileId;\nreturn [{ json: {\n  adminId, senderId, chatId, firstName,\n  text: text || (hadVoice ? '' : '[mensagem sem texto]'),\n  hadVoice, fileId: fileId || '',\n  voiceError: ''\n} }];"
-      },
       "id": "prepBiblia01",
       "name": "Preparar (texto/voz)",
       "type": "n8n-nodes-base.code",
@@ -36,9 +47,20 @@
       "position": [
         -860,
         400
-      ]
+      ],
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst msg = raw.message || raw.channel_post || raw.edited_message || raw.edited_channel_post || {};\nconst adminId = String($env.ADMIN_TELEGRAM_ID || '0');\nconst senderId = String(msg.from?.id || msg.sender_chat?.id || '');\nconst chatId = String(msg.chat?.id || raw.my_chat_member?.chat?.id || '');\nconst firstName = msg.from?.first_name || msg.chat?.title || 'Irmão(ã)';\nconst text = String(msg.text || msg.caption || '').trim();\nconst fileId = msg.voice?.file_id || msg.audio?.file_id || msg.video_note?.file_id || null;\nconst hadVoice = !text && !!fileId;\nreturn [{ json: {\n  adminId, senderId, chatId, firstName,\n  text: text || (hadVoice ? '' : '[mensagem sem texto]'),\n  hadVoice, fileId: fileId || '',\n  voiceError: '',\n  chatTitle: msg.chat?.title || ''\n} }];"
+      }
     },
     {
+      "id": "ifVozBiblia01",
+      "name": "É Voz?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -620,
+        400
+      ],
       "parameters": {
         "conditions": {
           "options": {
@@ -62,35 +84,37 @@
           "combinator": "and"
         },
         "options": {}
-      },
-      "id": "ifVozBiblia01",
-      "name": "É Voz?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        -620,
-        400
-      ]
+      }
     },
     {
+      "id": "tgGetFileBiblia01",
+      "name": "TG getFile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "continueOnFail": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        -380,
+        220
+      ],
       "parameters": {
         "url": "=https://api.telegram.org/bot8669321947:AAEm1Ek1gI_wTUDYHNsyyuqbRkPFqLE-NSo/getFile?file_id={{ $json.fileId }}",
         "options": {
           "timeout": 15000
         }
-      },
-      "id": "tgGetFileBiblia01",
-      "name": "TG getFile",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        -380,
-        220
-      ],
-      "continueOnFail": true,
-      "onError": "continueRegularOutput"
+      }
     },
     {
+      "id": "tgDlAudioBiblia01",
+      "name": "Baixar áudio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "continueOnFail": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        -160,
+        220
+      ],
       "parameters": {
         "url": "=https://api.telegram.org/file/bot8669321947:AAEm1Ek1gI_wTUDYHNsyyuqbRkPFqLE-NSo/{{ $json.result.file_path }}",
         "options": {
@@ -101,19 +125,19 @@
           },
           "timeout": 25000
         }
-      },
-      "id": "tgDlAudioBiblia01",
-      "name": "Baixar áudio",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        -160,
-        220
-      ],
-      "continueOnFail": true,
-      "onError": "continueRegularOutput"
+      }
     },
     {
+      "id": "whisperBiblia01",
+      "name": "Whisper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "continueOnFail": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        60,
+        220
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://api.openai.com/v1/audio/transcriptions",
@@ -148,22 +172,9 @@
         "options": {
           "timeout": 45000
         }
-      },
-      "id": "whisperBiblia01",
-      "name": "Whisper",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        60,
-        220
-      ],
-      "continueOnFail": true,
-      "onError": "continueRegularOutput"
+      }
     },
     {
-      "parameters": {
-        "jsCode": "const prep = $('Preparar (texto/voz)').first().json;\nconst j = $input.first().json || {};\nlet text = String(j.text || '').trim();\nlet voiceError = '';\nif (!text) {\n  voiceError = String(j.error?.message || j.message || 'whisper vazio').slice(0, 180);\n  text = '[áudio recebido, mas não consegui transcrever]';\n}\nreturn [{ json: { ...prep, text, hadVoice: true, voiceError } }];"
-      },
       "id": "unirVozBiblia01",
       "name": "Unir voz",
       "type": "n8n-nodes-base.code",
@@ -171,12 +182,12 @@
       "position": [
         280,
         220
-      ]
+      ],
+      "parameters": {
+        "jsCode": "const prep = $('Preparar (texto/voz)').first().json;\nconst j = $input.first().json || {};\nlet text = String(j.text || '').trim();\nlet voiceError = '';\nif (!text) {\n  voiceError = String(j.error?.message || j.message || 'whisper vazio').slice(0, 180);\n  text = '[áudio recebido, mas não consegui transcrever]';\n}\nreturn [{ json: { ...prep, text, hadVoice: true, voiceError } }];"
+      }
     },
     {
-      "parameters": {
-        "jsCode": "const prev = $input.first().json;\nconst base = String($env.CK_BASE_URL || 'https://www.conectaking.com.br').replace(/\\/$/, '');\nconst token = String($env.CK_AGENT_JWT || '').trim();\nconst openaiKey = String($env.OPENAI_API_KEY || '').trim();\nconst model = String($env.OPENAI_MODEL || 'gpt-4o-mini').trim();\nconst text = String(prev.text || '').trim();\nconst chatId = String(prev.chatId || '');\nconst hadVoice = !!prev.hadVoice;\nconst firstName = String(prev.firstName || 'Irmão(ã)');\n\n// Data atual de São Paulo e Dia do Ano\nfunction getDayOfYearSP() {\n  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));\n  const start = new Date(now.getFullYear(), 0, 0);\n  const diff = now - start + ((start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000);\n  const oneDay = 1000 * 60 * 60 * 24;\n  return {\n    doy: Math.min(365, Math.max(1, Math.floor(diff / oneDay))),\n    iso: now.toISOString().slice(0, 10),\n    year: now.getFullYear()\n  };\n}\nconst todayInfo = getDayOfYearSP();\n\n// HTTP helper para Conecta King API\nasync function ck(method, path, body) {\n  const opts = {\n    method,\n    url: base + path,\n    headers: {\n      'Accept': 'application/json',\n      'Content-Type': 'application/json',\n      ...(token ? { 'Authorization': 'Bearer ' + token } : {})\n    },\n    json: true,\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true\n  };\n  if (body !== undefined) opts.body = body;\n  return this.helpers.httpRequest.call(this, opts);\n}\n\n// HTTP helper para OpenAI API\nasync function openaiCall(payload) {\n  return this.helpers.httpRequest.call(this, {\n    method: 'POST',\n    url: 'https://api.openai.com/v1/chat/completions',\n    headers: {\n      'Authorization': 'Bearer ' + openaiKey,\n      'Accept': 'application/json',\n      'Content-Type': 'application/json'\n    },\n    body: payload,\n    json: true,\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true\n  });\n}\n\n// Armazenamento de memória no staticData global\nconst store = $getWorkflowStaticData('global');\nif (!store.chats) store.chats = {};\nif (!store.chats[chatId]) {\n  store.chats[chatId] = { history: [] };\n}\nconst session = store.chats[chatId];\nif (!session.history) session.history = [];\n\nconst SYSTEM_PROMPT = `Você é o Agente Bíblia oficial da Conecta King no Telegram (@AgenteBiblia_Bot).\nVocê possui AUTORIDADE TOTAL E PODER ADMINISTRATIVO sobre todo o ecossistema bíblico da plataforma Conecta King.\nHOJE É: ${todayInfo.iso} · DIA DO ANO: #${todayInfo.doy} de 365 (Ano ${todayInfo.year}).\nQuando o usuário disser \"hoje\", \"devocional de hoje\", \"palavra de hoje\", o dia correspondente é OBRIGATORIAMENTE o dia #${todayInfo.doy}.\n\nSEUS PAPÉIS:\n1. MESTRE TEOLÓGICO, NEUROCIENTISTA & CONSELHEIRO DE ALTO NÍVEL:\n   Você NUNCA gera respostas rasas, superficiais, curtas ou fracas.\n   Você une com máxima autoridade e excelência a Teologia Bíblica Exegética profunda à Neurociência Comportamental (neuroplasticidade, regulação neuroquímica de cortisol, dopamina, GABA e serotonina), PNL e Reprogramação Mental (ressignificação de crenças limitantes e alinhamento à Mente de Cristo - Rm 12:2, 1 Co 2:16), Psicologia Clínica, Psiquiatria Integrativa e Desbloqueio Mental e Emocional (rompimento de travas de escassez, medo, culpa e procrastinação para a abundância e sabedoria divina).\n   Seus devocionais e ensinamentos são ricos, transformadores e profundos.\n\n2. ADMINISTRADOR SUPREMO DO MÓDULO BÍBLIA:\n   Você pode criar, editar, publicar, deletar e gerar com IA qualquer conteúdo:\n   • Temas dos Meses de Devocional (definir os temas de Janeiro a Dezembro)\n   • Palavra do Dia / Versículo do Dia (alterar para hoje ou qualquer data)\n   • Salmo do Dia (definir ou editar o texto/meditação do dia)\n   • Devocionais 365 (criar, alterar, gerar com IA e salvar os 365 dias)\n   • Prosperidade Antes de Dormir / Do Fracasso ao Legado (criar, editar, publicar ou gerar ativações com IA)\n   • Estudos Bíblicos por Livro (gerar com IA estudos completos para a plataforma)\n\nDIRETRIZES DE COMANDO:\n- Se o usuário pedir para gerar, criar, enriquecer ou focar o devocional de uma data ou de hoje em um tema específico (ex: escassez, neurociência, reprogramação, mentalidade, nova visão, unção), CHAME IMEDIATAMENTE 'admin_manage_devotional_365' com action='generate_ai', especificando o número do dia (se for hoje, use #${todayInfo.doy}) e descrevendo detalhadamente o foco no campo 'tema'.\n- Se o usuário pedir o devocional de hoje (\"manda o devocional de hoje\", \"qual o devocional de hoje\"), use 'get_devocional_do_dia'.\n- Se o usuário pedir para alterar ou salvar manualmente um texto bíblico/devocional, use a ferramenta administrativa correspondente com action='save'.\n- Mantenha tom seguro, executivo, espiritual e reverente. Confirme sempre com clareza o que foi executado.`;\n\nconst TOOLS = [\n  // --- TEMAS MENSAIS (ADMIN) ---\n  {\n    type: 'function',\n    function: {\n      name: 'admin_set_month_themes',\n      description: 'ADMIN: Define ou consulta os temas mensais dos devocionais (ex: do mês atual até dezembro, ou o ano todo).',\n      parameters: {\n        type: 'object',\n        properties: {\n          action: { type: 'string', enum: ['set', 'get', 'generate_all_ai'], description: 'Ação: set (gravar), get (consultar), generate_all_ai (gerar linha com IA para os 12 meses)' },\n          year: { type: 'number', description: 'Ano civil (opcional, padrão ano atual)' },\n          themes: {\n            type: 'object',\n            description: 'Objeto com os números dos meses como chave (\"1\" a \"12\") e seus respectivos temas como valor. Exemplo: {\"9\": \"Fé e Alinhamento\", \"10\": \"Prosperidade e Chamado\", \"11\": \"Gratidão e Frutos\", \"12\": \"O Maior Legado\"}'\n          }\n        },\n        required: ['action']\n      }\n    }\n  },\n\n  // --- PALAVRA DO DIA / VERSÍCULO DO DIA (ADMIN) ---\n  {\n    type: 'function',\n    function: {\n      name: 'admin_edit_verse_of_day',\n      description: 'ADMIN: Altera, define ou personaliza a Palavra do Dia / Versículo do Dia no sistema para hoje ou para uma data específica.',\n      parameters: {\n        type: 'object',\n        properties: {\n          date: { type: 'string', description: 'Data YYYY-MM-DD (deixe vazio para hoje)' },\n          ref: { type: 'string', description: 'Referência bíblica (ex: Jeremias 29:11, Salmos 91:1)' },\n          texto: { type: 'string', description: 'Texto sagrado do versículo' },\n          reflexao: { type: 'string', description: 'Reflexão edificante' }\n        },\n        required: ['ref', 'texto']\n      }\n    }\n  },\n\n  // --- SALMO DO DIA (ADMIN) ---\n  {\n    type: 'function',\n    function: {\n      name: 'admin_edit_salmo_do_dia',\n      description: 'ADMIN: Altera ou define o Salmo do Dia no sistema para hoje ou para uma data específica.',\n      parameters: {\n        type: 'object',\n        properties: {\n          date: { type: 'string', description: 'Data YYYY-MM-DD (deixe vazio para hoje)' },\n          ref: { type: 'string', description: 'Referência do salmo (ex: Salmos 23:1-6)' },\n          texto: { type: 'string', description: 'Texto do salmo' },\n          reflexao: { type: 'string', description: 'Meditação ou oração baseada no salmo' },\n          capitulo: { type: 'number', description: 'Capítulo do salmo' }\n        },\n        required: ['ref', 'texto']\n      }\n    }\n  },\n\n  // --- DEVOCIONAIS 365 (ADMIN) ---\n  {\n    type: 'function',\n    function: {\n      name: 'admin_manage_devotional_365',\n      description: 'ADMIN: Cria, edita, gera com IA especialista ou exclui devocionais de qualquer um dos 365 dias do ano. Se o usuário pedir para gerar, criar, enriquecer ou focar em temas específicos (como escassez, mentalidade, neurociência, reprogramação), use SEMPRE action=\"generate_ai\" com o tema preenchido.',\n      parameters: {\n        type: 'object',\n        properties: {\n          action: { type: 'string', enum: ['generate_ai', 'save', 'get', 'delete'], description: 'Ação: generate_ai (gerar com IA especialista no backend), save (gravar dados manuais), get (consultar), delete (remover)' },\n          day: { type: 'number', description: 'Dia do ano (1 a 365). Se o usuário se referir a hoje, use o dia atual de hoje.' },\n          titulo: { type: 'string', description: 'Título do devocional' },\n          versiculo_ref: { type: 'string', description: 'Referência bíblica (ex: Romanos 12:2)' },\n          versiculo_texto: { type: 'string', description: 'Texto sagrado do versículo citado' },\n          reflexao: { type: 'string', description: 'Texto da meditação completo e profundo' },\n          oracao: { type: 'string', description: 'Oração pastoral profunda' },\n          aplicacao: { type: 'string', description: 'Aplicação prática e passos de neuro-reprogramação mental' },\n          tema: { type: 'string', description: 'Tema ou direcionamento detalhado para a IA focar (ex: desbloqueio de escassez, mentalidade e nova visão, neurociência, PNL, unção)' }\n        },\n        required: ['action', 'day']\n      }\n    }\n  },\n\n  // --- PROSPERIDADE ANTES DE DORMIR (ADMIN) ---\n  {\n    type: 'function',\n    function: {\n      name: 'admin_manage_prosperidade_dormir',\n      description: 'ADMIN: Cria, edita, publica ou gera com IA as ativações de Prosperidade Antes de Dormir (Do Fracasso ao Legado).',\n      parameters: {\n        type: 'object',\n        properties: {\n          action: { type: 'string', enum: ['save', 'publish', 'generate_ai', 'get'], description: 'Ação desejada' },\n          activation_number: { type: 'number', description: 'Número da ativação (1 a 31)' },\n          titulo: { type: 'string', description: 'Título da ativação' },\n          proverbs_ref: { type: 'string', description: 'Versículo / Provérbios' },\n          fundamento_sagrado: { type: 'string', description: 'Fundamento bíblico' },\n          decreto_entrada: { type: 'string', description: 'Decreto para antes de dormir' },\n          diagnostico_escassez: { type: 'string', description: 'Mentalidade de escassez a vencer' },\n          nova_mentalidade: { type: 'string', description: 'Mentalidade divina de abundância' },\n          exercicio_fixacao: { type: 'string', description: 'Exercício prático' },\n          published: { type: 'boolean', description: 'Publicar (true) ou despublicar (false)' }\n        },\n        required: ['action', 'activation_number']\n      }\n    }\n  },\n\n  // --- GERAR ESTUDO POR LIVRO COM IA (ADMIN) ---\n  {\n    type: 'function',\n    function: {\n      name: 'admin_generate_book_study',\n      description: 'ADMIN: Gera com IA o estudo bíblico completo de um livro para publicação na plataforma Conecta King.',\n      parameters: {\n        type: 'object',\n        properties: {\n          book_id: { type: 'string', description: 'ID do livro (ex: genesis, romanos, hebreus, efesios, apocalipse)' }\n        },\n        required: ['book_id']\n      }\n    }\n  },\n\n  // --- CONSULTAS E ESTUDO (PÚBLICO / MEMBROS) ---\n  {\n    type: 'function',\n    function: {\n      name: 'get_verse_of_day',\n      description: 'Retorna o Versículo do Dia cadastrado na Conecta King com texto sagrado e reflexão.',\n      parameters: {\n        type: 'object',\n        properties: {\n          date: { type: 'string', description: 'Data opcional no formato YYYY-MM-DD' }\n        }\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'get_devocional_do_dia',\n      description: 'Retorna o Devocional do Dia da plataforma Conecta King.',\n      parameters: {\n        type: 'object',\n        properties: {\n          date: { type: 'string', description: 'Data opcional no formato YYYY-MM-DD' }\n        }\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'get_salmo_do_dia',\n      description: 'Retorna o Salmo do Dia com oração e meditação de louvor/conforto.',\n      parameters: { type: 'object', properties: {} }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'get_prosperidade_hoje',\n      description: 'Retorna a ativação do dia do projeto Prosperidade Antes de Dormir / 365 Ativações Conecta King.',\n      parameters: {\n        type: 'object',\n        properties: {\n          day: { type: 'number', description: 'Número do dia opcional (1 a 365)' }\n        }\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'get_bible_text',\n      description: 'Busca o texto bíblico de um livro e capítulo específico (ex: Genesis 1, Salmos 23, Joao 3).',\n      parameters: {\n        type: 'object',\n        properties: {\n          book_id: { type: 'string', description: 'Identificador do livro (ex: genesis, exodo, salmos, proverbios, mateus, joao, romanos)' },\n          chapter: { type: 'number', description: 'Número do capítulo' }\n        },\n        required: ['book_id', 'chapter']\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'generate_sermon_outline',\n      description: 'Gera um esboço expositivo de sermão ou pregação para ministrar.',\n      parameters: {\n        type: 'object',\n        properties: {\n          theme: { type: 'string', description: 'Tema ou título da mensagem' },\n          passage: { type: 'string', description: 'Passagem ou texto bíblico base' },\n          audience: { type: 'string', description: 'Público-alvo (jovens, igreja, liderança, família)' }\n        },\n        required: ['theme']\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'pastoral_prayer_counsel',\n      description: 'Gera uma oração pastoral e conselho bíblico personalizado para o momento da pessoa.',\n      parameters: {\n        type: 'object',\n        properties: {\n          need: { type: 'string', description: 'Motivo da oração' },\n          name: { type: 'string', description: 'Nome da pessoa' }\n        },\n        required: ['need']\n      }\n    }\n  }\n];\n\nlet outMessage = '';\n\ntry {\n  if (!openaiKey) {\n    const r = await ck.call(this, 'GET', '/api/bible/verse-of-day');\n    const v = (r.body && r.body.data) || {};\n    outMessage = `🕊️ *A paz do Senhor, ${firstName}!*\\n\\n📖 *Versículo do Dia:*\\n_\\\"${v.texto || 'O Senhor é o meu pastor; de nada terei falta.'}\\\"_\\n— *${v.ref || 'Salmos 23:1'}*\\n\\n✨ _${v.reflexao || 'Confie no cuidado e na provisão divina para o seu dia.'}_\\n\\nComo posso orar ou estudar a Palavra com você hoje?`;\n  } else {\n    const inputForAi = (hadVoice ? '[áudio transcrito] ' : '') + (text || 'A paz do Senhor!');\n    const messages = [\n      { role: 'system', content: SYSTEM_PROMPT },\n      ...session.history.slice(-6),\n      { role: 'user', content: inputForAi }\n    ];\n\n    const completionRes = await openaiCall.call(this, {\n      model,\n      temperature: 0.2,\n      messages,\n      tools: TOOLS,\n      tool_choice: 'auto'\n    });\n\n    const choice = completionRes.body?.choices?.[0]?.message;\n\n    if (choice?.tool_calls && choice.tool_calls.length > 0) {\n      const toolCall = choice.tool_calls[0];\n      const fnName = toolCall.function.name;\n      let args = {};\n      try { args = JSON.parse(toolCall.function.arguments || '{}'); } catch (_) {}\n\n      // 1. TEMAS MENSAIS DOS DEVOCIONAIS (ADMIN)\n      if (fnName === 'admin_set_month_themes') {\n        const year = Number(args.year || todayInfo.year);\n        if (args.action === 'set' && args.themes) {\n          const currentRes = await ck.call(this, 'GET', `/api/admin/bible/devotionals-365/month-themes/${year}`);\n          const currentThemes = (currentRes.body && (currentRes.body.data?.themes || currentRes.body.themes)) || {};\n          const mergedThemes = { ...currentThemes, ...args.themes };\n\n          const r = await ck.call(this, 'PUT', `/api/admin/bible/devotionals-365/month-themes/${year}`, mergedThemes);\n          if (r.statusCode >= 200 && r.statusCode < 300) {\n            const monthsNames = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];\n            const lines = [`🗓️ *Temas Mensais de Devocionais Gravados (${year})!*\\n`];\n            for (const [m, t] of Object.entries(args.themes)) {\n              const mNum = Number(m);\n              const mName = monthsNames[mNum] || `Mês ${mNum}`;\n              lines.push(`• *${mName} (Mês ${mNum}):* ${t}`);\n            }\n            lines.push(`\\n✅ _Salvo com sucesso na base do servidor! Já orientará as próximas gerações de devocionais._`);\n            outMessage = lines.join('\\n');\n          } else {\n            outMessage = `⚠️ Erro ao salvar temas: ${r.body?.message || JSON.stringify(r.body)}`;\n          }\n        } else if (args.action === 'generate_all_ai') {\n          const r = await ck.call(this, 'POST', `/api/admin/bible/devotionals-365/month-themes/${year}/generate-all`, { delayMs: 300 });\n          if (r.statusCode >= 200 && r.statusCode < 300) {\n            outMessage = `⚡ *Linha Editorial Completa para ${year} Gerada com IA!*\\n\\nTodos os 12 meses receberam temas teológicos profundos e inspiradores na plataforma.`;\n          } else {\n            outMessage = `⚠️ Erro ao gerar temas: ${r.body?.message}`;\n          }\n        } else {\n          const r = await ck.call(this, 'GET', `/api/admin/bible/devotionals-365/month-themes/${year}`);\n          const th = (r.body && (r.body.data?.themes || r.body.themes)) || {};\n          const monthsNames = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];\n          const lines = [`🗓️ *Temas dos Meses (${year}):*\\n`];\n          for (let i = 1; i <= 12; i++) {\n            lines.push(`• *${monthsNames[i]}:* ${th[i] || '—'}`);\n          }\n          outMessage = lines.join('\\n');\n        }\n\n      // 2. EDITAR VERSÍCULO DO DIA (ADMIN)\n      } else if (fnName === 'admin_edit_verse_of_day') {\n        const targetDate = args.date || todayInfo.iso;\n        const payload = {\n          date: targetDate,\n          ref: args.ref,\n          texto: args.texto,\n          reflexao: args.reflexao || ''\n        };\n        const r = await ck.call(this, 'PUT', '/api/admin/bible/verse-of-day', payload);\n        if (r.statusCode >= 200 && r.statusCode < 300) {\n          outMessage = `👑 *Palavra do Dia Atualizada com Sucesso!*\\n\\n📅 *Data:* ${targetDate}\\n📖 *Referência:* ${args.ref}\\n📜 *Texto Sagrado:*\\n_\\\"${args.texto}\\\"_\\n\\n🕊️ *Reflexão:*\\n${args.reflexao || 'Nenhuma reflexão adicional.'}\\n\\n✅ _Atualizado e já em exibição no cartão digital e na plataforma Conecta King!_`;\n        } else {\n          outMessage = `⚠️ Erro ao atualizar versículo: ${r.body?.message || JSON.stringify(r.body)}`;\n        }\n\n      // 3. EDITAR SALMO DO DIA (ADMIN)\n      } else if (fnName === 'admin_edit_salmo_do_dia') {\n        const targetDate = args.date || todayInfo.iso;\n        const payload = {\n          date: targetDate,\n          ref: args.ref,\n          texto: args.texto,\n          reflexao: args.reflexao || '',\n          capitulo: args.capitulo || null\n        };\n        const r = await ck.call(this, 'PUT', '/api/admin/bible/salmo-do-dia', payload);\n        if (r.statusCode >= 200 && r.statusCode < 300) {\n          outMessage = `🛡️ *Salmo do Dia Atualizado com Sucesso!*\\n\\n📅 *Data:* ${targetDate}\\n📖 *Salmo:* ${args.ref}\\n📜 *Texto:*\\n_\\\"${args.texto}\\\"_\\n\\n🕊️ *Meditação:*\\n${args.reflexao || 'Que a paz do Senhor guarde a sua vida.'}\\n\\n✅ _Salvo e em exibição na plataforma!_`;\n        } else {\n          outMessage = `⚠️ Erro ao atualizar salmo: ${r.body?.message || JSON.stringify(r.body)}`;\n        }\n\n      // 4. GERENCIAR DEVOCIONAIS 365 (ADMIN)\n      } else if (fnName === 'admin_manage_devotional_365') {\n        const targetDay = Number(args.day || todayInfo.doy);\n        if (args.action === 'save') {\n          const payload = {\n            titulo: args.titulo || 'Devocional Diário',\n            versiculo_ref: args.versiculo_ref || '',\n            versiculo_texto: args.versiculo_texto || '',\n            reflexao: args.reflexao || '',\n            oracao: args.oracao || '',\n            aplicacao: args.aplicacao || ''\n          };\n          const r = await ck.call(this, 'PUT', `/api/admin/bible/devotionals-365/${targetDay}`, payload);\n          if (r.statusCode >= 200 && r.statusCode < 300) {\n            outMessage = `✨ *Devocional #${targetDay} Gravado no Servidor!*\\n\\n📖 *Título:* ${payload.titulo}\\n📍 *Passagem:* ${payload.versiculo_ref}\\n${payload.versiculo_texto ? '📜 *Versículo:* _\"' + payload.versiculo_texto + '\"_\\n\\n' : ''}📝 *Reflexão:*\\n${payload.reflexao}\\n\\n${payload.aplicacao ? '🎯 *Aplicação Prática & Reprogramação:*\\n' + payload.aplicacao + '\\n\\n' : ''}🙏 *Oração Pastoral:*\\n_${payload.oracao}_\\n\\n✅ _Salvo com sucesso na base oficial dos 365 dias!_`;\n          } else {\n            outMessage = `⚠️ Erro ao salvar devocional: ${r.body?.message || JSON.stringify(r.body)}`;\n          }\n        } else if (args.action === 'generate_ai') {\n          const year = todayInfo.year;\n          const r = await ck.call(this, 'POST', `/api/admin/bible/devotionals-365/day/${targetDay}/generate-ai`, {\n            year,\n            temaPersonalizado: args.tema || '',\n            temaModo: args.tema ? 'personalizado' : 'mes_auto'\n          });\n          if (r.statusCode >= 200 && r.statusCode < 300) {\n            const d = r.body?.data || {};\n            const refTitle = d.versiculo_ref || d.passagem || '';\n            const vText = d.versiculo_texto ? '📜 *Versículo:* _\"' + d.versiculo_texto + '\"_\\n\\n' : '';\n            const refl = d.reflexao || d.texto || '';\n            const pray = d.oracao || '';\n            const apl = d.aplicacao || '';\n\n            outMessage = `⚡ *Devocional #${targetDay} Gerado com IA & Gravado!*\\n\\n📖 *Título:* ${d.titulo || 'Novo Devocional'}\\n📍 *Passagem:* ${refTitle}\\n\\n${vText}📝 *Reflexão (Teologia, Neurociência & Desbloqueio):*\\n${refl}\\n\\n${apl ? '🎯 *Neuro-Ação & Reprogramação Prática:*\\n' + apl + '\\n\\n' : ''}🙏 *Oração Pastoral:*\\n_${pray || 'Amém.'}_\\n\\n✅ _Publicado e ativo no Conecta King!_`;\n          } else {\n            outMessage = `⚠️ Erro ao gerar com IA: ${r.body?.message || JSON.stringify(r.body)}`;\n          }\n        } else if (args.action === 'delete') {\n          const r = await ck.call(this, 'DELETE', `/api/admin/bible/devotionals-365/${targetDay}`);\n          outMessage = r.statusCode < 300 ? `🗑️ *Devocional #${targetDay} Removido com Sucesso!* Dia liberado para nova redação.` : `⚠️ Erro ao remover: ${r.body?.message}`;\n        } else {\n          const r = await ck.call(this, 'GET', `/api/admin/bible/devotionals-365/day/${targetDay}`);\n          const d = r.body?.data || {};\n          outMessage = `📄 *Devocional Cadastrado — Dia #${targetDay}:*\\n\\n*Título:* ${d.titulo || 'Sem título'}\\n*Ref:* ${d.versiculo_ref || d.passagem || ''}\\n*Versículo:* ${d.versiculo_texto || '—'}\\n*Texto:* ${d.reflexao || d.texto || 'Vazio'}`;\n        }\n\n      // 5. PROSPERIDADE ANTES DE DORMIR (ADMIN)\n      } else if (fnName === 'admin_manage_prosperidade_dormir') {\n        const n = Number(args.activation_number || 1);\n        if (args.action === 'save') {\n          const payload = {\n            titulo: args.titulo || 'Ativação Noturna',\n            proverbs_ref: args.proverbs_ref || '',\n            fundamento_sagrado: args.fundamento_sagrado || '',\n            decreto_entrada: args.decreto_entrada || '',\n            diagnostico_escassez: args.diagnostico_escassez || '',\n            nova_mentalidade: args.nova_mentalidade || '',\n            exercicio_fixacao: args.exercicio_fixacao || '',\n            published: args.published !== false\n          };\n          const r = await ck.call(this, 'PUT', `/api/admin/bible/prosperidade/${n}`, payload);\n          if (r.statusCode >= 200 && r.statusCode < 300) {\n            outMessage = `🌙 *Ativação de Prosperidade #${n} Salva!*\\n\\n💎 *Título:* ${payload.titulo}\\n📖 *Palavra Base:* ${payload.proverbs_ref}\\n🕊️ *Fundamento:* ${payload.fundamento_sagrado}\\n\\n🗣️ *Decreto para Antes de Dormir:*\\n_\\\"${payload.decreto_entrada}\\\"_\\n\\n💡 *Nova Mentalidade:* ${payload.nova_mentalidade}\\n\\n📢 *Status:* ${payload.published ? '✅ Publicada na plataforma' : '🟡 Rascunho'}`;\n          } else {\n            outMessage = `⚠️ Erro ao salvar ativação: ${r.body?.message || JSON.stringify(r.body)}`;\n          }\n        } else if (args.action === 'publish') {\n          const pub = args.published !== false;\n          const r = await ck.call(this, 'PATCH', `/api/admin/bible/prosperidade/${n}/publish`, { published: pub });\n          outMessage = r.statusCode < 300 ? `📢 *Ativação #${n} ${pub ? 'Publicada com Sucesso! Já visível para todos.' : 'Despublicada (Rascunho)'}*` : `⚠️ Erro ao alterar status: ${r.body?.message}`;\n        } else if (args.action === 'generate_ai') {\n          const r = await ck.call(this, 'POST', `/api/admin/bible/prosperidade/${n}/generate-ai`);\n          if (r.statusCode >= 200 && r.statusCode < 300) {\n            const data = r.body?.data || {};\n            outMessage = `⚡ *Ativação #${n} Gerada com IA (Do Fracasso ao Legado)!*\\n\\n💎 *${data.titulo || 'Ativação Noturna'}*\\n📖 *Versículo:* ${data.proverbs_ref || ''}\\n\\n🗣️ *Decreto Noturno:*\\n_\\\"${data.decreto_entrada || data.sentenca_ativacao || ''}\\\"_\\n\\n✅ _Salva com sucesso no banco de dados!_`;\n          } else {\n            outMessage = `⚠️ Falha ao gerar com IA: ${r.body?.message || JSON.stringify(r.body)}`;\n          }\n        } else {\n          const r = await ck.call(this, 'GET', `/api/admin/bible/prosperidade/${n}`);\n          const d = r.body?.data || {};\n          outMessage = `🌙 *Ativação #${n}:* ${d.titulo || ''}\\n*Decreto:* ${d.decreto_entrada || ''}\\n*Status:* ${d.published ? 'Publicada' : 'Rascunho'}`;\n        }\n\n      // 6. GERAR ESTUDO POR LIVRO COM IA (ADMIN)\n      } else if (fnName === 'admin_generate_book_study') {\n        const bookId = String(args.book_id || '').toLowerCase().trim();\n        const r = await ck.call(this, 'POST', `/api/admin/bible/study/book/${bookId}/generate-ai`);\n        if (r.statusCode >= 200 && r.statusCode < 300) {\n          outMessage = `📚 *Estudo do Livro de ${bookId.toUpperCase()} Gerado com Sucesso!*\\n\\nO estudo exegético completo com introdução, contexto histórico, temas principais e divisão por capítulos foi gravado e já está acessível no módulo de estudos da Bíblia! 📖👑`;\n        } else {\n          outMessage = `⚠️ Falha ao gerar estudo: ${r.body?.message || JSON.stringify(r.body)}`;\n        }\n\n      // 7. CONSULTAS COMUNS (VERSÍCULO, SALMO, DEVOCIONAL DO DIA, ETC.)\n      } else if (fnName === 'get_verse_of_day') {\n        const query = args.date ? '?date=' + encodeURIComponent(args.date) : '';\n        const r = await ck.call(this, 'GET', '/api/bible/verse-of-day' + query);\n        const data = (r.body && r.body.data) || {};\n        const ref = data.ref || 'Palavra do Dia';\n        const versiculo = data.texto || 'Lâmpada para os meus pés é tua palavra e luz, para o meu caminho.';\n        const reflexao = data.reflexao || 'Guarde esta promessa em seu coração hoje.';\n        outMessage = `📖 *Versículo do Dia | Conecta King*\\n\\n\"*${versiculo}*\"\\n\\n📍 *${ref}*\\n\\n🕊️ *Reflexão:*\\n${reflexao}\\n\\nQue esta Palavra alimente o seu espírito hoje! 🙏`;\n      } else if (fnName === 'get_devocional_do_dia') {\n        const query = args.date ? '?date=' + encodeURIComponent(args.date) : '';\n        const r = await ck.call(this, 'GET', '/api/bible/devocional-do-dia' + query);\n        const d = (r.body && r.body.data) || {};\n        const titulo = d.titulo || d.title || 'Devocional Diário';\n        const passagem = d.versiculo_ref || d.versiculo || d.passagem || d.reference || d.ref || 'Escrituras Sagradas';\n        const vTexto = d.versiculo_texto ? '📜 *Versículo:* _\"' + d.versiculo_texto + '\"_\\n\\n' : '';\n        const texto = d.reflexao || d.texto || d.content || d.meditacao || '';\n        const oracao = d.oracao || d.prayer || '';\n        const aplicacao = d.aplicacao || d.application || '';\n        outMessage = `✨ *Devocional do Dia:* ${titulo}\\n\\n📖 *Texto Base:* ${passagem}\\n\\n${vTexto}${texto}\\n\\n${aplicacao ? '🎯 *Aplicação Prática & Reprogramação:*\\n' + aplicacao + '\\n\\n' : ''}${oracao ? '🙏 *Oração Pastoral:*\\n_' + oracao + '_\\n\\n' : ''}Amém! Que Deus abençoe sua jornada.`;\n      } else if (fnName === 'get_salmo_do_dia') {\n        const r = await ck.call(this, 'GET', '/api/bible/salmo-do-dia');\n        const s = (r.body && r.body.data) || {};\n        const ref = s.ref || 'Salmos';\n        const texto = s.texto || '';\n        const reflexao = s.reflexao || '';\n        outMessage = `🛡️ *Salmo do Dia:* ${ref}\\n\\n\"${texto}\"\\n\\n${reflexao ? '🕊️ *Meditação:*\\n' + reflexao + '\\n\\n' : ''}Que o Senhor seja o seu refúgio e fortaleza hoje! 🙌`;\n      } else if (fnName === 'get_prosperidade_hoje') {\n        const path = args.day ? '/api/bible/prosperidade/ativacao/' + args.day : '/api/bible/prosperidade/hoje';\n        const r = await ck.call(this, 'GET', path);\n        const p = (r.body && r.body.data) || {};\n        const num = p.numero || p.day || p.dia || '365';\n        const titulo = p.titulo || p.title || 'Ativação Bíblica de Prosperidade';\n        const versiculo = p.versiculo || p.verse || '';\n        const declaracao = p.declaracao || p.affirmation || '';\n        const chave = p.chave || p.chave_prosperidade || p.principio || '';\n        const acao = p.acao_pratica || p.action || '';\n        outMessage = `🌙 *Ativação Noturna de Prosperidade #${num}*\\n\\n💎 *${titulo}*\\n\\n📖 *Princípio Bíblico:*\\n\"${versiculo}\"\\n\\n${chave ? '🔑 *Chave de Sabedoria:* ' + chave + '\\n\\n' : ''}${declaracao ? '🗣️ *Declaração de Fé:*\\n_\"' + declaracao + '\"_\\n\\n' : ''}${acao ? '🎯 *Passo Prático:*\\n' + acao + '\\n\\n' : ''}Deus tem prazer na prosperidade integral da sua vida!`;\n      } else if (fnName === 'get_bible_text') {\n        const bookId = String(args.book_id || 'salmos').toLowerCase();\n        const cap = Number(args.chapter || 1);\n        const r = await ck.call(this, 'GET', `/api/bible/book/${bookId}/${cap}`);\n        const data = (r.body && r.body.data) || {};\n        const bookName = data.book?.name || bookId.toUpperCase();\n        const verses = data.verses || data.versiculos || [];\n        if (Array.isArray(verses) && verses.length > 0) {\n          const sample = verses.slice(0, 10).map(v => `*${v.number || v.verse}* ${v.text}`).join('\\n\\n');\n          outMessage = `📖 *${bookName} ${cap}*\\n\\n${sample}${verses.length > 10 ? '\\n\\n_(Exibindo os primeiros 10 versículos de ' + verses.length + ' motivado por espaço no Telegram)_' : ''}`;\n        } else {\n          outMessage = `📖 *Leitura de ${bookName} ${cap}* consultada na plataforma.`;\n        }\n      } else if (fnName === 'generate_sermon_outline') {\n        const theme = args.theme;\n        const pass = args.passage || 'Escrituras';\n        const aud = args.audience ? ` (Público: ${args.audience})` : '';\n        const sermonRes = await openaiCall.call(this, {\n          model,\n          temperature: 0.4,\n          messages: [\n            { role: 'system', content: 'Você é um pregador e mestre bíblico expositivo de alto nível. Crie um esboço exegético e claro de sermão contendo: 1. Título impactante e memorável; 2. Texto Base com contexto histórico-cultural e etimológico; 3. Introdução cativante que conecte com a realidade humana; 4. Três pontos principais expositivos profundamente alicerçados nas escrituras e na neurociência da transformação pessoal; 5. Aplicação prática para o cotidiano; 6. Conclusão profética e apelo/oração pastoral.' },\n            { role: 'user', content: `Elabore um esboço de pregação sobre o tema: \\\"${theme}\\\", baseado em \\\"${pass}\\\"${aud}.` }\n          ]\n        });\n        outMessage = sermonRes.body?.choices?.[0]?.message?.content || `📋 *Esboço de Pregação: ${theme}*\\n\\n📖 Base: ${pass}`;\n      } else if (fnName === 'pastoral_prayer_counsel') {\n        const prayerRes = await openaiCall.call(this, {\n          model,\n          temperature: 0.4,\n          messages: [\n            { role: 'system', content: 'Você é um pastor amoroso, sábio e com profunda unção espiritual e psicológica. Escreva uma oração pastoral profunda, bíblica e restauradora, trazendo paz ao sistema límbico/nervoso da pessoa, destruindo sentimentos de medo, abandono e culpa, e liberando bênçãos e decretos de vida e vitória.' },\n            { role: 'user', content: `Faça uma oração pastoral para ${args.name || firstName}, que necessita de intercessão e direção sobre: ${args.need}.` }\n          ]\n        });\n        outMessage = prayerRes.body?.choices?.[0]?.message?.content || `🙏 Que a paz que excede todo entendimento guarde o seu coração e a sua mente em Cristo Jesus.`;\n      }\n    } else {\n      outMessage = choice?.content || `A paz do Senhor, ${firstName}! Estou aqui como Conselheiro Bíblico da Conecta King. O que você gostaria de criar, editar ou estudar na Palavra hoje?`;\n    }\n\n    // Diagnóstico removido);\n    if (session.history.length > 12) session.history.splice(0, 2);\n  }\n} catch (e) {\n  outMessage = '🕊️ Graça e Paz! Ocorreu uma oscilação momentânea: ' + String(e.message || e).slice(0, 200) + '\\n\\nComo posso abençoar seus estudos na Palavra hoje?';\n}\n\nreturn [{ json: { ...prev, outMessage } }];\n"
-      },
       "id": "executarBibliaIA",
       "name": "Executar Bíblia IA",
       "type": "n8n-nodes-base.code",
@@ -184,9 +195,21 @@
       "position": [
         280,
         480
-      ]
+      ],
+      "parameters": {
+        "jsCode": "const prev = $input.first().json;\nconst base = String($env.CK_BASE_URL || 'https://www.conectaking.com.br').replace(/\\/$/, '');\nconst token = String($env.CK_AGENT_JWT || '').trim();\nconst openaiKey = String($env.OPENAI_API_KEY || '').trim();\nconst model = String($env.OPENAI_MODEL || 'gpt-4o-mini').trim();\nconst text = String(prev.text || '').trim();\nconst chatId = String(prev.chatId || '');\nconst hadVoice = !!prev.hadVoice;\nconst firstName = String(prev.firstName || 'Irmão(ã)');\n\n// Data atual de São Paulo e Dia do Ano\nfunction getDayOfYearSP() {\n  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));\n  const start = new Date(now.getFullYear(), 0, 0);\n  const diff = now - start + ((start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000);\n  const oneDay = 1000 * 60 * 60 * 24;\n  return {\n    doy: Math.min(365, Math.max(1, Math.floor(diff / oneDay))),\n    iso: now.toISOString().slice(0, 10),\n    year: now.getFullYear()\n  };\n}\nconst todayInfo = getDayOfYearSP();\n\n// HTTP helper para Conecta King API\nasync function ck(method, path, body) {\n  const opts = {\n    method,\n    url: base + path,\n    headers: {\n      'Accept': 'application/json',\n      'Content-Type': 'application/json',\n      ...(token ? { 'Authorization': 'Bearer ' + token } : {})\n    },\n    json: true,\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true\n  };\n  if (body !== undefined) opts.body = body;\n  return this.helpers.httpRequest.call(this, opts);\n}\n\n// HTTP helper para OpenAI API\nasync function openaiCall(payload) {\n  return this.helpers.httpRequest.call(this, {\n    method: 'POST',\n    url: 'https://api.openai.com/v1/chat/completions',\n    headers: {\n      'Authorization': 'Bearer ' + openaiKey,\n      'Accept': 'application/json',\n      'Content-Type': 'application/json'\n    },\n    body: payload,\n    json: true,\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true\n  });\n}\n\n// Armazenamento de memória no staticData global\nconst store = $getWorkflowStaticData('global');\nif (!store.chats) store.chats = {};\nif (!store.chats[chatId]) {\n  store.chats[chatId] = { history: [] };\n}\nconst session = store.chats[chatId];\nif (!session.history) session.history = [];\n\nconst SYSTEM_PROMPT = `Você é o Agente Bíblia oficial da Conecta King no Telegram (@AgenteBiblia_Bot).\nVocê possui AUTORIDADE TOTAL E PODER ADMINISTRATIVO sobre todo o ecossistema bíblico da plataforma Conecta King.\nHOJE É: ${todayInfo.iso} · DIA DO ANO: #${todayInfo.doy} de 365 (Ano ${todayInfo.year}).\nQuando o usuário disser \"hoje\", \"devocional de hoje\", \"palavra de hoje\", o dia correspondente é OBRIGATORIAMENTE o dia #${todayInfo.doy}.\n\nSEUS PAPÉIS:\n1. MESTRE TEOLÓGICO & CONSELHEIRO DE ALTO NÍVEL:\n   Você NUNCA gera respostas rasas, superficiais, curtas ou fracas.\n   Você fundamenta seus devocionais e ensinamentos na Teologia Bíblica Exegética profunda, trazendo renovação da mente e alinhamento à Mente de Cristo (Romanos 12:2, 1 Coríntios 2:16), libertação de crenças de escassez e cura emocional sob a soberania divina.\n   \n   ⚠️ REGRA DE OURO (SIGILOSO / INVISÍVEL):\n   NUNCA cite nomes de técnicas ou jargões como: \"PNL\", \"Programação Neurolinguística\", \"Neurociência\", \"Neuroplasticidade\", \"Dopamina\", \"Cortisol\", \"Psicologia Clínica\", \"Psiquiatria Integrativa\" ou \"Reprogramação Mental\" no texto da mensagem.\n   Você aplica todos esses princípios de desbloqueio, ancoragem e ressignificação de forma 100% INVISÍVEL, prática e pastoral através das Escrituras Sagradas. O leitor experimenta a transformação na mente e no espírito sem deparar com termos técnicos de cursos ou teorias seculares.\n\n2. ADMINISTRADOR SUPREMO DO MÓDULO BÍBLIA:\n   Você pode criar, editar, publicar, deletar e gerar com IA qualquer conteúdo:\n   • Temas dos Meses de Devocional (definir os temas de Janeiro a Dezembro)\n   • Palavra do Dia / Versículo do Dia (alterar para hoje ou qualquer data)\n   • Salmo do Dia (definir ou editar o texto/meditação do dia)\n   • Devocionais 365 (criar, alterar, gerar com IA e salvar os 365 dias)\n   • Prosperidade Antes de Dormir / Do Fracasso ao Legado (criar, editar, publicar ou gerar ativações com IA)\n   • Estudos Bíblicos por Livro (gerar com IA estudos completos para a plataforma)\n\nDIRETRIZES DE COMANDO:\n- Se o usuário pedir para gerar, criar, enriquecer ou focar o devocional de uma data ou de hoje em um tema específico (ex: escassez, neurociência, reprogramação, mentalidade, nova visão, unção), CHAME IMEDIATAMENTE 'admin_manage_devotional_365' com action='generate_ai', especificando o número do dia (se for hoje, use #${todayInfo.doy}) e descrevendo detalhadamente o foco no campo 'tema'.\n- Se o usuário pedir o devocional de hoje (\"manda o devocional de hoje\", \"qual o devocional de hoje\"), use 'get_devocional_do_dia'.\n- Se o usuário pedir para alterar ou salvar manualmente um texto bíblico/devocional, use a ferramenta administrativa correspondente com action='save'.\n- Mantenha tom seguro, executivo, espiritual e reverente. Confirme sempre com clareza o que foi executado.`;\n\nconst TOOLS = [\n  // --- TEMAS MENSAIS (ADMIN) ---\n  {\n    type: 'function',\n    function: {\n      name: 'admin_set_month_themes',\n      description: 'ADMIN: Define ou consulta os temas mensais dos devocionais (ex: do mês atual até dezembro, ou o ano todo).',\n      parameters: {\n        type: 'object',\n        properties: {\n          action: { type: 'string', enum: ['set', 'get', 'generate_all_ai'], description: 'Ação: set (gravar), get (consultar), generate_all_ai (gerar linha com IA para os 12 meses)' },\n          year: { type: 'number', description: 'Ano civil (opcional, padrão ano atual)' },\n          themes: {\n            type: 'object',\n            description: 'Objeto com os números dos meses como chave (\"1\" a \"12\") e seus respectivos temas como valor. Exemplo: {\"9\": \"Fé e Alinhamento\", \"10\": \"Prosperidade e Chamado\", \"11\": \"Gratidão e Frutos\", \"12\": \"O Maior Legado\"}'\n          }\n        },\n        required: ['action']\n      }\n    }\n  },\n\n  // --- PALAVRA DO DIA / VERSÍCULO DO DIA (ADMIN) ---\n  {\n    type: 'function',\n    function: {\n      name: 'admin_edit_verse_of_day',\n      description: 'ADMIN: Altera, define ou personaliza a Palavra do Dia / Versículo do Dia no sistema para hoje ou para uma data específica.',\n      parameters: {\n        type: 'object',\n        properties: {\n          date: { type: 'string', description: 'Data YYYY-MM-DD (deixe vazio para hoje)' },\n          ref: { type: 'string', description: 'Referência bíblica (ex: Jeremias 29:11, Salmos 91:1)' },\n          texto: { type: 'string', description: 'Texto sagrado do versículo' },\n          reflexao: { type: 'string', description: 'Reflexão edificante' }\n        },\n        required: ['ref', 'texto']\n      }\n    }\n  },\n\n  // --- SALMO DO DIA (ADMIN) ---\n  {\n    type: 'function',\n    function: {\n      name: 'admin_edit_salmo_do_dia',\n      description: 'ADMIN: Altera ou define o Salmo do Dia no sistema para hoje ou para uma data específica.',\n      parameters: {\n        type: 'object',\n        properties: {\n          date: { type: 'string', description: 'Data YYYY-MM-DD (deixe vazio para hoje)' },\n          ref: { type: 'string', description: 'Referência do salmo (ex: Salmos 23:1-6)' },\n          texto: { type: 'string', description: 'Texto do salmo' },\n          reflexao: { type: 'string', description: 'Meditação ou oração baseada no salmo' },\n          capitulo: { type: 'number', description: 'Capítulo do salmo' }\n        },\n        required: ['ref', 'texto']\n      }\n    }\n  },\n\n  // --- DEVOCIONAIS 365 (ADMIN) ---\n  {\n    type: 'function',\n    function: {\n      name: 'admin_manage_devotional_365',\n      description: 'ADMIN: Cria, edita, gera com IA especialista ou exclui devocionais de qualquer um dos 365 dias do ano. Se o usuário pedir para gerar, criar, enriquecer ou focar em temas específicos (como escassez, mentalidade, neurociência, reprogramação), use SEMPRE action=\"generate_ai\" com o tema preenchido.',\n      parameters: {\n        type: 'object',\n        properties: {\n          action: { type: 'string', enum: ['generate_ai', 'save', 'get', 'delete'], description: 'Ação: generate_ai (gerar com IA especialista no backend), save (gravar dados manuais), get (consultar), delete (remover)' },\n          day: { type: 'number', description: 'Dia do ano (1 a 365). Se o usuário se referir a hoje, use o dia atual de hoje.' },\n          titulo: { type: 'string', description: 'Título do devocional' },\n          versiculo_ref: { type: 'string', description: 'Referência bíblica (ex: Romanos 12:2)' },\n          versiculo_texto: { type: 'string', description: 'Texto sagrado do versículo citado' },\n          reflexao: { type: 'string', description: 'Texto da meditação completo e profundo' },\n          oracao: { type: 'string', description: 'Oração pastoral profunda' },\n          aplicacao: { type: 'string', description: 'Aplicação prática e passos de neuro-reprogramação mental' },\n          tema: { type: 'string', description: 'Tema ou direcionamento detalhado para a IA focar (ex: desbloqueio de escassez, mentalidade e nova visão, neurociência, PNL, unção)' }\n        },\n        required: ['action', 'day']\n      }\n    }\n  },\n\n  // --- PROSPERIDADE ANTES DE DORMIR (ADMIN) ---\n  {\n    type: 'function',\n    function: {\n      name: 'admin_manage_prosperidade_dormir',\n      description: 'ADMIN: Cria, edita, publica ou gera com IA as ativações de Prosperidade Antes de Dormir (Do Fracasso ao Legado).',\n      parameters: {\n        type: 'object',\n        properties: {\n          action: { type: 'string', enum: ['save', 'publish', 'generate_ai', 'get'], description: 'Ação desejada' },\n          activation_number: { type: 'number', description: 'Número da ativação (1 a 31)' },\n          titulo: { type: 'string', description: 'Título da ativação' },\n          proverbs_ref: { type: 'string', description: 'Versículo / Provérbios' },\n          fundamento_sagrado: { type: 'string', description: 'Fundamento bíblico' },\n          decreto_entrada: { type: 'string', description: 'Decreto para antes de dormir' },\n          diagnostico_escassez: { type: 'string', description: 'Mentalidade de escassez a vencer' },\n          nova_mentalidade: { type: 'string', description: 'Mentalidade divina de abundância' },\n          exercicio_fixacao: { type: 'string', description: 'Exercício prático' },\n          published: { type: 'boolean', description: 'Publicar (true) ou despublicar (false)' }\n        },\n        required: ['action', 'activation_number']\n      }\n    }\n  },\n\n  // --- GERAR ESTUDO POR LIVRO COM IA (ADMIN) ---\n  {\n    type: 'function',\n    function: {\n      name: 'admin_generate_book_study',\n      description: 'ADMIN: Gera com IA o estudo bíblico completo de um livro para publicação na plataforma Conecta King.',\n      parameters: {\n        type: 'object',\n        properties: {\n          book_id: { type: 'string', description: 'ID do livro (ex: genesis, romanos, hebreus, efesios, apocalipse)' }\n        },\n        required: ['book_id']\n      }\n    }\n  },\n\n  // --- CONSULTAS E ESTUDO (PÚBLICO / MEMBROS) ---\n  {\n    type: 'function',\n    function: {\n      name: 'get_verse_of_day',\n      description: 'Retorna o Versículo do Dia cadastrado na Conecta King com texto sagrado e reflexão.',\n      parameters: {\n        type: 'object',\n        properties: {\n          date: { type: 'string', description: 'Data opcional no formato YYYY-MM-DD' }\n        }\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'get_devocional_do_dia',\n      description: 'Retorna o Devocional do Dia da plataforma Conecta King.',\n      parameters: {\n        type: 'object',\n        properties: {\n          date: { type: 'string', description: 'Data opcional no formato YYYY-MM-DD' }\n        }\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'get_salmo_do_dia',\n      description: 'Retorna o Salmo do Dia com oração e meditação de louvor/conforto.',\n      parameters: { type: 'object', properties: {} }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'get_prosperidade_hoje',\n      description: 'Retorna a ativação do dia do projeto Prosperidade Antes de Dormir / 365 Ativações Conecta King.',\n      parameters: {\n        type: 'object',\n        properties: {\n          day: { type: 'number', description: 'Número do dia opcional (1 a 365)' }\n        }\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'get_bible_text',\n      description: 'Busca o texto bíblico de um livro e capítulo específico (ex: Genesis 1, Salmos 23, Joao 3).',\n      parameters: {\n        type: 'object',\n        properties: {\n          book_id: { type: 'string', description: 'Identificador do livro (ex: genesis, exodo, salmos, proverbios, mateus, joao, romanos)' },\n          chapter: { type: 'number', description: 'Número do capítulo' }\n        },\n        required: ['book_id', 'chapter']\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'generate_sermon_outline',\n      description: 'Gera um esboço expositivo de sermão ou pregação para ministrar.',\n      parameters: {\n        type: 'object',\n        properties: {\n          theme: { type: 'string', description: 'Tema ou título da mensagem' },\n          passage: { type: 'string', description: 'Passagem ou texto bíblico base' },\n          audience: { type: 'string', description: 'Público-alvo (jovens, igreja, liderança, família)' }\n        },\n        required: ['theme']\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'pastoral_prayer_counsel',\n      description: 'Gera uma oração pastoral e conselho bíblico personalizado para o momento da pessoa.',\n      parameters: {\n        type: 'object',\n        properties: {\n          need: { type: 'string', description: 'Motivo da oração' },\n          name: { type: 'string', description: 'Nome da pessoa' }\n        },\n        required: ['need']\n      }\n    }\n  }\n];\n\nlet outMessage = '';\n\ntry {\n  if (!openaiKey) {\n    const r = await ck.call(this, 'GET', '/api/bible/verse-of-day');\n    const v = (r.body && r.body.data) || {};\n    outMessage = `🕊️ *A paz do Senhor, ${firstName}!*\\n\\n📖 *Versículo do Dia:*\\n_\\\"${v.texto || 'O Senhor é o meu pastor; de nada terei falta.'}\\\"_\\n— *${v.ref || 'Salmos 23:1'}*\\n\\n✨ _${v.reflexao || 'Confie no cuidado e na provisão divina para o seu dia.'}_\\n\\nComo posso orar ou estudar a Palavra com você hoje?`;\n  } else {\n    const inputForAi = (hadVoice ? '[áudio transcrito] ' : '') + (text || 'A paz do Senhor!');\n    const messages = [\n      { role: 'system', content: SYSTEM_PROMPT },\n      ...session.history.slice(-6),\n      { role: 'user', content: inputForAi }\n    ];\n\n    const completionRes = await openaiCall.call(this, {\n      model,\n      temperature: 0.2,\n      messages,\n      tools: TOOLS,\n      tool_choice: 'auto'\n    });\n\n    const choice = completionRes.body?.choices?.[0]?.message;\n\n    if (choice?.tool_calls && choice.tool_calls.length > 0) {\n      const toolCall = choice.tool_calls[0];\n      const fnName = toolCall.function.name;\n      let args = {};\n      try { args = JSON.parse(toolCall.function.arguments || '{}'); } catch (_) {}\n\n      // 1. TEMAS MENSAIS DOS DEVOCIONAIS (ADMIN)\n      if (fnName === 'admin_set_month_themes') {\n        const year = Number(args.year || todayInfo.year);\n        if (args.action === 'set' && args.themes) {\n          const currentRes = await ck.call(this, 'GET', `/api/admin/bible/devotionals-365/month-themes/${year}`);\n          const currentThemes = (currentRes.body && (currentRes.body.data?.themes || currentRes.body.themes)) || {};\n          const mergedThemes = { ...currentThemes, ...args.themes };\n\n          const r = await ck.call(this, 'PUT', `/api/admin/bible/devotionals-365/month-themes/${year}`, mergedThemes);\n          if (r.statusCode >= 200 && r.statusCode < 300) {\n            const monthsNames = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];\n            const lines = [`🗓️ *Temas Mensais de Devocionais Gravados (${year})!*\\n`];\n            for (const [m, t] of Object.entries(args.themes)) {\n              const mNum = Number(m);\n              const mName = monthsNames[mNum] || `Mês ${mNum}`;\n              lines.push(`• *${mName} (Mês ${mNum}):* ${t}`);\n            }\n            lines.push(`\\n✅ _Salvo com sucesso na base do servidor! Já orientará as próximas gerações de devocionais._`);\n            outMessage = lines.join('\\n');\n          } else {\n            outMessage = `⚠️ Erro ao salvar temas: ${r.body?.message || JSON.stringify(r.body)}`;\n          }\n        } else if (args.action === 'generate_all_ai') {\n          const r = await ck.call(this, 'POST', `/api/admin/bible/devotionals-365/month-themes/${year}/generate-all`, { delayMs: 300 });\n          if (r.statusCode >= 200 && r.statusCode < 300) {\n            outMessage = `⚡ *Linha Editorial Completa para ${year} Gerada com IA!*\\n\\nTodos os 12 meses receberam temas teológicos profundos e inspiradores na plataforma.`;\n          } else {\n            outMessage = `⚠️ Erro ao gerar temas: ${r.body?.message}`;\n          }\n        } else {\n          const r = await ck.call(this, 'GET', `/api/admin/bible/devotionals-365/month-themes/${year}`);\n          const th = (r.body && (r.body.data?.themes || r.body.themes)) || {};\n          const monthsNames = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];\n          const lines = [`🗓️ *Temas dos Meses (${year}):*\\n`];\n          for (let i = 1; i <= 12; i++) {\n            lines.push(`• *${monthsNames[i]}:* ${th[i] || '—'}`);\n          }\n          outMessage = lines.join('\\n');\n        }\n\n      // 2. EDITAR VERSÍCULO DO DIA (ADMIN)\n      } else if (fnName === 'admin_edit_verse_of_day') {\n        const targetDate = args.date || todayInfo.iso;\n        const payload = {\n          date: targetDate,\n          ref: args.ref,\n          texto: args.texto,\n          reflexao: args.reflexao || ''\n        };\n        const r = await ck.call(this, 'PUT', '/api/admin/bible/verse-of-day', payload);\n        if (r.statusCode >= 200 && r.statusCode < 300) {\n          outMessage = `👑 *Palavra do Dia Atualizada com Sucesso!*\\n\\n📅 *Data:* ${targetDate}\\n📖 *Referência:* ${args.ref}\\n📜 *Texto Sagrado:*\\n_\\\"${args.texto}\\\"_\\n\\n🕊️ *Reflexão:*\\n${args.reflexao || 'Nenhuma reflexão adicional.'}\\n\\n✅ _Atualizado e já em exibição no cartão digital e na plataforma Conecta King!_`;\n        } else {\n          outMessage = `⚠️ Erro ao atualizar versículo: ${r.body?.message || JSON.stringify(r.body)}`;\n        }\n\n      // 3. EDITAR SALMO DO DIA (ADMIN)\n      } else if (fnName === 'admin_edit_salmo_do_dia') {\n        const targetDate = args.date || todayInfo.iso;\n        const payload = {\n          date: targetDate,\n          ref: args.ref,\n          texto: args.texto,\n          reflexao: args.reflexao || '',\n          capitulo: args.capitulo || null\n        };\n        const r = await ck.call(this, 'PUT', '/api/admin/bible/salmo-do-dia', payload);\n        if (r.statusCode >= 200 && r.statusCode < 300) {\n          outMessage = `🛡️ *Salmo do Dia Atualizado com Sucesso!*\\n\\n📅 *Data:* ${targetDate}\\n📖 *Salmo:* ${args.ref}\\n📜 *Texto:*\\n_\\\"${args.texto}\\\"_\\n\\n🕊️ *Meditação:*\\n${args.reflexao || 'Que a paz do Senhor guarde a sua vida.'}\\n\\n✅ _Salvo e em exibição na plataforma!_`;\n        } else {\n          outMessage = `⚠️ Erro ao atualizar salmo: ${r.body?.message || JSON.stringify(r.body)}`;\n        }\n\n      // 4. GERENCIAR DEVOCIONAIS 365 (ADMIN)\n      } else if (fnName === 'admin_manage_devotional_365') {\n        const targetDay = Number(args.day || todayInfo.doy);\n        if (args.action === 'save') {\n          const payload = {\n            titulo: args.titulo || 'Devocional Diário',\n            versiculo_ref: args.versiculo_ref || '',\n            versiculo_texto: args.versiculo_texto || '',\n            reflexao: args.reflexao || '',\n            oracao: args.oracao || '',\n            aplicacao: args.aplicacao || ''\n          };\n          const r = await ck.call(this, 'PUT', `/api/admin/bible/devotionals-365/${targetDay}`, payload);\n          if (r.statusCode >= 200 && r.statusCode < 300) {\n            outMessage = `✨ *Devocional #${targetDay} Gravado no Servidor!*\\n\\n📖 *Título:* ${payload.titulo}\\n📍 *Passagem:* ${payload.versiculo_ref}\\n${payload.versiculo_texto ? '📜 *Versículo:* _\"' + payload.versiculo_texto + '\"_\\n\\n' : ''}📝 *Reflexão:*\\n${payload.reflexao}\\n\\n${payload.aplicacao ? '🎯 *Aplicação Prática & Reprogramação:*\\n' + payload.aplicacao + '\\n\\n' : ''}🙏 *Oração Pastoral:*\\n_${payload.oracao}_\\n\\n✅ _Salvo com sucesso na base oficial dos 365 dias!_`;\n          } else {\n            outMessage = `⚠️ Erro ao salvar devocional: ${r.body?.message || JSON.stringify(r.body)}`;\n          }\n        } else if (args.action === 'generate_ai') {\n          const year = todayInfo.year;\n          const r = await ck.call(this, 'POST', `/api/admin/bible/devotionals-365/day/${targetDay}/generate-ai`, {\n            year,\n            temaPersonalizado: args.tema || '',\n            temaModo: args.tema ? 'personalizado' : 'mes_auto'\n          });\n          if (r.statusCode >= 200 && r.statusCode < 300) {\n            const d = r.body?.data || {};\n            const refTitle = d.versiculo_ref || d.passagem || '';\n            const vText = d.versiculo_texto ? '📜 *Versículo:* _\"' + d.versiculo_texto + '\"_\\n\\n' : '';\n            const refl = d.reflexao || d.texto || '';\n            const pray = d.oracao || '';\n            const apl = d.aplicacao || '';\n\n            outMessage = `⚡ *Devocional #${targetDay} Gerado com IA & Gravado!*\\n\\n📖 *Título:* ${d.titulo || 'Novo Devocional'}\\n📍 *Passagem:* ${refTitle}\\n\\n${vText}📝 *Reflexão (Teologia, Neurociência & Desbloqueio):*\\n${refl}\\n\\n${apl ? '🎯 *Neuro-Ação & Reprogramação Prática:*\\n' + apl + '\\n\\n' : ''}🙏 *Oração Pastoral:*\\n_${pray || 'Amém.'}_\\n\\n✅ _Publicado e ativo no Conecta King!_`;\n          } else {\n            outMessage = `⚠️ Erro ao gerar com IA: ${r.body?.message || JSON.stringify(r.body)}`;\n          }\n        } else if (args.action === 'delete') {\n          const r = await ck.call(this, 'DELETE', `/api/admin/bible/devotionals-365/${targetDay}`);\n          outMessage = r.statusCode < 300 ? `🗑️ *Devocional #${targetDay} Removido com Sucesso!* Dia liberado para nova redação.` : `⚠️ Erro ao remover: ${r.body?.message}`;\n        } else {\n          const r = await ck.call(this, 'GET', `/api/admin/bible/devotionals-365/day/${targetDay}`);\n          const d = r.body?.data || {};\n          outMessage = `📄 *Devocional Cadastrado — Dia #${targetDay}:*\\n\\n*Título:* ${d.titulo || 'Sem título'}\\n*Ref:* ${d.versiculo_ref || d.passagem || ''}\\n*Versículo:* ${d.versiculo_texto || '—'}\\n*Texto:* ${d.reflexao || d.texto || 'Vazio'}`;\n        }\n\n      // 5. PROSPERIDADE ANTES DE DORMIR (ADMIN)\n      } else if (fnName === 'admin_manage_prosperidade_dormir') {\n        const n = Number(args.activation_number || 1);\n        if (args.action === 'save') {\n          const payload = {\n            titulo: args.titulo || 'Ativação Noturna',\n            proverbs_ref: args.proverbs_ref || '',\n            fundamento_sagrado: args.fundamento_sagrado || '',\n            decreto_entrada: args.decreto_entrada || '',\n            diagnostico_escassez: args.diagnostico_escassez || '',\n            nova_mentalidade: args.nova_mentalidade || '',\n            exercicio_fixacao: args.exercicio_fixacao || '',\n            published: args.published !== false\n          };\n          const r = await ck.call(this, 'PUT', `/api/admin/bible/prosperidade/${n}`, payload);\n          if (r.statusCode >= 200 && r.statusCode < 300) {\n            outMessage = `🌙 *Ativação de Prosperidade #${n} Salva!*\\n\\n💎 *Título:* ${payload.titulo}\\n📖 *Palavra Base:* ${payload.proverbs_ref}\\n🕊️ *Fundamento:* ${payload.fundamento_sagrado}\\n\\n🗣️ *Decreto para Antes de Dormir:*\\n_\\\"${payload.decreto_entrada}\\\"_\\n\\n💡 *Nova Mentalidade:* ${payload.nova_mentalidade}\\n\\n📢 *Status:* ${payload.published ? '✅ Publicada na plataforma' : '🟡 Rascunho'}`;\n          } else {\n            outMessage = `⚠️ Erro ao salvar ativação: ${r.body?.message || JSON.stringify(r.body)}`;\n          }\n        } else if (args.action === 'publish') {\n          const pub = args.published !== false;\n          const r = await ck.call(this, 'PATCH', `/api/admin/bible/prosperidade/${n}/publish`, { published: pub });\n          outMessage = r.statusCode < 300 ? `📢 *Ativação #${n} ${pub ? 'Publicada com Sucesso! Já visível para todos.' : 'Despublicada (Rascunho)'}*` : `⚠️ Erro ao alterar status: ${r.body?.message}`;\n        } else if (args.action === 'generate_ai') {\n          const r = await ck.call(this, 'POST', `/api/admin/bible/prosperidade/${n}/generate-ai`);\n          if (r.statusCode >= 200 && r.statusCode < 300) {\n            const data = r.body?.data || {};\n            outMessage = `⚡ *Ativação #${n} Gerada com IA (Do Fracasso ao Legado)!*\\n\\n💎 *${data.titulo || 'Ativação Noturna'}*\\n📖 *Versículo:* ${data.proverbs_ref || ''}\\n\\n🗣️ *Decreto Noturno:*\\n_\\\"${data.decreto_entrada || data.sentenca_ativacao || ''}\\\"_\\n\\n✅ _Salva com sucesso no banco de dados!_`;\n          } else {\n            outMessage = `⚠️ Falha ao gerar com IA: ${r.body?.message || JSON.stringify(r.body)}`;\n          }\n        } else {\n          const r = await ck.call(this, 'GET', `/api/admin/bible/prosperidade/${n}`);\n          const d = r.body?.data || {};\n          outMessage = `🌙 *Ativação #${n}:* ${d.titulo || ''}\\n*Decreto:* ${d.decreto_entrada || ''}\\n*Status:* ${d.published ? 'Publicada' : 'Rascunho'}`;\n        }\n\n      // 6. GERAR ESTUDO POR LIVRO COM IA (ADMIN)\n      } else if (fnName === 'admin_generate_book_study') {\n        const bookId = String(args.book_id || '').toLowerCase().trim();\n        const r = await ck.call(this, 'POST', `/api/admin/bible/study/book/${bookId}/generate-ai`);\n        if (r.statusCode >= 200 && r.statusCode < 300) {\n          outMessage = `📚 *Estudo do Livro de ${bookId.toUpperCase()} Gerado com Sucesso!*\\n\\nO estudo exegético completo com introdução, contexto histórico, temas principais e divisão por capítulos foi gravado e já está acessível no módulo de estudos da Bíblia! 📖👑`;\n        } else {\n          outMessage = `⚠️ Falha ao gerar estudo: ${r.body?.message || JSON.stringify(r.body)}`;\n        }\n\n      // 7. CONSULTAS COMUNS (VERSÍCULO, SALMO, DEVOCIONAL DO DIA, ETC.)\n      } else if (fnName === 'get_verse_of_day') {\n        const query = args.date ? '?date=' + encodeURIComponent(args.date) : '';\n        const r = await ck.call(this, 'GET', '/api/bible/verse-of-day' + query);\n        const data = (r.body && r.body.data) || {};\n        const ref = data.ref || 'Palavra do Dia';\n        const versiculo = data.texto || 'Lâmpada para os meus pés é tua palavra e luz, para o meu caminho.';\n        const reflexao = data.reflexao || 'Guarde esta promessa em seu coração hoje.';\n        outMessage = `📖 *Versículo do Dia | Conecta King*\\n\\n\"*${versiculo}*\"\\n\\n📍 *${ref}*\\n\\n🕊️ *Reflexão:*\\n${reflexao}\\n\\nQue esta Palavra alimente o seu espírito hoje! 🙏`;\n      } else if (fnName === 'get_devocional_do_dia') {\n        const query = args.date ? '?date=' + encodeURIComponent(args.date) : '';\n        const r = await ck.call(this, 'GET', '/api/bible/devocional-do-dia' + query);\n        let d = (r.body && r.body.data) || {};\n        const temTexto = !!(d.reflexao || d.texto || d.content);\n        if (!temTexto) {\n          // Se não houver devocional pronto, gera com IA no backend seguindo o tema do mês\n          const genR = await ck.call(this, 'POST', `/api/admin/bible/devotionals-365/day/${todayInfo.doy}/generate-ai`, {\n            year: todayInfo.year,\n            temaModo: 'mes_auto'\n          });\n          d = (genR.body && genR.body.data) || d;\n        }\n        const titulo = d.titulo || d.title || 'Palavra do Dia';\n        const passagem = d.versiculo_ref || d.versiculo || d.passagem || d.reference || d.ref || 'Escrituras Sagradas';\n        const vTexto = d.versiculo_texto ? `\"${d.versiculo_texto}\"\\n\\n` : '';\n        const texto = d.reflexao || d.texto || d.content || d.meditacao || '';\n        const oracao = d.oracao || d.prayer || '';\n        const aplicacao = d.aplicacao || d.application || '';\n        outMessage = `🌅 *Devocional do Dia:* ${titulo}\\n\\n📖 *Texto Base:* ${passagem}\\n\\n${vTexto}${texto}\\n\\n${aplicacao ? '🎯 *Aplicação Prática:*\\n' + aplicacao + '\\n\\n' : ''}${oracao ? '🙏 *Oração:*\\n_' + oracao + '_\\n\\n' : ''}Amém! Que Deus abençoe sua jornada. 🙌`;\n      } else if (fnName === 'get_salmo_do_dia') {\n        const r = await ck.call(this, 'GET', '/api/bible/salmo-do-dia');\n        const s = (r.body && r.body.data) || {};\n        const ref = s.ref || 'Salmos';\n        const texto = s.texto || '';\n        const reflexao = s.reflexao || '';\n        outMessage = `🛡️ *Salmo do Dia:* ${ref}\\n\\n\"${texto}\"\\n\\n${reflexao ? '🕊️ *Meditação:*\\n' + reflexao + '\\n\\n' : ''}Que o Senhor seja o seu refúgio e fortaleza hoje! 🙌`;\n      } else if (fnName === 'get_prosperidade_hoje') {\n        const path = args.day ? '/api/bible/prosperidade/ativacao/' + args.day : '/api/bible/prosperidade/hoje';\n        const r = await ck.call(this, 'GET', path);\n        const p = (r.body && r.body.data) || {};\n        const num = p.numero || p.day || p.dia || '365';\n        const titulo = p.titulo || p.title || 'Ativação Bíblica de Prosperidade';\n        const versiculo = p.versiculo || p.verse || '';\n        const declaracao = p.declaracao || p.affirmation || '';\n        const chave = p.chave || p.chave_prosperidade || p.principio || '';\n        const acao = p.acao_pratica || p.action || '';\n        outMessage = `🌙 *Ativação Noturna de Prosperidade #${num}*\\n\\n💎 *${titulo}*\\n\\n📖 *Princípio Bíblico:*\\n\"${versiculo}\"\\n\\n${chave ? '🔑 *Chave de Sabedoria:* ' + chave + '\\n\\n' : ''}${declaracao ? '🗣️ *Declaração de Fé:*\\n_\"' + declaracao + '\"_\\n\\n' : ''}${acao ? '🎯 *Passo Prático:*\\n' + acao + '\\n\\n' : ''}Deus tem prazer na prosperidade integral da sua vida!`;\n      } else if (fnName === 'get_bible_text') {\n        const bookId = String(args.book_id || 'salmos').toLowerCase();\n        const cap = Number(args.chapter || 1);\n        const r = await ck.call(this, 'GET', `/api/bible/book/${bookId}/${cap}`);\n        const data = (r.body && r.body.data) || {};\n        const bookName = data.book?.name || bookId.toUpperCase();\n        const verses = data.verses || data.versiculos || [];\n        if (Array.isArray(verses) && verses.length > 0) {\n          const sample = verses.slice(0, 10).map(v => `*${v.number || v.verse}* ${v.text}`).join('\\n\\n');\n          outMessage = `📖 *${bookName} ${cap}*\\n\\n${sample}${verses.length > 10 ? '\\n\\n_(Exibindo os primeiros 10 versículos de ' + verses.length + ' motivado por espaço no Telegram)_' : ''}`;\n        } else {\n          outMessage = `📖 *Leitura de ${bookName} ${cap}* consultada na plataforma.`;\n        }\n      } else if (fnName === 'generate_sermon_outline') {\n        const theme = args.theme;\n        const pass = args.passage || 'Escrituras';\n        const aud = args.audience ? ` (Público: ${args.audience})` : '';\n        const sermonRes = await openaiCall.call(this, {\n          model,\n          temperature: 0.4,\n          messages: [\n            { role: 'system', content: 'Você é um pregador e mestre bíblico expositivo de alto nível. Crie um esboço exegético e claro de sermão contendo: 1. Título impactante e memorável; 2. Texto Base com contexto histórico-cultural e etimológico; 3. Introdução cativante que conecte com a realidade humana; 4. Três pontos principais expositivos profundamente alicerçados nas escrituras e na neurociência da transformação pessoal; 5. Aplicação prática para o cotidiano; 6. Conclusão profética e apelo/oração pastoral.' },\n            { role: 'user', content: `Elabore um esboço de pregação sobre o tema: \\\"${theme}\\\", baseado em \\\"${pass}\\\"${aud}.` }\n          ]\n        });\n        outMessage = sermonRes.body?.choices?.[0]?.message?.content || `📋 *Esboço de Pregação: ${theme}*\\n\\n📖 Base: ${pass}`;\n      } else if (fnName === 'pastoral_prayer_counsel') {\n        const prayerRes = await openaiCall.call(this, {\n          model,\n          temperature: 0.4,\n          messages: [\n            { role: 'system', content: 'Você é um pastor amoroso, sábio e com profunda unção espiritual e psicológica. Escreva uma oração pastoral profunda, bíblica e restauradora, trazendo paz ao sistema límbico/nervoso da pessoa, destruindo sentimentos de medo, abandono e culpa, e liberando bênçãos e decretos de vida e vitória.' },\n            { role: 'user', content: `Faça uma oração pastoral para ${args.name || firstName}, que necessita de intercessão e direção sobre: ${args.need}.` }\n          ]\n        });\n        outMessage = prayerRes.body?.choices?.[0]?.message?.content || `🙏 Que a paz que excede todo entendimento guarde o seu coração e a sua mente em Cristo Jesus.`;\n      }\n    } else {\n      outMessage = choice?.content || `A paz do Senhor, ${firstName}! Estou aqui como Conselheiro Bíblico da Conecta King. O que você gostaria de criar, editar ou estudar na Palavra hoje?`;\n    }\n\n    // Diagnóstico removido\n\n    session.history.push({ role: 'user', content: inputForAi });\n    session.history.push({ role: 'assistant', content: outMessage });\n    if (session.history.length > 12) session.history.splice(0, 2);\n  }\n} catch (e) {\n  outMessage = '���️ Graça e Paz! Ocorreu uma oscilação momentânea: ' + String(e.message || e).slice(0, 200) + '\\n\\nComo posso abençoar seus estudos na Palavra hoje?';\n}\n\n\nfunction splitTelegramMessage(text, maxLen = 3900) {\n  if (!text || typeof text !== 'string') return [text || ''];\n  if (text.length <= maxLen) return [text];\n  const chunks = [];\n  let remaining = text;\n  while (remaining.length > 0) {\n    if (remaining.length <= maxLen) {\n      chunks.push(remaining);\n      break;\n    }\n    let splitIdx = remaining.lastIndexOf('\\n\\n', maxLen);\n    if (splitIdx < maxLen * 0.4) {\n      splitIdx = remaining.lastIndexOf('\\n', maxLen);\n    }\n    if (splitIdx < maxLen * 0.4) {\n      splitIdx = remaining.lastIndexOf('. ', maxLen);\n      if (splitIdx !== -1) splitIdx += 1;\n    }\n    if (splitIdx < maxLen * 0.3) {\n      splitIdx = remaining.lastIndexOf(' ', maxLen);\n    }\n    if (splitIdx <= 0) {\n      splitIdx = maxLen;\n    }\n    const chunk = remaining.substring(0, splitIdx).trim();\n    if (chunk) chunks.push(chunk);\n    remaining = remaining.substring(splitIdx).trim();\n  }\n  return chunks.length ? chunks : [text];\n}\n\nconst chunks = splitTelegramMessage(outMessage, 3900);\nreturn chunks.map(chunk => ({ json: { ...prev, outMessage: chunk } }));\n"
+      }
     },
     {
+      "id": "enviarTelegramBiblia",
+      "name": "Enviar Telegram",
+      "webhookId": "50672ee2-4259-4412-b53a-7f9377d5423e",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        540,
+        400
+      ],
       "parameters": {
         "chatId": "={{ $('Preparar (texto/voz)').first().json.chatId }}",
         "text": "={{ $json.outMessage || $json.output || 'A paz do Senhor! Como posso abençoar seus estudos e sua fé hoje?' }}",
@@ -195,18 +218,10 @@
           "parse_mode": "Markdown"
         }
       },
-      "id": "enviarTelegramBiblia",
-      "name": "Enviar Telegram",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [
-        540,
-        400
-      ],
       "credentials": {
         "telegramApi": {
-          "id": "bibliaTelegramAccount",
-          "name": "Telegram Agente Bíblia"
+          "id": "g9e8goMSML0vE2JS",
+          "name": "Telegram account 3"
         }
       }
     }
@@ -308,8 +323,442 @@
       ]
     }
   },
-  "active": true,
+  "nodeGroups": [],
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "errorWorkflow": "ckErrWfSentry01"
+  },
+  "staticData": {
+    "global": {
+      "chats": {
+        "78792434": {
+          "history": [
+            {
+              "role": "user",
+              "content": "Gere o devocional do dia 28 de setembro, focado em desbloqueio de escassez\" e mentalidade e nova visão"
+            },
+            {
+              "role": "assistant",
+              "content": "⚡ *Devocional #271 Gerado com IA & Gravado!*\n\n📖 *Título:* Perseverança nas Promessas de Deus\n📍 *Passagem:* Hebreus 10:23\n\n📝 *Reflexão (Neurociência, Teologia & Desbloqueio):*\n...\n\n🙏 *Oração:*\n_Amém._\n\n✅ _Publicado e ativo no Conecta King!_"
+            },
+            {
+              "role": "user",
+              "content": "Manda o devocional de hoje"
+            },
+            {
+              "role": "assistant",
+              "content": "✨ *Devocional do Dia:* Perseverança nas Promessas de Deus\n\n📖 *Texto Base:* Escrituras Sagradas\n\nNeste mês de setembro, enquanto refletimos sobre fidelidade e perseverança, que cada um de nós busque ser um testemunho vivo da graça que fortalece o nosso caminho. Vamos nos lembrar de que, independentemente dos desafios que encontramos, a fidelidade de Deus não falha, e nossa perseverança será recompensada. Que o Senhor nos ajude a nos manter firmes e inabaláveis, sempre crescendo na fé e no amor.\n\n🙏 *Oração:*\n_Senhor Deus, agradeço-Te pela Tua fidelidade que nunca falha. Ajuda-me a permanecer firme na esperança e a perseverar mesmo nos momentos difíceis. Que eu possa encontrar conforto em Tuas promessas e ser uma luz para aqueles ao meu redor. Fortalece minha fé e ensina-me a confiar em Ti a cada passo do caminho. Em nome de Jesus, amém._\n\nAmém! Que Deus abençoe sua jornada."
+            },
+            {
+              "role": "user",
+              "content": "Me passa o devocional de hoje"
+            },
+            {
+              "role": "assistant",
+              "content": "✨ *Devocional do Dia:* Graça e salvação\n\n📖 *Texto Base:* Efésios 2:8\n\nNa epístola aos Efésios, Paulo revela uma verdade central da fé cristã: a salvação é um presente divino, acessível apenas pela graça, recebida por meio da fé. Ao refletirmos sobre Efésios 2:8, somos confrontados com a radicalidade da graça: ela é um favor imerecido, algo que não conseguimos conquistar, mas que é dado a nós como um ato de amor. Esta compreensão é fundamental, especialmente ao atravessarmos desertos em nossa vida espiritual, quando enfrentamos períodos de provação e deserto emocional. A graça não é apenas uma doutrina; é a essência que nos sustenta e nos permite continuar nossa jornada, mesmo quando tudo parece árido. O apóstolo destaca que nossa salvação é um dom, e não uma conquista, para que ninguém possa se gloriar. Essa verdade nos leva a um lugar de humildade, onde reconhecemos que, em nossa fragilidade, encontramos força na dependência de Deus.\n\nA neurociência nos oferece uma nova perspectiva sobre essa dependência. Estudos sobre neuroplasticidade mostram que nossos cérebros podem se reconfigurar em resposta a novas informações e experiências. Quando internalizamos a graça de Deus, podemos experimentar uma alteração na maneira como o nosso cérebro responde ao estresse e à ansiedade. Por exemplo, a regulação neuroquímica dos neurotransmissores como a dopamina e a serotonina pode ser influenciada pela prática da gratidão e pelo reconhecimento do dom da salvação. Essa reconfiguração não apenas traz alívio emocional, mas também nos permite ver a vida através das lentes da esperança e da paz, mesmo em tempos de deserto.\n\nDentro da PNL, podemos utilizar a ressignificação para transformar padrões mentais limitantes. Ao invés de ver o deserto como um lugar de desespero, podemos reprogramar nossa mente para entendê-lo como um espaço de crescimento e preparação para a abundância que Deus tem para nós. Romanos 12:2 nos ensina sobre a renovação da mente, um convite a substituir pensamentos negativos por verdades bíblicas. Essa mudança de perspectiva é um ato consciente que nos aproxima da Mente de Cristo, que nos vê além das nossas circunstâncias imediatas.\n\nA psicologia clínica e a psiquiatria integrativa também trazem insights valiosos sobre como a fé e a saúde emocional estão interligadas. O reconhecimento de que somos amados e aceitos incondicionalmente por Deus pode aliviar angústias e trazer um equilíbrio entre mente e corpo. Quando enfrentamos o deserto, é vital cuidar de nossa saúde emocional, permitindo que a fé sirva como um âncora que estabiliza nossas emoções e nos conecta ao amor divino. A prática regular de atividades que promovam o bem-estar, como meditação e oração, pode ser um caminho eficaz para promover essa regulação emocional.\n\nO desbloqueio mental e emocional, por sua vez, é crucial quando nos deparamos com sentimentos de culpa, rejeição ou paralisia. A verdade bíblica que diz que a salvação é um presente nos convida a romper com essas travas. Ao aceitarmos a graça de Deus, podemos liberar a carga de expectativas e falhas, permitindo que a verdade nos liberte. O deserto, então, torna-se um lugar de cura, onde podemos deixar ir o que nos impede de avançar e nos agarrar à nova vida que Cristo nos oferece.\n\nPara ancorar essa transformação, podemos empregar técnicas de hipnose clínica que promovem a paz interior. Filipenses 4:7 nos lembra que a paz de Deus guarda nossos corações e mentes. Um exercício prático pode ser a respiração consciente, onde, ao inspirar, visualizamos a graça de Deus preenchendo-nos, e ao expirar, liberamos qualquer ansiedade ou medo. Essa prática não só traz alívio imediato, mas também nos ajuda a cultivar um estado mental de paz duradoura.\n\nAssim, ao caminharmos pelo deserto, lembremo-nos de que a graça não é apenas uma crença, mas uma realidade transformadora. Que possamos, diariamente, renovar nossa mente e coração, abraçando a esperança que ancoramos em Cristo, mesmo nas tempestades da vida.\n\n🙏 *Oração:*\n_Senhor Deus, eu Te agradeço por Tua graça que me alcança, mesmo em meio aos desertos da minha vida. Ajuda-me a reconhecer que não sou definido pelas minhas falhas, mas pela Tua misericórdia. Que eu possa viver em gratidão e humildade, permitindo que a Tua paz guarde meu coração e minha mente. Liberta-me de qualquer carga que me impeça de avançar e renova a minha mente com a Tua verdade. Eu clamo pela Tua intervenção em minha vida, confiando que a esperança que encontro em Cristo é a âncora da minha alma. Amém._\n\nAmém! Que Deus abençoe sua jornada."
+            },
+            {
+              "role": "user",
+              "content": "Me passa o devocional de hoje"
+            },
+            {
+              "role": "assistant",
+              "content": "✨ *Devocional do Dia:* O caminho, a verdade e a vida\n\n📖 *Texto Base:* João 14:6\n\nNo Evangelho de João, Jesus declara com firmeza: \"Eu sou o caminho, a verdade e a vida\" (João 14:6). Essa afirmação não é meramente uma instrução, mas uma revelação profunda da identidade de Cristo e do papel que Ele desempenha em nossas vidas, especialmente quando nos encontramos em momentos desafiadores, como os desertos da vida. Quando Jesus fala a Tomé, que expressa confusão sobre o caminho a seguir, Ele não oferece um mapa ou uma lista de direções; Ele se apresenta como o próprio caminho. Este entendimento é crucial para aqueles que estão passando por desertos espirituais, onde a direção parece incerta e a esperança escassa. Em nossos momentos de dúvida, somos lembrados de que a verdadeira orientação e clareza vêm de um relacionamento pessoal com Cristo, que é o nosso guia infalível em meio às dificuldades.\n\n🙏 *Oração:*\n_Senhor Deus, neste dia, venho a Ti com meu coração aberto, buscando a paz que vem somente de Ti. Ajuda-me a ver o deserto como um lugar de aprendizado e crescimento. Desbloqueia minha mente de pensamentos que me aprisionam e me enche com a verdade de que Tu és o caminho, a verdade e a vida. Que eu possa ancorar minha esperança em Ti, mesmo quando a jornada se torna difícil. Em nome de Jesus, amém._\n\nAmém! Que Deus abençoe sua jornada."
+            },
+            {
+              "role": "user",
+              "content": "Devocional de hoje não é igual o de ontem que tinha pnl que tinha desbloqueio que tinha psicologia clínica e psiquiatria interativa não tem PNL entre outras"
+            },
+            {
+              "role": "assistant",
+              "content": "✨ *Devocional do Dia:* O caminho, a verdade e a vida\n\n📖 *Texto Base:* João 14:6\n\nNo Evangelho de João, Jesus declara com firmeza: \"Eu sou o caminho, a verdade e a vida\" (João 14:6). Essa afirmação não é meramente uma instrução, mas uma revelação profunda da identidade de Cristo e do papel que Ele desempenha em nossas vidas, especialmente quando nos encontramos em momentos desafiadores, como os desertos da vida. Quando Jesus fala a Tomé, que expressa confusão sobre o caminho a seguir, Ele não oferece um mapa ou uma lista de direções; Ele se apresenta como o próprio caminho. Este entendimento é crucial para aqueles que estão passando por desertos espirituais, onde a direção parece incerta e a esperança escassa. Em nossos momentos de dúvida, somos lembrados de que a verdadeira orientação e clareza vêm de um relacionamento pessoal com Cristo, que é o nosso guia infalível em meio às dificuldades.\n\n🙏 *Oração:*\n_Senhor Deus, neste dia, venho a Ti com meu coração aberto, buscando a paz que vem somente de Ti. Ajuda-me a ver o deserto como um lugar de aprendizado e crescimento. Desbloqueia minha mente de pensamentos que me aprisionam e me enche com a verdade de que Tu és o caminho, a verdade e a vida. Que eu possa ancorar minha esperança em Ti, mesmo quando a jornada se torna difícil. Em nome de Jesus, amém._\n\nAmém! Que Deus abençoe sua jornada."
+            },
+            {
+              "role": "user",
+              "content": "Me passa o devocional de hoje"
+            },
+            {
+              "role": "assistant",
+              "content": "🌅 *Devocional do Dia:* O caminho, a verdade e a vida\n\n📖 *Texto Base:* João 14:6\n\n\"Eu sou o caminho, e a verdade e a vida; ninguém vem ao Pai senão por mim.\"\n\nNo diálogo de Jesus com Tomé em João 14:6, encontramos uma profunda resposta não apenas a uma dúvida, mas a um anseio humano universal: a busca por direção e propósito. Jesus se apresenta como o caminho, a verdade e a vida, não apenas como um guia entre muitos, mas como a única via que conduz ao Pai. Essa afirmação é particularmente significativa quando refletimos sobre a experiência de passar pelo deserto da vida. Muitas vezes, em momentos de dor, incerteza e solidão, nos sentimos perdidos, como se estivéssemos vagando sem rumo. No deserto, a tentação é confiar nas nossas próprias percepções e soluções, mas Jesus nos convida a reconhecer que Ele é a resposta definitiva às nossas perguntas mais profundas. Ao declarar \"Eu sou o caminho\", Ele nos assegura que a jornada, ainda que árdua, é segura quando se caminha com Ele.\n\nDo ponto de vista da neurociência, essa afirmação de Jesus também ressoa com a maneira como nossa mente e corpo reagem às experiências de crise e desespero. A neuroplasticidade, a capacidade do cérebro de se reorganizar e adaptar, é fundamental nesse processo. Quando nos voltamos para Cristo em momentos de deserto, estamos não apenas buscando consolo espiritual, mas também ativando um processo neuroquímico que pode transformar nossa perspectiva. A regulação dos hormônios como o cortisol, frequentemente elevado em situações de estresse, pode ser revertida por meio da prática da fé e da confiança em Deus. Estudos mostram que a prática da gratidão e da meditação pode elevar os níveis de dopamina e serotonina, promovendo um estado de bem-estar que se alinha com a promessa de vida abundante que Jesus oferece.\n\nNa perspectiva da Programação Neurolinguística (PNL), compreender que Jesus é \"a verdade\" nos permite ressignificar nossas crenças limitantes. Muitas vezes, a mente humana é capturada por padrões de pensamento negativos que nos mantêm em ciclos de dúvida e medo. Ao renovar nossa mente, conforme Romanos 12:2, podemos substituir esses padrões por uma mentalidade que reflete a Mente de Cristo. Isso envolve um exercício consciente de identificar e desafiar pensamentos que não se alinham com a verdade de Deus, substituindo-os por declarações de fé e esperança. Ao fazer isso, podemos nos libertar das correntes que nos prendem ao desespero, encontrando liberdade na verdade que nos transforma.\n\nA psicologia clínica e a psiquiatria integrativa também nos oferecem insights valiosos sobre a saúde emocional durante a travessia pelo deserto. A conexão entre mente e corpo é inegável; emoções não processadas podem se manifestar em sintomas físicos e psicológicos. A prática da fé, associada a técnicas de terapia, como a terapia cognitivo-comportamental, pode proporcionar alívio para angústias e desarmonias emocionais. É essencial permitir que a verdade de que \"Jesus é a vida\" penetre em nossa psique, trazendo cura e restauração. O convite de Jesus é para uma vida plena, que não se limita à sobrevivência, mas se estende à vivência de uma abundância que flui de um relacionamento íntimo com Ele.\n\nO desbloqueio mental e emocional é outro aspecto vital neste processo de transformação. Confrontar medos, culpas e rejeições é fundamental para avançar na jornada da fé. A verdade bíblica nos ensina que somos aceitos e amados por Deus, independentemente de nossas falhas. Ao nos apropriar dessa realidade, podemos romper com as limitações que nos impedem de experimentar a plenitude da vida em Cristo. A superação dessas travas emocionais não é apenas um ato de fé, mas um processo ativo que envolve a nossa participação consciente. Isso pode ser alcançado através de práticas de oração, meditação e confissão, que nos ajudam a alinhar nossas emoções com a verdade de Deus.\n\nPor fim, a ancoragem e a sugestão profunda de paz são essenciais para viver em harmonia com o propósito divino. Ao praticar técnicas de respiração e meditação que nos conectem à presença de Deus, podemos cultivar um espaço interno de paz, conforme Filipenses 4:7. Técnicas de hipnose clínica, como a visualização de um lugar seguro e repleto da paz de Deus, podem ser extremamente eficazes. Ao nos ancorarmos nessa paz, somos capacitados a enfrentar os desafios do deserto com tranquilidade e confiança, sabendo que, em Cristo, temos tudo o que precisamos para superar as adversidades e prosperar em meio a elas.\n\n🎯 *Aplicação Prática:*\nPara aplicar essa reflexão em sua vida, comece estabelecendo um tempo diário de oração e meditação, onde você possa se conectar com Deus e buscar a verdade de Sua Palavra. Durante esse momento, escreva três crenças limitantes que você deseja ressignificar e, em seguida, crie afirmações que reflitam a verdade de Deus sobre você e sua vida. Além disso, pratique técnicas de respiração que ajudem a acalmar sua mente e corpo, permitindo que a paz de Deus flua sobre você, especialmente em momentos de estresse ou incerteza.\n\nOutra ação prática é identificar uma área de sua vida onde você sente que está passando por um deserto. Faça uma lista de passos pequenos e realistas que você pode tomar para avançar nessa área, confiando em que Jesus é o caminho que lhe mostrará a direção correta. Compartilhe suas lutas com um amigo de fé ou um mentor espiritual, buscando apoio e encorajamento. Lembre-se de que a jornada pode ser árdua, mas você não está sozinho.\n\n🙏 *Oração:*\n_Senhor Deus, agradecemos por Tua Palavra que ilumina nosso caminho e nos guia em meio aos desertos da vida. Hoje, entregamos nossas preocupações, medos e dúvidas a Ti, pedindo que nos ajudes a ver Jesus como o caminho, a verdade e a vida. Que possamos experimentar a liberdade e a paz que vêm de um relacionamento profundo Contigo. Cura nossas almas, desfaz as amarras que nos prendem e renova nossas mentes para que possamos viver na plenitude que Tu nos ofereces. Em nome de Jesus, amém._\n\nAmém! Que Deus abençoe sua jornada. 🙌"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "FnkVNknOa2gV0Tfn",
+      "projectId": "38exZ3CcqzZj3va8",
+      "project": {
+        "id": "38exZ3CcqzZj3va8",
+        "name": "CONECTA KING <conectaking@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "3d0208f7-e092-475a-a710-3df0a3cd5c2d",
+        "createdAt": "2026-09-13T01:23:00.632Z",
+        "updatedAt": "2026-09-13T14:10:30.916Z"
+      },
+      "createdAt": "2026-09-27T19:46:20.160Z",
+      "updatedAt": "2026-09-27T19:46:20.160Z"
+    }
+  ],
+  "activeVersion": {
+    "versionId": "72ab868a-3812-4df9-aa9e-0b034072551a",
+    "workflowId": "FnkVNknOa2gV0Tfn",
+    "nodes": [
+      {
+        "id": "tgTriggerBiblia",
+        "name": "Telegram Trigger",
+        "webhookId": "ck-agent-telegram-biblia",
+        "type": "n8n-nodes-base.telegramTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          -1100,
+          400
+        ],
+        "parameters": {
+          "updates": [
+            "message",
+            "channel_post",
+            "edited_message",
+            "edited_channel_post",
+            "my_chat_member"
+          ],
+          "additionalFields": {}
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "g9e8goMSML0vE2JS",
+            "name": "Telegram account 3"
+          }
+        }
+      },
+      {
+        "id": "prepBiblia01",
+        "name": "Preparar (texto/voz)",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -860,
+          400
+        ],
+        "parameters": {
+          "jsCode": "const raw = $input.first().json;\nconst msg = raw.message || raw.channel_post || raw.edited_message || raw.edited_channel_post || {};\nconst adminId = String($env.ADMIN_TELEGRAM_ID || '0');\nconst senderId = String(msg.from?.id || msg.sender_chat?.id || '');\nconst chatId = String(msg.chat?.id || raw.my_chat_member?.chat?.id || '');\nconst firstName = msg.from?.first_name || msg.chat?.title || 'Irmão(ã)';\nconst text = String(msg.text || msg.caption || '').trim();\nconst fileId = msg.voice?.file_id || msg.audio?.file_id || msg.video_note?.file_id || null;\nconst hadVoice = !text && !!fileId;\nreturn [{ json: {\n  adminId, senderId, chatId, firstName,\n  text: text || (hadVoice ? '' : '[mensagem sem texto]'),\n  hadVoice, fileId: fileId || '',\n  voiceError: '',\n  chatTitle: msg.chat?.title || ''\n} }];"
+        }
+      },
+      {
+        "id": "ifVozBiblia01",
+        "name": "É Voz?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          -620,
+          400
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "loose",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "voz1",
+                "leftValue": "={{ $json.hadVoice }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "tgGetFileBiblia01",
+        "name": "TG getFile",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "continueOnFail": true,
+        "onError": "continueRegularOutput",
+        "position": [
+          -380,
+          220
+        ],
+        "parameters": {
+          "url": "=https://api.telegram.org/bot8669321947:AAEm1Ek1gI_wTUDYHNsyyuqbRkPFqLE-NSo/getFile?file_id={{ $json.fileId }}",
+          "options": {
+            "timeout": 15000
+          }
+        }
+      },
+      {
+        "id": "tgDlAudioBiblia01",
+        "name": "Baixar áudio",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "continueOnFail": true,
+        "onError": "continueRegularOutput",
+        "position": [
+          -160,
+          220
+        ],
+        "parameters": {
+          "url": "=https://api.telegram.org/file/bot8669321947:AAEm1Ek1gI_wTUDYHNsyyuqbRkPFqLE-NSo/{{ $json.result.file_path }}",
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "file"
+              }
+            },
+            "timeout": 25000
+          }
+        }
+      },
+      {
+        "id": "whisperBiblia01",
+        "name": "Whisper",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "continueOnFail": true,
+        "onError": "continueRegularOutput",
+        "position": [
+          60,
+          220
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.openai.com/v1/audio/transcriptions",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $env.OPENAI_API_KEY }}"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "multipart-form-data",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "model",
+                "value": "whisper-1"
+              },
+              {
+                "name": "language",
+                "value": "pt"
+              },
+              {
+                "parameterType": "formBinaryData",
+                "name": "file",
+                "inputDataFieldName": "data"
+              }
+            ]
+          },
+          "options": {
+            "timeout": 45000
+          }
+        }
+      },
+      {
+        "id": "unirVozBiblia01",
+        "name": "Unir voz",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          280,
+          220
+        ],
+        "parameters": {
+          "jsCode": "const prep = $('Preparar (texto/voz)').first().json;\nconst j = $input.first().json || {};\nlet text = String(j.text || '').trim();\nlet voiceError = '';\nif (!text) {\n  voiceError = String(j.error?.message || j.message || 'whisper vazio').slice(0, 180);\n  text = '[áudio recebido, mas não consegui transcrever]';\n}\nreturn [{ json: { ...prep, text, hadVoice: true, voiceError } }];"
+        }
+      },
+      {
+        "id": "executarBibliaIA",
+        "name": "Executar Bíblia IA",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          280,
+          480
+        ],
+        "parameters": {
+          "jsCode": "const prev = $input.first().json;\nconst base = String($env.CK_BASE_URL || 'https://www.conectaking.com.br').replace(/\\/$/, '');\nconst token = String($env.CK_AGENT_JWT || '').trim();\nconst openaiKey = String($env.OPENAI_API_KEY || '').trim();\nconst model = String($env.OPENAI_MODEL || 'gpt-4o-mini').trim();\nconst text = String(prev.text || '').trim();\nconst chatId = String(prev.chatId || '');\nconst hadVoice = !!prev.hadVoice;\nconst firstName = String(prev.firstName || 'Irmão(ã)');\n\n// Data atual de São Paulo e Dia do Ano\nfunction getDayOfYearSP() {\n  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));\n  const start = new Date(now.getFullYear(), 0, 0);\n  const diff = now - start + ((start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000);\n  const oneDay = 1000 * 60 * 60 * 24;\n  return {\n    doy: Math.min(365, Math.max(1, Math.floor(diff / oneDay))),\n    iso: now.toISOString().slice(0, 10),\n    year: now.getFullYear()\n  };\n}\nconst todayInfo = getDayOfYearSP();\n\n// HTTP helper para Conecta King API\nasync function ck(method, path, body) {\n  const opts = {\n    method,\n    url: base + path,\n    headers: {\n      'Accept': 'application/json',\n      'Content-Type': 'application/json',\n      ...(token ? { 'Authorization': 'Bearer ' + token } : {})\n    },\n    json: true,\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true\n  };\n  if (body !== undefined) opts.body = body;\n  return this.helpers.httpRequest.call(this, opts);\n}\n\n// HTTP helper para OpenAI API\nasync function openaiCall(payload) {\n  return this.helpers.httpRequest.call(this, {\n    method: 'POST',\n    url: 'https://api.openai.com/v1/chat/completions',\n    headers: {\n      'Authorization': 'Bearer ' + openaiKey,\n      'Accept': 'application/json',\n      'Content-Type': 'application/json'\n    },\n    body: payload,\n    json: true,\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true\n  });\n}\n\n// Armazenamento de memória no staticData global\nconst store = $getWorkflowStaticData('global');\nif (!store.chats) store.chats = {};\nif (!store.chats[chatId]) {\n  store.chats[chatId] = { history: [] };\n}\nconst session = store.chats[chatId];\nif (!session.history) session.history = [];\n\nconst SYSTEM_PROMPT = `Você é o Agente Bíblia oficial da Conecta King no Telegram (@AgenteBiblia_Bot).\nVocê possui AUTORIDADE TOTAL E PODER ADMINISTRATIVO sobre todo o ecossistema bíblico da plataforma Conecta King.\nHOJE É: ${todayInfo.iso} · DIA DO ANO: #${todayInfo.doy} de 365 (Ano ${todayInfo.year}).\nQuando o usuário disser \"hoje\", \"devocional de hoje\", \"palavra de hoje\", o dia correspondente é OBRIGATORIAMENTE o dia #${todayInfo.doy}.\n\nSEUS PAPÉIS:\n1. MESTRE TEOLÓGICO & CONSELHEIRO DE ALTO NÍVEL:\n   Você NUNCA gera respostas rasas, superficiais, curtas ou fracas.\n   Você fundamenta seus devocionais e ensinamentos na Teologia Bíblica Exegética profunda, trazendo renovação da mente e alinhamento à Mente de Cristo (Romanos 12:2, 1 Coríntios 2:16), libertação de crenças de escassez e cura emocional sob a soberania divina.\n   \n   ⚠️ REGRA DE OURO (SIGILOSO / INVISÍVEL):\n   NUNCA cite nomes de técnicas ou jargões como: \"PNL\", \"Programação Neurolinguística\", \"Neurociência\", \"Neuroplasticidade\", \"Dopamina\", \"Cortisol\", \"Psicologia Clínica\", \"Psiquiatria Integrativa\" ou \"Reprogramação Mental\" no texto da mensagem.\n   Você aplica todos esses princípios de desbloqueio, ancoragem e ressignificação de forma 100% INVISÍVEL, prática e pastoral através das Escrituras Sagradas. O leitor experimenta a transformação na mente e no espírito sem deparar com termos técnicos de cursos ou teorias seculares.\n\n2. ADMINISTRADOR SUPREMO DO MÓDULO BÍBLIA:\n   Você pode criar, editar, publicar, deletar e gerar com IA qualquer conteúdo:\n   • Temas dos Meses de Devocional (definir os temas de Janeiro a Dezembro)\n   • Palavra do Dia / Versículo do Dia (alterar para hoje ou qualquer data)\n   • Salmo do Dia (definir ou editar o texto/meditação do dia)\n   • Devocionais 365 (criar, alterar, gerar com IA e salvar os 365 dias)\n   • Prosperidade Antes de Dormir / Do Fracasso ao Legado (criar, editar, publicar ou gerar ativações com IA)\n   • Estudos Bíblicos por Livro (gerar com IA estudos completos para a plataforma)\n\nDIRETRIZES DE COMANDO:\n- Se o usuário pedir para gerar, criar, enriquecer ou focar o devocional de uma data ou de hoje em um tema específico (ex: escassez, neurociência, reprogramação, mentalidade, nova visão, unção), CHAME IMEDIATAMENTE 'admin_manage_devotional_365' com action='generate_ai', especificando o número do dia (se for hoje, use #${todayInfo.doy}) e descrevendo detalhadamente o foco no campo 'tema'.\n- Se o usuário pedir o devocional de hoje (\"manda o devocional de hoje\", \"qual o devocional de hoje\"), use 'get_devocional_do_dia'.\n- Se o usuário pedir para alterar ou salvar manualmente um texto bíblico/devocional, use a ferramenta administrativa correspondente com action='save'.\n- Mantenha tom seguro, executivo, espiritual e reverente. Confirme sempre com clareza o que foi executado.`;\n\nconst TOOLS = [\n  // --- TEMAS MENSAIS (ADMIN) ---\n  {\n    type: 'function',\n    function: {\n      name: 'admin_set_month_themes',\n      description: 'ADMIN: Define ou consulta os temas mensais dos devocionais (ex: do mês atual até dezembro, ou o ano todo).',\n      parameters: {\n        type: 'object',\n        properties: {\n          action: { type: 'string', enum: ['set', 'get', 'generate_all_ai'], description: 'Ação: set (gravar), get (consultar), generate_all_ai (gerar linha com IA para os 12 meses)' },\n          year: { type: 'number', description: 'Ano civil (opcional, padrão ano atual)' },\n          themes: {\n            type: 'object',\n            description: 'Objeto com os números dos meses como chave (\"1\" a \"12\") e seus respectivos temas como valor. Exemplo: {\"9\": \"Fé e Alinhamento\", \"10\": \"Prosperidade e Chamado\", \"11\": \"Gratidão e Frutos\", \"12\": \"O Maior Legado\"}'\n          }\n        },\n        required: ['action']\n      }\n    }\n  },\n\n  // --- PALAVRA DO DIA / VERSÍCULO DO DIA (ADMIN) ---\n  {\n    type: 'function',\n    function: {\n      name: 'admin_edit_verse_of_day',\n      description: 'ADMIN: Altera, define ou personaliza a Palavra do Dia / Versículo do Dia no sistema para hoje ou para uma data específica.',\n      parameters: {\n        type: 'object',\n        properties: {\n          date: { type: 'string', description: 'Data YYYY-MM-DD (deixe vazio para hoje)' },\n          ref: { type: 'string', description: 'Referência bíblica (ex: Jeremias 29:11, Salmos 91:1)' },\n          texto: { type: 'string', description: 'Texto sagrado do versículo' },\n          reflexao: { type: 'string', description: 'Reflexão edificante' }\n        },\n        required: ['ref', 'texto']\n      }\n    }\n  },\n\n  // --- SALMO DO DIA (ADMIN) ---\n  {\n    type: 'function',\n    function: {\n      name: 'admin_edit_salmo_do_dia',\n      description: 'ADMIN: Altera ou define o Salmo do Dia no sistema para hoje ou para uma data específica.',\n      parameters: {\n        type: 'object',\n        properties: {\n          date: { type: 'string', description: 'Data YYYY-MM-DD (deixe vazio para hoje)' },\n          ref: { type: 'string', description: 'Referência do salmo (ex: Salmos 23:1-6)' },\n          texto: { type: 'string', description: 'Texto do salmo' },\n          reflexao: { type: 'string', description: 'Meditação ou oração baseada no salmo' },\n          capitulo: { type: 'number', description: 'Capítulo do salmo' }\n        },\n        required: ['ref', 'texto']\n      }\n    }\n  },\n\n  // --- DEVOCIONAIS 365 (ADMIN) ---\n  {\n    type: 'function',\n    function: {\n      name: 'admin_manage_devotional_365',\n      description: 'ADMIN: Cria, edita, gera com IA especialista ou exclui devocionais de qualquer um dos 365 dias do ano. Se o usuário pedir para gerar, criar, enriquecer ou focar em temas específicos (como escassez, mentalidade, neurociência, reprogramação), use SEMPRE action=\"generate_ai\" com o tema preenchido.',\n      parameters: {\n        type: 'object',\n        properties: {\n          action: { type: 'string', enum: ['generate_ai', 'save', 'get', 'delete'], description: 'Ação: generate_ai (gerar com IA especialista no backend), save (gravar dados manuais), get (consultar), delete (remover)' },\n          day: { type: 'number', description: 'Dia do ano (1 a 365). Se o usuário se referir a hoje, use o dia atual de hoje.' },\n          titulo: { type: 'string', description: 'Título do devocional' },\n          versiculo_ref: { type: 'string', description: 'Referência bíblica (ex: Romanos 12:2)' },\n          versiculo_texto: { type: 'string', description: 'Texto sagrado do versículo citado' },\n          reflexao: { type: 'string', description: 'Texto da meditação completo e profundo' },\n          oracao: { type: 'string', description: 'Oração pastoral profunda' },\n          aplicacao: { type: 'string', description: 'Aplicação prática e passos de neuro-reprogramação mental' },\n          tema: { type: 'string', description: 'Tema ou direcionamento detalhado para a IA focar (ex: desbloqueio de escassez, mentalidade e nova visão, neurociência, PNL, unção)' }\n        },\n        required: ['action', 'day']\n      }\n    }\n  },\n\n  // --- PROSPERIDADE ANTES DE DORMIR (ADMIN) ---\n  {\n    type: 'function',\n    function: {\n      name: 'admin_manage_prosperidade_dormir',\n      description: 'ADMIN: Cria, edita, publica ou gera com IA as ativações de Prosperidade Antes de Dormir (Do Fracasso ao Legado).',\n      parameters: {\n        type: 'object',\n        properties: {\n          action: { type: 'string', enum: ['save', 'publish', 'generate_ai', 'get'], description: 'Ação desejada' },\n          activation_number: { type: 'number', description: 'Número da ativação (1 a 31)' },\n          titulo: { type: 'string', description: 'Título da ativação' },\n          proverbs_ref: { type: 'string', description: 'Versículo / Provérbios' },\n          fundamento_sagrado: { type: 'string', description: 'Fundamento bíblico' },\n          decreto_entrada: { type: 'string', description: 'Decreto para antes de dormir' },\n          diagnostico_escassez: { type: 'string', description: 'Mentalidade de escassez a vencer' },\n          nova_mentalidade: { type: 'string', description: 'Mentalidade divina de abundância' },\n          exercicio_fixacao: { type: 'string', description: 'Exercício prático' },\n          published: { type: 'boolean', description: 'Publicar (true) ou despublicar (false)' }\n        },\n        required: ['action', 'activation_number']\n      }\n    }\n  },\n\n  // --- GERAR ESTUDO POR LIVRO COM IA (ADMIN) ---\n  {\n    type: 'function',\n    function: {\n      name: 'admin_generate_book_study',\n      description: 'ADMIN: Gera com IA o estudo bíblico completo de um livro para publicação na plataforma Conecta King.',\n      parameters: {\n        type: 'object',\n        properties: {\n          book_id: { type: 'string', description: 'ID do livro (ex: genesis, romanos, hebreus, efesios, apocalipse)' }\n        },\n        required: ['book_id']\n      }\n    }\n  },\n\n  // --- CONSULTAS E ESTUDO (PÚBLICO / MEMBROS) ---\n  {\n    type: 'function',\n    function: {\n      name: 'get_verse_of_day',\n      description: 'Retorna o Versículo do Dia cadastrado na Conecta King com texto sagrado e reflexão.',\n      parameters: {\n        type: 'object',\n        properties: {\n          date: { type: 'string', description: 'Data opcional no formato YYYY-MM-DD' }\n        }\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'get_devocional_do_dia',\n      description: 'Retorna o Devocional do Dia da plataforma Conecta King.',\n      parameters: {\n        type: 'object',\n        properties: {\n          date: { type: 'string', description: 'Data opcional no formato YYYY-MM-DD' }\n        }\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'get_salmo_do_dia',\n      description: 'Retorna o Salmo do Dia com oração e meditação de louvor/conforto.',\n      parameters: { type: 'object', properties: {} }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'get_prosperidade_hoje',\n      description: 'Retorna a ativação do dia do projeto Prosperidade Antes de Dormir / 365 Ativações Conecta King.',\n      parameters: {\n        type: 'object',\n        properties: {\n          day: { type: 'number', description: 'Número do dia opcional (1 a 365)' }\n        }\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'get_bible_text',\n      description: 'Busca o texto bíblico de um livro e capítulo específico (ex: Genesis 1, Salmos 23, Joao 3).',\n      parameters: {\n        type: 'object',\n        properties: {\n          book_id: { type: 'string', description: 'Identificador do livro (ex: genesis, exodo, salmos, proverbios, mateus, joao, romanos)' },\n          chapter: { type: 'number', description: 'Número do capítulo' }\n        },\n        required: ['book_id', 'chapter']\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'generate_sermon_outline',\n      description: 'Gera um esboço expositivo de sermão ou pregação para ministrar.',\n      parameters: {\n        type: 'object',\n        properties: {\n          theme: { type: 'string', description: 'Tema ou título da mensagem' },\n          passage: { type: 'string', description: 'Passagem ou texto bíblico base' },\n          audience: { type: 'string', description: 'Público-alvo (jovens, igreja, liderança, família)' }\n        },\n        required: ['theme']\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'pastoral_prayer_counsel',\n      description: 'Gera uma oração pastoral e conselho bíblico personalizado para o momento da pessoa.',\n      parameters: {\n        type: 'object',\n        properties: {\n          need: { type: 'string', description: 'Motivo da oração' },\n          name: { type: 'string', description: 'Nome da pessoa' }\n        },\n        required: ['need']\n      }\n    }\n  }\n];\n\nlet outMessage = '';\n\ntry {\n  if (!openaiKey) {\n    const r = await ck.call(this, 'GET', '/api/bible/verse-of-day');\n    const v = (r.body && r.body.data) || {};\n    outMessage = `🕊️ *A paz do Senhor, ${firstName}!*\\n\\n📖 *Versículo do Dia:*\\n_\\\"${v.texto || 'O Senhor é o meu pastor; de nada terei falta.'}\\\"_\\n— *${v.ref || 'Salmos 23:1'}*\\n\\n✨ _${v.reflexao || 'Confie no cuidado e na provisão divina para o seu dia.'}_\\n\\nComo posso orar ou estudar a Palavra com você hoje?`;\n  } else {\n    const inputForAi = (hadVoice ? '[áudio transcrito] ' : '') + (text || 'A paz do Senhor!');\n    const messages = [\n      { role: 'system', content: SYSTEM_PROMPT },\n      ...session.history.slice(-6),\n      { role: 'user', content: inputForAi }\n    ];\n\n    const completionRes = await openaiCall.call(this, {\n      model,\n      temperature: 0.2,\n      messages,\n      tools: TOOLS,\n      tool_choice: 'auto'\n    });\n\n    const choice = completionRes.body?.choices?.[0]?.message;\n\n    if (choice?.tool_calls && choice.tool_calls.length > 0) {\n      const toolCall = choice.tool_calls[0];\n      const fnName = toolCall.function.name;\n      let args = {};\n      try { args = JSON.parse(toolCall.function.arguments || '{}'); } catch (_) {}\n\n      // 1. TEMAS MENSAIS DOS DEVOCIONAIS (ADMIN)\n      if (fnName === 'admin_set_month_themes') {\n        const year = Number(args.year || todayInfo.year);\n        if (args.action === 'set' && args.themes) {\n          const currentRes = await ck.call(this, 'GET', `/api/admin/bible/devotionals-365/month-themes/${year}`);\n          const currentThemes = (currentRes.body && (currentRes.body.data?.themes || currentRes.body.themes)) || {};\n          const mergedThemes = { ...currentThemes, ...args.themes };\n\n          const r = await ck.call(this, 'PUT', `/api/admin/bible/devotionals-365/month-themes/${year}`, mergedThemes);\n          if (r.statusCode >= 200 && r.statusCode < 300) {\n            const monthsNames = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];\n            const lines = [`🗓️ *Temas Mensais de Devocionais Gravados (${year})!*\\n`];\n            for (const [m, t] of Object.entries(args.themes)) {\n              const mNum = Number(m);\n              const mName = monthsNames[mNum] || `Mês ${mNum}`;\n              lines.push(`• *${mName} (Mês ${mNum}):* ${t}`);\n            }\n            lines.push(`\\n✅ _Salvo com sucesso na base do servidor! Já orientará as próximas gerações de devocionais._`);\n            outMessage = lines.join('\\n');\n          } else {\n            outMessage = `⚠️ Erro ao salvar temas: ${r.body?.message || JSON.stringify(r.body)}`;\n          }\n        } else if (args.action === 'generate_all_ai') {\n          const r = await ck.call(this, 'POST', `/api/admin/bible/devotionals-365/month-themes/${year}/generate-all`, { delayMs: 300 });\n          if (r.statusCode >= 200 && r.statusCode < 300) {\n            outMessage = `⚡ *Linha Editorial Completa para ${year} Gerada com IA!*\\n\\nTodos os 12 meses receberam temas teológicos profundos e inspiradores na plataforma.`;\n          } else {\n            outMessage = `⚠️ Erro ao gerar temas: ${r.body?.message}`;\n          }\n        } else {\n          const r = await ck.call(this, 'GET', `/api/admin/bible/devotionals-365/month-themes/${year}`);\n          const th = (r.body && (r.body.data?.themes || r.body.themes)) || {};\n          const monthsNames = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];\n          const lines = [`🗓️ *Temas dos Meses (${year}):*\\n`];\n          for (let i = 1; i <= 12; i++) {\n            lines.push(`• *${monthsNames[i]}:* ${th[i] || '—'}`);\n          }\n          outMessage = lines.join('\\n');\n        }\n\n      // 2. EDITAR VERSÍCULO DO DIA (ADMIN)\n      } else if (fnName === 'admin_edit_verse_of_day') {\n        const targetDate = args.date || todayInfo.iso;\n        const payload = {\n          date: targetDate,\n          ref: args.ref,\n          texto: args.texto,\n          reflexao: args.reflexao || ''\n        };\n        const r = await ck.call(this, 'PUT', '/api/admin/bible/verse-of-day', payload);\n        if (r.statusCode >= 200 && r.statusCode < 300) {\n          outMessage = `👑 *Palavra do Dia Atualizada com Sucesso!*\\n\\n📅 *Data:* ${targetDate}\\n📖 *Referência:* ${args.ref}\\n📜 *Texto Sagrado:*\\n_\\\"${args.texto}\\\"_\\n\\n🕊️ *Reflexão:*\\n${args.reflexao || 'Nenhuma reflexão adicional.'}\\n\\n✅ _Atualizado e já em exibição no cartão digital e na plataforma Conecta King!_`;\n        } else {\n          outMessage = `⚠️ Erro ao atualizar versículo: ${r.body?.message || JSON.stringify(r.body)}`;\n        }\n\n      // 3. EDITAR SALMO DO DIA (ADMIN)\n      } else if (fnName === 'admin_edit_salmo_do_dia') {\n        const targetDate = args.date || todayInfo.iso;\n        const payload = {\n          date: targetDate,\n          ref: args.ref,\n          texto: args.texto,\n          reflexao: args.reflexao || '',\n          capitulo: args.capitulo || null\n        };\n        const r = await ck.call(this, 'PUT', '/api/admin/bible/salmo-do-dia', payload);\n        if (r.statusCode >= 200 && r.statusCode < 300) {\n          outMessage = `🛡️ *Salmo do Dia Atualizado com Sucesso!*\\n\\n📅 *Data:* ${targetDate}\\n📖 *Salmo:* ${args.ref}\\n📜 *Texto:*\\n_\\\"${args.texto}\\\"_\\n\\n🕊️ *Meditação:*\\n${args.reflexao || 'Que a paz do Senhor guarde a sua vida.'}\\n\\n✅ _Salvo e em exibição na plataforma!_`;\n        } else {\n          outMessage = `⚠️ Erro ao atualizar salmo: ${r.body?.message || JSON.stringify(r.body)}`;\n        }\n\n      // 4. GERENCIAR DEVOCIONAIS 365 (ADMIN)\n      } else if (fnName === 'admin_manage_devotional_365') {\n        const targetDay = Number(args.day || todayInfo.doy);\n        if (args.action === 'save') {\n          const payload = {\n            titulo: args.titulo || 'Devocional Diário',\n            versiculo_ref: args.versiculo_ref || '',\n            versiculo_texto: args.versiculo_texto || '',\n            reflexao: args.reflexao || '',\n            oracao: args.oracao || '',\n            aplicacao: args.aplicacao || ''\n          };\n          const r = await ck.call(this, 'PUT', `/api/admin/bible/devotionals-365/${targetDay}`, payload);\n          if (r.statusCode >= 200 && r.statusCode < 300) {\n            outMessage = `✨ *Devocional #${targetDay} Gravado no Servidor!*\\n\\n📖 *Título:* ${payload.titulo}\\n📍 *Passagem:* ${payload.versiculo_ref}\\n${payload.versiculo_texto ? '📜 *Versículo:* _\"' + payload.versiculo_texto + '\"_\\n\\n' : ''}📝 *Reflexão:*\\n${payload.reflexao}\\n\\n${payload.aplicacao ? '🎯 *Aplicação Prática & Reprogramação:*\\n' + payload.aplicacao + '\\n\\n' : ''}🙏 *Oração Pastoral:*\\n_${payload.oracao}_\\n\\n✅ _Salvo com sucesso na base oficial dos 365 dias!_`;\n          } else {\n            outMessage = `⚠️ Erro ao salvar devocional: ${r.body?.message || JSON.stringify(r.body)}`;\n          }\n        } else if (args.action === 'generate_ai') {\n          const year = todayInfo.year;\n          const r = await ck.call(this, 'POST', `/api/admin/bible/devotionals-365/day/${targetDay}/generate-ai`, {\n            year,\n            temaPersonalizado: args.tema || '',\n            temaModo: args.tema ? 'personalizado' : 'mes_auto'\n          });\n          if (r.statusCode >= 200 && r.statusCode < 300) {\n            const d = r.body?.data || {};\n            const refTitle = d.versiculo_ref || d.passagem || '';\n            const vText = d.versiculo_texto ? '📜 *Versículo:* _\"' + d.versiculo_texto + '\"_\\n\\n' : '';\n            const refl = d.reflexao || d.texto || '';\n            const pray = d.oracao || '';\n            const apl = d.aplicacao || '';\n\n            outMessage = `⚡ *Devocional #${targetDay} Gerado com IA & Gravado!*\\n\\n📖 *Título:* ${d.titulo || 'Novo Devocional'}\\n📍 *Passagem:* ${refTitle}\\n\\n${vText}📝 *Reflexão (Teologia, Neurociência & Desbloqueio):*\\n${refl}\\n\\n${apl ? '🎯 *Neuro-Ação & Reprogramação Prática:*\\n' + apl + '\\n\\n' : ''}🙏 *Oração Pastoral:*\\n_${pray || 'Amém.'}_\\n\\n✅ _Publicado e ativo no Conecta King!_`;\n          } else {\n            outMessage = `⚠️ Erro ao gerar com IA: ${r.body?.message || JSON.stringify(r.body)}`;\n          }\n        } else if (args.action === 'delete') {\n          const r = await ck.call(this, 'DELETE', `/api/admin/bible/devotionals-365/${targetDay}`);\n          outMessage = r.statusCode < 300 ? `🗑️ *Devocional #${targetDay} Removido com Sucesso!* Dia liberado para nova redação.` : `⚠️ Erro ao remover: ${r.body?.message}`;\n        } else {\n          const r = await ck.call(this, 'GET', `/api/admin/bible/devotionals-365/day/${targetDay}`);\n          const d = r.body?.data || {};\n          outMessage = `📄 *Devocional Cadastrado — Dia #${targetDay}:*\\n\\n*Título:* ${d.titulo || 'Sem título'}\\n*Ref:* ${d.versiculo_ref || d.passagem || ''}\\n*Versículo:* ${d.versiculo_texto || '—'}\\n*Texto:* ${d.reflexao || d.texto || 'Vazio'}`;\n        }\n\n      // 5. PROSPERIDADE ANTES DE DORMIR (ADMIN)\n      } else if (fnName === 'admin_manage_prosperidade_dormir') {\n        const n = Number(args.activation_number || 1);\n        if (args.action === 'save') {\n          const payload = {\n            titulo: args.titulo || 'Ativação Noturna',\n            proverbs_ref: args.proverbs_ref || '',\n            fundamento_sagrado: args.fundamento_sagrado || '',\n            decreto_entrada: args.decreto_entrada || '',\n            diagnostico_escassez: args.diagnostico_escassez || '',\n            nova_mentalidade: args.nova_mentalidade || '',\n            exercicio_fixacao: args.exercicio_fixacao || '',\n            published: args.published !== false\n          };\n          const r = await ck.call(this, 'PUT', `/api/admin/bible/prosperidade/${n}`, payload);\n          if (r.statusCode >= 200 && r.statusCode < 300) {\n            outMessage = `🌙 *Ativação de Prosperidade #${n} Salva!*\\n\\n💎 *Título:* ${payload.titulo}\\n📖 *Palavra Base:* ${payload.proverbs_ref}\\n🕊️ *Fundamento:* ${payload.fundamento_sagrado}\\n\\n🗣️ *Decreto para Antes de Dormir:*\\n_\\\"${payload.decreto_entrada}\\\"_\\n\\n💡 *Nova Mentalidade:* ${payload.nova_mentalidade}\\n\\n📢 *Status:* ${payload.published ? '✅ Publicada na plataforma' : '🟡 Rascunho'}`;\n          } else {\n            outMessage = `⚠️ Erro ao salvar ativação: ${r.body?.message || JSON.stringify(r.body)}`;\n          }\n        } else if (args.action === 'publish') {\n          const pub = args.published !== false;\n          const r = await ck.call(this, 'PATCH', `/api/admin/bible/prosperidade/${n}/publish`, { published: pub });\n          outMessage = r.statusCode < 300 ? `📢 *Ativação #${n} ${pub ? 'Publicada com Sucesso! Já visível para todos.' : 'Despublicada (Rascunho)'}*` : `⚠️ Erro ao alterar status: ${r.body?.message}`;\n        } else if (args.action === 'generate_ai') {\n          const r = await ck.call(this, 'POST', `/api/admin/bible/prosperidade/${n}/generate-ai`);\n          if (r.statusCode >= 200 && r.statusCode < 300) {\n            const data = r.body?.data || {};\n            outMessage = `⚡ *Ativação #${n} Gerada com IA (Do Fracasso ao Legado)!*\\n\\n💎 *${data.titulo || 'Ativação Noturna'}*\\n📖 *Versículo:* ${data.proverbs_ref || ''}\\n\\n🗣️ *Decreto Noturno:*\\n_\\\"${data.decreto_entrada || data.sentenca_ativacao || ''}\\\"_\\n\\n✅ _Salva com sucesso no banco de dados!_`;\n          } else {\n            outMessage = `⚠️ Falha ao gerar com IA: ${r.body?.message || JSON.stringify(r.body)}`;\n          }\n        } else {\n          const r = await ck.call(this, 'GET', `/api/admin/bible/prosperidade/${n}`);\n          const d = r.body?.data || {};\n          outMessage = `🌙 *Ativação #${n}:* ${d.titulo || ''}\\n*Decreto:* ${d.decreto_entrada || ''}\\n*Status:* ${d.published ? 'Publicada' : 'Rascunho'}`;\n        }\n\n      // 6. GERAR ESTUDO POR LIVRO COM IA (ADMIN)\n      } else if (fnName === 'admin_generate_book_study') {\n        const bookId = String(args.book_id || '').toLowerCase().trim();\n        const r = await ck.call(this, 'POST', `/api/admin/bible/study/book/${bookId}/generate-ai`);\n        if (r.statusCode >= 200 && r.statusCode < 300) {\n          outMessage = `📚 *Estudo do Livro de ${bookId.toUpperCase()} Gerado com Sucesso!*\\n\\nO estudo exegético completo com introdução, contexto histórico, temas principais e divisão por capítulos foi gravado e já está acessível no módulo de estudos da Bíblia! 📖👑`;\n        } else {\n          outMessage = `⚠️ Falha ao gerar estudo: ${r.body?.message || JSON.stringify(r.body)}`;\n        }\n\n      // 7. CONSULTAS COMUNS (VERSÍCULO, SALMO, DEVOCIONAL DO DIA, ETC.)\n      } else if (fnName === 'get_verse_of_day') {\n        const query = args.date ? '?date=' + encodeURIComponent(args.date) : '';\n        const r = await ck.call(this, 'GET', '/api/bible/verse-of-day' + query);\n        const data = (r.body && r.body.data) || {};\n        const ref = data.ref || 'Palavra do Dia';\n        const versiculo = data.texto || 'Lâmpada para os meus pés é tua palavra e luz, para o meu caminho.';\n        const reflexao = data.reflexao || 'Guarde esta promessa em seu coração hoje.';\n        outMessage = `📖 *Versículo do Dia | Conecta King*\\n\\n\"*${versiculo}*\"\\n\\n📍 *${ref}*\\n\\n🕊️ *Reflexão:*\\n${reflexao}\\n\\nQue esta Palavra alimente o seu espírito hoje! 🙏`;\n      } else if (fnName === 'get_devocional_do_dia') {\n        const query = args.date ? '?date=' + encodeURIComponent(args.date) : '';\n        const r = await ck.call(this, 'GET', '/api/bible/devocional-do-dia' + query);\n        let d = (r.body && r.body.data) || {};\n        const temTexto = !!(d.reflexao || d.texto || d.content);\n        if (!temTexto) {\n          // Se não houver devocional pronto, gera com IA no backend seguindo o tema do mês\n          const genR = await ck.call(this, 'POST', `/api/admin/bible/devotionals-365/day/${todayInfo.doy}/generate-ai`, {\n            year: todayInfo.year,\n            temaModo: 'mes_auto'\n          });\n          d = (genR.body && genR.body.data) || d;\n        }\n        const titulo = d.titulo || d.title || 'Palavra do Dia';\n        const passagem = d.versiculo_ref || d.versiculo || d.passagem || d.reference || d.ref || 'Escrituras Sagradas';\n        const vTexto = d.versiculo_texto ? `\"${d.versiculo_texto}\"\\n\\n` : '';\n        const texto = d.reflexao || d.texto || d.content || d.meditacao || '';\n        const oracao = d.oracao || d.prayer || '';\n        const aplicacao = d.aplicacao || d.application || '';\n        outMessage = `🌅 *Devocional do Dia:* ${titulo}\\n\\n📖 *Texto Base:* ${passagem}\\n\\n${vTexto}${texto}\\n\\n${aplicacao ? '🎯 *Aplicação Prática:*\\n' + aplicacao + '\\n\\n' : ''}${oracao ? '🙏 *Oração:*\\n_' + oracao + '_\\n\\n' : ''}Amém! Que Deus abençoe sua jornada. 🙌`;\n      } else if (fnName === 'get_salmo_do_dia') {\n        const r = await ck.call(this, 'GET', '/api/bible/salmo-do-dia');\n        const s = (r.body && r.body.data) || {};\n        const ref = s.ref || 'Salmos';\n        const texto = s.texto || '';\n        const reflexao = s.reflexao || '';\n        outMessage = `🛡️ *Salmo do Dia:* ${ref}\\n\\n\"${texto}\"\\n\\n${reflexao ? '🕊️ *Meditação:*\\n' + reflexao + '\\n\\n' : ''}Que o Senhor seja o seu refúgio e fortaleza hoje! 🙌`;\n      } else if (fnName === 'get_prosperidade_hoje') {\n        const path = args.day ? '/api/bible/prosperidade/ativacao/' + args.day : '/api/bible/prosperidade/hoje';\n        const r = await ck.call(this, 'GET', path);\n        const p = (r.body && r.body.data) || {};\n        const num = p.numero || p.day || p.dia || '365';\n        const titulo = p.titulo || p.title || 'Ativação Bíblica de Prosperidade';\n        const versiculo = p.versiculo || p.verse || '';\n        const declaracao = p.declaracao || p.affirmation || '';\n        const chave = p.chave || p.chave_prosperidade || p.principio || '';\n        const acao = p.acao_pratica || p.action || '';\n        outMessage = `🌙 *Ativação Noturna de Prosperidade #${num}*\\n\\n💎 *${titulo}*\\n\\n📖 *Princípio Bíblico:*\\n\"${versiculo}\"\\n\\n${chave ? '🔑 *Chave de Sabedoria:* ' + chave + '\\n\\n' : ''}${declaracao ? '🗣️ *Declaração de Fé:*\\n_\"' + declaracao + '\"_\\n\\n' : ''}${acao ? '🎯 *Passo Prático:*\\n' + acao + '\\n\\n' : ''}Deus tem prazer na prosperidade integral da sua vida!`;\n      } else if (fnName === 'get_bible_text') {\n        const bookId = String(args.book_id || 'salmos').toLowerCase();\n        const cap = Number(args.chapter || 1);\n        const r = await ck.call(this, 'GET', `/api/bible/book/${bookId}/${cap}`);\n        const data = (r.body && r.body.data) || {};\n        const bookName = data.book?.name || bookId.toUpperCase();\n        const verses = data.verses || data.versiculos || [];\n        if (Array.isArray(verses) && verses.length > 0) {\n          const sample = verses.slice(0, 10).map(v => `*${v.number || v.verse}* ${v.text}`).join('\\n\\n');\n          outMessage = `📖 *${bookName} ${cap}*\\n\\n${sample}${verses.length > 10 ? '\\n\\n_(Exibindo os primeiros 10 versículos de ' + verses.length + ' motivado por espaço no Telegram)_' : ''}`;\n        } else {\n          outMessage = `📖 *Leitura de ${bookName} ${cap}* consultada na plataforma.`;\n        }\n      } else if (fnName === 'generate_sermon_outline') {\n        const theme = args.theme;\n        const pass = args.passage || 'Escrituras';\n        const aud = args.audience ? ` (Público: ${args.audience})` : '';\n        const sermonRes = await openaiCall.call(this, {\n          model,\n          temperature: 0.4,\n          messages: [\n            { role: 'system', content: 'Você é um pregador e mestre bíblico expositivo de alto nível. Crie um esboço exegético e claro de sermão contendo: 1. Título impactante e memorável; 2. Texto Base com contexto histórico-cultural e etimológico; 3. Introdução cativante que conecte com a realidade humana; 4. Três pontos principais expositivos profundamente alicerçados nas escrituras e na neurociência da transformação pessoal; 5. Aplicação prática para o cotidiano; 6. Conclusão profética e apelo/oração pastoral.' },\n            { role: 'user', content: `Elabore um esboço de pregação sobre o tema: \\\"${theme}\\\", baseado em \\\"${pass}\\\"${aud}.` }\n          ]\n        });\n        outMessage = sermonRes.body?.choices?.[0]?.message?.content || `📋 *Esboço de Pregação: ${theme}*\\n\\n📖 Base: ${pass}`;\n      } else if (fnName === 'pastoral_prayer_counsel') {\n        const prayerRes = await openaiCall.call(this, {\n          model,\n          temperature: 0.4,\n          messages: [\n            { role: 'system', content: 'Você é um pastor amoroso, sábio e com profunda unção espiritual e psicológica. Escreva uma oração pastoral profunda, bíblica e restauradora, trazendo paz ao sistema límbico/nervoso da pessoa, destruindo sentimentos de medo, abandono e culpa, e liberando bênçãos e decretos de vida e vitória.' },\n            { role: 'user', content: `Faça uma oração pastoral para ${args.name || firstName}, que necessita de intercessão e direção sobre: ${args.need}.` }\n          ]\n        });\n        outMessage = prayerRes.body?.choices?.[0]?.message?.content || `🙏 Que a paz que excede todo entendimento guarde o seu coração e a sua mente em Cristo Jesus.`;\n      }\n    } else {\n      outMessage = choice?.content || `A paz do Senhor, ${firstName}! Estou aqui como Conselheiro Bíblico da Conecta King. O que você gostaria de criar, editar ou estudar na Palavra hoje?`;\n    }\n\n    // Diagnóstico removido\n\n    session.history.push({ role: 'user', content: inputForAi });\n    session.history.push({ role: 'assistant', content: outMessage });\n    if (session.history.length > 12) session.history.splice(0, 2);\n  }\n} catch (e) {\n  outMessage = '���️ Graça e Paz! Ocorreu uma oscilação momentânea: ' + String(e.message || e).slice(0, 200) + '\\n\\nComo posso abençoar seus estudos na Palavra hoje?';\n}\n\nreturn [{ json: { ...prev, outMessage } }];\n"
+        }
+      },
+      {
+        "id": "enviarTelegramBiblia",
+        "name": "Enviar Telegram",
+        "webhookId": "50672ee2-4259-4412-b53a-7f9377d5423e",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          540,
+          400
+        ],
+        "parameters": {
+          "chatId": "={{ $('Preparar (texto/voz)').first().json.chatId }}",
+          "text": "={{ $json.outMessage || $json.output || 'A paz do Senhor! Como posso abençoar seus estudos e sua fé hoje?' }}",
+          "additionalFields": {
+            "appendAttribution": false,
+            "parse_mode": "Markdown"
+          }
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "g9e8goMSML0vE2JS",
+            "name": "Telegram account 3"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Telegram Trigger": {
+        "main": [
+          [
+            {
+              "node": "Preparar (texto/voz)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Preparar (texto/voz)": {
+        "main": [
+          [
+            {
+              "node": "É Voz?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "É Voz?": {
+        "main": [
+          [
+            {
+              "node": "TG getFile",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Executar Bíblia IA",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "TG getFile": {
+        "main": [
+          [
+            {
+              "node": "Baixar áudio",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Baixar áudio": {
+        "main": [
+          [
+            {
+              "node": "Whisper",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Whisper": {
+        "main": [
+          [
+            {
+              "node": "Unir voz",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Unir voz": {
+        "main": [
+          [
+            {
+              "node": "Executar Bíblia IA",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Executar Bíblia IA": {
+        "main": [
+          [
+            {
+              "node": "Enviar Telegram",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "CONECTA KING",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "createdAt": "2026-09-30T16:28:34.301Z",
+    "updatedAt": "2026-09-30T16:28:34.301Z",
+    "workflowPublishHistory": [
+      {
+        "id": 90,
+        "workflowId": "FnkVNknOa2gV0Tfn",
+        "versionId": "72ab868a-3812-4df9-aa9e-0b034072551a",
+        "event": "activated",
+        "userId": "3d0208f7-e092-475a-a710-3df0a3cd5c2d",
+        "createdAt": "2026-09-30T16:28:35.650Z"
+      },
+      {
+        "id": 92,
+        "workflowId": "FnkVNknOa2gV0Tfn",
+        "versionId": "72ab868a-3812-4df9-aa9e-0b034072551a",
+        "event": "activated",
+        "userId": "3d0208f7-e092-475a-a710-3df0a3cd5c2d",
+        "createdAt": "2026-09-30T16:28:37.640Z"
+      },
+      {
+        "id": 91,
+        "workflowId": "FnkVNknOa2gV0Tfn",
+        "versionId": "72ab868a-3812-4df9-aa9e-0b034072551a",
+        "event": "deactivated",
+        "userId": "3d0208f7-e092-475a-a710-3df0a3cd5c2d",
+        "createdAt": "2026-09-30T16:28:37.154Z"
+      }
+    ]
   }
 }
