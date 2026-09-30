@@ -52,7 +52,7 @@
     clearSession();
     var dest = loginPath || '/login';
     var ru = encodeURIComponent(global.location.href);
-    global.location.href = dest + (dest.indexOf('?') >= 0 ? '&' : '?') + 'returnUrl=' + ru;
+    global.location.href = dest + (dest.indexOf('?') >= 0 ? '&' : '?') + 'session_expired=1&returnUrl=' + ru;
     return false;
   }
 

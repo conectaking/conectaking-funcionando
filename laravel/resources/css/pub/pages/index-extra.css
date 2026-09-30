@@ -93,11 +93,11 @@
             content: '';
             position: absolute;
             top: 0;
-            left: -100%;
+            left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            animation: shimmer 3s infinite;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
+            pointer-events: none;
         }
         
         .header::after {
@@ -107,9 +107,8 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: radial-gradient(circle at 50% 50%, rgba(255, 199, 0, 0.1) 0%, transparent 70%);
+            background: radial-gradient(circle at 50% 50%, rgba(255, 199, 0, 0.05) 0%, transparent 70%);
             pointer-events: none;
-            animation: pulse 3s ease-in-out infinite;
         }
         
         .header-content {
@@ -135,7 +134,10 @@
             height: 45px;
             width: auto;
             filter: drop-shadow(0 0 10px rgba(255, 199, 0, 0.5));
-            animation: pulse 2s ease-in-out infinite;
+            transition: transform 0.2s ease;
+        }
+        .logo-container:hover img {
+            transform: scale(1.05);
         }
         
         .logo-text {
@@ -1019,7 +1021,6 @@
     margin: 0 auto 16px;
     display: block;
     filter: drop-shadow(0 0 12px rgba(255, 199, 0, 0.5));
-    animation: pulse 2s ease-in-out infinite;
 }
 .ck-mockup-name {
     font-family: 'Cinzel', serif;

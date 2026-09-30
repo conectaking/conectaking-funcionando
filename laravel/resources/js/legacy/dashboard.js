@@ -68,12 +68,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (e) {}
     }
     if (!user) {
-        window.location.href = '/login?returnUrl=' + encodeURIComponent(window.location.href);
+        window.location.href = '/login?session_expired=1&returnUrl=' + encodeURIComponent(window.location.href);
         return;
     }
     if (user.accountType === 'free') {
         alert('Acesso negado. Faça um upgrade do seu plano para acessar o dashboard.');
-        window.location.href = '/#planos';
         return;
     }
 
@@ -1758,7 +1757,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 localStorage.removeItem('conectaKingToken');
                 localStorage.removeItem('conectaKingRefreshToken');
                 localStorage.removeItem('conectaKingUser');
-                window.location.href = sameFolderPage('login.html');
+                window.location.href = sameFolderPage('login.html') + '?session_expired=1';
                 return;
             }
 
@@ -3776,7 +3775,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 localStorage.removeItem('conectaKingToken');
                 localStorage.removeItem('conectaKingRefreshToken');
                 localStorage.removeItem('conectaKingUser');
-                window.location.href = sameFolderPage('login.html');
+                window.location.href = sameFolderPage('login.html') + '?session_expired=1';
                 return;
             }
 
@@ -4403,7 +4402,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (updatedUser.accountType === 'free') {
                 alert('Acesso negado. Faça um upgrade do seu plano para acessar o dashboard.');
-                window.location.href = '/#planos';
                 return;
             }
 

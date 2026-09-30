@@ -25,10 +25,31 @@ class LegacyPageController extends Controller
             return redirect('/admin-devocionais-365#prosperidade', 301);
         }
         if ($name === 'login') {
-            $hasTokenCookie = !empty($request->cookie('token')) || !empty($request->cookie('refresh_token'));
             $isExplicitLogout = $request->query('logout') === '1' || $request->query('session_expired') === '1';
-            if ($hasTokenCookie && !$isExplicitLogout) {
-                return redirect('/dashboard');
+            $hasReturnUrl = $request->has('returnUrl') || $request->has('redirect');
+
+            if ($isExplicitLogout) {
+                \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('token'));
+                \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('refresh_token'));
+            } elseif (! $hasReturnUrl) {
+                // Só redireciona automaticamente se não veio de um redirect (para prevenir loop de redirecionamento)
+                $token = $request->cookie('token');
+                if (is_string($token) && $token !== '') {
+                    try {
+                        $jwt = app(\App\Services\Auth\JwtService::class);
+                        $payload = $jwt->decode($token);
+                        $userId = $payload['userId'] ?? $payload['id'] ?? null;
+                        if (! empty($userId)) {
+                            $user = \Illuminate\Support\Facades\DB::selectOne('SELECT id, account_type FROM users WHERE id = ? LIMIT 1', [$userId]);
+                            if ($user && ($user->account_type ?? '') !== 'free') {
+                                return redirect('/dashboard');
+                            }
+                        }
+                    } catch (\Throwable) {
+                        // Token inválido/expirado — limpa o cookie para evitar loops
+                        \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('token'));
+                    }
+                }
             }
         }
 

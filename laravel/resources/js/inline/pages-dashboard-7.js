@@ -100,10 +100,32 @@
             setTimeout(removeImagePngText, 500);
             setTimeout(removeImagePngText, 1000);
             
-            // Observar mudanças no DOM
+            // Observar mudanças no DOM (debounced e filtrado para não interferir na digitação)
             if (window.MutationObserver) {
+                var _mutTimer = null;
                 const observer = new MutationObserver(function(mutations) {
-                    removeImagePngText();
+                    var shouldCheck = false;
+                    for (var i = 0; i < mutations.length; i++) {
+                        var m = mutations[i];
+                        if (m.type === 'childList' && m.addedNodes.length > 0) {
+                            for (var j = 0; j < m.addedNodes.length; j++) {
+                                var n = m.addedNodes[j];
+                                if ((n.textContent || '').includes('image.png')) {
+                                    shouldCheck = true;
+                                    break;
+                                }
+                            }
+                        } else if (m.type === 'characterData') {
+                            if ((m.target.textContent || '').includes('image.png')) {
+                                shouldCheck = true;
+                            }
+                        }
+                        if (shouldCheck) break;
+                    }
+                    if (shouldCheck) {
+                        if (_mutTimer) clearTimeout(_mutTimer);
+                        _mutTimer = setTimeout(removeImagePngText, 200);
+                    }
                 });
                 observer.observe(document.body, {
                     childList: true,
