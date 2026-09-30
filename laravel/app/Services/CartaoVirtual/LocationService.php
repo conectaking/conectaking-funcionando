@@ -13,6 +13,7 @@ class LocationService
     private const FIELDS = [
         'address', 'address_formatted', 'latitude', 'longitude', 'place_name',
         'street', 'house_number', 'complement', 'bairro', 'city', 'uf', 'cep',
+        'display_format', 'banner_url',
     ];
 
     /**
@@ -78,6 +79,8 @@ class LocationService
             $values
         );
 
+        CartaoPublicService::forgetCardCache($userId);
+
         return $this->ok($this->findByProfileItemId($profileItemId) ?? $row);
     }
 
@@ -87,7 +90,9 @@ class LocationService
     private function findByProfileItemId(int $profileItemId): ?array
     {
         $row = DB::selectOne(
-            'SELECT id, profile_item_id, address, address_formatted, latitude, longitude, place_name, created_at, updated_at
+            'SELECT id, profile_item_id, address, address_formatted, latitude, longitude, place_name,
+                    street, house_number, complement, bairro, city, uf, cep, display_format, banner_url,
+                    created_at, updated_at
              FROM location_items WHERE profile_item_id = ? LIMIT 1',
             [$profileItemId]
         );

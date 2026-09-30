@@ -519,7 +519,8 @@ class CartaoPublicService
 
         try {
             $rows = DB::select(
-                "SELECT address, address_formatted, latitude, longitude, place_name, profile_item_id
+                "SELECT id, address, address_formatted, latitude, longitude, place_name, profile_item_id,
+                        street, house_number, complement, bairro, city, uf, cep, display_format, banner_url
                  FROM location_items WHERE profile_item_id IN ({$placeholders})",
                 $itemIds
             );
@@ -767,10 +768,14 @@ class CartaoPublicService
             $locData = (array) $loc;
             unset($locData['profile_item_id']);
 
+            $fmt = strtolower(trim((string) ($loc->display_format ?? 'mapa')));
+            $defaultTitle = ($fmt === 'button') ? 'Ver no Mapa' : 'Onde me encontrar';
+            $title = ($item['title'] ?? null) ?: $defaultTitle;
+
             return [
                 'map_url' => $mapUrl,
                 'location_data' => $locData,
-                'title' => ($item['title'] ?? null) ?: 'Ver no Mapa',
+                'title' => $title,
             ];
         } catch (\Throwable $e) {
             return ['map_url' => null];

@@ -2357,6 +2357,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 if (listPlaceholder) listPlaceholder.style.display = 'none';
             }
+            const locDisplayFormat = modal.querySelector('#location-display-format')?.value || 'mapa';
+            const locBannerUrl = modal.querySelector('.location-banner-url-input')?.value || null;
+            itemEl.dataset.locationDisplayFormat = locDisplayFormat;
             const payload = {
                 address: locAddr,
                 address_formatted: locFormatted,
@@ -2368,7 +2371,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 bairro: locBairro,
                 city: locCity,
                 uf: locUf,
-                cep: locCep
+                cep: locCep,
+                display_format: locDisplayFormat,
+                banner_url: locBannerUrl
             };
             fetch('/api/location/config/' + itemId, {
                 method: 'PUT',
@@ -2391,6 +2396,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                         item.location_data.city = payload.city;
                         item.location_data.uf = payload.uf;
                         item.location_data.cep = payload.cep;
+                        item.location_data.display_format = payload.display_format;
+                        item.location_data.banner_url = payload.banner_url;
+                    }
+                    if (window.DashboardCartao && typeof window.DashboardCartao.updateLivePreviewFromForm === 'function') {
+                        window.DashboardCartao.updateLivePreviewFromForm();
                     }
                 }
             }).catch(function (err) { console.warn('Erro ao salvar localização:', err); });

@@ -8,6 +8,7 @@
     'use strict';
 
     var __ckDashLog = function () { try { if (localStorage.getItem('ck_debug') === '1') console.log.apply(console, arguments); } catch (e) {} };
+    global.refreshBibleVisibilitySetting = global.refreshBibleVisibilitySetting || function () {};
 
     function safeIconClass(s, fb) {
         fb = fb || 'fas fa-link';

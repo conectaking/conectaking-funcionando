@@ -885,6 +885,34 @@ function updateLivePreviewFromForm() {
                 previewEl.style.cursor = 'pointer';
                 previewEl.style.pointerEvents = 'auto';
             }
+        } else if (itemType === 'location' && (function() {
+            var locItem = (window.currentProfileData && window.currentProfileData.items) ? window.currentProfileData.items.find(function(i) { return String(i.id) === String(itemId); }) : null;
+            var locData = (locItem && locItem.location_data) || {};
+            var locFmt = itemEl.dataset.locationDisplayFormat || locData.display_format || 'mapa';
+            return locFmt === 'mapa';
+        })()) {
+            var locItem = (window.currentProfileData && window.currentProfileData.items) ? window.currentProfileData.items.find(function(i) { return String(i.id) === String(itemId); }) : null;
+            var locData = (locItem && locItem.location_data) || {};
+            var locTitle = (itemEl.querySelector('.item-title-input')?.value || itemEl.querySelector('.item-display-title')?.textContent || locItem?.title || 'Onde me encontrar').trim();
+            var locAddr = locData.address_formatted || locData.address || itemEl.querySelector('.location-formatted-display')?.textContent || itemEl.querySelector('.location-address-input')?.value || '';
+            previewEl = document.createElement('div');
+            previewEl.className = 'location-map-card' + (isDisabled ? ' preview-link-disabled' : '');
+            previewEl.style.cssText = 'width:100%;border-radius:12px;overflow:hidden;background:#1a1a1d;border:1px solid rgba(255,199,0,0.3);box-shadow:0 4px 16px rgba(0,0,0,0.4);margin-bottom:0;text-align:left;position:relative;' + (isDisabled ? 'opacity:0.65;' : '');
+            previewEl.innerHTML = `
+                <div style="position:relative;height:75px;background:#1e2028;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                    <i class="fas fa-map" style="font-size:2rem;color:rgba(255,199,0,0.4);"></i>
+                    <div style="position:absolute;bottom:6px;left:10px;right:10px;font-size:0.75rem;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        <i class="fas fa-map-marker-alt" style="color:#FFC700;margin-right:4px;"></i>${locTitle}
+                    </div>
+                </div>
+                <div style="padding:8px 10px 10px;">
+                    <p style="margin:0 0 6px;font-size:0.68rem;color:#ccc;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${locAddr || 'Localização no mapa'}</p>
+                    <div style="display:flex;gap:6px;">
+                        <div style="flex:1;padding:5px 6px;border-radius:6px;background:#1a73e8;color:#fff;font-size:0.65rem;font-weight:700;text-align:center;">Google Maps</div>
+                        <div style="flex:1;padding:5px 6px;border-radius:6px;background:#00b4cf;color:#fff;font-size:0.65rem;font-weight:700;text-align:center;">Waze</div>
+                    </div>
+                </div>
+            `;
         } else if (['link', 'pix', 'pix_qrcode', 'pdf', 'whatsapp', 'telegram', 'email', 'facebook', 'instagram', 'pinterest', 'linkedin', 'portfolio', 'reddit', 'tiktok', 'twitch', 'twitter', 'youtube', 'spotify', 'convite', 'bible', 'digital_form', 'sales_page', 'location'].includes(itemType)) {
             previewEl = document.createElement(isDisabled ? 'div' : 'a');
             previewEl.className = 'preview-link-button' + (isDisabled ? ' preview-link-disabled' : '');

@@ -2551,7 +2551,9 @@ function _setupEventListenersBody() {
 
             // Ao abrir Personalizar: atualizar visibilidade do botão Bíblia (evita sumir após excluir outro módulo)
             if (targetId === 'personalizar-editor') {
-                refreshBibleVisibilitySetting();
+                if (typeof window.refreshBibleVisibilitySetting === 'function') {
+                    window.refreshBibleVisibilitySetting();
+                }
             }
 
             // Atualizar hash e localStorage para manter a aba ao atualizar (mobile perde hash no refresh)
