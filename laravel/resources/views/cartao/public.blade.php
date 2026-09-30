@@ -16,6 +16,9 @@
     $showVcard = !empty($d['show_vcard_button']);
     $mapUrl = trim((string)($d['map_url'] ?? $d['location_url'] ?? $d['google_maps_url'] ?? ''));
     $logoSize = (int)($d['company_logo_size'] ?? 60);
+    // Se houver item de localização na lista, o card de mapa já será exibido lá;
+    // nesse caso, ocultar o botão genérico "Ver no Mapa" para evitar duplicidade.
+    $hasLocationItem = collect($items)->contains(fn($it) => ($it['item_type'] ?? '') === 'location');
 @endphp
 <!DOCTYPE html>
 <html lang="pt-BR" class="ck-page-bg">
@@ -328,7 +331,7 @@
             </a>
         @endif
 
-        @if($showVcard || $mapUrl !== '')
+        @if($showVcard || ($mapUrl !== '' && !$hasLocationItem))
             <div class="profile-actions">
                 @if($showVcard)
                     <a href="/vcard/{{ $profile_slug }}" class="profile-link" id="save-contact-btn">
@@ -336,7 +339,7 @@
                         <span>Salvar Contato</span>
                     </a>
                 @endif
-                @if($mapUrl !== '')
+                @if($mapUrl !== '' && !$hasLocationItem)
                     <a href="{{ $mapUrl }}" class="profile-link" target="_blank" rel="noopener noreferrer">
                         <i class="fas fa-map-marker-alt"></i>
                         <span>Ver no Mapa</span>
