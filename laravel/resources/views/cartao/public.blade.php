@@ -590,7 +590,7 @@
                         }
                     @endphp
 
-                    @if($locFmt === 'mapa' && ($locLat !== null || $locAddr !== ''))
+                    @if($locFmt === 'mapa' && ($locLat !== null || $locAddr !== '' || $locMapUrl !== ''))
                         {{-- ── FORMATO CARTÃO MAPA ── --}}
                         <div class="location-map-card" data-item-id="{{ $item['id'] ?? '' }}" style="width:100%;border-radius:16px;overflow:hidden;background:linear-gradient(145deg,#1a1a1d,#111113);border:1px solid rgba(255,199,0,0.25);box-shadow:0 8px 32px rgba(0,0,0,0.5);margin-bottom:0;">
 
