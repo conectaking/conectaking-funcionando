@@ -1,0 +1,82 @@
+{
+  "id": "ckSchedulerBibliaDiario",
+  "name": "CK Scheduler Biblia Diario",
+  "nodes": [
+
+    // ─────────────────────────────────────────
+    // SCHEDULER 1: DEVOCIONAL MATINAL (06:00)
+    // ─────────────────────────────────────────
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "cronDevocionalManha",
+      "name": "Cron Devocional 06h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-800, 200],
+      "parameters": {
+        "rule": {
+          "cronExpression": "0 6 * * *"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verifica se é 06:00 horário de Brasília\nconst now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));\nconst hour = now.getHours();\nif (hour !== 6) return []; // Só executa às 6h\n\nconst base = String($env.CK_BASE_URL || 'https://www.conectaking.com.br').replace(/\\/$/, '');\nconst token = String($env.CK_AGENT_JWT || '').trim();\nconst openaiKey = String($env.OPENAI_API_KEY || '').trim();\nconst model = String($env.OPENAI_MODEL || 'gpt-4o-mini').trim();\nconst botToken = String($env.BIBLIA_BOT_TOKEN || '8669321947:AAEm1Ek1gI_wTUDYHNsyyuqbRkPFqLE-NSo').trim();\nconst chatGroupId = String($env.BIBLIA_GROUP_CHAT_ID || '').trim();\n\nif (!chatGroupId) return [{ json: { skip: true, motivo: 'BIBLIA_GROUP_CHAT_ID não configurado' } }];\n\n// Dia do ano e mês\nconst start = new Date(now.getFullYear(), 0, 0);\nconst diff = now - start + ((start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000);\nconst doy = Math.min(365, Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24))));\nconst month = now.getMonth() + 1;\nconst year = now.getFullYear();\nconst iso = now.toISOString().slice(0, 10);\n\nasync function ck(method, path, body) {\n  const opts = {\n    method,\n    url: base + path,\n    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json',\n      ...(token ? { 'Authorization': 'Bearer ' + token } : {}) },\n    json: true, returnFullResponse: true, ignoreHttpStatusErrors: true\n  };\n  if (body !== undefined) opts.body = body;\n  return this.helpers.httpRequest.call(this, opts);\n}\n\nasync function openaiCall(payload) {\n  return this.helpers.httpRequest.call(this, {\n    method: 'POST', url: 'https://api.openai.com/v1/chat/completions',\n    headers: { 'Authorization': 'Bearer ' + openaiKey, 'Accept': 'application/json', 'Content-Type': 'application/json' },\n    body: payload, json: true, returnFullResponse: true, ignoreHttpStatusErrors: true\n  });\n}\n\nasync function sendTelegram(text) {\n  return this.helpers.httpRequest.call(this, {\n    method: 'POST',\n    url: `https://api.telegram.org/bot${botToken}/sendMessage`,\n    headers: { 'Content-Type': 'application/json' },\n    body: { chat_id: chatGroupId, text, parse_mode: 'Markdown' },\n    json: true, returnFullResponse: true, ignoreHttpStatusErrors: true\n  });\n}\n\n// Buscar tema do mês\nconst temaRes = await ck.call(this, 'GET', `/api/admin/bible/devotionals-365/month-themes/${year}`);\nconst themes = (temaRes.body && (temaRes.body.data?.themes || temaRes.body.themes)) || {};\nconst temaDoMes = themes[String(month)] || 'Fé e Confiança em Deus';\n\n// Buscar devocional do dia\nconst devRes = await ck.call(this, 'GET', `/api/bible/devocional-do-dia?date=${iso}`);\nconst d = (devRes.body && devRes.body.data) || {};\nconst temConteudo = !!(d.reflexao || d.texto || d.content);\n\nlet texto = '';\n\nif (temConteudo) {\n  // Formato padrão — SEM mencionar PNL, Neurociência, Psicologia\n  const titulo = d.titulo || d.title || 'Palavra do Dia';\n  const passagem = d.versiculo_ref || d.versiculo || d.passagem || d.ref || 'Escrituras Sagradas';\n  const vTexto = d.versiculo_texto ? `\"${d.versiculo_texto}\"\\n\\n` : '';\n  const corpo = d.reflexao || d.texto || d.content || '';\n  const oracao = d.oracao || d.prayer || '';\n  texto = `✨ *Devocional do Dia:* ${titulo}\\n\\n📖 *Texto Base:* ${passagem}\\n\\n${vTexto}${corpo}\\n\\n${oracao ? '🙏 *Oração:*\\n_' + oracao + '_\\n\\n' : ''}Amém! Que Deus abençoe sua jornada. ❤️`;\n} else {\n  // Devocional não cadastrado — gerar via backend com tema do mês\n  const genRes = await ck.call(this, 'POST', `/api/admin/bible/devotionals-365/day/${doy}/generate-ai`, {\n    year, temaPersonalizado: temaDoMes, temaModo: 'mes_auto'\n  });\n  const gd = (genRes.body && genRes.body.data) || {};\n  const titulo = gd.titulo || 'Palavra do Dia';\n  const passagem = gd.versiculo_ref || gd.passagem || 'Escrituras Sagradas';\n  const vTexto = gd.versiculo_texto ? `\"${gd.versiculo_texto}\"\\n\\n` : '';\n  const corpo = gd.reflexao || gd.texto || '';\n  const oracao = gd.oracao || '';\n  texto = `✨ *Devocional do Dia:* ${titulo}\\n\\n📖 *Texto Base:* ${passagem}\\n\\n${vTexto}${corpo}\\n\\n${oracao ? '🙏 *Oração:*\\n_' + oracao + '_\\n\\n' : ''}Amém! Que Deus abençoe sua jornada. ❤️`;\n}\n\nawait sendTelegram.call(this, texto);\nreturn [{ json: { enviado: true, dia: doy, tema: temaDoMes, data: iso } }];\n"
+      },
+      "id": "enviarDevocionalManha",
+      "name": "Enviar Devocional Matinal",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-500, 200]
+    },
+
+    // ─────────────────────────────────────────
+    // SCHEDULER 2: PROSPERIDADE ANTES DE DORMIR (21:00)
+    // 31 Dias de Ativação — Livro de Provérbios
+    // ─────────────────────────────────────────
+    {
+      "parameters": {
+        "rule": {
+          "cronExpression": "0 21 * * *"
+        }
+      },
+      "id": "cronProsperidade21h",
+      "name": "Cron Prosperidade 21h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-800, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verifica se é 21:00 horário de Brasília\nconst now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));\nconst hour = now.getHours();\nif (hour !== 21) return []; // Só executa às 21h\n\nconst base = String($env.CK_BASE_URL || 'https://www.conectaking.com.br').replace(/\\/$/, '');\nconst token = String($env.CK_AGENT_JWT || '').trim();\nconst botToken = String($env.BIBLIA_BOT_TOKEN || '8669321947:AAEm1Ek1gI_wTUDYHNsyyuqbRkPFqLE-NSo').trim();\nconst chatGroupId = String($env.BIBLIA_GROUP_CHAT_ID || '').trim();\n\nif (!chatGroupId) return [{ json: { skip: true, motivo: 'BIBLIA_GROUP_CHAT_ID não configurado' } }];\n\n// Número da ativação: dia do mês (1-31), cicla por Provérbios\nconst diaDoMes = now.getDate(); // 1 a 31\nconst numAtivacao = diaDoMes; // alinha ao capítulo de Provérbios\n\nasync function ck(method, path, body) {\n  const opts = {\n    method, url: base + path,\n    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json',\n      ...(token ? { 'Authorization': 'Bearer ' + token } : {}) },\n    json: true, returnFullResponse: true, ignoreHttpStatusErrors: true\n  };\n  if (body !== undefined) opts.body = body;\n  return this.helpers.httpRequest.call(this, opts);\n}\n\nasync function sendTelegram(text) {\n  return this.helpers.httpRequest.call(this, {\n    method: 'POST',\n    url: `https://api.telegram.org/bot${botToken}/sendMessage`,\n    headers: { 'Content-Type': 'application/json' },\n    body: { chat_id: chatGroupId, text, parse_mode: 'Markdown' },\n    json: true, returnFullResponse: true, ignoreHttpStatusErrors: true\n  });\n}\n\n// Buscar ativação de Prosperidade\nconst r = await ck.call(this, 'GET', `/api/bible/prosperidade/ativacao/${numAtivacao}`);\nconst p = (r.body && r.body.data) || {};\n\nconst titulo = p.titulo || p.title || `Prosperidade Antes de Dormir`;\nconst ref = p.proverbs_ref || p.versiculo_ref || `Provérbios ${numAtivacao}`;\nconst meditacao = p.fundamento_sagrado || p.reflexao || p.texto || '';\nconst declaracao = p.decreto_entrada || p.declaracao || '';\n\nlet texto = '';\n\nif (meditacao) {\n  texto = `🌙 *31 Dias de Ativação — Prosperidade Antes de Dormir*\\n\\n💎 *Ativação #${numAtivacao}: ${titulo}*\\n\\n📖 *${ref}*\\n\\n${meditacao}\\n\\n🗣️ *Declare antes de dormir:*\\n_\"${declaracao}\"_\\n\\n✨ Deus tem prazer na prosperidade integral da sua vida!`;\n} else {\n  // Ativação não cadastrada — gerar via backend\n  const genR = await ck.call(this, 'POST', `/api/admin/bible/prosperidade/${numAtivacao}/generate-ai`);\n  const gp = (genR.body && genR.body.data) || {};\n  const gTitulo = gp.titulo || `Prosperidade Antes de Dormir`;\n  const gRef = gp.proverbs_ref || `Provérbios ${numAtivacao}`;\n  const gMed = gp.fundamento_sagrado || gp.reflexao || '';\n  const gDecr = gp.decreto_entrada || gp.sentenca_ativacao || '';\n  texto = `🌙 *31 Dias de Ativação — Prosperidade Antes de Dormir*\\n\\n💎 *Ativação #${numAtivacao}: ${gTitulo}*\\n\\n📖 *${gRef}*\\n\\n${gMed}\\n\\n🗣️ *Declare antes de dormir:*\\n_\"${gDecr}\"_\\n\\n✨ Deus tem prazer na prosperidade integral da sua vida!`;\n}\n\nawait sendTelegram.call(this, texto);\nreturn [{ json: { enviado: true, ativacao: numAtivacao } }];\n"
+      },
+      "id": "enviarProsperidade",
+      "name": "Enviar Prosperidade Noturna",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-500, 500]
+    }
+
+  ],
+  "connections": {
+    "Cron Devocional 06h": {
+      "main": [[{ "node": "Enviar Devocional Matinal", "type": "main", "index": 0 }]]
+    },
+    "Cron Prosperidade 21h": {
+      "main": [[{ "node": "Enviar Prosperidade Noturna", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
