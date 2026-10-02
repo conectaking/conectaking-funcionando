@@ -3651,7 +3651,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 throw err;
                             }
 
-                            return response;
+                            const json = await response.json();
+                            return json;
                         } catch (e) {
                             lastAttemptError = e;
                             const msg = (e && e.message) ? String(e.message) : '';
@@ -3669,9 +3670,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             })();
 
-            const response = await profileFetchPromise;
-
-            const data = await response.json();
+            const data = await profileFetchPromise;
 
             // Log para debug - ver o que está sendo retornado
             __ckDashLog('Dados recebidos da API:', data);
@@ -3746,7 +3745,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 renderEditor(profileData);
                 __ckDashLog('renderEditor concluído com sucesso');
 
-                reconcileModulesListWithProfileData(profileData);
+                try {
+                    if (typeof reconcileModulesListWithProfileData === 'function') {
+                        reconcileModulesListWithProfileData(profileData);
+                    } else if (window.DashboardCartao && typeof window.DashboardCartao.reconcileModulesListWithProfileData === 'function') {
+                        window.DashboardCartao.reconcileModulesListWithProfileData(profileData);
+                    }
+                } catch (reconcileError) {
+                    console.warn('Aviso: falha na reconciliação de módulos com o perfil:', reconcileError);
+                }
             } catch (renderError) {
                 console.error('Erro ao renderizar editor:', renderError);
                 console.error('O Stack trace:', renderError.stack);
@@ -3791,6 +3798,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             } else if (error.message.includes('Erro de conexão') || error.message.includes('Timeout')) {
                 alert('Problema de conexão detectado. Verifique sua internet e tente novamente.');
+            } else if (error.message.includes('Erro ao renderizar interface')) {
+                console.error('Erro de interface ao desenhar perfil:', error);
             } else {
                 alert('Erro ao carregar dados do perfil. Tente novamente.');
             }

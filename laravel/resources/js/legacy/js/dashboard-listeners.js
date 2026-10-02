@@ -2632,33 +2632,30 @@ function _setupEventListenersBody() {
         // 1) Hash é um painel principal (ex: finance-pane, relatorios-pane, editar-pane)?
         const mainNavLink = document.querySelector(`.sidebar .nav-link[data-target="${targetId}"]`);
         if (mainNavLink) {
-            // No mobile: aplicar a troca de painel diretamente (click pode falhar com sidebar oculto)
-            const isMobile = window.innerWidth <= 768;
-            if (isMobile) {
-                document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
-                mainNavLink.classList.add('active');
-                document.querySelectorAll('.main-content').forEach(pane => {
-                    pane.classList.remove('active');
-                    pane.style.display = 'none';
-                });
-                var livePreview = document.querySelector('.live-preview');
-                if (livePreview) livePreview.style.display = targetId === 'king-forms-pane' ? 'none' : '';
-                const targetPane = document.getElementById(targetId);
-                if (targetPane) {
-                    targetPane.classList.add('active');
-                    targetPane.style.display = 'flex';
-                }
-                if (targetId === 'finance-pane' && window.initFinancePane) window.initFinancePane();
-                else if (targetId === 'relatorios-pane' && typeof window.loadReportsData === 'function') window.loadReportsData();
-                else if (targetId === 'assinatura-pane' && typeof window.loadSubscriptionInfo === 'function') window.loadSubscriptionInfo();
-                else if (targetId === 'compartilhar-pane' && typeof window.generateQRCode === 'function') window.generateQRCode();
+            const targetPane = document.getElementById(targetId);
+            if (mainNavLink.classList.contains('active') && targetPane && targetPane.classList.contains('active')) {
+                return;
+            }
 
-                else if (targetId === 'king-forms-pane') {
-                    var kfIframe = document.getElementById('king-forms-iframe');
-                    if (kfIframe && (!kfIframe.src || kfIframe.src === 'about:blank' || kfIframe.src.endsWith('about:blank'))) kfIframe.src = '/kingForms';
-                }
-            } else {
-                mainNavLink.click();
+            document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+            mainNavLink.classList.add('active');
+            document.querySelectorAll('.main-content').forEach(pane => {
+                pane.classList.remove('active');
+                pane.style.display = 'none';
+            });
+            var livePreview = document.querySelector('.live-preview');
+            if (livePreview) livePreview.style.display = targetId === 'king-forms-pane' ? 'none' : '';
+            if (targetPane) {
+                targetPane.classList.add('active');
+                targetPane.style.display = 'flex';
+            }
+            if (targetId === 'finance-pane' && window.initFinancePane) window.initFinancePane();
+            else if (targetId === 'relatorios-pane' && typeof window.loadReportsData === 'function') window.loadReportsData();
+            else if (targetId === 'assinatura-pane' && typeof window.loadSubscriptionInfo === 'function') window.loadSubscriptionInfo();
+            else if (targetId === 'compartilhar-pane' && typeof window.generateQRCode === 'function') window.generateQRCode();
+            else if (targetId === 'king-forms-pane') {
+                var kfIframe = document.getElementById('king-forms-iframe');
+                if (kfIframe && (!kfIframe.src || kfIframe.src === 'about:blank' || kfIframe.src.endsWith('about:blank'))) kfIframe.src = '/kingForms';
             }
             return;
         }
@@ -2667,19 +2664,33 @@ function _setupEventListenersBody() {
         const editorNavLink = document.querySelector(`[data-editor-target="${targetId}"]`);
         if (editorNavLink) {
             const editarLink = document.querySelector(`.sidebar .nav-link[data-target="editar-pane"]`);
-            if (editarLink) {
-                if (window.innerWidth <= 768) {
-                    document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
-                    editarLink.classList.add('active');
-                    document.querySelectorAll('.main-content').forEach(p => { p.classList.remove('active'); p.style.display = 'none'; });
-                    const ep = document.getElementById('editar-pane');
-                    if (ep) { ep.classList.add('active'); ep.style.display = 'flex'; }
-                    setTimeout(() => editorNavLink.click(), 50);
-                } else {
-                    editarLink.click();
-                    setTimeout(() => editorNavLink.click(), 50);
+            const editarPane = document.getElementById('editar-pane');
+
+            if (editarLink && !editarLink.classList.contains('active')) {
+                document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+                editarLink.classList.add('active');
+            }
+            if (editarPane && !editarPane.classList.contains('active')) {
+                document.querySelectorAll('.main-content').forEach(p => {
+                    p.classList.remove('active');
+                    p.style.display = 'none';
+                });
+                editarPane.classList.add('active');
+                editarPane.style.display = 'flex';
+                var livePreview = document.querySelector('.live-preview');
+                if (livePreview) livePreview.style.display = '';
+            }
+
+            if (!editorNavLink.classList.contains('active')) {
+                SELECTORS.editorNavLinks.forEach(l => l.classList.remove('active'));
+                editorNavLink.classList.add('active');
+                SELECTORS.editorPanes.forEach(pane => pane.classList.toggle('active', pane.id === targetId));
+
+                if (targetId === 'personalizar-editor' && typeof window.refreshBibleVisibilitySetting === 'function') {
+                    window.refreshBibleVisibilitySetting();
                 }
             }
+            return;
         }
     };
 

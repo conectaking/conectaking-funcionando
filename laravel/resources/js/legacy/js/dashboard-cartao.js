@@ -30,6 +30,18 @@
             var c = core();
             if (typeof c.parseBannerDestination === 'function') return c.parseBannerDestination(raw);
             return { primary_url: String(raw || '').trim(), instagram_url: '', whatsapp_url: '' };
+        },
+        moduleListDisplayTitle: function (item) {
+            var c = core();
+            if (typeof c.moduleListDisplayTitle === 'function') return c.moduleListDisplayTitle(item);
+            if (typeof global.moduleListDisplayTitle === 'function') return global.moduleListDisplayTitle(item);
+            return (item && (item.title || item.name || item.item_type)) || 'Módulo';
+        },
+        getDefaultIcon: function (itemType) {
+            var c = core();
+            if (typeof c.getDefaultIcon === 'function') return c.getDefaultIcon(itemType);
+            if (typeof global.getDefaultIcon === 'function') return global.getDefaultIcon(itemType);
+            return 'fas fa-cube';
         }
     };
 
@@ -1405,74 +1417,89 @@ function normalizeProfileItemType(item) {
 }
 
 function appendMinimalModuleListItem(item) {
-    const REMOVED_UI_MODULES = { agenda: 1, contract: 1, photographer_site: 1, kingbrief: 1, king_bolao: 1 };
-    if (item && REMOVED_UI_MODULES[item.item_type]) return false;
-    const container = SELECTORS.itemsContainer || document.getElementById('items-container');
-    if (!container || !item || item.id == null) return false;
-    const idStr = String(item.id);
-    if (container.querySelector('[data-id="' + idStr + '"]')) return false;
-    const itemEl = document.createElement('div');
-    itemEl.className = 'module-item module-item-fallback';
-    itemEl.dataset.id = idStr;
-    itemEl.dataset.itemType = item.item_type || 'link';
-    const isActive = item.is_active !== false;
-    const title = moduleListDisplayTitle(item);
-    itemEl.innerHTML = `
-            <div class="module-name module-name-row">${title}</div>
-            <div class="module-content-wrapper">
-                <div class="module-drag-controls">
-                    <button class="module-move-btn move-up" title="Mover para cima" data-item-id="${idStr}" data-direction="up"><i class="fas fa-chevron-up"></i></button>
-                    <div class="module-drag-handle" title="Arrastar"><i class="fas fa-grip-vertical"></i></div>
-                    <button class="module-move-btn move-down" title="Mover para baixo" data-item-id="${idStr}" data-direction="down"><i class="fas fa-chevron-down"></i></button>
+    try {
+        const REMOVED_UI_MODULES = { agenda: 1, contract: 1, photographer_site: 1, kingbrief: 1, king_bolao: 1 };
+        if (item && REMOVED_UI_MODULES[item.item_type]) return false;
+        const container = SELECTORS.itemsContainer || document.getElementById('items-container');
+        if (!container || !item || item.id == null) return false;
+        const idStr = String(item.id);
+        if (container.querySelector('[data-id="' + idStr + '"]')) return false;
+        const itemEl = document.createElement('div');
+        itemEl.className = 'module-item module-item-fallback';
+        itemEl.dataset.id = idStr;
+        itemEl.dataset.itemType = item.item_type || 'link';
+        const isActive = item.is_active !== false;
+        const title = (typeof env.moduleListDisplayTitle === 'function')
+            ? env.moduleListDisplayTitle(item)
+            : (item && (item.title || item.name || item.item_type)) || 'Módulo';
+        const iconClass = (typeof env.getDefaultIcon === 'function')
+            ? env.getDefaultIcon(item.item_type)
+            : 'fas fa-cube';
+        itemEl.innerHTML = `
+                <div class="module-name module-name-row">${title}</div>
+                <div class="module-content-wrapper">
+                    <div class="module-drag-controls">
+                        <button class="module-move-btn move-up" title="Mover para cima" data-item-id="${idStr}" data-direction="up"><i class="fas fa-chevron-up"></i></button>
+                        <div class="module-drag-handle" title="Arrastar"><i class="fas fa-grip-vertical"></i></div>
+                        <button class="module-move-btn move-down" title="Mover para baixo" data-item-id="${idStr}" data-direction="down"><i class="fas fa-chevron-down"></i></button>
+                    </div>
+                    <div class="module-icon"><i class="${iconClass}"></i></div>
+                    <div class="module-actions-inline">
+                        <label class="module-toggle" title="Desativar">
+                            <input type="checkbox" class="module-toggle-input" ${isActive ? 'checked' : ''} data-item-id="${idStr}">
+                            <span class="module-toggle-slider"></span>
+                        </label>
+                        <button class="module-action-btn edit edit-item-btn" title="Editar Módulo" data-item-id="${idStr}"><i class="fas fa-pencil-alt"></i></button>
+                        <button class="module-action-btn duplicate duplicate-item-btn" title="Duplicar" data-item-id="${idStr}"><i class="fas fa-copy"></i></button>
+                        <button class="module-action-btn delete delete-item-btn" title="Excluir" data-item-id="${idStr}"><i class="fas fa-trash"></i></button>
+                    </div>
                 </div>
-                <div class="module-icon"><i class="${getDefaultIcon(item.item_type)}"></i></div>
-                <div class="module-actions-inline">
-                    <label class="module-toggle" title="Desativar">
-                        <input type="checkbox" class="module-toggle-input" ${isActive ? 'checked' : ''} data-item-id="${idStr}">
-                        <span class="module-toggle-slider"></span>
-                    </label>
-                    <button class="module-action-btn edit edit-item-btn" title="Editar Módulo" data-item-id="${idStr}"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="module-action-btn duplicate duplicate-item-btn" title="Duplicar" data-item-id="${idStr}"><i class="fas fa-copy"></i></button>
-                    <button class="module-action-btn delete delete-item-btn" title="Excluir" data-item-id="${idStr}"><i class="fas fa-trash"></i></button>
-                </div>
-            </div>
-            <div class="item-content" style="display: none;"><p style="padding:0.75rem;color:#f39c12;font-size:0.85rem;">Carregado em modo simplificado. Use o lápis para editar.</p></div>`;
-    container.appendChild(itemEl);
-    console.log(`Módulo ${idStr} (${item.item_type}) adicionado em modo simplificado`);
-    return true;
+                <div class="item-content" style="display: none;"><p style="padding:0.75rem;color:#f39c12;font-size:0.85rem;">Carregado em modo simplificado. Use o lápis para editar.</p></div>`;
+        container.appendChild(itemEl);
+        console.log(`Módulo ${idStr} (${item.item_type}) adicionado em modo simplificado`);
+        return true;
+    } catch (e) {
+        console.warn('Erro ao adicionar módulo em modo simplificado:', e);
+        return false;
+    }
 }
 
 function reconcileModulesListWithProfileData(profileData) {
-    const container = SELECTORS.itemsContainer || document.getElementById('items-container');
-    if (!container || !profileData?.items) return false;
-    const expected = getModuleListItemsFromProfile(profileData).map(function (it) {
-        return normalizeProfileItemType(Object.assign({}, it));
-    });
-    const missing = expected.filter(function (it) {
-        return !container.querySelector('[data-id="' + it.id + '"]');
-    });
-    if (!missing.length) return false;
-    console.warn('Módulos em falta na lista:', missing.map(function (m) {
-        return (m.item_type || '?') + '#' + m.id;
-    }).join(', '));
-    missing.forEach(function (it) { appendMinimalModuleListItem(it); });
-    const stillMissing = expected.filter(function (it) {
-        return !container.querySelector('[data-id="' + it.id + '"]');
-    });
-    if (stillMissing.length) {
-        console.warn('Re-render completo - ainda faltam:', stillMissing.map(function (m) {
+    try {
+        const container = SELECTORS.itemsContainer || document.getElementById('items-container');
+        if (!container || !profileData?.items) return false;
+        const expected = getModuleListItemsFromProfile(profileData).map(function (it) {
+            return normalizeProfileItemType(Object.assign({}, it));
+        });
+        const missing = expected.filter(function (it) {
+            return !container.querySelector('[data-id="' + it.id + '"]');
+        });
+        if (!missing.length) return false;
+        console.warn('Módulos em falta na lista:', missing.map(function (m) {
             return (m.item_type || '?') + '#' + m.id;
         }).join(', '));
-        if (global.DashboardEditor && typeof global.DashboardEditor.renderEditor === 'function') {
-            global.DashboardEditor.renderEditor(profileData);
-        } else if (typeof global.renderEditor === 'function') {
-            global.renderEditor(profileData);
-        } else {
-            console.warn('[DashboardCartao] renderEditor indisponível para re-render completo');
+        missing.forEach(function (it) { appendMinimalModuleListItem(it); });
+        const stillMissing = expected.filter(function (it) {
+            return !container.querySelector('[data-id="' + it.id + '"]');
+        });
+        if (stillMissing.length) {
+            console.warn('Re-render completo - ainda faltam:', stillMissing.map(function (m) {
+                return (m.item_type || '?') + '#' + m.id;
+            }).join(', '));
+            if (global.DashboardEditor && typeof global.DashboardEditor.renderEditor === 'function') {
+                global.DashboardEditor.renderEditor(profileData);
+            } else if (typeof global.renderEditor === 'function') {
+                global.renderEditor(profileData);
+            } else {
+                console.warn('[DashboardCartao] renderEditor indisponível para re-render completo');
+            }
         }
+        if (typeof updateLivePreviewFromForm === 'function') updateLivePreviewFromForm();
+        return true;
+    } catch (e) {
+        console.warn('Erro ao reconciliar lista de módulos:', e);
+        return false;
     }
-    if (typeof updateLivePreviewFromForm === 'function') updateLivePreviewFromForm();
-    return true;
 }
 
 
