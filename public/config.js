@@ -177,6 +177,23 @@
             if (nativeFetch) {
                 window.fetch = function (input, init) {
                     var abs = toAbsoluteUrl(input);
+                    if (abs && abs.indexOf('google-analytics.com') !== -1) {
+                        try {
+                            if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+                                var beaconBody = init && init.body ? init.body : null;
+                                if (navigator.sendBeacon(abs, beaconBody)) {
+                                    return Promise.resolve(new Response(JSON.stringify({ ok: true }), {
+                                        status: 200,
+                                        headers: { 'Content-Type': 'application/json' }
+                                    }));
+                                }
+                            }
+                        } catch (e) {}
+                        var safeInit = Object.assign({}, init || {}, { mode: 'no-cors', credentials: 'omit' });
+                        return nativeFetch(abs, safeInit).catch(function () {
+                            return Promise.resolve(new Response('', { status: 200 }));
+                        });
+                    }
                     if (shouldRewriteToSameOrigin(abs)) {
                         var rewritten = rewriteToSameOrigin(abs);
                         if (rewritten && rewritten !== abs) {
@@ -239,6 +256,9 @@
   window.fetch = function (input, opts) {
     opts = opts || {};
     var url = typeof input === 'string' ? input : (input && input.url) || '';
+    if (url && url.indexOf('google-analytics.com') !== -1) {
+      return prev.call(window, input, opts);
+    }
     var finalUrl = url;
     if (url && (url.indexOf('/api/') === 0 || url.indexOf('api/') === 0)) {
       finalUrl = url.indexOf('http') === 0 ? url : apiBase + (url.indexOf('/') === 0 ? url : '/' + url);

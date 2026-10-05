@@ -5,7 +5,13 @@
                 try { var s = localStorage.getItem('dashboard_last_pane'); if (s) hash = s.charAt(0)==='#' ? s : '#'+s; } catch(e){}
             }
             if (!hash || hash === '#') return;
-            var tid = hash.replace(/^#/,'').trim();
+            var rawTid = '';
+            try { rawTid = decodeURIComponent(hash.replace(/^#/,'').trim()); } catch(e) { rawTid = hash.replace(/^#/,'').trim(); }
+            var tid = rawTid.replace(/\s+/g, '-').toLowerCase();
+            if (tid === 'modelos') tid = 'modelos-editor';
+            else if (tid === 'info' || tid === 'informacoes') tid = 'info-editor';
+            else if (tid === 'modulos' || tid === 'modulo' || tid === 'itens' || tid === 'items') tid = 'items-editor';
+            else if (tid === 'personalizar') tid = 'personalizar-editor';
             if (tid.startsWith('finance-pane-tab-')) tid = 'finance-pane';
             var map = {finance:'finance-pane','king-forms':'king-forms-pane',relatorios:'relatorios-pane',editar:'editar-pane',compartilhar:'compartilhar-pane',branding:'branding-pane','separacao-pacotes':'separacao-pacotes-pane',assinatura:'assinatura-pane','personalizar-link':'personalizar-link-pane'};
             var editorTab = null;

@@ -36,28 +36,18 @@
                 removeTextNodes(document.documentElement);
                 removeTextNodes(document.head);
                 
-                // Verificar e remover elementos específicos
-                const allElements = document.querySelectorAll('*');
-                allElements.forEach(el => {
-                    const text = el.textContent || '';
-                    const innerText = el.innerText || '';
-                    
-                    // Se o elemento contém apenas "image.png", remover
-                    if ((text.trim() === 'image.png' || innerText.trim() === 'image.png') && 
-                        el.children.length === 0) {
-                        el.style.display = 'none';
-                        el.style.visibility = 'hidden';
-                        el.style.opacity = '0';
-                        el.style.height = '0';
-                        el.style.width = '0';
-                        el.style.overflow = 'hidden';
-                        el.style.fontSize = '0';
-                        el.style.lineHeight = '0';
-                        try {
-                            el.remove();
-                        } catch(e) {
-                            el.textContent = '';
-                            el.innerHTML = '';
+                // Verificar especificamente a área ao redor do botão mobile e filhos diretos do body
+                const bodyChildren = Array.from((document.body && document.body.childNodes) || []);
+                bodyChildren.forEach(child => {
+                    if (child.nodeType === Node.TEXT_NODE) {
+                        const text = child.nodeValue || '';
+                        if (text.includes('image.png')) {
+                            try { child.parentNode && child.parentNode.removeChild(child); } catch(e) { child.nodeValue = ''; }
+                        }
+                    } else if (child.nodeType === Node.ELEMENT_NODE && child.children.length === 0) {
+                        const text = (child.textContent || '').trim();
+                        if (text === 'image.png') {
+                            try { child.remove(); } catch(e) { child.textContent = ''; }
                         }
                     }
                 });

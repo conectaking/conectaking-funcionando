@@ -64,8 +64,8 @@ html {
   height: 100%;
   overflow-x: hidden !important;
   overflow-y: hidden !important;
-  width: 100vw !important;
-  max-width: 100vw !important;
+  width: 100% !important;
+  max-width: 100% !important;
   box-sizing: border-box;
 }
 *, *::before, *::after {
@@ -82,9 +82,9 @@ body {
   color: var(--text-primary); 
   transition: background-color 0.3s ease, color 0.3s ease;
   min-height: 100vh;
-  width: 100vw !important;
-  max-width: 100vw !important;
-  min-width: 100vw !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
   box-sizing: border-box;
   position: fixed;
   top: 0;
@@ -124,7 +124,7 @@ body {
 .dashboard-layout { 
   display: grid; 
   grid-template-columns: 220px minmax(0, 1fr) 260px; 
-  width: 100vw !important;
+  width: 100% !important;
   height: 100vh !important; 
   max-height: 100vh;
   overflow-x: hidden !important;
@@ -140,8 +140,8 @@ body {
   right: 0 !important;
   bottom: 0 !important;
   gap: 0 !important;
-  max-width: 100vw !important;
-  min-width: 100vw !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
   column-gap: 0 !important;
   row-gap: 0 !important;
   /* Garantir que não há espaço extra */
@@ -155,42 +155,80 @@ body {
 
 @media (max-width: 768px) {
   html {
+    overflow-x: hidden !important;
     overflow-y: auto !important;
     height: auto !important;
+    min-height: 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: none;
     /* Suporte para safe-area (notch) em iPhones */
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
   }
   
   body {
-    overflow-y: auto !important;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
     height: auto !important;
+    min-height: 100% !important;
     max-height: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: none;
     /* Suporte para safe-area (notch) em iPhones */
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
+    padding-bottom: env(safe-area-inset-bottom, 0);
   }
   
   .dashboard-layout {
     position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
     height: auto !important;
     max-height: none !important;
     min-height: 100vh;
+    min-height: 100dvh;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
     overflow-y: visible !important;
+    overflow-x: hidden !important;
     /* Suporte para safe-area */
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
   }
   
   .content-wrapper {
     height: auto !important;
     max-height: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
     overflow: visible !important;
     /* Garantir que não corte conteúdo */
-    padding-left: max(12px, env(safe-area-inset-left));
-    padding-right: max(12px, env(safe-area-inset-right));
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
     box-sizing: border-box;
+  }
+
+  .main-content {
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 }
 .sidebar { 
@@ -2527,8 +2565,8 @@ html.sortable-dragging-active {
 .mobile-menu-toggle {
   display: none;
   position: fixed;
-  top: 12px;
-  left: 12px;
+  top: max(12px, env(safe-area-inset-top, 12px));
+  left: max(12px, env(safe-area-inset-left, 12px));
   width: 44px;
   height: 44px;
   background: var(--preto-card);
@@ -2583,13 +2621,15 @@ html.sortable-dragging-active {
 }
 
 @media (max-width: 768px) {
-  .dashboard-layout { grid-template-columns: 1fr; padding-top: 60px; }
+  .dashboard-layout { grid-template-columns: 1fr; padding-top: calc(60px + env(safe-area-inset-top, 0px)); }
   
   /* Botão hambúrguer visível */
   .mobile-menu-toggle { 
     display: flex;
     z-index: 2001;
     position: fixed;
+    top: max(12px, env(safe-area-inset-top, 12px));
+    left: max(12px, env(safe-area-inset-left, 12px));
   }
   
   /* Garantir que o sidebar-header não fique atrás do hamburger */
@@ -2612,8 +2652,10 @@ html.sortable-dragging-active {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
     background: rgba(0,0,0,0.5);
     opacity: 0;
     pointer-events: none;
@@ -3350,7 +3392,8 @@ html.sortable-dragging-active {
     align-items: flex-start; 
     gap: 16px; 
     margin-top: 16px; 
-    padding-right: 50px;
+    padding-left: 60px;
+    padding-right: 16px;
     box-sizing: border-box;
     width: 100%;
     max-width: 100%;
@@ -3569,21 +3612,6 @@ html.sortable-dragging-active {
   .content-header { 
     padding-right: 0; 
     padding-left: 60px; /* Espaço para o hamburger menu */
-  }
-  /* No mobile (max-width: 768px), o h1 já está escondido, então não precisa dessa regra */
-  @media (min-width: 769px) and (max-width: 992px) {
-    .content-header h1 { 
-      font-size: 1.3rem;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-    }
-    .content-header h1 .header-action-icon {
-      align-self: flex-start;
-      margin-top: 0;
-      flex-shrink: 0;
-    }
   }
   
   /* Melhorar área de clique em mobile */
@@ -4436,83 +4464,62 @@ body.light-theme .divider { border-top-color: var(--border-glass); }
   }
   
   .content-header { 
+    display: flex;
     flex-direction: column; 
-    align-items: center; 
-    justify-content: center;
-    gap: 0; 
+    align-items: flex-start; 
+    justify-content: flex-start;
+    gap: 12px; 
     margin-top: 0; 
-    margin-bottom: 24px;
-    padding: 0 16px;
-    padding-left: 60px; /* Espaço para o hamburger menu não sobrepor o texto */
+    margin-bottom: 20px;
+    padding: 0;
+    padding-left: 56px; /* Espaço para o hamburger menu não sobrepor o texto */
     width: 100%;
     box-sizing: border-box;
     position: relative;
+    cursor: default !important;
   }
   
-  /* FORÇAR: Esconder TODOS os elementos filhos do header no mobile */
-  .content-header > * {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    height: 0 !important;
-    width: 0 !important;
-    overflow: hidden !important;
+  .content-header .header-title-wrapper {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    width: 100% !important;
   }
-  
-  /* FORÇAR: Esconder novo layout do header no mobile */
-  .content-header .header-title-wrapper,
-  .content-header .header-title-wrapper * {
-    display: none !important;
-    visibility: hidden !important;
+
+  .content-header .header-title-top {
+    font-size: 1.25rem !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    color: var(--text-primary) !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin: 0 !important;
   }
-  
-  /* FORÇAR: Esconder todos os h1 dentro do header no mobile */
-  .content-header h1,
-  .content-header h1 * {
-    display: none !important;
-    visibility: hidden !important;
-    font-size: 0 !important;
-    line-height: 0 !important;
+
+  .content-header .header-title-bottom {
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    color: var(--text-secondary) !important;
+    line-height: 1.2 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin: 0 !important;
   }
-  
-  /* FORÇAR: Esconder botão de salvar do header no mobile */
+
   .content-header .btn-save-header,
   .content-header button {
-    display: none !important;
-    visibility: hidden !important;
-  }
-  
-  /* FORÇAR: Criar novo texto centralizado "Cartão virtual Conecta King" no mobile - APENAS UMA VEZ */
-  .content-header::before {
-    content: "Cartão virtual Conecta King" !important;
-    font-size: 1.5rem !important;
-    color: var(--text-primary) !important;
-    font-weight: 700 !important;
-    display: block !important;
+    display: inline-flex !important;
     visibility: visible !important;
-    line-height: 1.3 !important;
-    white-space: nowrap !important;
-    text-align: center !important;
-    width: calc(100% - 60px) !important;
-    margin: 0 auto !important;
-    position: relative !important;
-    z-index: 9999 !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    pointer-events: auto !important;
-    cursor: pointer !important;
+    opacity: 1 !important;
   }
-  
-  /* Tornar o header clicável no mobile */
-  .content-header {
-    cursor: pointer !important;
-  }
-  
-  /* FORÇAR: Garantir que não haja ::after criando texto duplicado */
+
+  .content-header::before,
   .content-header::after {
-    content: "" !important;
     display: none !important;
-    visibility: hidden !important;
+    content: none !important;
   }
   
   .header-actions { 
@@ -5312,8 +5319,15 @@ body.expiration-banner-visible { padding-top: 54px; }
 /* ========== FIX MOBILE MÓDULOS ATIVOS - Layout: nome em cima | setas+ícone+desativar+editar+duplicar+deletar ========== */
 /* Card de largura total ("de comprido de largura"), não fininho no meio - todos mobile (incl. iPhone 16/17) */
 @media (max-width: 768px) {
-  .editor-area,
   .main-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(16px, env(safe-area-inset-right, 0px)) !important;
+    padding-top: max(16px, env(safe-area-inset-top, 0px)) !important;
+    box-sizing: border-box !important;
+  }
+  .editor-area {
     width: 100% !important;
     max-width: 100% !important;
     padding-left: 0 !important;

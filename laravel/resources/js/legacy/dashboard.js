@@ -4502,24 +4502,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Evento no overlay real - apenas fecha o menu, não bloqueia cliques nos links
+        let lastOverlayTouchTime = 0;
         if (overlay) {
-            overlay.addEventListener('click', (e) => {
-                // Só fechar se clicar diretamente no overlay, não em elementos filhos
+            function handleOverlayClose(e) {
                 if (e.target === overlay) {
-                    e.preventDefault();
-                    e.stopPropagation();
+                    const now = Date.now();
+                    if (now - lastOverlayTouchTime < 450) {
+                        if (e) { e.preventDefault(); e.stopPropagation(); }
+                        return;
+                    }
+                    lastOverlayTouchTime = now;
                     closeMobileMenu(e);
                 }
-            });
-
-            overlay.addEventListener('touchend', (e) => {
-                // Só fechar se tocar diretamente no overlay, não em elementos filhos
-                if (e.target === overlay) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    closeMobileMenu(e);
-                }
-            }, { passive: false });
+            }
+            overlay.addEventListener('touchend', handleOverlayClose, { passive: false });
+            overlay.addEventListener('click', handleOverlayClose);
         }
 
         // Eventos para o botão de abrir
@@ -4540,13 +4537,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        mobileMenuToggle.addEventListener('click', function (e) {
+        let lastMenuToggleTime = 0;
+        function handleMenuToggle(e) {
+            const now = Date.now();
+            if (now - lastMenuToggleTime < 450) {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                return;
+            }
+            lastMenuToggleTime = now;
             toggleMobileMenu(e);
-        });
+        }
 
-        mobileMenuToggle.addEventListener('touchend', function (e) {
-            toggleMobileMenu(e);
-        }, { passive: false });
+        mobileMenuToggle.addEventListener('touchend', handleMenuToggle, { passive: false });
+        mobileMenuToggle.addEventListener('click', handleMenuToggle);
 
         // Garantir que o botão está clicável
         mobileMenuToggle.style.pointerEvents = 'auto';

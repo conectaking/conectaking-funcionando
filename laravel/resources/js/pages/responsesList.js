@@ -5756,9 +5756,9 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 linksSection.style.setProperty('webkit-overflow-scrolling', 'auto', 'important');
                 linksSection.style.setProperty('ms-overflow-style', 'none', 'important');
                 linksSection.style.setProperty('scrollbar-width', 'none', 'important');
-                // IMPORTANTE: Usar 100vw para ocupar TODA a largura da tela (sem margens pretas)
-                linksSection.style.setProperty('width', '100vw', 'important');
-                linksSection.style.setProperty('max-width', '100vw', 'important');
+                // IMPORTANTE: Usar 100% para ocupar toda a largura da tela sem scrollbar horizontal
+                linksSection.style.setProperty('width', '100%', 'important');
+                linksSection.style.setProperty('max-width', '100%', 'important');
                 linksSection.style.setProperty('margin', '0', 'important');
                 // IMPORTANTE: Padding zero nas laterais para remover espaços pretos
                 linksSection.style.setProperty('padding', '8px 0', 'important');

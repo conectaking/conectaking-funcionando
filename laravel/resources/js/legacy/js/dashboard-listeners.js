@@ -192,26 +192,6 @@ function _setupEventListenersBody() {
         });
     }
 
-    // Redirecionar ao clicar no título "Cartão virtual Conecta King" no mobile
-    const contentHeader = document.querySelector('.content-header');
-    if (contentHeader && typeof contentHeader.addEventListener === 'function') {
-        contentHeader.addEventListener('click', (e) => {
-            // Verificar se está no mobile
-            const isMobile = window.innerWidth <= 768;
-
-            if (isMobile) {
-                // Verificar se não clicou em botões ou outros elementos interativos
-                const target = e.target;
-                const clickedButton = target.closest('button');
-                const clickedLink = target.closest('a');
-
-                // Se clicou diretamente no header ou em área vazia (não em botões/links)
-                if (!clickedButton && !clickedLink && (target === contentHeader || target.classList.contains('content-header'))) {
-                    window.location.href = '/';
-                }
-            }
-        });
-    }
     SELECTORS.addItemBtn?.addEventListener('click', async () => {
         SELECTORS.addItemModal?.classList.add('active');
         // Sempre recarregar módulos ao abrir (reflete Separação de Pacotes atual)
@@ -504,38 +484,51 @@ function _setupEventListenersBody() {
     };
 
     if (SELECTORS.mobilePreviewBtn) {
-        SELECTORS.mobilePreviewBtn.addEventListener('click', openPreview);
+        let lastPreviewTouch = 0;
         SELECTORS.mobilePreviewBtn.addEventListener('touchend', (e) => {
+            lastPreviewTouch = Date.now();
             e.preventDefault();
             openPreview(e);
         }, { passive: false });
+        SELECTORS.mobilePreviewBtn.addEventListener('click', (e) => {
+            if (Date.now() - lastPreviewTouch < 450) return;
+            openPreview(e);
+        });
         SELECTORS.mobilePreviewBtn.style.touchAction = 'manipulation';
         SELECTORS.mobilePreviewBtn.style.webkitTapHighlightColor = 'transparent';
     }
 
     if (SELECTORS.previewCloseBtn) {
-        SELECTORS.previewCloseBtn.addEventListener('click', closePreview);
+        let lastCloseTouch = 0;
         SELECTORS.previewCloseBtn.addEventListener('touchend', (e) => {
+            lastCloseTouch = Date.now();
             e.preventDefault();
             closePreview(e);
         }, { passive: false });
+        SELECTORS.previewCloseBtn.addEventListener('click', (e) => {
+            if (Date.now() - lastCloseTouch < 450) return;
+            closePreview(e);
+        });
         SELECTORS.previewCloseBtn.style.touchAction = 'manipulation';
     }
 
     if (SELECTORS.livePreview) {
+        let lastOverlayTouch = 0;
         // Fechar ao clicar/tocar no overlay do preview
-        SELECTORS.livePreview.addEventListener('click', (e) => {
-            if (e.target === SELECTORS.livePreview || e.target.classList.contains('live-preview')) {
-                closePreview(e);
-            }
-        });
-
         SELECTORS.livePreview.addEventListener('touchend', (e) => {
             if (e.target === SELECTORS.livePreview || e.target.classList.contains('live-preview')) {
+                lastOverlayTouch = Date.now();
                 e.preventDefault();
                 closePreview(e);
             }
         }, { passive: false });
+
+        SELECTORS.livePreview.addEventListener('click', (e) => {
+            if (Date.now() - lastOverlayTouch < 450) return;
+            if (e.target === SELECTORS.livePreview || e.target.classList.contains('live-preview')) {
+                closePreview(e);
+            }
+        });
 
         // Prevenir scroll dentro do preview no mobile
         SELECTORS.livePreview.addEventListener('touchmove', (e) => {
@@ -2562,10 +2555,7 @@ function _setupEventListenersBody() {
 
             // Scroll suave para o topo no mobile
             if (window.innerWidth <= 768) {
-                const editorArea = document.querySelector('.editor-area');
-                if (editorArea) {
-                    editorArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         });
     });
@@ -2598,7 +2588,20 @@ function _setupEventListenersBody() {
             }
         }
         if (!hash || hash === '#') return;
-        let targetId = hash.substring(1).trim();
+        let rawTarget = '';
+        try {
+            rawTarget = decodeURIComponent(hash.substring(1).trim());
+        } catch (e) {
+            rawTarget = hash.substring(1).trim();
+        }
+        let targetId = rawTarget.replace(/\s+/g, '-').toLowerCase();
+        if (targetId === 'modelos') targetId = 'modelos-editor';
+        else if (targetId === 'info' || targetId === 'informacoes') targetId = 'info-editor';
+        else if (targetId === 'modulos' || targetId === 'modulo' || targetId === 'itens' || targetId === 'items') targetId = 'items-editor';
+        else if (targetId === 'personalizar') targetId = 'personalizar-editor';
+        if (targetId === 'modelos-editor' || targetId === 'info-editor' || targetId === 'items-editor' || targetId === 'personalizar-editor') {
+            try { window.history.replaceState(null, '', (window.location.pathname || '/dashboard') + '#' + targetId); } catch (e) {}
+        }
         if (!targetId) return;
         const fullHash = targetId; // guardar para finance-pane-tab-X
         // finance-pane-tab-cartoes -> finance-pane (preservar hash para initFinancePane ler a aba)

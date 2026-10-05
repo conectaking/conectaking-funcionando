@@ -167,14 +167,14 @@ function initSortable() {
         animation: 150,
         // SEMPRE usar handle (três pontinhos) - tanto no mobile quanto desktop
         handle: '.module-drag-handle',
-        // Configuração para mobile - SEM delay para resposta imediata
-        delay: 0, // SEM delay - resposta imediata
-        delayOnTouchStart: false, // SEM delay no touch
-        touchStartThreshold: 0, // Zero - detecta movimento imediatamente
+        // Configuração para mobile - pequeno threshold para distinguir scroll de arraste
+        delay: isMobile ? 80 : 0,
+        delayOnTouchOnly: true,
+        touchStartThreshold: isMobile ? 4 : 0,
         // Fallback no mobile - NÃO usar fallbackOnBody para manter eventos no container
         forceFallback: isMobile,
-        fallbackOnBody: false, // false = drag fica no container = touch contínuo no mobile
-        fallbackTolerance: 0,
+        fallbackOnBody: false,
+        fallbackTolerance: isMobile ? 4 : 0,
         fallbackOffset: { x: 0, y: -8 },
         fallbackClass: 'sortable-fallback',
         // Scroll durante drag - usar padrão do Sortable (não customizar)
