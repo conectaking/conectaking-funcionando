@@ -162,7 +162,7 @@ body {
     width: 100% !important;
     max-width: 100% !important;
     -webkit-overflow-scrolling: touch !important;
-    overscroll-behavior-y: none;
+    overscroll-behavior-y: auto !important;
     /* Suporte para safe-area (notch) em iPhones */
     padding-left: env(safe-area-inset-left, 0);
     padding-right: env(safe-area-inset-right, 0);
@@ -183,7 +183,7 @@ body {
     max-width: 100% !important;
     min-width: 0 !important;
     -webkit-overflow-scrolling: touch !important;
-    overscroll-behavior-y: none;
+    overscroll-behavior-y: auto !important;
     /* Suporte para safe-area (notch) em iPhones */
     padding-left: env(safe-area-inset-left, 0);
     padding-right: env(safe-area-inset-right, 0);
@@ -198,11 +198,12 @@ body {
     bottom: auto !important;
     height: auto !important;
     max-height: none !important;
-    min-height: 100vh;
-    min-height: 100dvh;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
+    overflow: visible !important;
     overflow-y: visible !important;
     overflow-x: hidden !important;
     /* Suporte para safe-area */
@@ -211,11 +212,13 @@ body {
   }
   
   .content-wrapper {
+    position: relative !important;
     height: auto !important;
     max-height: none !important;
     width: 100% !important;
     max-width: 100% !important;
     overflow: visible !important;
+    overflow-y: visible !important;
     /* Garantir que não corte conteúdo */
     padding-left: max(12px, env(safe-area-inset-left, 0px));
     padding-right: max(12px, env(safe-area-inset-right, 0px));
@@ -223,10 +226,32 @@ body {
   }
 
   .main-content {
+    position: relative !important;
     height: auto !important;
     max-height: none !important;
+    overflow: visible !important;
     overflow-y: visible !important;
     overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .editor-area {
+    position: relative !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    overflow-y: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .editor-pane {
+    position: relative !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    overflow-y: visible !important;
     width: 100% !important;
     max-width: 100% !important;
   }
