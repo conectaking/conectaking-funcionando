@@ -2646,7 +2646,14 @@ html.sortable-dragging-active {
 }
 
 @media (max-width: 768px) {
-  .dashboard-layout { grid-template-columns: 1fr; padding-top: calc(60px + env(safe-area-inset-top, 0px)); }
+  .dashboard-layout { 
+    grid-template-columns: 1fr; 
+    padding-top: calc(60px + env(safe-area-inset-top, 0px)); 
+    position: relative !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
   
   /* Botão hambúrguer visível */
   .mobile-menu-toggle { 
@@ -4288,7 +4295,24 @@ body.light-theme .divider { border-top-color: var(--border-glass); }
 
 /* Ativa overlay do preview no mobile */
 @media (max-width: 992px) {
-  .dashboard-layout { grid-template-columns: 1fr; padding-top: 60px; }
+  .dashboard-layout { 
+    grid-template-columns: 1fr; 
+    padding-top: 60px; 
+    position: relative !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .content-wrapper {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .main-content {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
   .mobile-preview-btn { display: flex; top: 80px; }
 
   .live-preview {
@@ -4433,7 +4457,7 @@ body.light-theme .divider { border-top-color: var(--border-glass); }
   }
   
   body {
-    overflow-y: auto !important;
+    overflow-y: visible !important;
     height: auto !important;
     max-height: none !important;
   }
@@ -4458,11 +4482,26 @@ body.light-theme .divider { border-top-color: var(--border-glass); }
   .nav-link { margin: 0; padding: 12px; }
   .main-content { 
     padding: 20px 16px; 
-    padding-bottom: 100px; /* Espaço para o botão fixo */
-    overflow-y: visible; 
-    overflow-x: hidden;
+    padding-bottom: 120px !important; /* Espaço para o botão fixo */
+    overflow-y: visible !important; 
+    overflow-x: hidden !important;
     min-height: calc(100vh - 60px);
     position: relative;
+    height: auto !important;
+  }
+
+  .editor-area {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    overflow-y: visible !important;
+  }
+
+  .editor-pane {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    overflow-y: visible !important;
   }
   
   /* Botão de salvar fixo no mobile */

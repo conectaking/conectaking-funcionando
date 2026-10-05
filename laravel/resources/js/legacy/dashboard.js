@@ -4478,7 +4478,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (sidebar) {
                 sidebar.classList.add('mobile-open');
                 document.body.classList.add('mobile-menu-open');
-                document.body.style.overflow = 'hidden';
                 if (overlay) {
                     overlay.classList.add('active');
                 }
