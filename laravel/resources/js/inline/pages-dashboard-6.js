@@ -38,7 +38,7 @@
                 if (tid === 'separacao-pacotes-pane' || tid === 'separacao-pacotes' || tid === 'personalizar-link-pane') {
                     tid = 'editar-pane';
                     try { localStorage.removeItem('dashboard_last_pane'); } catch(e){}
-                    if (window.history && window.history.replaceState) {
+                    if (window.history && window.history.replaceState && window.location.hash !== '#editar') {
                         window.history.replaceState(null, '', (window.location.pathname || '/dashboard') + '#editar');
                     }
                 }
@@ -76,5 +76,4 @@
         }
         if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', restorePane);
         else restorePane();
-        setTimeout(restorePane, 0);
     })();

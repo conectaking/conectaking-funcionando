@@ -2533,30 +2533,50 @@ function _setupEventListenersBody() {
             }
         }
     });
+    function switchEditorTab(targetId) {
+        if (!targetId) return;
+        const allLinks = document.querySelectorAll('.editor-nav-link');
+        const allPanes = document.querySelectorAll('.editor-pane');
+        allLinks.forEach(l => l.classList.toggle('active', l.getAttribute('data-editor-target') === targetId));
+        allPanes.forEach(pane => pane.classList.toggle('active', pane.id === targetId));
+
+        // Ao abrir Personalizar: atualizar visibilidade do botão Bíblia (evita sumir após excluir outro módulo)
+        if (targetId === 'personalizar-editor') {
+            if (typeof window.refreshBibleVisibilitySetting === 'function') {
+                window.refreshBibleVisibilitySetting();
+            }
+        }
+
+        // Atualizar hash e localStorage se mudou
+        if (window.location.hash !== '#' + targetId) {
+            try { window.history.replaceState(null, '', (window.location.pathname || '/dashboard') + '#' + targetId); } catch (e) { }
+        }
+        try { localStorage.setItem('dashboard_last_pane', '#' + targetId); } catch (e) { }
+
+        // Scroll suave para o topo no mobile
+        if (window.innerWidth <= 768) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+    window.__ckSwitchEditorTab = switchEditorTab;
+
+    // Listener delegado em document: garante que clique/toque nas abas funcione sempre,
+    // mesmo em conexões lentas ou se setupEventListeners demorar
+    document.addEventListener('click', function(e) {
+        const link = e.target && e.target.closest ? e.target.closest('.editor-nav-link') : null;
+        if (!link) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const targetId = link.getAttribute('data-editor-target');
+        if (targetId) switchEditorTab(targetId);
+    }, true);
+
     SELECTORS.editorNavLinks.forEach(link => {
         link.addEventListener('click', e => {
             e.preventDefault();
             e.stopPropagation();
-            SELECTORS.editorNavLinks.forEach(l => l.classList.remove('active'));
-            link.classList.add('active');
             const targetId = link.dataset.editorTarget;
-            SELECTORS.editorPanes.forEach(pane => pane.classList.toggle('active', pane.id === targetId));
-
-            // Ao abrir Personalizar: atualizar visibilidade do botão Bíblia (evita sumir após excluir outro módulo)
-            if (targetId === 'personalizar-editor') {
-                if (typeof window.refreshBibleVisibilitySetting === 'function') {
-                    window.refreshBibleVisibilitySetting();
-                }
-            }
-
-            // Atualizar hash e localStorage para manter a aba ao atualizar (mobile perde hash no refresh)
-            window.history.replaceState(null, '', window.location.pathname + '#' + targetId);
-            try { localStorage.setItem('dashboard_last_pane', '#' + targetId); } catch (e) { }
-
-            // Scroll suave para o topo no mobile
-            if (window.innerWidth <= 768) {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
+            switchEditorTab(targetId);
         });
     });
 
@@ -2600,7 +2620,9 @@ function _setupEventListenersBody() {
         else if (targetId === 'modulos' || targetId === 'modulo' || targetId === 'itens' || targetId === 'items') targetId = 'items-editor';
         else if (targetId === 'personalizar') targetId = 'personalizar-editor';
         if (targetId === 'modelos-editor' || targetId === 'info-editor' || targetId === 'items-editor' || targetId === 'personalizar-editor') {
-            try { window.history.replaceState(null, '', (window.location.pathname || '/dashboard') + '#' + targetId); } catch (e) {}
+            if (window.location.hash !== '#' + targetId) {
+                try { window.history.replaceState(null, '', (window.location.pathname || '/dashboard') + '#' + targetId); } catch (e) {}
+            }
         }
         if (!targetId) return;
         const fullHash = targetId; // guardar para finance-pane-tab-X
@@ -2628,7 +2650,9 @@ function _setupEventListenersBody() {
             if (targetId === 'separacao-pacotes-pane' || targetId === 'separacao-pacotes' || targetId === 'personalizar-link-pane') {
                 targetId = 'editar-pane';
                 try { localStorage.removeItem('dashboard_last_pane'); } catch (e) {}
-                try { window.history.replaceState(null, '', (window.location.pathname || '/dashboard') + '#editar'); } catch (e) {}
+                if (window.location.hash !== '#editar') {
+                    try { window.history.replaceState(null, '', (window.location.pathname || '/dashboard') + '#editar'); } catch (e) {}
+                }
             }
         }
 
@@ -2685,9 +2709,9 @@ function _setupEventListenersBody() {
             }
 
             if (!editorNavLink.classList.contains('active')) {
-                SELECTORS.editorNavLinks.forEach(l => l.classList.remove('active'));
+                document.querySelectorAll('.editor-nav-link').forEach(l => l.classList.remove('active'));
                 editorNavLink.classList.add('active');
-                SELECTORS.editorPanes.forEach(pane => pane.classList.toggle('active', pane.id === targetId));
+                document.querySelectorAll('.editor-pane').forEach(pane => pane.classList.toggle('active', pane.id === targetId));
 
                 if (targetId === 'personalizar-editor' && typeof window.refreshBibleVisibilitySetting === 'function') {
                     window.refreshBibleVisibilitySetting();
@@ -2697,11 +2721,8 @@ function _setupEventListenersBody() {
         }
     };
 
-    // Processar hash IMEDIATAMENTE para evitar flash do painel errado (especialmente mobile)
-    processHashOnLoad(); // execução imediata
-    requestAnimationFrame(() => processHashOnLoad()); // após primeiro frame
-    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
-    if (isMobile) setTimeout(processHashOnLoad, 150); // backup no mobile
+    // Processar hash na carga
+    processHashOnLoad();
     window.addEventListener('hashchange', processHashOnLoad);
     const iconList = ['fab fa-instagram', 'fab fa-whatsapp', 'fab fa-tiktok', 'fab fa-youtube', 'fab fa-linkedin', 'fas fa-briefcase', 'fab fa-github', 'fas fa-globe', 'fas fa-envelope', 'fas fa-phone', 'fas fa-file-pdf', 'fas fa-map-marker-alt', 'fab fa-telegram', 'fab fa-spotify', 'fab fa-discord', 'fas fa-link', 'fas fa-dollar-sign', 'fab fa-facebook', 'fab fa-twitter', 'fab fa-pinterest', 'fab fa-behance', 'fab fa-dribbble', 'fab fa-spotify'];
     const renderIcons = (filter = '') => {

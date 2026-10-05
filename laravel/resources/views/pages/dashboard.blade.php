@@ -117,16 +117,16 @@
                 <!-- Chips de cores -->
                 
                 <nav class="editor-nav">
-                    <a href="#" class="editor-nav-link active" data-editor-target="modelos-editor">
+                    <a href="javascript:void(0)" class="editor-nav-link active" data-editor-target="modelos-editor">
                         <i class="fas fa-layer-group"></i> Modelos
                     </a>
-                    <a href="#" class="editor-nav-link" data-editor-target="info-editor">
+                    <a href="javascript:void(0)" class="editor-nav-link" data-editor-target="info-editor">
                         <i class="fas fa-info-circle"></i> Informações
                     </a>
-                    <a href="#" class="editor-nav-link" data-editor-target="items-editor">
+                    <a href="javascript:void(0)" class="editor-nav-link" data-editor-target="items-editor">
                         <i class="fas fa-th"></i> Módulos
                     </a>
-                    <a href="#" class="editor-nav-link" data-editor-target="personalizar-editor">
+                    <a href="javascript:void(0)" class="editor-nav-link" data-editor-target="personalizar-editor">
                         <i class="fas fa-palette"></i> Personalizar
                     </a>
                 </nav>
