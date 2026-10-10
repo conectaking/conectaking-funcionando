@@ -86,6 +86,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // ─── Interceptador de erros de páginas → Telegram do King ────────────
         $exceptions->report(function (\Throwable $e) {
+            // Ignorar execução via console/CLI (comandos agendados, artisan, cron)
+            if (app()->runningInConsole()) {
+                return false;
+            }
+
             // Ignorar erros HTTP esperados (404, 401, 403, 422) — só 500+ ou inesperados
             if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
                 if ($e->getStatusCode() < 500) {

@@ -74,18 +74,29 @@ Artisan::command('maintenance:uptime-selfcheck', function () {
     $ok = false;
     $status = 0;
     $body = '';
-    try {
-        $ctx = stream_context_create(['http' => ['timeout' => 8, 'ignore_errors' => true]]);
-        $raw = @file_get_contents($url, false, $ctx);
-        if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $m)) {
-            $status = (int) $m[1];
+
+    // Até 3 tentativas com intervalo de 2s para evitar falsos alertas por micro-oscilações
+    for ($attempt = 1; $attempt <= 3; $attempt++) {
+        try {
+            $ctx = stream_context_create(['http' => ['timeout' => 10, 'ignore_errors' => true]]);
+            $raw = @file_get_contents($url, false, $ctx);
+            if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $m)) {
+                $status = (int) $m[1];
+            }
+            $body = is_string($raw) ? $raw : '';
+            $json = json_decode($body, true);
+            $ok = $status >= 200 && $status < 300 && is_array($json) && (($json['status'] ?? '') === 'ok');
+            if ($ok) {
+                break;
+            }
+        } catch (\Throwable $e) {
+            $body = $e->getMessage();
         }
-        $body = is_string($raw) ? $raw : '';
-        $json = json_decode($body, true);
-        $ok = $status >= 200 && $status < 300 && is_array($json) && (($json['status'] ?? '') === 'ok');
-    } catch (\Throwable $e) {
-        $body = $e->getMessage();
+        if ($attempt < 3) {
+            sleep(2);
+        }
     }
+
     if (! $ok) {
         app(\App\Services\OpsAlertService::class)->error('uptime.health_failed', [
             'url' => $url,
