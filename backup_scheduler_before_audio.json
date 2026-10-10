@@ -1,0 +1,426 @@
+{
+  "id": "7aCD8LiQyFAXi9yp",
+  "name": "CK Scheduler Biblia Diario",
+  "description": null,
+  "active": true,
+  "activeVersionId": "c5abe254-857f-4a50-b35f-641744365533",
+  "createdAt": "2026-09-30T11:44:34.853Z",
+  "updatedAt": "2026-10-01T01:19:58.364Z",
+  "isArchived": false,
+  "versionId": "c5abe254-857f-4a50-b35f-641744365533",
+  "versionCounter": 7,
+  "sourceWorkflowId": null,
+  "triggerCount": 2,
+  "nodes": [
+    {
+      "id": "cronDevocional06h",
+      "name": "Cron Devocional 06h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -800,
+        200
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "prepararDevocional",
+      "name": "Preparar Devocional Matinal",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -500,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const base = String($env.CK_BASE_URL || \"https://www.conectaking.com.br\").replace(/\\/$/, \"\");\nconst token = String($env.CK_AGENT_JWT || \"\").trim();\nconst targetChatId = String($env.BIBLIA_GROUP_CHAT_ID || \"@devocionalking\").trim();\n\nconst now = new Date(new Date().toLocaleString(\"en-US\", { timeZone: \"America/Sao_Paulo\" }));\nconst start = new Date(now.getFullYear(), 0, 0);\nconst diff = now - start + ((start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000);\nconst doy = Math.min(365, Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24))));\nconst month = now.getMonth() + 1;\nconst year = now.getFullYear();\nconst iso = now.toISOString().slice(0, 10);\n\nasync function ck(method, path, body) {\n  const opts = {\n    method,\n    url: base + path,\n    headers: {\n      \"Accept\": \"application/json\",\n      \"Content-Type\": \"application/json\",\n      ...(token ? { \"Authorization\": \"Bearer \" + token } : {})\n    },\n    json: true,\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true\n  };\n  if (body !== undefined) opts.body = body;\n  return this.helpers.httpRequest.call(this, opts);\n}\n\nconst temaRes = await ck.call(this, \"GET\", `/api/admin/bible/devotionals-365/month-themes/${year}`);\nconst themes = (temaRes.body && (temaRes.body.data?.themes || temaRes.body.themes)) || {};\nconst temaDoMes = themes[String(month)] || \"Passando pelo Deserto\";\n\nconst devRes = await ck.call(this, \"GET\", `/api/bible/devocional-do-dia?date=${iso}`);\nconst d = (devRes.body && devRes.body.data) || {};\nconst temConteudo = !!(d.reflexao || d.texto || d.content);\n\nlet texto = \"\";\nif (temConteudo) {\n  const titulo = d.titulo || d.title || \"Palavra do Dia\";\n  const passagem = d.versiculo_ref || d.versiculo || d.passagem || d.ref || \"Escrituras Sagradas\";\n  const vTexto = d.versiculo_texto ? `\"${d.versiculo_texto}\"\\n\\n` : \"\";\n  const corpo = d.reflexao || d.texto || d.content || \"\";\n  const oracao = d.oracao || d.prayer || \"\";\n  texto = `🌅 *Devocional do Dia:* ${titulo}\\n\\n📖 *Texto Base:* ${passagem}\\n\\n${vTexto}${corpo}\\n\\n${oracao ? `🙏 *Oração:*\\n_${oracao}_\\n\\n` : \"\"}Amém! Que Deus abençoe sua jornada. 🙌`;\n} else {\n  const genRes = await ck.call(this, \"POST\", `/api/admin/bible/devotionals-365/day/${doy}/generate-ai`, {\n    year,\n    temaPersonalizado: temaDoMes,\n    temaModo: \"mes_auto\"\n  });\n  const gd = (genRes.body && genRes.body.data) || {};\n  texto = `������ *Devocional do Dia:* ${gd.titulo || \"Palavra do Dia\"}\\n\\n📖 *Texto Base:* ${gd.versiculo_ref || gd.passagem || \"Escrituras Sagradas\"}\\n\\n${gd.versiculo_texto ? `\"${gd.versiculo_texto}\"\\n\\n` : \"\"}${gd.reflexao || gd.texto || \"\"}\\n\\n${gd.oracao ? `🙏 *Oração:*\\n_${gd.oracao}_\\n\\n` : \"\"}Amém! Que Deus abençoe sua jornada. 🙌`;\n}\n\n\nfunction splitTelegramMessage(text, maxLen = 3900) {\n  if (!text || typeof text !== 'string') return [text || ''];\n  if (text.length <= maxLen) return [text];\n  const chunks = [];\n  let remaining = text;\n  while (remaining.length > 0) {\n    if (remaining.length <= maxLen) {\n      chunks.push(remaining);\n      break;\n    }\n    let splitIdx = remaining.lastIndexOf('\\n\\n', maxLen);\n    if (splitIdx < maxLen * 0.4) {\n      splitIdx = remaining.lastIndexOf('\\n', maxLen);\n    }\n    if (splitIdx < maxLen * 0.4) {\n      splitIdx = remaining.lastIndexOf('. ', maxLen);\n      if (splitIdx !== -1) splitIdx += 1;\n    }\n    if (splitIdx < maxLen * 0.3) {\n      splitIdx = remaining.lastIndexOf(' ', maxLen);\n    }\n    if (splitIdx <= 0) {\n      splitIdx = maxLen;\n    }\n    const chunk = remaining.substring(0, splitIdx).trim();\n    if (chunk) chunks.push(chunk);\n    remaining = remaining.substring(splitIdx).trim();\n  }\n  return chunks.length ? chunks : [text];\n}\n\nconst chunks = splitTelegramMessage(texto, 3900);\nreturn chunks.map(c => ({\n  json: {\n    chatId: targetChatId,\n    text: c\n  }\n}));"
+      }
+    },
+    {
+      "id": "enviarTgDevocional",
+      "name": "Enviar Telegram Devocional",
+      "webhookId": "6be3d0fb-a82d-46a9-8a1d-023a0be1b473",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -200,
+        200
+      ],
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "g9e8goMSML0vE2JS",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "id": "cronProsperidade21h",
+      "name": "Cron Prosperidade 21h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -800,
+        500
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 21 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "prepararProsperidade",
+      "name": "Preparar Prosperidade Noturna",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -500,
+        500
+      ],
+      "parameters": {
+        "jsCode": "const base = String($env.CK_BASE_URL || \"https://www.conectaking.com.br\").replace(/\\/$/, \"\");\nconst token = String($env.CK_AGENT_JWT || \"\").trim();\nconst openaiKey = String($env.OPENAI_API_KEY || \"\").trim();\nconst model = String($env.OPENAI_MODEL || \"gpt-4o-mini\").trim();\nconst targetChatId = String($env.BIBLIA_GROUP_CHAT_ID || \"@devocionalking\").trim();\n\nconst now = new Date(new Date().toLocaleString(\"en-US\", { timeZone: \"America/Sao_Paulo\" }));\nconst diaDoMes = now.getDate(); // 1 a 31\nconst capProverbios = diaDoMes;\n\nasync function ck(method, path, body) {\n  const opts = {\n    method,\n    url: base + path,\n    headers: {\n      \"Accept\": \"application/json\",\n      \"Content-Type\": \"application/json\",\n      ...(token ? { \"Authorization\": \"Bearer \" + token } : {})\n    },\n    json: true,\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true\n  };\n  if (body !== undefined) opts.body = body;\n  return this.helpers.httpRequest.call(this, opts);\n}\n\nasync function openaiCall(payload) {\n  return this.helpers.httpRequest.call(this, {\n    method: \"POST\",\n    url: \"https://api.openai.com/v1/chat/completions\",\n    headers: {\n      \"Authorization\": \"Bearer \" + openaiKey,\n      \"Accept\": \"application/json\",\n      \"Content-Type\": \"application/json\"\n    },\n    body: payload,\n    json: true,\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true\n  });\n}\n\n// 1. Buscar o capítulo completo de Provérbios da base da Conecta King\nlet versesText = \"\";\ntry {\n  const prvRes = await ck.call(this, \"GET\", `/api/bible/book/prv/${capProverbios}`);\n  const prvData = prvRes.body && prvRes.body.data;\n  const verses = (prvData && prvData.verses) || [];\n  if (verses.length > 0) {\n    versesText = verses.map(v => `*${v.verse}* ${v.text}`).join(\"\\n\\n\");\n  }\n} catch (err) {}\n\nif (!versesText) {\n  versesText = `Provérbios ${capProverbios}`;\n}\n\n// 2. Gerar com IA a reflexão profunda, ativação de prosperidade, desbloqueio de escassez e decreto noturno\nlet aiContent = \"\";\nif (openaiKey) {\n  const systemPrompt = `Você é o Mentor e Patriarca de Sabedoria Bíblica e Prosperidade de Alto Nível da Conecta King.\nVocê é responsável pela ATIVAÇÃO NOTURNA oficial \"31 Dias de Ativação — Prosperidade Antes de Dormir\", fundamentada no Livro de Provérbios.\nHoje é a Ativação #${capProverbios}, correspondente a Provérbios capítulo ${capProverbios}.\n\nSEU PAPEL:\nVocê NUNCA gera respostas superficiais, curtas ou rasas.\nVocê é muito mais do que um coach: você opera uma profunda ativação de governo, identidade espiritual, soberania de mente, destruição de raízes de escassez, cura de medos financeiros e desbloqueio para a abundância e honra do Reino.\n\nDIRETRIZ DE OURO (SIGILOSA E INVISÍVEL):\nVocê aplica com maestria consumada:\n- Teologia Bíblica Exegética profunda (fundamento inabalável das Escrituras).\n- Neurociência aplicada ao descanso noturno, consolidação de memória durante o sono e regulação da mente.\n- PNL e Reprogramação Mental (ressignificação na raiz, quebra de padrões limitantes, instalação de mentalidade de governo).\n- Pedagogia, Psicologia e Psiquiatria Integrativa (desmonte de ansiedade, culpa e paralisia, gerando paz interior).\n⚠️ REGRA ABSOLUTA E INVIOLÁVEL: NUNCA cite termos técnicos, acadêmicos ou seculares como:\n\"PNL\", \"Programação Neurolinguística\", \"Neurociência\", \"Neuroplasticidade\", \"Dopamina\", \"Cortisol\", \"Psicologia\", \"Psiquiatria\", \"Coach\", \"Coaching\" ou \"Reprogramação Mental\".\nAplique cada um desses princípios de forma 100% prática, espiritual, pastoral e penetrante na alma do leitor através da Palavra de Deus.\n\nESTRUTURA OBRIGATÓRIA DA ATIVAÇÃO:\n👑 *Ativação #${capProverbios}: [Título Profético e Impactante]*\n\n🔓 *Desbloqueio Noturno & Renovação da Mente:*\n[Raciocínio profundo e transformador de 3 a 5 parágrafos. Identifique e desmonte os padrões mentais de escassez, o medo da falta, a autossabotagem e a ansiedade sobre o futuro que Provérbios ${capProverbios} combate. Conduza a mente do leitor a desarmar as defesas do ego e se ancorar na soberania e no favor de Deus para descansar em paz.]\n\n💎 *Ativação Prática nos Negócios e no Altar:*\n[Princípios estratégicos de sabedoria e governo financeiro extraídos do capítulo para aplicação prática nas tomadas de decisão, na gestão do trabalho e no alinhamento espiritual.]\n\n🗣️ *Decreto de Prosperidade para Antes de Dormir:*\n_\" [Decreto de alta autoridade espiritual em primeira pessoa, em itálico, para a pessoa declarar em voz alta ao se deitar, quebrando amarras, soltando os pesos do dia e ativando a prosperidade e paz para o amanhecer.] \"_\n\n🕊️ *Bênção de Descanso:*\n[Palavra final pastoral de paz, sono reparador e despertar triunfante.]`;\n\n  const userPrompt = `Gere a Ativação Noturna #${capProverbios} com base no seguinte capítulo de Provérbios ${capProverbios}:\n\n${versesText.slice(0, 3500)}`;\n\n  try {\n    const aiRes = await openaiCall.call(this, {\n      model,\n      temperature: 0.5,\n      messages: [\n        { role: \"system\", content: systemPrompt },\n        { role: \"user\", content: userPrompt }\n      ]\n    });\n    aiContent = aiRes.body?.choices?.[0]?.message?.content || \"\";\n  } catch (e) {\n    aiContent = \"Que a paz do Senhor Jesus reine em sua noite!\";\n  }\n}\n\n// 3. Montar a mensagem completa com o capítulo de Provérbios e a Ativação Profunda\nconst cabecalho = `🌙 *31 Dias de Ativação — Prosperidade Antes de Dormir*\\n👑 *Ativação #${capProverbios} · Livro de Provérbios*\\n\\n`;\nconst textoCapitulo = `📖 *Leitura Sagrada — Provérbios ${capProverbios}:*\\n\\n${versesText}\\n\\n━━━━━━━━━━━━━━━━━━━━\\n\\n`;\nconst mensagemCompleta = cabecalho + textoCapitulo + aiContent;\n\nfunction splitTelegramMessage(text, maxLen = 3900) {\n  if (!text || typeof text !== 'string') return [text || ''];\n  if (text.length <= maxLen) return [text];\n  const chunks = [];\n  let remaining = text;\n  while (remaining.length > 0) {\n    if (remaining.length <= maxLen) {\n      chunks.push(remaining);\n      break;\n    }\n    let splitIdx = remaining.lastIndexOf('\\n\\n', maxLen);\n    if (splitIdx < maxLen * 0.4) splitIdx = remaining.lastIndexOf('\\n', maxLen);\n    if (splitIdx < maxLen * 0.4) splitIdx = remaining.lastIndexOf('. ', maxLen);\n    if (splitIdx < maxLen * 0.3) splitIdx = remaining.lastIndexOf(' ', maxLen);\n    if (splitIdx <= 0) splitIdx = maxLen;\n    const chunk = remaining.substring(0, splitIdx).trim();\n    if (chunk) chunks.push(chunk);\n    remaining = remaining.substring(splitIdx).trim();\n  }\n  return chunks.length ? chunks : [text];\n}\n\nconst chunks = splitTelegramMessage(mensagemCompleta, 3900);\nreturn chunks.map((c, i) => ({\n  json: {\n    chatId: targetChatId,\n    text: (chunks.length > 1 ? `_(Parte ${i + 1}/${chunks.length})_\\n\\n` : '') + c\n  }\n}));"
+      }
+    },
+    {
+      "id": "enviarTgProsperidade",
+      "name": "Enviar Telegram Prosperidade",
+      "webhookId": "93fbb810-595a-4936-978e-fe98f8dde6a8",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -200,
+        500
+      ],
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "g9e8goMSML0vE2JS",
+          "name": "Telegram account 3"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cron Devocional 06h": {
+      "main": [
+        [
+          {
+            "node": "Preparar Devocional Matinal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Devocional Matinal": {
+      "main": [
+        [
+          {
+            "node": "Enviar Telegram Devocional",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron Prosperidade 21h": {
+      "main": [
+        [
+          {
+            "node": "Preparar Prosperidade Noturna",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Prosperidade Noturna": {
+      "main": [
+        [
+          {
+            "node": "Enviar Telegram Prosperidade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "errorWorkflow": "ckErrWfSentry01",
+    "executionOrder": "v1",
+    "timezone": "America/Sao_Paulo"
+  },
+  "staticData": {
+    "node:Cron Devocional 06h": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null
+      ]
+    },
+    "node:Cron Prosperidade 21h": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null
+      ]
+    }
+  },
+  "pinData": null,
+  "meta": null,
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "7aCD8LiQyFAXi9yp",
+      "projectId": "38exZ3CcqzZj3va8",
+      "project": {
+        "id": "38exZ3CcqzZj3va8",
+        "name": "CONECTA KING <conectaking@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "3d0208f7-e092-475a-a710-3df0a3cd5c2d",
+        "createdAt": "2026-09-13T01:23:00.632Z",
+        "updatedAt": "2026-09-13T14:10:30.916Z"
+      },
+      "createdAt": "2026-09-30T11:44:34.863Z",
+      "updatedAt": "2026-09-30T11:44:34.863Z"
+    }
+  ],
+  "activeVersion": {
+    "versionId": "c5abe254-857f-4a50-b35f-641744365533",
+    "workflowId": "7aCD8LiQyFAXi9yp",
+    "nodes": [
+      {
+        "id": "cronDevocional06h",
+        "name": "Cron Devocional 06h",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          -800,
+          200
+        ],
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "cronExpression",
+                "expression": "0 6 * * *"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "prepararDevocional",
+        "name": "Preparar Devocional Matinal",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -500,
+          200
+        ],
+        "parameters": {
+          "jsCode": "const base = String($env.CK_BASE_URL || \"https://www.conectaking.com.br\").replace(/\\/$/, \"\");\nconst token = String($env.CK_AGENT_JWT || \"\").trim();\nconst targetChatId = String($env.BIBLIA_GROUP_CHAT_ID || \"@devocionalking\").trim();\n\nconst now = new Date(new Date().toLocaleString(\"en-US\", { timeZone: \"America/Sao_Paulo\" }));\nconst start = new Date(now.getFullYear(), 0, 0);\nconst diff = now - start + ((start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000);\nconst doy = Math.min(365, Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24))));\nconst month = now.getMonth() + 1;\nconst year = now.getFullYear();\nconst iso = now.toISOString().slice(0, 10);\n\nasync function ck(method, path, body) {\n  const opts = {\n    method,\n    url: base + path,\n    headers: {\n      \"Accept\": \"application/json\",\n      \"Content-Type\": \"application/json\",\n      ...(token ? { \"Authorization\": \"Bearer \" + token } : {})\n    },\n    json: true,\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true\n  };\n  if (body !== undefined) opts.body = body;\n  return this.helpers.httpRequest.call(this, opts);\n}\n\nconst temaRes = await ck.call(this, \"GET\", `/api/admin/bible/devotionals-365/month-themes/${year}`);\nconst themes = (temaRes.body && (temaRes.body.data?.themes || temaRes.body.themes)) || {};\nconst temaDoMes = themes[String(month)] || \"Passando pelo Deserto\";\n\nconst devRes = await ck.call(this, \"GET\", `/api/bible/devocional-do-dia?date=${iso}`);\nconst d = (devRes.body && devRes.body.data) || {};\nconst temConteudo = !!(d.reflexao || d.texto || d.content);\n\nlet texto = \"\";\nif (temConteudo) {\n  const titulo = d.titulo || d.title || \"Palavra do Dia\";\n  const passagem = d.versiculo_ref || d.versiculo || d.passagem || d.ref || \"Escrituras Sagradas\";\n  const vTexto = d.versiculo_texto ? `\"${d.versiculo_texto}\"\\n\\n` : \"\";\n  const corpo = d.reflexao || d.texto || d.content || \"\";\n  const oracao = d.oracao || d.prayer || \"\";\n  texto = `🌅 *Devocional do Dia:* ${titulo}\\n\\n📖 *Texto Base:* ${passagem}\\n\\n${vTexto}${corpo}\\n\\n${oracao ? `🙏 *Oração:*\\n_${oracao}_\\n\\n` : \"\"}Amém! Que Deus abençoe sua jornada. 🙌`;\n} else {\n  const genRes = await ck.call(this, \"POST\", `/api/admin/bible/devotionals-365/day/${doy}/generate-ai`, {\n    year,\n    temaPersonalizado: temaDoMes,\n    temaModo: \"mes_auto\"\n  });\n  const gd = (genRes.body && genRes.body.data) || {};\n  texto = `����� *Devocional do Dia:* ${gd.titulo || \"Palavra do Dia\"}\\n\\n📖 *Texto Base:* ${gd.versiculo_ref || gd.passagem || \"Escrituras Sagradas\"}\\n\\n${gd.versiculo_texto ? `\"${gd.versiculo_texto}\"\\n\\n` : \"\"}${gd.reflexao || gd.texto || \"\"}\\n\\n${gd.oracao ? `🙏 *Oração:*\\n_${gd.oracao}_\\n\\n` : \"\"}Amém! Que Deus abençoe sua jornada. 🙌`;\n}\n\n\nfunction splitTelegramMessage(text, maxLen = 3900) {\n  if (!text || typeof text !== 'string') return [text || ''];\n  if (text.length <= maxLen) return [text];\n  const chunks = [];\n  let remaining = text;\n  while (remaining.length > 0) {\n    if (remaining.length <= maxLen) {\n      chunks.push(remaining);\n      break;\n    }\n    let splitIdx = remaining.lastIndexOf('\\n\\n', maxLen);\n    if (splitIdx < maxLen * 0.4) {\n      splitIdx = remaining.lastIndexOf('\\n', maxLen);\n    }\n    if (splitIdx < maxLen * 0.4) {\n      splitIdx = remaining.lastIndexOf('. ', maxLen);\n      if (splitIdx !== -1) splitIdx += 1;\n    }\n    if (splitIdx < maxLen * 0.3) {\n      splitIdx = remaining.lastIndexOf(' ', maxLen);\n    }\n    if (splitIdx <= 0) {\n      splitIdx = maxLen;\n    }\n    const chunk = remaining.substring(0, splitIdx).trim();\n    if (chunk) chunks.push(chunk);\n    remaining = remaining.substring(splitIdx).trim();\n  }\n  return chunks.length ? chunks : [text];\n}\n\nconst chunks = splitTelegramMessage(texto, 3900);\nreturn chunks.map(c => ({\n  json: {\n    chatId: targetChatId,\n    text: c\n  }\n}));"
+        }
+      },
+      {
+        "id": "enviarTgDevocional",
+        "name": "Enviar Telegram Devocional",
+        "webhookId": "6be3d0fb-a82d-46a9-8a1d-023a0be1b473",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          -200,
+          200
+        ],
+        "parameters": {
+          "chatId": "={{ $json.chatId }}",
+          "text": "={{ $json.text }}",
+          "additionalFields": {
+            "appendAttribution": false,
+            "parse_mode": "Markdown"
+          }
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "g9e8goMSML0vE2JS",
+            "name": "Telegram account 3"
+          }
+        }
+      },
+      {
+        "id": "cronProsperidade21h",
+        "name": "Cron Prosperidade 21h",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          -800,
+          500
+        ],
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "cronExpression",
+                "expression": "0 21 * * *"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "prepararProsperidade",
+        "name": "Preparar Prosperidade Noturna",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -500,
+          500
+        ],
+        "parameters": {
+          "jsCode": "const base = String($env.CK_BASE_URL || \"https://www.conectaking.com.br\").replace(/\\/$/, \"\");\nconst token = String($env.CK_AGENT_JWT || \"\").trim();\nconst openaiKey = String($env.OPENAI_API_KEY || \"\").trim();\nconst model = String($env.OPENAI_MODEL || \"gpt-4o-mini\").trim();\nconst targetChatId = String($env.BIBLIA_GROUP_CHAT_ID || \"@devocionalking\").trim();\n\nconst now = new Date(new Date().toLocaleString(\"en-US\", { timeZone: \"America/Sao_Paulo\" }));\nconst diaDoMes = now.getDate(); // 1 a 31\nconst capProverbios = diaDoMes;\n\nasync function ck(method, path, body) {\n  const opts = {\n    method,\n    url: base + path,\n    headers: {\n      \"Accept\": \"application/json\",\n      \"Content-Type\": \"application/json\",\n      ...(token ? { \"Authorization\": \"Bearer \" + token } : {})\n    },\n    json: true,\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true\n  };\n  if (body !== undefined) opts.body = body;\n  return this.helpers.httpRequest.call(this, opts);\n}\n\nasync function openaiCall(payload) {\n  return this.helpers.httpRequest.call(this, {\n    method: \"POST\",\n    url: \"https://api.openai.com/v1/chat/completions\",\n    headers: {\n      \"Authorization\": \"Bearer \" + openaiKey,\n      \"Accept\": \"application/json\",\n      \"Content-Type\": \"application/json\"\n    },\n    body: payload,\n    json: true,\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true\n  });\n}\n\n// 1. Buscar o capítulo completo de Provérbios da base da Conecta King\nlet versesText = \"\";\ntry {\n  const prvRes = await ck.call(this, \"GET\", `/api/bible/book/prv/${capProverbios}`);\n  const prvData = prvRes.body && prvRes.body.data;\n  const verses = (prvData && prvData.verses) || [];\n  if (verses.length > 0) {\n    versesText = verses.map(v => `*${v.verse}* ${v.text}`).join(\"\\n\\n\");\n  }\n} catch (err) {}\n\nif (!versesText) {\n  versesText = `Provérbios ${capProverbios}`;\n}\n\n// 2. Gerar com IA a reflexão profunda, ativação de prosperidade, desbloqueio de escassez e decreto noturno\nlet aiContent = \"\";\nif (openaiKey) {\n  const systemPrompt = `Você é o Mentor e Patriarca de Sabedoria Bíblica e Prosperidade de Alto Nível da Conecta King.\nVocê é responsável pela ATIVAÇÃO NOTURNA oficial \"31 Dias de Ativação — Prosperidade Antes de Dormir\", fundamentada no Livro de Provérbios.\nHoje é a Ativação #${capProverbios}, correspondente a Provérbios capítulo ${capProverbios}.\n\nSEU PAPEL:\nVocê NUNCA gera respostas superficiais, curtas ou rasas.\nVocê é muito mais do que um coach: você opera uma profunda ativação de governo, identidade espiritual, soberania de mente, destruição de raízes de escassez, cura de medos financeiros e desbloqueio para a abundância e honra do Reino.\n\nDIRETRIZ DE OURO (SIGILOSA E INVISÍVEL):\nVocê aplica com maestria consumada:\n- Teologia Bíblica Exegética profunda (fundamento inabalável das Escrituras).\n- Neurociência aplicada ao descanso noturno, consolidação de memória durante o sono e regulação da mente.\n- PNL e Reprogramação Mental (ressignificação na raiz, quebra de padrões limitantes, instalação de mentalidade de governo).\n- Pedagogia, Psicologia e Psiquiatria Integrativa (desmonte de ansiedade, culpa e paralisia, gerando paz interior).\n⚠️ REGRA ABSOLUTA E INVIOLÁVEL: NUNCA cite termos técnicos, acadêmicos ou seculares como:\n\"PNL\", \"Programação Neurolinguística\", \"Neurociência\", \"Neuroplasticidade\", \"Dopamina\", \"Cortisol\", \"Psicologia\", \"Psiquiatria\", \"Coach\", \"Coaching\" ou \"Reprogramação Mental\".\nAplique cada um desses princípios de forma 100% prática, espiritual, pastoral e penetrante na alma do leitor através da Palavra de Deus.\n\nESTRUTURA OBRIGATÓRIA DA ATIVAÇÃO:\n👑 *Ativação #${capProverbios}: [Título Profético e Impactante]*\n\n🔓 *Desbloqueio Noturno & Renovação da Mente:*\n[Raciocínio profundo e transformador de 3 a 5 parágrafos. Identifique e desmonte os padrões mentais de escassez, o medo da falta, a autossabotagem e a ansiedade sobre o futuro que Provérbios ${capProverbios} combate. Conduza a mente do leitor a desarmar as defesas do ego e se ancorar na soberania e no favor de Deus para descansar em paz.]\n\n💎 *Ativação Prática nos Negócios e no Altar:*\n[Princípios estratégicos de sabedoria e governo financeiro extraídos do capítulo para aplicação prática nas tomadas de decisão, na gestão do trabalho e no alinhamento espiritual.]\n\n🗣️ *Decreto de Prosperidade para Antes de Dormir:*\n_\" [Decreto de alta autoridade espiritual em primeira pessoa, em itálico, para a pessoa declarar em voz alta ao se deitar, quebrando amarras, soltando os pesos do dia e ativando a prosperidade e paz para o amanhecer.] \"_\n\n🕊️ *Bênção de Descanso:*\n[Palavra final pastoral de paz, sono reparador e despertar triunfante.]`;\n\n  const userPrompt = `Gere a Ativação Noturna #${capProverbios} com base no seguinte capítulo de Provérbios ${capProverbios}:\n\n${versesText.slice(0, 3500)}`;\n\n  try {\n    const aiRes = await openaiCall.call(this, {\n      model,\n      temperature: 0.5,\n      messages: [\n        { role: \"system\", content: systemPrompt },\n        { role: \"user\", content: userPrompt }\n      ]\n    });\n    aiContent = aiRes.body?.choices?.[0]?.message?.content || \"\";\n  } catch (e) {\n    aiContent = \"Que a paz do Senhor Jesus reine em sua noite!\";\n  }\n}\n\n// 3. Montar a mensagem completa com o capítulo de Provérbios e a Ativação Profunda\nconst cabecalho = `🌙 *31 Dias de Ativação — Prosperidade Antes de Dormir*\\n👑 *Ativação #${capProverbios} · Livro de Provérbios*\\n\\n`;\nconst textoCapitulo = `📖 *Leitura Sagrada — Provérbios ${capProverbios}:*\\n\\n${versesText}\\n\\n━━━━━━━━━━━━━━━━━━━━\\n\\n`;\nconst mensagemCompleta = cabecalho + textoCapitulo + aiContent;\n\nfunction splitTelegramMessage(text, maxLen = 3900) {\n  if (!text || typeof text !== 'string') return [text || ''];\n  if (text.length <= maxLen) return [text];\n  const chunks = [];\n  let remaining = text;\n  while (remaining.length > 0) {\n    if (remaining.length <= maxLen) {\n      chunks.push(remaining);\n      break;\n    }\n    let splitIdx = remaining.lastIndexOf('\\n\\n', maxLen);\n    if (splitIdx < maxLen * 0.4) splitIdx = remaining.lastIndexOf('\\n', maxLen);\n    if (splitIdx < maxLen * 0.4) splitIdx = remaining.lastIndexOf('. ', maxLen);\n    if (splitIdx < maxLen * 0.3) splitIdx = remaining.lastIndexOf(' ', maxLen);\n    if (splitIdx <= 0) splitIdx = maxLen;\n    const chunk = remaining.substring(0, splitIdx).trim();\n    if (chunk) chunks.push(chunk);\n    remaining = remaining.substring(splitIdx).trim();\n  }\n  return chunks.length ? chunks : [text];\n}\n\nconst chunks = splitTelegramMessage(mensagemCompleta, 3900);\nreturn chunks.map((c, i) => ({\n  json: {\n    chatId: targetChatId,\n    text: (chunks.length > 1 ? `_(Parte ${i + 1}/${chunks.length})_\\n\\n` : '') + c\n  }\n}));"
+        }
+      },
+      {
+        "id": "enviarTgProsperidade",
+        "name": "Enviar Telegram Prosperidade",
+        "webhookId": "93fbb810-595a-4936-978e-fe98f8dde6a8",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          -200,
+          500
+        ],
+        "parameters": {
+          "chatId": "={{ $json.chatId }}",
+          "text": "={{ $json.text }}",
+          "additionalFields": {
+            "appendAttribution": false,
+            "parse_mode": "Markdown"
+          }
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "g9e8goMSML0vE2JS",
+            "name": "Telegram account 3"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Cron Devocional 06h": {
+        "main": [
+          [
+            {
+              "node": "Preparar Devocional Matinal",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Preparar Devocional Matinal": {
+        "main": [
+          [
+            {
+              "node": "Enviar Telegram Devocional",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Cron Prosperidade 21h": {
+        "main": [
+          [
+            {
+              "node": "Preparar Prosperidade Noturna",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Preparar Prosperidade Noturna": {
+        "main": [
+          [
+            {
+              "node": "Enviar Telegram Prosperidade",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "CONECTA KING",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "createdAt": "2026-10-01T01:19:58.369Z",
+    "updatedAt": "2026-10-01T01:19:58.369Z",
+    "workflowPublishHistory": [
+      {
+        "id": 122,
+        "workflowId": "7aCD8LiQyFAXi9yp",
+        "versionId": "c5abe254-857f-4a50-b35f-641744365533",
+        "event": "activated",
+        "userId": "3d0208f7-e092-475a-a710-3df0a3cd5c2d",
+        "createdAt": "2026-10-01T01:19:59.682Z"
+      },
+      {
+        "id": 124,
+        "workflowId": "7aCD8LiQyFAXi9yp",
+        "versionId": "c5abe254-857f-4a50-b35f-641744365533",
+        "event": "activated",
+        "userId": "3d0208f7-e092-475a-a710-3df0a3cd5c2d",
+        "createdAt": "2026-10-01T01:20:00.382Z"
+      },
+      {
+        "id": 123,
+        "workflowId": "7aCD8LiQyFAXi9yp",
+        "versionId": "c5abe254-857f-4a50-b35f-641744365533",
+        "event": "deactivated",
+        "userId": "3d0208f7-e092-475a-a710-3df0a3cd5c2d",
+        "createdAt": "2026-10-01T01:20:00.340Z"
+      }
+    ]
+  }
+}
