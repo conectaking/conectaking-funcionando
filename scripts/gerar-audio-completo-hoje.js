@@ -36,11 +36,39 @@ const exec = JSON.parse(fs.readFileSync('exec_9751.json', 'utf8'));
 const prep = exec.data.resultData.runData['Preparar Prosperidade Noturna'][0].data.main[0];
 const fullText = prep[0].json.text.replace(/^_\(Parte 1\/2\)_\s*/, '') + '\n\n' + prep[1].json.text.replace(/^_\(Parte 2\/2\)_\s*/, '');
 
-const cleanText = fullText
-  .replace(/[*_#\`~]/g, '')
-  .replace(/[🌙👑📖🔓💎🗣️🕊️]/g, '')
-  .replace(/━+/g, '')
-  .trim();
+function prepareTextForAudio(text) {
+  if (!text || typeof text !== 'string') return '';
+
+  let cleaned = text
+    .replace(/━+/g, '')
+    .replace(/Ativação\s*#(\d+)/gi, 'Ativação número $1')
+    .replace(/(?:📖\s*)?Leitura Sagrada\s*[—–\-:]*\s*Provérbios\s*(\d+)\s*:?/gi, 'Leitura Sagrada: Livro de Provérbios, capítulo $1.\n')
+    .replace(/[*_#\`~]/g, '')
+    .replace(/[🌙👑📖🔓💎🗣️🕊️🌅🙏🙌✨❤️]/gu, '');
+
+  const lines = cleaned.split('\n');
+  const filteredLines = [];
+
+  for (let rawLine of lines) {
+    let line = rawLine.trim();
+    if (!line) continue;
+
+    if (/^[123]\s+(?:Cor[íi]ntios|Samuel|Reis|Cr[ôo]nicas|Tessalonicenses|Tim[óo]teo|Pedro|Jo[ãa]o)/i.test(line)) {
+      filteredLines.push(line);
+      continue;
+    }
+
+    const withoutVerseNumber = line.replace(/^(?:vers[íi]culo\s*\d+[\.\:\-\s–—]*|\*?v\.\s*\d+[\.\:\-\s–—]*|\[\d+\]\s*|\(\d+\)\s*|\*\s*\d+[\.\:\-\s–—]*\*\s*[\.\:\-\s–—]*|\d+[\.\:\)\s\-–—]+)\s*/i, '').trim();
+
+    if (withoutVerseNumber) {
+      filteredLines.push(withoutVerseNumber);
+    }
+  }
+
+  return filteredLines.join('\n\n');
+}
+
+const cleanText = prepareTextForAudio(fullText);
 
 function splitTextForTts(text, maxChunk = 3000) {
   if (text.length <= maxChunk) return [text];
