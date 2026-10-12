@@ -1,6 +1,7 @@
 const https = require('https');
 
 const API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzZDAyMDhmNy1lMDkyLTQ3NWEtYTcxMC0zZGYwYTNjZDVjMmQiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiYThhNDkwNjAtMjMwNy00NWJmLWE3MzEtYTNmZGQ5YjZhNmJhIiwiaWF0IjoxNzkwNzY4MDk5fQ.zolsEirfo_aaJ7q0Opcy4D8tMVD1kVAS-w2f0xYzKnA";
+const WF_ID = "mkK244lveO0N1qPR";
 
 function req(method, path) {
   return new Promise((resolve, reject) => {
@@ -31,14 +32,24 @@ function req(method, path) {
 }
 
 async function main() {
-  for (const id of ["10525", "10521", "10520", "10519"]) {
+  const list = await req("GET", `/api/v1/executions?workflowId=${WF_ID}&limit=100`);
+  const execs = list.body?.data || [];
+  console.log(`Checking ${execs.length} executions...`);
+  for (const e of execs) {
+    const id = e.id;
     const res = await req("GET", `/api/v1/executions/${id}?includeData=true`);
     const runData = res.body?.data?.resultData?.runData;
-    const adminNode = runData?.['Executar Admin']?.[0]?.data?.main?.[0]?.[0]?.json;
-    const tgIn = runData?.['Webhook Telegram']?.[0]?.data?.main?.[0]?.[0]?.json;
-    console.log(`\n=== EXEC ${id} ===`);
-    console.log("TG IN:", tgIn?.message?.text || tgIn?.body?.message?.text || JSON.stringify(tgIn?.body || tgIn)?.slice(0, 100));
-    console.log("OUT:", adminNode?.outMessage?.slice(0, 150));
+    if (runData?.['Telegram Trigger']) {
+      const tg = runData['Telegram Trigger']?.[0]?.data?.main?.[0]?.[0]?.json;
+      const whisper = runData['Whisper']?.[0]?.data?.main?.[0]?.[0]?.json;
+      const text = tg?.message?.text || whisper?.text;
+      const adminNode = runData?.['Executar Admin']?.[0]?.data?.main?.[0]?.[0]?.json;
+      console.log(`[EXEC ${id}] (${e.startedAt})`);
+      console.log(`  USER: ${text || '(voice without whisper)'}`);
+      if (adminNode?.outMessage) {
+        console.log(`  BOT: ${adminNode.outMessage.replace(/\n/g, ' ').slice(0, 160)}`);
+      }
+    }
   }
 }
 
