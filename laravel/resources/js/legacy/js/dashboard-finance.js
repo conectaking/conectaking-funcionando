@@ -418,21 +418,126 @@ window.initFinancePane = async function () {
 
         // Renderizar dashboard financeiro estilo Neon Desktop (baseado no modelo)
         financeContent.innerHTML = `
-            <!-- Design System Neon Desktop Dashboard -->
+            <!-- Design System Neon Desktop & Light Mode Dashboard -->
             <style>
-                :root {
+                /* Dark Theme (Padrão) */
+                :root,
+                #finance-content.finance-theme-dark,
+                .finance-theme-dark {
                     --finance-bg: #0a0a0c;
-                    --finance-card-dark: #16161a;
-                    --finance-surface: rgba(22, 22, 26, 0.8);
-                    --finance-border: rgba(255, 255, 255, 0.05);
-                    --finance-text-primary: #f1f5f9;
-                    --finance-text-secondary: #64748b;
+                    --finance-card-dark: #141418;
+                    --finance-card-inner: #1a1a22;
+                    --finance-surface: rgba(20, 20, 24, 0.85);
+                    --finance-border: rgba(255, 255, 255, 0.08);
+                    --finance-border-subtle: rgba(255, 255, 255, 0.04);
+                    --finance-text-primary: #f8fafc;
+                    --finance-text-secondary: #94a3b8;
+                    --finance-text-muted: #64748b;
+                    --finance-input-bg: #0e0e12;
+                    --finance-input-border: rgba(255, 255, 255, 0.15);
                     --finance-indigo: #3b82f6;
+                    --finance-indigo-glow: rgba(59, 130, 246, 0.25);
                     --finance-emerald: #22c55e;
                     --finance-rose: #ef4444;
                     --finance-neon-blue: #3b82f6;
                     --finance-neon-green: #22c55e;
                     --finance-neon-red: #ef4444;
+                    --finance-card-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+                    --finance-tab-active-bg: #3b82f6;
+                    --finance-tab-active-text: #ffffff;
+                    --finance-tab-inactive-bg: rgba(255, 255, 255, 0.05);
+                    --finance-tab-inactive-text: #94a3b8;
+                }
+
+                /* Light Theme (Modo Branco) */
+                #finance-content.finance-theme-light,
+                .finance-theme-light {
+                    --finance-bg: #f8fafc;
+                    --finance-card-dark: #ffffff;
+                    --finance-card-inner: #f1f5f9;
+                    --finance-surface: rgba(255, 255, 255, 0.95);
+                    --finance-border: rgba(0, 0, 0, 0.08);
+                    --finance-border-subtle: rgba(0, 0, 0, 0.04);
+                    --finance-text-primary: #0f172a;
+                    --finance-text-secondary: #475569;
+                    --finance-text-muted: #94a3b8;
+                    --finance-input-bg: #ffffff;
+                    --finance-input-border: #cbd5e1;
+                    --finance-indigo: #2563eb;
+                    --finance-indigo-glow: rgba(37, 99, 235, 0.15);
+                    --finance-emerald: #16a34a;
+                    --finance-rose: #dc2626;
+                    --finance-neon-blue: #2563eb;
+                    --finance-neon-green: #16a34a;
+                    --finance-neon-red: #dc2626;
+                    --finance-card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+                    --finance-tab-active-bg: #2563eb;
+                    --finance-tab-active-text: #ffffff;
+                    --finance-tab-inactive-bg: #e2e8f0;
+                    --finance-tab-inactive-text: #475569;
+                }
+
+                #finance-content {
+                    background: var(--finance-bg);
+                    color: var(--finance-text-primary);
+                    transition: background 0.25s ease, color 0.25s ease;
+                }
+
+                #finance-content.finance-theme-light .finance-card-premium,
+                #finance-content.finance-theme-light .kf-card {
+                    background: #ffffff !important;
+                    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+                }
+
+                #finance-content.finance-theme-light .finance-card-premium:hover,
+                #finance-content.finance-theme-light .kf-card:hover {
+                    border-color: rgba(37, 99, 235, 0.25) !important;
+                    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08);
+                }
+
+                #finance-content.finance-theme-light [style*="background: #111"],
+                #finance-content.finance-theme-light [style*="background:#111"] {
+                    background: #ffffff !important;
+                    border-color: rgba(0, 0, 0, 0.08) !important;
+                }
+
+                #finance-content.finance-theme-light [style*="background: #16161a"],
+                #finance-content.finance-theme-light [style*="background:#16161a"],
+                #finance-content.finance-theme-light [style*="background: var(--finance-card-dark)"] {
+                    background: #ffffff !important;
+                    border-color: rgba(0, 0, 0, 0.08) !important;
+                }
+
+                #finance-content.finance-theme-light [style*="background:rgba(0,0,0,0.3)"],
+                #finance-content.finance-theme-light [style*="background: rgba(0,0,0,0.3)"] {
+                    background: #f8fafc !important;
+                    border-color: rgba(0, 0, 0, 0.06) !important;
+                }
+
+                #finance-content.finance-theme-light [style*="color: #f1f5f9"],
+                #finance-content.finance-theme-light [style*="color:#f1f5f9"],
+                #finance-content.finance-theme-light [style*="color: #fff;"],
+                #finance-content.finance-theme-light [style*="color:#fff;"] {
+                    color: #0f172a !important;
+                }
+
+                #finance-content.finance-theme-light [style*="color: #64748b"],
+                #finance-content.finance-theme-light [style*="color:#64748b"] {
+                    color: #475569 !important;
+                }
+
+                #finance-content.finance-theme-light [style*="color:rgba(255,255,255,0.6)"],
+                #finance-content.finance-theme-light [style*="color: rgba(255,255,255,0.6)"] {
+                    color: #64748b !important;
+                }
+
+                #finance-content.finance-theme-light input,
+                #finance-content.finance-theme-light select,
+                #finance-content.finance-theme-light textarea {
+                    background-color: #ffffff !important;
+                    color: #0f172a !important;
+                    border-color: #cbd5e1 !important;
                 }
                 
                 .finance-scrollbar::-webkit-scrollbar {
@@ -518,82 +623,86 @@ window.initFinancePane = async function () {
                 }
             </style>
             
-            <!-- Header Section -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; flex-wrap: wrap; gap: 16px;">
-                <div style="flex: 1; min-width: 200px;">
-                    <h2 style="font-size: 2rem; font-weight: 700; color: var(--finance-text-primary); margin-bottom: 8px;">Visão Geral Financeira</h2>
-                    <p style="color: var(--finance-text-secondary); font-size: 0.95rem;">Bem-vindo de volta. Suas finanças estão saudáveis este mês.</p>
+            <!-- Header Section Executivo -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--finance-border);">
+                <div style="flex: 1; min-width: 240px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                        <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: #fff; font-size: 1rem; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+                            <i class="fas fa-wallet"></i>
+                        </span>
+                        <h2 style="font-size: 1.85rem; font-weight: 800; color: var(--finance-text-primary); margin: 0; letter-spacing: -0.02em;">Gestão Financeira</h2>
+                    </div>
+                    <p style="color: var(--finance-text-secondary); font-size: 0.9rem; margin: 0;">Controle de caixa, fluxo mensal, cobranças de clientes e parcelamentos.</p>
                 </div>
-                <div class="finance-header-actions" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center;">
+                
+                <div class="finance-header-actions" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                    <!-- Alternador de Tema (Modo Claro / Modo Escuro) -->
+                    <button type="button" id="finance-theme-toggle-btn" onclick="window.toggleFinanceTheme && window.toggleFinanceTheme()" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--finance-card-dark); border: 1px solid var(--finance-border); border-radius: 12px; color: var(--finance-text-primary); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;" title="Alternar entre modo claro e escuro">
+                        <i class="fas fa-sun" style="color: #f59e0b;"></i>
+                        <span>Modo Claro</span>
+                    </button>
+
                     <!-- Seletor de Perfis -->
                     <div style="position: relative;">
-                        <button onclick="showFinanceProfilesModal()" id="finance-profile-selector" style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--finance-card-dark); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: var(--finance-text-primary); font-size: 0.875rem; font-weight: 500; cursor: pointer; min-width: 150px; justify-content: space-between;">
+                        <button onclick="showFinanceProfilesModal()" id="finance-profile-selector" style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--finance-card-dark); border: 1px solid var(--finance-border); border-radius: 12px; color: var(--finance-text-primary); font-size: 0.85rem; font-weight: 600; cursor: pointer; min-width: 140px; justify-content: space-between;">
                             <span style="display: flex; align-items: center; gap: 8px;">
                                 <i class="fas ${currentProfile?.icon || 'fa-wallet'}" style="color: ${currentProfile?.color || '#3b82f6'};"></i>
                                 <span id="finance-current-profile-name">${currentProfile?.name || 'Principal'}</span>
                             </span>
-                            <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
+                            <i class="fas fa-chevron-down" style="font-size: 0.65rem; color: var(--finance-text-secondary);"></i>
                         </button>
                     </div>
-                    <button onclick="showMonthSelector()" style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--finance-card-dark); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: var(--finance-text-primary); font-size: 0.875rem; font-weight: 500; cursor: pointer;">
-                        <i class="fas fa-calendar-alt"></i>
+
+                    <!-- Seletor de Mês -->
+                    <button onclick="showMonthSelector()" style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--finance-card-dark); border: 1px solid var(--finance-border); border-radius: 12px; color: var(--finance-text-primary); font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+                        <i class="fas fa-calendar-alt" style="color: var(--finance-indigo);"></i>
                         <span id="finance-header-month">${now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</span>
+                        <i class="fas fa-chevron-down" style="font-size: 0.65rem; color: var(--finance-text-secondary);"></i>
                     </button>
-                    <button type="button" onclick="showNovoLancamentoChoiceModal()" style="display: flex; align-items: center; gap: 10px; padding: 12px 24px; background: var(--finance-indigo); border: none; border-radius: 12px; color: white; font-size: 1rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.35); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 24px rgba(59, 130, 246, 0.4)'" onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 20px rgba(59, 130, 246, 0.35)'">
-                        <i class="fas fa-plus" style="font-size: 1.1rem;"></i>
-                        Novo lançamento
+
+                    <!-- Botão Novo Lançamento -->
+                    <button type="button" onclick="showNovoLancamentoChoiceModal()" style="display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border: none; border-radius: 12px; color: white; font-size: 0.9rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 16px rgba(59, 130, 246, 0.35); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
+                        <i class="fas fa-plus" style="font-size: 0.9rem;"></i>
+                        <span>Novo Lançamento</span>
                     </button>
+
+                    <!-- Menu de Opções / Configurações (Discreto e Organizado) -->
                     <div style="position: relative;">
-                        <button type="button" onclick="var m=document.getElementById('finance-print-main-menu'); m.style.display=m.style.display==='none'?'block':'none';" style="display: flex; align-items: center; gap: 8px; padding: 12px 20px; background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.5); border-radius: 12px; color: var(--finance-neon-blue); font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(59, 130, 246, 0.3)'" onmouseout="this.style.background='rgba(59, 130, 246, 0.2)'">
-                            <i class="fas fa-print"></i>
-                            Imprimir
+                        <button type="button" onclick="var m=document.getElementById('finance-more-options-menu'); m.style.display=m.style.display==='none'?'block':'none';" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--finance-card-dark); border: 1px solid var(--finance-border); border-radius: 12px; color: var(--finance-text-secondary); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.color='var(--finance-text-primary)'" onmouseout="this.style.color='var(--finance-text-secondary)'">
+                            <i class="fas fa-sliders-h"></i>
+                            <span>Opções</span>
                         </button>
-                        <div id="finance-print-main-menu" style="display: none; position: absolute; top: 100%; left: 0; margin-top: 6px; background: var(--finance-card-dark); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 8px; min-width: 240px; z-index: 10002; box-shadow: 0 10px 30px rgba(0,0,0,0.4); max-height: 70vh; overflow-y: auto;">
-                            <button type="button" onclick="window._financePrintBalance('tudo'); document.getElementById('finance-print-main-menu').style.display='none';" style="display: block; width: 100%; padding: 10px 14px; text-align: left; background: none; border: none; color: #e2e8f0; cursor: pointer; border-radius: 8px; font-size: 0.9rem;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"><i class="fas fa-file-alt" style="margin-right: 8px;"></i>Tudo</button>
-                            <button type="button" onclick="window._financePrintBalance('geral'); document.getElementById('finance-print-main-menu').style.display='none';" style="display: block; width: 100%; padding: 10px 14px; text-align: left; background: none; border: none; color: #e2e8f0; cursor: pointer; border-radius: 8px; font-size: 0.9rem;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"><i class="fas fa-file-invoice" style="margin-right: 8px;"></i>Balanço geral</button>
-                            <button type="button" onclick="window._financePrintBalance('despesas'); document.getElementById('finance-print-main-menu').style.display='none';" style="display: block; width: 100%; padding: 10px 14px; text-align: left; background: none; border: none; color: #e2e8f0; cursor: pointer; border-radius: 8px; font-size: 0.9rem;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"><i class="fas fa-arrow-down" style="margin-right: 8px;"></i>Só despesas</button>
-                            <button type="button" onclick="window._financePrintBalance('receitas'); document.getElementById('finance-print-main-menu').style.display='none';" style="display: block; width: 100%; padding: 10px 14px; text-align: left; background: none; border: none; color: #e2e8f0; cursor: pointer; border-radius: 8px; font-size: 0.9rem;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"><i class="fas fa-arrow-up" style="margin-right: 8px;"></i>Só receitas</button>
-                            <button type="button" onclick="window._financePrintBalance('falta-pagar'); document.getElementById('finance-print-main-menu').style.display='none';" style="display: block; width: 100%; padding: 10px 14px; text-align: left; background: none; border: none; color: #e2e8f0; cursor: pointer; border-radius: 8px; font-size: 0.9rem;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"><i class="fas fa-hourglass-half" style="margin-right: 8px;"></i>O que falta pagar</button>
-                            <button type="button" onclick="window._financePrintBalance('quem-eu-devo'); document.getElementById('finance-print-main-menu').style.display='none';" style="display: block; width: 100%; padding: 10px 14px; text-align: left; background: none; border: none; color: #e2e8f0; cursor: pointer; border-radius: 8px; font-size: 0.9rem;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"><i class="fas fa-hand-holding-usd" style="margin-right: 8px;"></i>Quem eu devo</button>
-                            <button type="button" onclick="window._financePrintBalance('serasa'); document.getElementById('finance-print-main-menu').style.display='none';" style="display: block; width: 100%; padding: 10px 14px; text-align: left; background: none; border: none; color: #e2e8f0; cursor: pointer; border-radius: 8px; font-size: 0.9rem;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"><i class="fas fa-university" style="margin-right: 8px;"></i>Serasa / Dívidas</button>
-                            <button type="button" onclick="window._financePrintBalance('fluxo'); document.getElementById('finance-print-main-menu').style.display='none';" style="display: block; width: 100%; padding: 10px 14px; text-align: left; background: none; border: none; color: #e2e8f0; cursor: pointer; border-radius: 8px; font-size: 0.9rem;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"><i class="fas fa-exchange-alt" style="margin-right: 8px;"></i>Fluxo</button>
-                            <button type="button" onclick="window._financePrintBalance('trabalhos'); document.getElementById('finance-print-main-menu').style.display='none';" style="display: block; width: 100%; padding: 10px 14px; text-align: left; background: none; border: none; color: #e2e8f0; cursor: pointer; border-radius: 8px; font-size: 0.9rem;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"><i class="fas fa-briefcase" style="margin-right: 8px;"></i>Trabalhos</button>
-                            <button type="button" onclick="window._financePrintBalance('bens'); document.getElementById('finance-print-main-menu').style.display='none';" style="display: block; width: 100%; padding: 10px 14px; text-align: left; background: none; border: none; color: #e2e8f0; cursor: pointer; border-radius: 8px; font-size: 0.9rem;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"><i class="fas fa-box-open" style="margin-right: 8px;"></i>Bens</button>
-                            <button type="button" onclick="window._financePrintBalance('cartoes'); document.getElementById('finance-print-main-menu').style.display='none';" style="display: block; width: 100%; padding: 10px 14px; text-align: left; background: none; border: none; color: #e2e8f0; cursor: pointer; border-radius: 8px; font-size: 0.9rem;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"><i class="fas fa-credit-card" style="margin-right: 8px;"></i>Cartões</button>
-                            <button type="button" onclick="window._financePrintBalance('meta'); document.getElementById('finance-print-main-menu').style.display='none';" style="display: block; width: 100%; padding: 10px 14px; text-align: left; background: none; border: none; color: #e2e8f0; cursor: pointer; border-radius: 8px; font-size: 0.9rem;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"><i class="fas fa-bullseye" style="margin-right: 8px;"></i>Metas</button>
+                        <div id="finance-more-options-menu" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 8px; background: var(--finance-card-dark); border: 1px solid var(--finance-border); border-radius: 14px; padding: 8px; min-width: 230px; z-index: 10002; box-shadow: var(--finance-card-shadow);">
+                            <button type="button" onclick="document.getElementById('finance-more-options-menu').style.display='none'; window._financePrintBalance('tudo');" style="display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; text-align: left; background: none; border: none; color: var(--finance-text-primary); cursor: pointer; border-radius: 8px; font-size: 0.85rem; font-weight: 500;" onmouseover="this.style.background='rgba(59,130,246,0.1)'" onmouseout="this.style.background='none'">
+                                <i class="fas fa-print" style="color: #3b82f6;"></i> Imprimir / Exportar Balanço
+                            </button>
+                            ${isAdmin ? `
+                            <button type="button" onclick="document.getElementById('finance-more-options-menu').style.display='none'; showWhatsAppConfigModal();" style="display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; text-align: left; background: none; border: none; color: var(--finance-text-primary); cursor: pointer; border-radius: 8px; font-size: 0.85rem; font-weight: 500;" onmouseover="this.style.background='rgba(34,197,94,0.1)'" onmouseout="this.style.background='none'">
+                                <i class="fab fa-whatsapp" style="color: #22c55e;"></i> Alertas WhatsApp
+                            </button>
+                            ` : ''}
+                            <div style="height: 1px; background: var(--finance-border); margin: 6px 0;"></div>
+                            <button type="button" onclick="document.getElementById('finance-more-options-menu').style.display='none'; showZerarMesModal();" style="display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; text-align: left; background: none; border: none; color: #ef4444; cursor: pointer; border-radius: 8px; font-size: 0.85rem; font-weight: 500;" onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background='none'">
+                                <i class="fas fa-eraser"></i> Fechamento / Zerar Mês
+                            </button>
+                            <button type="button" onclick="document.getElementById('finance-more-options-menu').style.display='none'; showAlterarSenhaZerarModal();" style="display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; text-align: left; background: none; border: none; color: var(--finance-text-secondary); cursor: pointer; border-radius: 8px; font-size: 0.85rem; font-weight: 500;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='none'">
+                                <i class="fas fa-key"></i> Alterar Senha de Zerar
+                            </button>
                         </div>
                     </div>
-                    <button type="button" id="btn-zerar-mes-link" onclick="showZerarMesModal()" style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 12px; color: #ef4444; font-size: 0.875rem; font-weight: 600; cursor: pointer;" onmouseover="this.style.background='rgba(239, 68, 68, 0.3)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.2)'">
-                        <i class="fas fa-eraser"></i>
-                        Zerar mês
-                    </button>
-                    <button type="button" onclick="showAlterarSenhaZerarModal()" style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; color: var(--finance-text-secondary); font-size: 0.875rem; font-weight: 600; cursor: pointer;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
-                        <i class="fas fa-key"></i>
-                        Alterar senha de zerar
-                    </button>
-                    ${isAdmin ? `
-                    <button id="finance-whatsapp-config-btn" onclick="showWhatsAppConfigModal()" style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: rgba(37, 211, 102, 0.2); border: 1px solid rgba(37, 211, 102, 0.4); border-radius: 12px; color: #25D366; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(37, 211, 102, 0.3)'" onmouseout="this.style.background='rgba(37, 211, 102, 0.2)'">
-                        <i class="fab fa-whatsapp"></i>
-                        Configurar WhatsApp
-                    </button>
-                    <button type="button" onclick="showAdminVerSenhasModal()" style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: rgba(139, 92, 246, 0.2); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 12px; color: #8b5cf6; font-size: 0.875rem; font-weight: 600; cursor: pointer;" onmouseover="this.style.background='rgba(139, 92, 246, 0.3)'" onmouseout="this.style.background='rgba(139, 92, 246, 0.2)'">
-                        <i class="fas fa-list"></i>
-                        Ver senhas dos clientes
-                    </button>
-                    ` : ''}
                 </div>
             </div>
             
             <!-- Abas unificadas: Resumo + Fluxo, Trampo, Bens, Cartões, Serasa -->
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px;" class="finance-tabs-container">
-                <button type="button" class="finance-unified-tab active" data-finance-tab="resumo" style="padding: 10px 18px; border-radius: 12px; border: none; background: var(--finance-indigo); color: white; font-weight: 700; cursor: pointer; font-size: 0.8rem;">Resumo</button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="fluxo" style="padding: 10px 18px; border-radius: 12px; border: none; background: rgba(255,255,255,0.05); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.8rem;">Fluxo</button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="trabalhos" style="padding: 10px 18px; border-radius: 12px; border: none; background: rgba(255,255,255,0.05); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.8rem;">Trabalhos</button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="bens" style="padding: 10px 18px; border-radius: 12px; border: none; background: rgba(255,255,255,0.05); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.8rem;">Bens</button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="cartoes" style="padding: 10px 18px; border-radius: 12px; border: none; background: rgba(255,255,255,0.05); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.8rem;">Cartões</button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="meta" style="padding: 10px 18px; border-radius: 12px; border: none; background: rgba(255,255,255,0.05); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.8rem;">Meta</button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="terceiros" style="padding: 10px 18px; border-radius: 12px; border: none; background: rgba(255,255,255,0.05); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.8rem;">Quem eu devo</button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="serasa" style="padding: 10px 18px; border-radius: 12px; border: none; background: rgba(255,255,255,0.05); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.8rem;">Serasa</button>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px;" class="finance-tabs-container">
+                <button type="button" class="finance-unified-tab active" data-finance-tab="resumo" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-indigo); color: white; font-weight: 700; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-chart-pie"></i> Resumo</button>
+                <button type="button" class="finance-unified-tab" data-finance-tab="fluxo" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-exchange-alt"></i> Fluxo</button>
+                <button type="button" class="finance-unified-tab" data-finance-tab="trabalhos" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-briefcase"></i> A Receber (Trabalhos)</button>
+                <button type="button" class="finance-unified-tab" data-finance-tab="terceiros" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-hand-holding-usd"></i> Quem Eu Devo</button>
+                <button type="button" class="finance-unified-tab" data-finance-tab="cartoes" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-credit-card"></i> Cartões</button>
+                <button type="button" class="finance-unified-tab" data-finance-tab="bens" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-box-open"></i> Bens</button>
+                <button type="button" class="finance-unified-tab" data-finance-tab="meta" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-bullseye"></i> Metas</button>
+                <button type="button" class="finance-unified-tab" data-finance-tab="serasa" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-university"></i> Serasa / Dívidas</button>
             </div>
             <div id="finance-resumo-content">
             <!-- Main Balance Card with Chart -->
@@ -1262,8 +1371,10 @@ window.initFinancePane = async function () {
                         var pagamentosHtmlT = (c.pagamentos || []).length ? '<div style="margin-bottom:0.75rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 6px 0;">Pagamentos (clique em Excluir para remover um pagamento errado)</p>' + (c.pagamentos || []).map(function (p, pIdx) { return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);gap:8px;"><span style="font-size:11px;color:#cbd5e1;">R$ ' + fmt(Number(p.valor) || 0) + ' em ' + formatPayDateT(p) + '</span><div style="display:flex;gap:6px;"><button type="button" onclick="event.stopPropagation(); window._kingFinanceEditarPagamentoTerceiro && window._kingFinanceEditarPagamentoTerceiro(\'' + (person.id || '').replace(/'/g, "\\'") + '\',\'' + (c.id || '').replace(/'/g, "\\'") + '\',' + pIdx + ')" style="background:rgba(139,92,246,0.25);border:1px solid rgba(139,92,246,0.5);color:#a78bfa;cursor:pointer;padding:4px 10px;border-radius:8px;font-size:10px;font-weight:700;" title="Editar"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="event.stopPropagation(); window._kingFinanceExcluirPagamentoTerceiro && window._kingFinanceExcluirPagamentoTerceiro(\'' + (person.id || '').replace(/'/g, "\\'") + '\',\'' + (c.id || '').replace(/'/g, "\\'") + '\',' + pIdx + ')" style="background:rgba(239,68,68,0.25);border:1px solid rgba(239,68,68,0.5);color:#fca5a5;cursor:pointer;padding:4px 10px;border-radius:8px;font-size:10px;font-weight:700;" title="Excluir este pagamento"><i class="fas fa-trash"></i></button></div></div>'; }).join('') + '</div>' : '';
                         var vencStr = (c.dataVencimento || '').trim(); if (/^\d{4}-\d{2}-\d{2}$/.test(vencStr)) { var pt = vencStr.split('-'); vencStr = pt[2] + '/' + pt[1] + '/' + pt[0]; }
                         var tipoLabel = (c.tipo === 'recorrente') ? 'Mensal' : 'Única vez';
+                        var descStr = (c.descricao || '').trim();
+                        var descHtml = descStr ? '<p style="font-size:11px;color:#c4b5fd;margin:0 0 6px 0;line-height:1.4;"><i class="fas fa-tag" style="margin-right:5px;font-size:10px;color:#a78bfa;"></i>' + escapeHtmlFinance(descStr) + '</p>' : '';
                         var subtituloConta = (vencStr || tipoLabel) ? '<p style="font-size:10px;color:#94a3b8;margin:0 0 6px 0;">Venc: ' + (vencStr || '-') + ' · ' + tipoLabel + '</p>' : '';
-                        return '<div class="kf-card" style="' + styleKfCard + 'border-left:4px solid #8b5cf6;"><div style="display:flex;justify-content:space-between;margin-bottom:0.75rem;align-items:center;"><span style="font-size:12px;font-weight:800;color:#94a3b8;">' + num + '.</span><h4 style="font-size:14px;font-weight:800;margin:0;flex:1;">' + (c.nomeConta || 'Conta').replace(/</g, ' ').slice(0, 45) + '</h4><div style="display:flex;gap:6px;"><button type="button" onclick="window._kingFinanceEditContaTerceiro && window._kingFinanceEditContaTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="background:none;border:1px solid rgba(139,92,246,0.5);color:#a78bfa;cursor:pointer;padding:4px 8px;border-radius:8px;" title="Editar conta"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="window._kingFinanceDeleteContaTerceiro && window._kingFinanceDeleteContaTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="background:none;border:none;color:#64748b;cursor:pointer;" title="Excluir esta conta"><i class="fas fa-trash"></i></button></div></div>' + subtituloConta + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;"><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;">TOTAL LIQUIDADO</p><p style="font-size:16px;font-weight:800;color:#86efac;margin:0;">R$ ' + fmt(pago) + '</p><p style="font-size:10px;color:#94a3b8;margin:0;">' + pctD + '% Completo</p></div><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;">VALOR DA NEGOCIAÇÃO</p><p style="font-size:16px;font-weight:800;color:#f59e0b;margin:0 0 6px 0;">R$ ' + fmt(restante) + '</p><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamentoTerceiro && window._kingFinanceRegistrarPagamentoTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="padding:6px 12px;background:rgba(245,158,11,0.35);color:#fcd34d;border:1px solid rgba(245,158,11,0.6);border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;">Pagar mais</button></div></div>' + pagamentosHtmlT + '<div style="height:6px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:0.75rem;"><div style="height:100%;width:' + pctD + '%;background:#8b5cf6;border-radius:999px;"></div></div><button type="button" onclick="window._kingFinanceRegistrarPagamentoTerceiro && window._kingFinanceRegistrarPagamentoTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="width:100%;padding:12px;background:#8b5cf6;color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;">Efetuar pagamento</button></div>';
+                        return '<div class="kf-card" style="' + styleKfCard + 'border-left:4px solid #8b5cf6;"><div style="display:flex;justify-content:space-between;margin-bottom:0.4rem;align-items:center;"><span style="font-size:12px;font-weight:800;color:#94a3b8;">' + num + '.</span><h4 style="font-size:14px;font-weight:800;margin:0;flex:1;">' + (c.nomeConta || 'Conta').replace(/</g, ' ').slice(0, 50) + '</h4><div style="display:flex;gap:6px;"><button type="button" onclick="window._kingFinanceEditContaTerceiro && window._kingFinanceEditContaTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="background:none;border:1px solid rgba(139,92,246,0.5);color:#a78bfa;cursor:pointer;padding:4px 8px;border-radius:8px;" title="Editar conta"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="window._kingFinanceDeleteContaTerceiro && window._kingFinanceDeleteContaTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="background:none;border:none;color:#64748b;cursor:pointer;" title="Excluir esta conta"><i class="fas fa-trash"></i></button></div></div>' + descHtml + subtituloConta + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;"><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;">TOTAL LIQUIDADO</p><p style="font-size:16px;font-weight:800;color:#86efac;margin:0;">R$ ' + fmt(pago) + '</p><p style="font-size:10px;color:#94a3b8;margin:0;">' + pctD + '% Completo</p></div><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;">VALOR DA NEGOCIAÇÃO</p><p style="font-size:16px;font-weight:800;color:#f59e0b;margin:0 0 6px 0;">R$ ' + fmt(restante) + '</p><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamentoTerceiro && window._kingFinanceRegistrarPagamentoTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="padding:6px 12px;background:rgba(245,158,11,0.35);color:#fcd34d;border:1px solid rgba(245,158,11,0.6);border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;">Pagar mais</button></div></div>' + pagamentosHtmlT + '<div style="height:6px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:0.75rem;"><div style="height:100%;width:' + pctD + '%;background:#8b5cf6;border-radius:999px;"></div></div><button type="button" onclick="window._kingFinanceRegistrarPagamentoTerceiro && window._kingFinanceRegistrarPagamentoTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="width:100%;padding:12px;background:#8b5cf6;color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;">Efetuar pagamento</button></div>';
                     }).join('');
                     contentArea = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px;"><h4 style="font-size:1rem;font-weight:800;color:#a78bfa;margin:0;">' + (person.nome || 'Pessoa').replace(/</g, ' ') + '</h4><div style="display:flex;gap:8px;"><button type="button" onclick="window._kingFinanceImportarTerceirosImagem && window._kingFinanceImportarTerceirosImagem()" style="padding:8px 16px;background:rgba(34,197,94,0.25);color:#86efac;border:1px solid rgba(34,197,94,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-image" style="margin-right:6px;"></i>Importar imagem</button><button type="button" onclick="window._kingFinanceEditTerceiro && window._kingFinanceEditTerceiro(\'' + person.id + '\')" style="padding:8px 16px;background:rgba(139,92,246,0.25);color:#a78bfa;border:1px solid rgba(139,92,246,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-pencil-alt" style="margin-right:6px;"></i>Editar pessoa</button><button type="button" onclick="window._kingFinanceOpenModal(\'contaPessoa\', \'' + person.id + '\')" style="padding:8px 16px;background:#8b5cf6;color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Nova conta</button><button type="button" onclick="if(confirm(\'Excluir esta pessoa e todas as contas?\')) window._kingFinanceDelete(\'terceiros\',\'' + person.id + '\')" style="padding:8px 16px;background:rgba(244,63,94,0.25);color:#fda4af;border:1px solid rgba(244,63,94,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-trash" style="margin-right:6px;"></i>Excluir pessoa</button></div></div><div style="display:flex;flex-direction:column;gap:1rem;">' + cardsContas + '</div>';
                 }
@@ -1515,10 +1626,11 @@ window.initFinancePane = async function () {
                 } else if (modalType === 'contaPessoa') {
                     var today = new Date().toISOString().slice(0, 10);
                     var contaHtml = '<label style="font-size:0.8rem;color:var(--finance-text-secondary);margin-bottom:4px;">Nome da conta</label><input name="nomeConta" placeholder="Ex: Cartão X, Aluguel" required style="' + baseStyle + '">' +
+                        '<label style="font-size:0.8rem;color:var(--finance-text-secondary);margin:8px 0 4px 0;display:block;">Descrição / Referência / Motivo (opcional)</label><input name="descricao" placeholder="Ex: Passagens no cartão da Socorrinha, Leite da Sara..." style="' + baseStyle + '">' +
                         '<label style="font-size:0.8rem;color:var(--finance-text-secondary);margin:8px 0 4px 0;display:block;">Valor R$ (total da negociação)</label><input name="valor" type="number" step="0.01" min="0.01" placeholder="0,00" required style="' + baseStyle + '">' +
                         '<label style="font-size:0.8rem;color:var(--finance-text-secondary);margin:8px 0 4px 0;display:block;">Data que adicionei</label><input name="dataAdicionada" type="date" style="' + baseStyle + '">' +
                         '<label style="font-size:0.8rem;color:var(--finance-text-secondary);margin:8px 0 4px 0;display:block;">Data do vencimento</label><input name="dataVencimento" type="date" style="' + baseStyle + '">' +
-                        '<label style="font-size:0.8rem;color:var(--finance-text-secondary);margin:8px 0 4px 0;display:block;">Tipo de pagamento</label><div style="display:flex;gap:16px;margin-bottom:8px;"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:#f1f5f9;"><input type="radio" name="tipoConta" value="unica" checked> nica vez</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:#f1f5f9;"><input type="radio" name="tipoConta" value="recorrente"> Recorrente (mensal)</label></div>' +
+                        '<label style="font-size:0.8rem;color:var(--finance-text-secondary);margin:8px 0 4px 0;display:block;">Tipo de pagamento</label><div style="display:flex;gap:16px;margin-bottom:8px;"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:#f1f5f9;"><input type="radio" name="tipoConta" value="unica" checked> Única vez</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:#f1f5f9;"><input type="radio" name="tipoConta" value="recorrente"> Recorrente (mensal)</label></div>' +
                         '<div id="conta-recorrente-wrap" style="display:none;"><label style="font-size:0.8rem;color:var(--finance-text-secondary);margin:8px 0 4px 0;display:block;">Quantos meses vai repetir?</label><input name="recorrenteMeses" type="number" min="2" max="120" placeholder="Ex: 12" style="' + baseStyle + '"></div>' +
                         '<div id="conta-aplicar-todas-wrap" style="display:none;"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:#f1f5f9;margin:8px 0;font-size:0.9rem;"><input type="checkbox" name="aplicarTodasParcelas" id="aplicarTodasParcelas"> Aplicar este valor e nome a <strong>todas as parcelas</strong> do grupo</label></div>';
                     formEl.innerHTML = contaHtml + '<button type="submit" style="width:100%;padding:14px;background:var(--finance-indigo,#3b82f6);color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;">Salvar</button>';
@@ -1529,6 +1641,7 @@ window.initFinancePane = async function () {
                     if (window._kingFinanceEditConta) {
                         var ecc = window._kingFinanceEditConta;
                         var nomeConta = formEl.querySelector('input[name="nomeConta"]'); if (nomeConta) nomeConta.value = ecc.nomeConta || '';
+                        var descInp = formEl.querySelector('input[name="descricao"]'); if (descInp) descInp.value = ecc.descricao || '';
                         var valorConta = formEl.querySelector('input[name="valor"]'); if (valorConta) valorConta.value = ecc.valor != null ? String(ecc.valor).replace('.', ',') : '';
                         var dataAd = formEl.querySelector('input[name="dataAdicionada"]'); if (dataAd) dataAd.value = ecc.dataAdicionada || today;
                         var dataVen = formEl.querySelector('input[name="dataVencimento"]'); if (dataVen) dataVen.value = ecc.dataVencimento || '';
@@ -1630,6 +1743,7 @@ window.initFinancePane = async function () {
                         var tipoConta = (data.tipoConta || 'unica') === 'recorrente' ? 'recorrente' : 'unica';
                         var valorTotal = parseFloat(String(data.valor || '').replace(',', '.')) || 0;
                         var nomeBase = (data.nomeConta || '').trim() || 'Conta';
+                        var descVal = (data.descricao || '').trim();
                         if (editConta && editConta.id) {
                             var aplicarATodas = (data.aplicarTodasParcelas === 'on' || data.aplicarTodasParcelas === true) && editConta.contaGrupoId;
                             if (aplicarATodas) {
@@ -1641,13 +1755,13 @@ window.initFinancePane = async function () {
                                     if (c.contaGrupoId === grupoId) {
                                         idx++;
                                         var nomeParcela = totalParcelas > 1 ? (nomeBase.replace(/\s*\(\d+\/\d+\)\s*$/, '').trim() || nomeBase) + ' (' + idx + '/' + totalParcelas + ')' : nomeBase;
-                                        person.contas[i] = Object.assign({}, person.contas[i], { nomeConta: nomeParcela, valor: valorTotal, dataAdicionada: dataAdicionada, dataVencimento: c.dataVencimento || dataVencimento, tipo: c.tipo || tipoConta });
+                                        person.contas[i] = Object.assign({}, person.contas[i], { nomeConta: nomeParcela, descricao: descVal || person.contas[i].descricao || '', valor: valorTotal, dataAdicionada: dataAdicionada, dataVencimento: c.dataVencimento || dataVencimento, tipo: c.tipo || tipoConta });
                                     }
                                 });
                             } else {
                                 var contaIdx = person.contas.findIndex(function (c) { return String(c.id) === String(editConta.id); });
                                 if (contaIdx >= 0) {
-                                    person.contas[contaIdx] = Object.assign({}, person.contas[contaIdx], { nomeConta: nomeBase, valor: valorTotal, dataAdicionada: dataAdicionada, dataVencimento: dataVencimento, tipo: tipoConta });
+                                    person.contas[contaIdx] = Object.assign({}, person.contas[contaIdx], { nomeConta: nomeBase, descricao: descVal || person.contas[contaIdx].descricao || '', valor: valorTotal, dataAdicionada: dataAdicionada, dataVencimento: dataVencimento, tipo: tipoConta });
                                 }
                             }
                             window._kingFinanceEditConta = null;
@@ -1661,11 +1775,11 @@ window.initFinancePane = async function () {
                                 d.setMonth(d.getMonth() + i);
                                 var vencStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
                                 var cid = grupoId + '-p' + (i + 1);
-                                person.contas.push({ id: cid, nomeConta: nomeBase + ' (' + (i + 1) + '/' + meses + ')', valor: valorParcela, dataAdicionada: dataAdicionada, dataVencimento: vencStr, tipo: 'recorrente', parcela: i + 1, totalParcelas: meses, contaGrupoId: grupoId, pagamentos: [] });
+                                person.contas.push({ id: cid, nomeConta: nomeBase + ' (' + (i + 1) + '/' + meses + ')', descricao: descVal, valor: valorParcela, dataAdicionada: dataAdicionada, dataVencimento: vencStr, tipo: 'recorrente', parcela: i + 1, totalParcelas: meses, contaGrupoId: grupoId, pagamentos: [] });
                             }
                         } else {
                             var cid = Date.now().toString() + '-' + Math.random().toString(36).slice(2, 9);
-                            person.contas.push({ id: cid, nomeConta: nomeBase, valor: valorTotal, dataAdicionada: dataAdicionada, dataVencimento: dataVencimento || dataAdicionada, tipo: 'unica', pagamentos: [] });
+                            person.contas.push({ id: cid, nomeConta: nomeBase, descricao: descVal, valor: valorTotal, dataAdicionada: dataAdicionada, dataVencimento: dataVencimento || dataAdicionada, tipo: 'unica', pagamentos: [] });
                         }
                         window._kingFinanceDb = db;
                         if (window._kingFinancePersist) window._kingFinancePersist(db);
@@ -2633,7 +2747,12 @@ window.showKingFinancePane = async function () {
                 const pagamentosHtmlT = (t.pagamentos || []).length ? '<div style="margin-top:12px;"><p style="font-size:9px;font-weight:800;color:rgba(255,255,255,0.5);margin:0 0 6px 0;letter-spacing:0.05em;">ENTRADAS</p>' + (t.pagamentos || []).map(p => '<p style="font-size:11px;color:#cbd5e1;margin:0 0 4px 0;">R$ ' + fmt(Number(p.valor) || 0) + ' em ' + formatPayDateTrab(p) + '</p>').join('') + '</div>' : '';
                 const datasStr = (t.data || t.dataPrevista) ? ' · ' + (t.data ? 'Trabalho: ' + (t.data.length >= 10 ? t.data.split('-').reverse().join('/') : t.data) : '') + (t.dataPrevista ? (t.data ? ' ' : '') + 'Previsto: ' + (t.dataPrevista.length >= 10 ? t.dataPrevista.split('-').reverse().join('/') : t.dataPrevista) : '') : '';
                 const cardStyle = 'background:linear-gradient(135deg,rgba(59,130,246,0.18) 0%,rgba(37,99,235,0.1) 50%,#111 100%);border:1px solid rgba(59,130,246,0.3);border-radius:20px;padding:1.5rem;min-height:180px;display:flex;flex-direction:column;position:relative;';
-                const valoresRow = '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;"><div><p style="font-size:10px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;">Valor recebido</p><p style="font-size:1.5rem;font-weight:800;margin:0;color:#22c55e;">R$ ' + fmt(pago) + '</p></div><div style="text-align:right;"><p style="font-size:10px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;">Falta receber</p><p style="font-size:1.5rem;font-weight:800;margin:0;color:' + (restante > 0 ? '#f87171' : '#22c55e') + ';">' + (restante > 0 ? 'R$ ' + fmt(restante) : 'Quitado') + '</p></div></div>';
+                const totalTrab = Number(t.valor) || 0;
+                const valoresRow = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;background:rgba(0,0,0,0.3);padding:14px 16px;border-radius:14px;border:1px solid rgba(255,255,255,0.08);">' +
+                    '<div><p style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.6);margin:0 0 4px 0;text-transform:uppercase;letter-spacing:0.04em;">Valor Total</p><p style="font-size:1.25rem;font-weight:800;margin:0;color:#38bdf8;">R$ ' + fmt(totalTrab) + '</p></div>' +
+                    '<div><p style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.6);margin:0 0 4px 0;text-transform:uppercase;letter-spacing:0.04em;">Valor Recebido</p><p style="font-size:1.25rem;font-weight:800;margin:0;color:#22c55e;">R$ ' + fmt(pago) + '</p></div>' +
+                    '<div style="text-align:right;"><p style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.6);margin:0 0 4px 0;text-transform:uppercase;letter-spacing:0.04em;">Falta Receber</p><p style="font-size:1.25rem;font-weight:800;margin:0;color:' + (restante > 0 ? '#f87171' : '#22c55e') + ';">' + (restante > 0 ? 'R$ ' + fmt(restante) : 'Quitado') + '</p></div>' +
+                '</div>';
                 return '<div class="kf-card" style="' + cardStyle + '"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;"><div><p style="font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;letter-spacing:0.1em;">SERVIÇO PRESTADO</p><h4 style="font-size:1.15rem;font-weight:800;margin:0;color:#fff;">' + (t.cliente || '').slice(0, 35) + '</h4><p style="font-size:10px;color:rgba(255,255,255,0.5);margin:4px 0 0 0;">' + (t.servico || '').slice(0, 50) + (datasStr ? datasStr : '') + '</p></div><button type="button" onclick="window._kingFinanceEditTrabalho && window._kingFinanceEditTrabalho(\'' + String(t.id).replace(/'/g, "\\'") + '\')" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#60a5fa;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Editar"><i class="fas fa-pencil-alt"></i></button></div>' + valoresRow + '<div style="height:8px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;width:' + pctD + '%;background:linear-gradient(90deg,#22c55e,#3b82f6);border-radius:999px;transition:width 0.3s;"></div></div><p style="font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 12px 0;">' + pctD + '% recebido</p>' + dataQuitStr + pagamentosHtmlT + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;"><button type="button" onclick="window._kingFinanceRegistrarEntradaTrabalho && window._kingFinanceRegistrarEntradaTrabalho(\'' + t.id + '\')" style="flex:1;min-width:140px;padding:10px 16px;background:#22c55e;color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;"><i class="fas fa-plus" style="margin-right:6px;"></i>Registrar entrada</button><button type="button" onclick="window._kingFinanceDelete(\'trabalhos\',\'' + t.id + '\')" style="background:none;border:1px solid rgba(239,68,68,0.4);color:#f87171;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Excluir"><i class="fas fa-trash"></i></button></div></div>';
             }).join('');
             container.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;"><h3 style="font-size:1.1rem;font-weight:800;color:#3b82f6;margin:0;">Trabalhos e Serviços</h3><button type="button" onclick="window._kingFinanceOpenModal(\'trabalho\')" style="padding:8px 16px;background:#2563eb;color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Registrar Serviço</button></div><p style="font-size:11px;color:#94a3b8;margin:0 0 12px 0;">Controle de serviços prestados. Registre entradas (pagamentos parciais) e acompanhe a quitação.</p><div style="display:flex;flex-direction:column;gap:1rem;">' + cardsTrab + '</div>';
@@ -3527,6 +3646,13 @@ window.openFinanceDetailModal = async function (type) {
                 var dt = (t.transaction_date || t.date || '').toString().slice(0, 10);
                 var origem = (t.source || 'fluxo') === 'trabalho' ? 'trabalho' : (t.source || 'fluxo') === 'bem' ? 'bem' : 'transacao';
                 return { origem: origem, descricao: t.description || '', cliente: t.client_name || null, valor: parseFloat(t.amount) || 0, data: dt };
+            });
+            var kingDbModalSaldo = window._kingFinanceDb || {};
+            (kingDbModalSaldo.trabalhos || []).forEach(function(t) {
+                (t.pagamentos || []).forEach(function(p) {
+                    var dt = (p.data || '').toString().trim().slice(0, 10);
+                    itensSaldo.push({ origem: 'trabalho', descricao: t.descricao || t.servico || 'Trabalho', cliente: t.cliente || t.nome || null, valor: parseFloat(p.valor) || 0, data: dt });
+                });
             });
             totalSaldo = itensSaldo.reduce(function (s, x) { return s + (x.valor || 0); }, 0);
         }
@@ -5021,6 +5147,27 @@ window.showGeneralBalanceModal = async function () {
         const faltaPagarMesComTerceiros = faltaPagarMes + terceirosMes;
         const saldoMes = receitasMes - despesasMes;
 
+        const kStats = window._kingFinanceStats || {};
+        const kingDbModal = window._kingFinanceDb || {};
+        const trabList = Array.isArray(kingDbModal.trabalhos) ? kingDbModal.trabalhos : [];
+        const trabRecebidoMes = trabList.reduce((acc, t) => {
+            return acc + (t.pagamentos || []).filter(p => (p.data || '').toString().slice(0, 7) === mesRef).reduce((s, p) => s + (Number(p.valor) || 0), 0);
+        }, 0);
+        const trabPendentes = trabList.reduce((acc, t) => {
+            const pago = (t.pagamentos || []).reduce((s, p) => s + (Number(p.valor) || 0), 0);
+            return acc + Math.max(0, (Number(t.valor) || 0) - pago);
+        }, 0);
+
+        const cardTotalRecebido = (kStats.totalRecebido !== undefined) ? kStats.totalRecebido : (receitasPagasMes || (totalIncome + trabRecebidoMes));
+        const cardTotalPago = (kStats.despesasPagas !== undefined) ? kStats.despesasPagas : (despesasPagasMes || totalExpense);
+        const cardSaldoDisponivel = (kStats.patrimonio !== undefined) ? kStats.patrimonio : (cardTotalRecebido - cardTotalPago);
+        const cardPendingReceber = (kStats.faltaReceberGeral !== undefined) ? kStats.faltaReceberGeral : ((kStats.totalFaltaReceberTrabalhos !== undefined) ? kStats.totalFaltaReceberTrabalhos : (faltaReceberMes || trabPendentes));
+        const cardPendingPagar = (kStats.faltaPagarEsteMes !== undefined) ? kStats.faltaPagarEsteMes : faltaPagarMesComTerceiros;
+        
+        const cardTotalTx = doMes.length > 0 ? doMes.length : totalTransactions;
+        const cardIncomeTx = doMes.length > 0 ? doMes.filter(t => (t.type || '').toUpperCase() === 'INCOME').length : incomeTransactions;
+        const cardExpenseTx = doMes.length > 0 ? doMes.filter(t => (t.type || '').toUpperCase() === 'EXPENSE').length : expenseTransactions;
+
         const fmt = (v) => (Number(v) || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
         const createPrintContent = (tipo) => {
@@ -5137,11 +5284,11 @@ window.showGeneralBalanceModal = async function () {
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 30px;">
                     <div style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(16, 185, 129, 0.2) 100%); border-radius: 16px; padding: 25px; border: 2px solid rgba(34, 197, 94, 0.3);">
                         <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 10px;">Total Recebido</p>
-                        <h3 style="color: #22c55e; font-size: 2.5rem; font-weight: 800; margin: 0;">R$ ${formatCurrency(totalIncome)}</h3>
+                        <h3 style="color: #22c55e; font-size: 2.5rem; font-weight: 800; margin: 0;">R$ ${formatCurrency(cardTotalRecebido)}</h3>
                     </div>
                     <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.2) 100%); border-radius: 16px; padding: 25px; border: 2px solid rgba(239, 68, 68, 0.3);">
                         <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 10px;">Total Pago</p>
-                        <h3 style="color: #ef4444; font-size: 2.5rem; font-weight: 800; margin: 0;">R$ ${formatCurrency(totalExpense)}</h3>
+                        <h3 style="color: #ef4444; font-size: 2.5rem; font-weight: 800; margin: 0;">R$ ${formatCurrency(cardTotalPago)}</h3>
                     </div>
                 </div>
                 
@@ -5149,13 +5296,13 @@ window.showGeneralBalanceModal = async function () {
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 30px;">
                     <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%); border-radius: 16px; padding: 25px; border: 2px solid rgba(102, 126, 234, 0.3);">
                         <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 10px;">Saldo Disponível</p>
-                        <h3 style="color: #667eea; font-size: 2.5rem; font-weight: 800; margin: 0;">R$ ${formatCurrency(totalIncome - totalExpense)}</h3>
+                        <h3 style="color: #667eea; font-size: 2.5rem; font-weight: 800; margin: 0;">R$ ${formatCurrency(cardSaldoDisponivel)}</h3>
                     </div>
                     <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.2) 100%); border-radius: 16px; padding: 25px; border: 2px solid rgba(245, 158, 11, 0.3);">
                         <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 10px;">Pendências</p>
                         <div style="margin-top: 10px;">
-                            <p style="color: #f59e0b; font-size: 1.2rem; margin: 5px 0;">Receber: R$ ${formatCurrency(pendingIncome)}</p>
-                            <p style="color: #ef4444; font-size: 1.2rem; margin: 5px 0;">Pagar: R$ ${formatCurrency(pendingExpense)}</p>
+                            <p style="color: #f59e0b; font-size: 1.2rem; margin: 5px 0;">Receber: R$ ${formatCurrency(cardPendingReceber)}</p>
+                            <p style="color: #ef4444; font-size: 1.2rem; margin: 5px 0;">Pagar: R$ ${formatCurrency(cardPendingPagar)}</p>
                         </div>
                     </div>
                 </div>
@@ -5163,20 +5310,20 @@ window.showGeneralBalanceModal = async function () {
                 <!-- Estatísticas -->
                 <div style="background: rgba(255,255,255,0.05); border-radius: 16px; padding: 25px; margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.1);">
                     <h3 style="color: white; font-size: 1.3rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-chart-bar" style="color: #8b5cf6;"></i> Estatísticas Gerais
+                        <i class="fas fa-chart-bar" style="color: #8b5cf6;"></i> Estatísticas Gerais (${mesNome})
                     </h3>
                     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
                         <div>
                             <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 5px;">Total de Transações</p>
-                            <p style="color: white; font-size: 1.8rem; font-weight: 700; margin: 0;">${totalTransactions}</p>
+                            <p style="color: white; font-size: 1.8rem; font-weight: 700; margin: 0;">${cardTotalTx}</p>
                         </div>
                         <div>
                             <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 5px;">Receitas</p>
-                            <p style="color: #22c55e; font-size: 1.8rem; font-weight: 700; margin: 0;">${incomeTransactions}</p>
+                            <p style="color: #22c55e; font-size: 1.8rem; font-weight: 700; margin: 0;">${cardIncomeTx}</p>
                         </div>
                         <div>
                             <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 5px;">Despesas</p>
-                            <p style="color: #ef4444; font-size: 1.8rem; font-weight: 700; margin: 0;">${expenseTransactions}</p>
+                            <p style="color: #ef4444; font-size: 1.8rem; font-weight: 700; margin: 0;">${cardExpenseTx}</p>
                         </div>
                     </div>
                 </div>
@@ -7840,32 +7987,65 @@ window.saveWhatsAppConfig = async function (planCode) {
 window.showNovoLancamentoChoiceModal = function () {
     const overlay = document.createElement('div');
     overlay.id = 'novo-lancamento-choice-overlay';
-    overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 10, 12, 0.92); z-index: 10005; display: flex; align-items: center; justify-content: center; padding: 24px; backdrop-filter: blur(8px);';
+    overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 10, 12, 0.88); z-index: 10005; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(10px);';
     overlay.innerHTML = `
-        <div style="background: var(--finance-card-dark, #16161a); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 24px; padding: 40px; max-width: 440px; width: 100%; box-shadow: 0 24px 64px rgba(0,0,0,0.6);">
-            <h2 style="color: var(--finance-text-primary, #f1f5f9); font-size: 1.35rem; font-weight: 700; margin: 0 0 8px 0; display: flex; align-items: center; gap: 12px;">
-                <i class="fas fa-plus-circle" style="color: var(--finance-indigo, #3b82f6);"></i> Novo lançamento
-            </h2>
-            <p style="color: var(--finance-text-secondary, #64748b); font-size: 0.9rem; margin-bottom: 28px;">Escolha o tipo de lançamento:</p>
-            <div style="display: flex; flex-direction: column; gap: 16px;">
-                <button type="button" id="choice-entrada" style="display: flex; align-items: center; gap: 16px; padding: 20px 24px; background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 16px; color: #22c55e; font-size: 1.05rem; font-weight: 700; cursor: pointer; transition: all 0.2s; text-align: left;">
-                    <i class="fas fa-arrow-down" style="font-size: 1.5rem; transform: rotate(180deg);"></i>
-                    <span>Entrada (receita)</span>
+        <div style="background: var(--finance-card-dark, #16161a); border: 1px solid var(--finance-border); border-radius: 24px; padding: 32px; max-width: 520px; width: 100%; box-shadow: var(--finance-card-shadow);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div>
+                    <h2 style="color: var(--finance-text-primary, #f1f5f9); font-size: 1.35rem; font-weight: 800; margin: 0 0 4px 0; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-plus-circle" style="color: var(--finance-indigo, #3b82f6);"></i> Novo Lançamento Financeiro
+                    </h2>
+                    <p style="color: var(--finance-text-secondary, #64748b); font-size: 0.85rem; margin: 0;">Selecione o tipo de registro que deseja realizar:</p>
+                </div>
+                <button type="button" id="choice-close-x" style="background: none; border: none; color: var(--finance-text-secondary); font-size: 1.25rem; cursor: pointer; padding: 4px;"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+                <!-- Opção 1: Entrada / Receita Avulsa -->
+                <button type="button" id="choice-entrada" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 18px; background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 16px; color: #22c55e; cursor: pointer; transition: all 0.2s; text-align: left;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(34, 197, 94, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                    <span style="font-size: 1rem; font-weight: 700; color: var(--finance-text-primary);">Receita (Entrada)</span>
+                    <span style="font-size: 0.75rem; color: var(--finance-text-secondary); line-height: 1.3;">Entrada de dinheiro à vista ou pix no caixa</span>
                 </button>
-                <button type="button" id="choice-saida" style="display: flex; align-items: center; gap: 16px; padding: 20px 24px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 16px; color: #ef4444; font-size: 1.05rem; font-weight: 700; cursor: pointer; transition: all 0.2s; text-align: left;">
-                    <i class="fas fa-arrow-down" style="font-size: 1.5rem;"></i>
-                    <span>Saída (despesa)</span>
-                    <span style="margin-left: auto; font-size: 0.8rem; font-weight: 600; color: var(--finance-text-secondary);">Pode vincular ao cartão de crédito</span>
+
+                <!-- Opção 2: Saída / Despesa -->
+                <button type="button" id="choice-saida" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 18px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 16px; color: #ef4444; cursor: pointer; transition: all 0.2s; text-align: left;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(239, 68, 68, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+                    <span style="font-size: 1rem; font-weight: 700; color: var(--finance-text-primary);">Despesa (Saída)</span>
+                    <span style="font-size: 0.75rem; color: var(--finance-text-secondary); line-height: 1.3;">Gasto do dia a dia, fixo ou no cartão</span>
+                </button>
+
+                <!-- Opção 3: Trabalho / A Receber -->
+                <button type="button" id="choice-trabalho" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 18px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 16px; color: #3b82f6; cursor: pointer; transition: all 0.2s; text-align: left;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(59, 130, 246, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <span style="font-size: 1rem; font-weight: 700; color: var(--finance-text-primary);">A Receber (Trabalho)</span>
+                    <span style="font-size: 0.75rem; color: var(--finance-text-secondary); line-height: 1.3;">Cliente com valor total, sinal e saldo a receber</span>
+                </button>
+
+                <!-- Opção 4: Conta a Pagar / Quem Eu Devo -->
+                <button type="button" id="choice-terceiro" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 18px; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 16px; color: #a855f7; cursor: pointer; transition: all 0.2s; text-align: left;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(168, 85, 247, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
+                        <i class="fas fa-hand-holding-usd"></i>
+                    </div>
+                    <span style="font-size: 1rem; font-weight: 700; color: var(--finance-text-primary);">A Pagar (Quem Devo)</span>
+                    <span style="font-size: 0.75rem; color: var(--finance-text-secondary); line-height: 1.3;">Parcelas futuras de cartão ou pessoas físicas</span>
                 </button>
             </div>
-            <button type="button" id="choice-cancel" style="margin-top: 20px; width: 100%; padding: 12px; background: transparent; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: var(--finance-text-secondary); font-size: 0.9rem; font-weight: 600; cursor: pointer;">Cancelar</button>
+
+            <button type="button" id="choice-cancel" style="width: 100%; padding: 12px; background: transparent; border: 1px solid var(--finance-border); border-radius: 12px; color: var(--finance-text-secondary); font-size: 0.9rem; font-weight: 600; cursor: pointer;">Cancelar</button>
         </div>
     `;
     document.body.appendChild(overlay);
-    overlay.querySelector('#choice-entrada').onmouseover = function () { this.style.background = 'rgba(34, 197, 94, 0.2)'; this.style.borderColor = 'rgba(34, 197, 94, 0.5)'; };
-    overlay.querySelector('#choice-entrada').onmouseout = function () { this.style.background = 'rgba(34, 197, 94, 0.12)'; this.style.borderColor = 'rgba(34, 197, 94, 0.35)'; };
-    overlay.querySelector('#choice-saida').onmouseover = function () { this.style.background = 'rgba(239, 68, 68, 0.18)'; this.style.borderColor = 'rgba(239, 68, 68, 0.5)'; };
-    overlay.querySelector('#choice-saida').onmouseout = function () { this.style.background = 'rgba(239, 68, 68, 0.1)'; this.style.borderColor = 'rgba(239, 68, 68, 0.3)'; };
+
+    overlay.querySelector('#choice-close-x').onclick = function () { overlay.remove(); };
+    overlay.querySelector('#choice-cancel').onclick = function () { overlay.remove(); };
+
     overlay.querySelector('#choice-entrada').onclick = function () {
         overlay.remove();
         if (window.openAddTransactionModal) window.openAddTransactionModal('income');
@@ -7874,7 +8054,17 @@ window.showNovoLancamentoChoiceModal = function () {
         overlay.remove();
         if (window.openAddTransactionModal) window.openAddTransactionModal('expense');
     };
-    overlay.querySelector('#choice-cancel').onclick = function () { overlay.remove(); };
+    overlay.querySelector('#choice-trabalho').onclick = function () {
+        overlay.remove();
+        if (window.switchUnifiedFinanceTab) window.switchUnifiedFinanceTab('trabalhos');
+        if (window._kingFinanceOpenModal) window._kingFinanceOpenModal('trabalho');
+    };
+    overlay.querySelector('#choice-terceiro').onclick = function () {
+        overlay.remove();
+        if (window.switchUnifiedFinanceTab) window.switchUnifiedFinanceTab('terceiros');
+        if (window._kingFinanceOpenModal) window._kingFinanceOpenModal('terceiro');
+    };
+
     overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
     document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', esc); } });
 };
@@ -8079,3 +8269,30 @@ try {
 } catch (_) { }
 
 })(typeof window !== 'undefined' ? window : this);
+
+// Gestão de Tema: Claro / Escuro (Persistente)
+window.toggleFinanceTheme = function () {
+    var cur = localStorage.getItem('ck_finance_theme') || 'dark';
+    var next = cur === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem('ck_finance_theme', next); } catch (e) {}
+    window.applyFinanceTheme(next);
+};
+
+window.applyFinanceTheme = function (theme) {
+    var t = theme || localStorage.getItem('ck_finance_theme') || 'dark';
+    var pane = document.getElementById('finance-content');
+    if (pane) {
+        pane.classList.remove('finance-theme-dark', 'finance-theme-light');
+        pane.classList.add('finance-theme-' + t);
+    }
+    var btn = document.getElementById('finance-theme-toggle-btn');
+    if (btn) {
+        if (t === 'light') {
+            btn.innerHTML = '<i class="fas fa-moon" style="color: #6366f1;"></i> <span>Modo Dark</span>';
+            btn.setAttribute('title', 'Alternar para Modo Escuro');
+        } else {
+            btn.innerHTML = '<i class="fas fa-sun" style="color: #f59e0b;"></i> <span>Modo Claro</span>';
+            btn.setAttribute('title', 'Alternar para Modo Claro');
+        }
+    }
+};
