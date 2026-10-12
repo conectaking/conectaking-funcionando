@@ -7979,4 +7979,27 @@ window.showAdminVerSenhasModal = async function () {
     }
 };
 
+// Auto-inicializar imediatamente se o painel de finanças já estiver ativo e aguardando renderização
+try {
+    if (typeof document !== 'undefined') {
+        const checkAutoInit = function () {
+            const finPane = document.getElementById('finance-pane');
+            const finContent = document.getElementById('finance-content');
+            if (finPane && (finPane.classList.contains('active') || finPane.style.display === 'flex')) {
+                if (finContent && (finContent.children.length === 0 || finContent.innerHTML.includes('Carregando módulo financeiro...'))) {
+                    if (typeof window.initFinancePane === 'function') {
+                        window.initFinancePane();
+                    }
+                }
+            }
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', checkAutoInit);
+        } else {
+            checkAutoInit();
+        }
+        setTimeout(checkAutoInit, 100);
+    }
+} catch (_) { }
+
 })(typeof window !== 'undefined' ? window : this);

@@ -669,9 +669,23 @@
                     </p>
                 </header>
                 <div class="ck-db-f8d354" id="finance-content">
-                    <p class="ck-db-b4058b">
-                        Carregando módulo financeiro...
+                    <p class="ck-db-b4058b" id="finance-initial-loader">
+                        <i class="fas fa-spinner fa-spin"></i> Carregando módulo financeiro...
                     </p>
+                    <script>
+                        (function() {
+                            function tryBootFinance() {
+                                var fc = document.getElementById('finance-content');
+                                if (!fc || !fc.innerHTML.includes('Carregando módulo financeiro...')) return;
+                                if (typeof window.initFinancePane === 'function') {
+                                    window.initFinancePane();
+                                }
+                            }
+                            setTimeout(tryBootFinance, 400);
+                            setTimeout(tryBootFinance, 1200);
+                            setTimeout(tryBootFinance, 2500);
+                        })();
+                    </script>
                 </div>
             </main>
             
