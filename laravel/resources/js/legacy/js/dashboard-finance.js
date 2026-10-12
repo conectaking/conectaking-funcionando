@@ -147,9 +147,14 @@ window.initFinancePane = async function () {
         const data = responseData.data || responseData;
 
         // Armazenar breakdown para modal "De onde veio" (Receitas, Saldo, Metas)
+        const emptyBreakdown = { transacoes: [], trabajos: [], recibos: [], itens: [], total: 0 };
         window._financeIncomeBreakdown = {
-            receitasDetalhadas: data.receitasDetalhadas || { transacoes: [], trabajos: [], recibos: [], itens: [], total: 0 },
-            saldoDetalhado: data.saldoDetalhado || { transacoes: [], trabajos: [], recibos: [], itens: [], total: 0 }
+            receitasDetalhadas: (data.receitasDetalhadas && !Array.isArray(data.receitasDetalhadas))
+                ? data.receitasDetalhadas
+                : Object.assign({}, emptyBreakdown, { itens: Array.isArray(data.receitasDetalhadas) ? data.receitasDetalhadas : [] }),
+            saldoDetalhado: (data.saldoDetalhado && !Array.isArray(data.saldoDetalhado))
+                ? data.saldoDetalhado
+                : Object.assign({}, emptyBreakdown, { itens: Array.isArray(data.saldoDetalhado) ? data.saldoDetalhado : [] })
         };
 
         // perfis já carregados no início para validar profile_id
@@ -879,7 +884,7 @@ window.initFinancePane = async function () {
         const validTabs = ['resumo', 'fluxo', 'trabalhos', 'bens', 'cartoes', 'meta', 'terceiros', 'serasa'];
         let savedTab = null;
         const hash = (window.location.hash || '').replace(/^#/, '');
-        const tabMatch = hash.match(/^finance-pane-tab-(.+)$/);
+        const tabMatch = hash.match(/^finance[-_]pane[-_]tab[-_](.+)$/) || hash.match(/^finance[-_]tab[-_](.+)$/);
         if (tabMatch && validTabs.includes(tabMatch[1])) savedTab = tabMatch[1];
         if (!savedTab) savedTab = localStorage.getItem('finance_active_tab');
         window._financeActiveTab = (savedTab && validTabs.includes(savedTab)) ? savedTab : 'resumo';
@@ -3371,8 +3376,10 @@ window.openFinanceDetailModal = async function (type) {
     var content = '';
 
     var breakdown = window._financeIncomeBreakdown || {};
-    var receitasDetalhadas = breakdown.receitasDetalhadas || { itens: [], total: 0 };
-    var saldoDetalhado = breakdown.saldoDetalhado || { itens: [], total: 0 };
+    var rawRec = breakdown.receitasDetalhadas || { itens: [], total: 0 };
+    var receitasDetalhadas = Array.isArray(rawRec) ? { itens: rawRec, total: 0 } : rawRec;
+    var rawSaldo = breakdown.saldoDetalhado || { itens: [], total: 0 };
+    var saldoDetalhado = Array.isArray(rawSaldo) ? { itens: rawSaldo, total: 0 } : rawSaldo;
 
     function renderBreakdownList(itens, total) {
         if (!itens || itens.length === 0) return '<p style="color:#94a3b8;text-align:center;padding:2rem;">Nenhum lançamento encontrado.</p>';

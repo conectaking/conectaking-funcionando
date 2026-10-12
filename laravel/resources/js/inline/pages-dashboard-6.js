@@ -12,7 +12,7 @@
             else if (tid === 'info' || tid === 'informacoes') tid = 'info-editor';
             else if (tid === 'modulos' || tid === 'modulo' || tid === 'itens' || tid === 'items') tid = 'items-editor';
             else if (tid === 'personalizar') tid = 'personalizar-editor';
-            if (tid.startsWith('finance-pane-tab-')) tid = 'finance-pane';
+            if (tid.startsWith('finance-pane-tab-') || tid.startsWith('finance_pane_tab_') || tid.startsWith('finance-tab-') || tid.startsWith('finance_tab_') || tid === 'finance_pane') tid = 'finance-pane';
             var map = {finance:'finance-pane','king-forms':'king-forms-pane',relatorios:'relatorios-pane',editar:'editar-pane',compartilhar:'compartilhar-pane',branding:'branding-pane','separacao-pacotes':'separacao-pacotes-pane',assinatura:'assinatura-pane','personalizar-link':'personalizar-link-pane'};
             var editorTab = null;
             if (map[tid]) tid = map[tid];
@@ -71,6 +71,9 @@
                         el.classList.add('active');
                         pane.classList.add('active');
                     }
+                }
+                if (tid === 'finance-pane' && typeof window.initFinancePane === 'function') {
+                    try { window.initFinancePane(); } catch (e) { }
                 }
             }
         }

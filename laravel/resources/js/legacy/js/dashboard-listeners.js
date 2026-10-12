@@ -2627,6 +2627,15 @@ function _setupEventListenersBody() {
         if (!targetId) return;
         const fullHash = targetId; // guardar para finance-pane-tab-X
         // finance-pane-tab-cartoes -> finance-pane (preservar hash para initFinancePane ler a aba)
+        if (
+            targetId.startsWith('finance-pane-tab-') ||
+            targetId.startsWith('finance_pane_tab_') ||
+            targetId.startsWith('finance-tab-') ||
+            targetId.startsWith('finance_tab_') ||
+            targetId === 'finance_pane'
+        ) {
+            targetId = 'finance-pane';
+        }
         if (hashToPaneId[targetId]) targetId = hashToPaneId[targetId];
 
         let isAdmin = false;
@@ -2661,6 +2670,12 @@ function _setupEventListenersBody() {
         if (mainNavLink) {
             const targetPane = document.getElementById(targetId);
             if (mainNavLink.classList.contains('active') && targetPane && targetPane.classList.contains('active')) {
+                if (targetId === 'finance-pane') {
+                    const finContent = document.getElementById('finance-content');
+                    if (!finContent || finContent.children.length === 0 || finContent.innerHTML.includes('Carregando módulo financeiro...')) {
+                        if (typeof window.initFinancePane === 'function') window.initFinancePane();
+                    }
+                }
                 return;
             }
 

@@ -67,11 +67,19 @@ window.__ckEnsureLazy = ensureLazy;
 
 function paneKeyFromTarget(targetId) {
   if (!targetId) return null;
-  if (targetId === 'finance-pane' || String(targetId).startsWith('finance-pane-tab-')) return 'finance';
-  if (targetId === 'relatorios-pane') return 'relatorios';
-  if (targetId === 'assinatura-pane') return 'assinatura';
-  if (targetId === 'compartilhar-pane' || targetId === 'qr-pane') return 'qr';
-  if (targetId === 'king-forms-pane') return 'formsEditor';
+  const tid = String(targetId).toLowerCase();
+  if (
+    tid === 'finance-pane' ||
+    tid === 'finance_pane' ||
+    tid.startsWith('finance-pane-tab-') ||
+    tid.startsWith('finance_pane_tab_') ||
+    tid.startsWith('finance-tab-') ||
+    tid.startsWith('finance_tab_')
+  ) return 'finance';
+  if (tid === 'relatorios-pane' || tid === 'relatorios_pane') return 'relatorios';
+  if (tid === 'assinatura-pane' || tid === 'assinatura_pane') return 'assinatura';
+  if (tid === 'compartilhar-pane' || tid === 'compartilhar_pane' || tid === 'qr-pane') return 'qr';
+  if (tid === 'king-forms-pane' || tid === 'king_forms_pane') return 'formsEditor';
   return null;
 }
 
@@ -102,7 +110,16 @@ function installLazyGuards() {
         (String(el.getAttribute('href') || '').includes('#assinatura') ? 'assinatura-pane' : '') ||
         (String(el.getAttribute('href') || '').includes('#king-forms') ? 'king-forms-pane' : '');
       const key = paneKeyFromTarget(target);
-      if (key) ensureLazy(key);
+      if (key) {
+        ensureLazy(key).then(() => {
+          if (key === 'finance' && typeof window.initFinancePane === 'function') {
+            const finContent = document.getElementById('finance-content');
+            if (!finContent || finContent.children.length === 0 || finContent.innerHTML.includes('Carregando módulo financeiro...')) {
+              window.initFinancePane();
+            }
+          }
+        });
+      }
     },
     true
   );
@@ -116,9 +133,27 @@ function installLazyGuards() {
       compartilhar: 'compartilhar-pane',
       'king-forms': 'king-forms-pane',
     };
-    const target = mapped[h] || h;
+    let target = mapped[h] || h;
+    if (
+      String(target).startsWith('finance-pane-tab-') ||
+      String(target).startsWith('finance_pane_tab_') ||
+      String(target).startsWith('finance-tab-') ||
+      String(target).startsWith('finance_tab_') ||
+      target === 'finance_pane'
+    ) {
+      target = 'finance-pane';
+    }
     const key = paneKeyFromTarget(target);
-    if (key) ensureLazy(key);
+    if (key) {
+      ensureLazy(key).then(() => {
+        if (key === 'finance' && typeof window.initFinancePane === 'function') {
+          const finContent = document.getElementById('finance-content');
+          if (!finContent || finContent.children.length === 0 || finContent.innerHTML.includes('Carregando módulo financeiro...')) {
+            window.initFinancePane();
+          }
+        }
+      });
+    }
   });
 
   // Hash inicial
@@ -131,8 +166,27 @@ function installLazyGuards() {
       compartilhar: 'compartilhar-pane',
       'king-forms': 'king-forms-pane',
     };
-    const key = paneKeyFromTarget(mapped[initial] || initial);
-    if (key) ensureLazy(key);
+    let target = mapped[initial] || initial;
+    if (
+      String(target).startsWith('finance-pane-tab-') ||
+      String(target).startsWith('finance_pane_tab_') ||
+      String(target).startsWith('finance-tab-') ||
+      String(target).startsWith('finance_tab_') ||
+      target === 'finance_pane'
+    ) {
+      target = 'finance-pane';
+    }
+    const key = paneKeyFromTarget(target);
+    if (key) {
+      ensureLazy(key).then(() => {
+        if (key === 'finance' && typeof window.initFinancePane === 'function') {
+          const finContent = document.getElementById('finance-content');
+          if (!finContent || finContent.children.length === 0 || finContent.innerHTML.includes('Carregando módulo financeiro...')) {
+            window.initFinancePane();
+          }
+        }
+      });
+    }
   }
 
   // Stubs: se alguém chamar antes do chunk, carrega e reencaminha
