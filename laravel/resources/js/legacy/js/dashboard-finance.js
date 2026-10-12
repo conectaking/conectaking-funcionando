@@ -75,6 +75,60 @@
         return env.safeFetch(url, options || {});
     };
 
+// ==========================================================
+// TEMA CLARO / ESCURO & AUTO-SYNC GLOBAL DO FINANCEIRO
+// ==========================================================
+window.applyFinanceTheme = function () {
+    const theme = localStorage.getItem('finance_theme') || 'dark';
+    const isLight = theme === 'light';
+    const financeContent = document.getElementById('finance-content');
+    if (financeContent) {
+        financeContent.classList.toggle('finance-theme-light', isLight);
+        financeContent.classList.toggle('finance-theme-dark', !isLight);
+    }
+    const btn = document.getElementById('finance-theme-toggle-btn');
+    if (btn) {
+        if (isLight) {
+            btn.innerHTML = '<i class="fas fa-moon" style="color: #6366f1;"></i> <span>Modo Escuro</span>';
+            btn.title = 'Alternar para Modo Escuro';
+        } else {
+            btn.innerHTML = '<i class="fas fa-sun" style="color: #f59e0b;"></i> <span>Modo Claro</span>';
+            btn.title = 'Alternar para Modo Claro';
+        }
+    }
+};
+
+window.toggleFinanceTheme = function () {
+    const currentTheme = localStorage.getItem('finance_theme') || 'dark';
+    const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
+    try { localStorage.setItem('finance_theme', nextTheme); } catch (e) { }
+    window.applyFinanceTheme();
+};
+
+if (!window._financeSyncListenerAttached) {
+    window._financeSyncListenerAttached = true;
+    window.addEventListener('focus', function () {
+        var now = Date.now();
+        if (now - (window._lastFinanceFetchTime || 0) > 15000) {
+            window._lastFinanceFetchTime = now;
+            if (typeof window.initFinancePane === 'function') {
+                window.initFinancePane();
+            }
+        }
+    });
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') {
+            var now = Date.now();
+            if (now - (window._lastFinanceFetchTime || 0) > 15000) {
+                window._lastFinanceFetchTime = now;
+                if (typeof window.initFinancePane === 'function') {
+                    window.initFinancePane();
+                }
+            }
+        }
+    });
+}
+
 // MÓDULO DE FINANÇAS (Estilo Mobills)
 // ==========================================================
 window.initFinancePane = async function () {
@@ -170,21 +224,7 @@ window.initFinancePane = async function () {
             }
         } catch (e) { }
         let kingDb = { fluxo: [], trabalhos: [], bens: [], cartoes: [], dividas: [], terceiros: [] };
-        // Memória + API; LS legado só one-shot migrate (não regravar dados sensíveis)
-        try {
-            const saved = localStorage.getItem('king_finance_v9');
-            if (saved) {
-                kingDb = JSON.parse(saved);
-                kingDb.terceiros = kingDb.terceiros || [];
-                kingDb.terceiros = (kingDb.terceiros || []).map(function (p) {
-                    if (Array.isArray(p.contas) && p.contas.length > 0) return p;
-                    var valorTotal = Number(p.valorTotal) || 0;
-                    var pagamentos = Array.isArray(p.pagamentos) ? p.pagamentos : [];
-                    var contas = [{ id: (p.id || '') + '-c1', nomeConta: 'Conta principal', valor: valorTotal, pagamentos: pagamentos }];
-                    return { id: p.id, nome: p.nome || 'Pessoa', contas: contas, dataInicio: p.dataInicio || '', limite: p.limite };
-                });
-            }
-        } catch (e) { }
+        try { localStorage.removeItem('king_finance_v9'); } catch (e) { }
         // Sincronização: carregar Serasa + Quem eu devo do servidor (site/mobile/localhost iguais)
         try {
             const kingDataUrl = `${env.API_URL}/api/finance/king-data${currentProfileId ? '?profile_id=' + encodeURIComponent(currentProfileId) : ''}`;
@@ -625,9 +665,11 @@ window.initFinancePane = async function () {
                     border: 1px solid #cbd5e1 !important;
                 }
 
-                /* Sub-abas e filtros (Bens, Quem Eu Devo, Períodos 1M/3M/6M) no modo claro */
-                body.light-theme #finance-content button[onclick*="_kingFinanceBensFiltro"],
-                #finance-content.finance-theme-light button[onclick*="_kingFinanceBensFiltro"],
+                /* Sub-abas e filtros (Quem Eu Devo, Trabalhos, Períodos 1M/3M/6M) no modo claro */
+                body.light-theme #finance-content button[onclick*="_kingFinanceTerceirosMesFiltro"],
+                #finance-content.finance-theme-light button[onclick*="_kingFinanceTerceirosMesFiltro"],
+                body.light-theme #finance-content button[onclick*="_kingFinanceTrabalhosFiltro"],
+                #finance-content.finance-theme-light button[onclick*="_kingFinanceTrabalhosFiltro"],
                 body.light-theme #finance-content button[onclick*="_kingFinanceTerceirosPessoaId"],
                 #finance-content.finance-theme-light button[onclick*="_kingFinanceTerceirosPessoaId"],
                 body.light-theme #finance-content .finance-period-buttons button:not(#period-1M),
@@ -926,18 +968,54 @@ window.initFinancePane = async function () {
                 </div>
             </div>
             
-            <!-- Abas unificadas: Resumo + Fluxo, Trampo, Bens, Cartões, Serasa -->
+            <!-- Abas unificadas: Resumo, Fluxo, Trabalhos, Quem Eu Devo, Cartões, Metas, Serasa -->
             <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px;" class="finance-tabs-container">
                 <button type="button" class="finance-unified-tab active" data-finance-tab="resumo" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-indigo); color: white; font-weight: 700; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-chart-pie"></i> Resumo</button>
                 <button type="button" class="finance-unified-tab" data-finance-tab="fluxo" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-exchange-alt"></i> Fluxo</button>
                 <button type="button" class="finance-unified-tab" data-finance-tab="trabalhos" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-briefcase"></i> A Receber (Trabalhos)</button>
                 <button type="button" class="finance-unified-tab" data-finance-tab="terceiros" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-hand-holding-usd"></i> Quem Eu Devo</button>
                 <button type="button" class="finance-unified-tab" data-finance-tab="cartoes" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-credit-card"></i> Cartões</button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="bens" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-box-open"></i> Bens</button>
                 <button type="button" class="finance-unified-tab" data-finance-tab="meta" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-bullseye"></i> Metas</button>
                 <button type="button" class="finance-unified-tab" data-finance-tab="serasa" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-university"></i> Serasa / Dívidas</button>
             </div>
             <div id="finance-resumo-content">
+            ${(function() {
+                var terceiros = (kingDb && kingDb.terceiros) || [];
+                var hojeStr = new Date().toISOString().slice(0, 10);
+                var d7 = new Date(); d7.setDate(d7.getDate() + 7);
+                var d7Str = d7.toISOString().slice(0, 10);
+                var pendenciasProximas = [];
+                var totalPendencias = 0;
+                terceiros.forEach(function(p) {
+                    (p.contas || []).forEach(function(c) {
+                        var pago = (c.pagamentos || []).reduce(function(a, x) { return a + (Number(x.valor) || 0); }, 0);
+                        var falta = Math.max(0, (Number(c.valor) || 0) - pago);
+                        if (falta > 0) {
+                            var v = (c.dataVencimento || '').trim().slice(0, 10);
+                            if (v && v <= d7Str) {
+                                pendenciasProximas.push({ pessoa: p.nome || 'Pessoa', conta: c.nomeConta || 'Conta', falta: falta, venc: v, atrasado: v < hojeStr });
+                                totalPendencias += falta;
+                            }
+                        }
+                    });
+                });
+                if (pendenciasProximas.length === 0) return '';
+                return `
+                <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(245, 158, 11, 0.1) 100%); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 16px; padding: 14px 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; background: rgba(239, 68, 68, 0.2); color: #f87171; font-size: 1.1rem;">
+                            <i class="fas fa-bell"></i>
+                        </span>
+                        <div>
+                            <strong style="color: var(--finance-text-primary); font-size: 0.9rem;">Atenção: ${pendenciasProximas.length} conta(s) a pagar vencem nos próximos 7 dias (ou estão vencidas)</strong>
+                            <p style="color: var(--finance-text-secondary); font-size: 0.78rem; margin: 2px 0 0 0;">Total previsto a quitar: <span style="color: #fca5a5; font-weight: 700;">R$ ${formatCurrency(totalPendencias)}</span></p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="window.switchUnifiedFinanceTab && window.switchUnifiedFinanceTab('terceiros')" style="padding: 8px 16px; background: rgba(239, 68, 68, 0.25); border: 1px solid rgba(239, 68, 68, 0.5); border-radius: 10px; color: #fca5a5; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.4)'" onmouseout="this.style.background='rgba(239,68,68,0.25)'">
+                        Ver em Quem Eu Devo &rarr;
+                    </button>
+                </div>`;
+            })()}
             <!-- Main Balance Card with Chart -->
             <div class="finance-card-premium" style="border-radius: 24px; padding: 32px; margin-bottom: 32px; position: relative; overflow: hidden;">
                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 32px; position: relative; z-index: 10;">
@@ -1227,8 +1305,8 @@ window.initFinancePane = async function () {
 
         if (typeof window.applyFinanceTheme === 'function') window.applyFinanceTheme();
 
-        // Abas unificadas: handler de troca e render do conteúdo King (Fluxo, Trampo, Bens, Cartões, Serasa)
-        const validTabs = ['resumo', 'fluxo', 'trabalhos', 'bens', 'cartoes', 'meta', 'terceiros', 'serasa'];
+        // Abas unificadas: handler de troca e render do conteúdo King (Fluxo, Trabalhos, Cartões, Metas, Quem Eu Devo, Serasa)
+        const validTabs = ['resumo', 'fluxo', 'trabalhos', 'cartoes', 'meta', 'terceiros', 'serasa'];
         let savedTab = null;
         const hash = (window.location.hash || '').replace(/^#/, '');
         const tabMatch = hash.match(/^finance[-_]pane[-_]tab[-_](.+)$/) || hash.match(/^finance[-_]tab[-_](.+)$/);
@@ -1264,7 +1342,7 @@ window.initFinancePane = async function () {
             btn.addEventListener('click', () => window.switchUnifiedFinanceTab(btn.getAttribute('data-finance-tab')));
         });
 
-        // Renderizar conteúdo das abas King (Fluxo, Trampo, Bens, Cartões, Serasa) no painel unificado
+        // Renderizar conteúdo das abas King no painel unificado
         function escapeHtmlFinance(s) {
             return String(s == null ? '' : s)
                 .replace(/&/g, '&amp;')
@@ -1280,7 +1358,7 @@ window.initFinancePane = async function () {
             const fluxoList = window._kingFinanceTransactions || [];
             const cartoesList = window._kingFinanceCards || [];
             const fmt = (v) => Number(v || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-            const styleKfCard = 'background:#111;padding:1.5rem;border-radius:1.5rem;border:1px solid rgba(255,255,255,0.05);';
+            const styleKfCard = 'background:var(--finance-card-dark);color:var(--finance-text-primary);padding:1.5rem;border-radius:1.5rem;border:1px solid var(--finance-border);box-shadow:var(--finance-card-shadow);';
             if (tabId === 'fluxo') {
                 var listBase = fluxoList.map(t => ({ id: t.id, tipo: (t.type || '').toUpperCase() === 'INCOME' ? 'receita' : 'despesa', valor: Number(t.amount) || 0, descricao: t.description || '', data: (t.transaction_date || t.date || '').toString().slice(0, 10), status: (t.status || '').toUpperCase() }));
                 // Incluir pagamentos e pendências de trabalhos do king_sync no fluxo
@@ -1411,49 +1489,45 @@ window.initFinancePane = async function () {
             }
             if (tabId === 'trabalhos') {
                 const list = db.trabalhos || [];
+                var filtroTrab = window._kingFinanceTrabalhosFiltro || 'pendentes';
+                var listToShow = list.filter(function (t) {
+                    if (filtroTrab === 'todos') return true;
+                    var pago = (t.pagamentos || []).reduce(function (a, p) { return a + (Number(p.valor) || 0); }, 0);
+                    var restante = Math.max(0, (Number(t.valor) || 0) - pago);
+                    return restante > 0.01;
+                });
+                var pendentesCount = list.filter(function (t) {
+                    var pago = (t.pagamentos || []).reduce(function (a, p) { return a + (Number(p.valor) || 0); }, 0);
+                    return Math.max(0, (Number(t.valor) || 0) - pago) > 0.01;
+                }).length;
                 var formatPayDateTrab = function (p) { var dt = p.data || ''; if (/^\d{4}-\d{2}-\d{2}$/.test(dt)) { var pt = dt.split('-'); dt = pt[2] + '/' + pt[1] + '/' + pt[0]; } return dt + (p.hora ? ' às ' + p.hora : ''); };
-                var cardsTrab = list.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">Nenhum trabalho. Clique em + Registrar Serviço.</p>' : list.map(function (t) {
+                var subTabsTrab = '<div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center;">' +
+                    '<button type="button" onclick="window._kingFinanceTrabalhosFiltro=\'pendentes\'; if(window.renderUnifiedKingTab) window.renderUnifiedKingTab(\'trabalhos\')" style="padding:8px 16px;border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ' + (filtroTrab === 'pendentes' ? '#3b82f6' : 'var(--finance-border)') + ';background:' + (filtroTrab === 'pendentes' ? 'rgba(59,130,246,0.3)' : 'transparent') + ';color:' + (filtroTrab === 'pendentes' ? '#93c5fd' : 'var(--finance-text-secondary)') + ';"><i class="fas fa-clock" style="margin-right:6px;"></i>Apenas Pendentes / A Receber (' + pendentesCount + ')</button>' +
+                    '<button type="button" onclick="window._kingFinanceTrabalhosFiltro=\'todos\'; if(window.renderUnifiedKingTab) window.renderUnifiedKingTab(\'trabalhos\')" style="padding:8px 16px;border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ' + (filtroTrab === 'todos' ? '#3b82f6' : 'var(--finance-border)') + ';background:' + (filtroTrab === 'todos' ? 'rgba(59,130,246,0.3)' : 'transparent') + ';color:' + (filtroTrab === 'todos' ? '#93c5fd' : 'var(--finance-text-secondary)') + ';"><i class="fas fa-list" style="margin-right:6px;"></i>Todos / Histórico Completo (' + list.length + ')</button>' +
+                '</div>';
+                var cardsTrab = listToShow.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">' + (filtroTrab === 'pendentes' ? 'Nenhum trabalho pendente a receber no momento! Parabéns.' : 'Nenhum trabalho cadastrado. Clique em + Registrar Serviço.') + '</p>' : listToShow.map(function (t) {
                     var pago = (t.pagamentos || []).reduce(function (a, p) { return a + (Number(p.valor) || 0); }, 0);
                     var restante = Math.max(0, (Number(t.valor) || 0) - pago);
                     var pctD = (Number(t.valor) || 0) > 0 ? Math.round((pago / (t.valor || 1)) * 100) : 100;
                     var quitado = pago >= (Number(t.valor) || 0);
                     var ultimoPag = (t.pagamentos || []).length ? t.pagamentos[t.pagamentos.length - 1] : null;
                     var dataQuitStr = quitado && ultimoPag ? '<p style="font-size:10px;color:#22c55e;margin:4px 0 0 0;"><i class="fas fa-check-circle"></i> Quitado em ' + escapeHtmlFinance(formatPayDateTrab(ultimoPag)) + '</p>' : '';
-                    var pagamentosHtmlT = (t.pagamentos || []).length ? '<div style="margin-top:12px;"><p style="font-size:9px;font-weight:800;color:rgba(255,255,255,0.5);margin:0 0 6px 0;letter-spacing:0.05em;">ENTRADAS</p>' + (t.pagamentos || []).map(function (p) { return '<p style="font-size:11px;color:#cbd5e1;margin:0 0 4px 0;">R$ ' + fmt(Number(p.valor) || 0) + ' em ' + escapeHtmlFinance(formatPayDateTrab(p)) + '</p>'; }).join('') + '</div>' : '';
+                    var pagamentosHtmlT = (t.pagamentos || []).length ? '<div style="margin-top:12px;"><p style="font-size:9px;font-weight:800;color:var(--finance-text-secondary);margin:0 0 6px 0;letter-spacing:0.05em;">ENTRADAS REGISTRADAS</p>' + (t.pagamentos || []).map(function (p) { return '<p style="font-size:11px;color:var(--finance-text-secondary);margin:0 0 4px 0;">R$ ' + fmt(Number(p.valor) || 0) + ' em ' + escapeHtmlFinance(formatPayDateTrab(p)) + '</p>'; }).join('') + '</div>' : '';
                     var datasStr = (t.data || t.dataPrevista) ? ' · ' + (t.data ? 'Trabalho: ' + (t.data.length >= 10 ? t.data.split('-').reverse().join('/') : t.data) : '') + (t.dataPrevista ? (t.data ? ' ' : '') + 'Previsto: ' + (t.dataPrevista.length >= 10 ? t.dataPrevista.split('-').reverse().join('/') : t.dataPrevista) : '') : '';
-                    var cardStyle = 'background:linear-gradient(135deg,rgba(59,130,246,0.18) 0%,rgba(37,99,235,0.1) 50%,#111 100%);border:1px solid rgba(59,130,246,0.3);border-radius:20px;padding:1.5rem;min-height:180px;display:flex;flex-direction:column;position:relative;';
+                    var cardStyle = 'background:var(--finance-card-dark);color:var(--finance-text-primary);border:1px solid rgba(59,130,246,0.3);border-radius:20px;padding:1.5rem;min-height:180px;display:flex;flex-direction:column;position:relative;box-shadow:var(--finance-card-shadow);';
                     var totalTrab = Number(t.valor) || 0;
-                    var valoresRow = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;background:rgba(0,0,0,0.3);padding:14px 16px;border-radius:14px;border:1px solid rgba(255,255,255,0.08);">' +
-                        '<div><p style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.6);margin:0 0 4px 0;text-transform:uppercase;letter-spacing:0.04em;">Valor Total</p><p style="font-size:1.25rem;font-weight:800;margin:0;color:#38bdf8;">R$ ' + fmt(totalTrab) + '</p></div>' +
-                        '<div><p style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.6);margin:0 0 4px 0;text-transform:uppercase;letter-spacing:0.04em;">Valor Recebido</p><p style="font-size:1.25rem;font-weight:800;margin:0;color:#22c55e;">R$ ' + fmt(pago) + '</p></div>' +
-                        '<div style="text-align:right;"><p style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.6);margin:0 0 4px 0;text-transform:uppercase;letter-spacing:0.04em;">Falta Receber</p><p style="font-size:1.25rem;font-weight:800;margin:0;color:' + (restante > 0 ? '#f87171' : '#22c55e') + ';">' + (restante > 0 ? 'R$ ' + fmt(restante) : 'Quitado') + '</p></div>' +
+                    var valoresRow = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;background:var(--finance-card-inner);padding:14px 16px;border-radius:14px;border:1px solid var(--finance-border);">' +
+                        '<div><p style="font-size:10px;font-weight:700;color:var(--finance-text-secondary);margin:0 0 4px 0;text-transform:uppercase;letter-spacing:0.04em;">Valor Total</p><p style="font-size:1.25rem;font-weight:800;margin:0;color:#38bdf8;">R$ ' + fmt(totalTrab) + '</p></div>' +
+                        '<div><p style="font-size:10px;font-weight:700;color:var(--finance-text-secondary);margin:0 0 4px 0;text-transform:uppercase;letter-spacing:0.04em;">Valor Recebido</p><p style="font-size:1.25rem;font-weight:800;margin:0;color:#22c55e;">R$ ' + fmt(pago) + '</p></div>' +
+                        '<div style="text-align:right;"><p style="font-size:10px;font-weight:700;color:var(--finance-text-secondary);margin:0 0 4px 0;text-transform:uppercase;letter-spacing:0.04em;">Falta Receber</p><p style="font-size:1.25rem;font-weight:800;margin:0;color:' + (restante > 0 ? '#f87171' : '#22c55e') + ';">' + (restante > 0 ? 'R$ ' + fmt(restante) : 'Quitado') + '</p></div>' +
                     '</div>';
-                    return '<div class="kf-card" style="' + cardStyle + '"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;"><div><p style="font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;letter-spacing:0.1em;">SERVIÇO PRESTADO</p><h4 style="font-size:1.15rem;font-weight:800;margin:0;color:#fff;">' + escapeHtmlFinance((t.cliente || '').slice(0, 35)) + '</h4><p style="font-size:10px;color:rgba(255,255,255,0.5);margin:4px 0 0 0;">' + escapeHtmlFinance((t.servico || '').slice(0, 50)) + escapeHtmlFinance(datasStr) + '</p></div><button type="button" onclick="window._kingFinanceEditTrabalho && window._kingFinanceEditTrabalho(\'' + String(t.id).replace(/'/g, "\\'") + '\')" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#60a5fa;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Editar"><i class="fas fa-pencil-alt"></i></button></div>' + valoresRow + '<div style="height:8px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;width:' + pctD + '%;background:linear-gradient(90deg,#22c55e,#3b82f6);border-radius:999px;transition:width 0.3s;"></div></div><p style="font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 12px 0;">' + pctD + '% recebido</p>' + dataQuitStr + pagamentosHtmlT + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;"><button type="button" onclick="window._kingFinanceRegistrarEntradaTrabalho && window._kingFinanceRegistrarEntradaTrabalho(\'' + t.id + '\')" style="flex:1;min-width:140px;padding:10px 16px;background:#22c55e;color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;"><i class="fas fa-plus" style="margin-right:6px;"></i>Registrar entrada</button><button type="button" onclick="window._kingFinanceDelete(\'trabalhos\',\'' + t.id + '\')" style="background:none;border:1px solid rgba(239,68,68,0.4);color:#f87171;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Excluir"><i class="fas fa-trash"></i></button></div></div>';
+                    return '<div class="kf-card" style="' + cardStyle + '"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;"><div><p style="font-size:11px;color:var(--finance-text-secondary);margin:0 0 4px 0;letter-spacing:0.1em;">SERVIÇO PRESTADO</p><h4 style="font-size:1.15rem;font-weight:800;margin:0;color:var(--finance-text-primary);">' + escapeHtmlFinance((t.cliente || '').slice(0, 35)) + '</h4><p style="font-size:10px;color:var(--finance-text-secondary);margin:4px 0 0 0;">' + escapeHtmlFinance((t.servico || '').slice(0, 50)) + escapeHtmlFinance(datasStr) + '</p></div><button type="button" onclick="window._kingFinanceEditTrabalho && window._kingFinanceEditTrabalho(\'' + String(t.id).replace(/'/g, "\\'") + '\')" style="background:var(--finance-card-inner);border:1px solid var(--finance-border);color:#60a5fa;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Editar"><i class="fas fa-pencil-alt"></i></button></div>' + valoresRow + '<div style="height:8px;background:var(--finance-border);border-radius:999px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;width:' + pctD + '%;background:linear-gradient(90deg,#22c55e,#3b82f6);border-radius:999px;transition:width 0.3s;"></div></div><p style="font-size:11px;color:var(--finance-text-secondary);margin:0 0 12px 0;">' + pctD + '% recebido</p>' + dataQuitStr + pagamentosHtmlT + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;"><button type="button" onclick="window._kingFinanceRegistrarEntradaTrabalho && window._kingFinanceRegistrarEntradaTrabalho(\'' + t.id + '\')" style="flex:1;min-width:140px;padding:10px 16px;background:#22c55e;color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;"><i class="fas fa-plus" style="margin-right:6px;"></i>Registrar entrada</button><button type="button" onclick="window._kingFinanceDelete(\'trabalhos\',\'' + t.id + '\')" style="background:none;border:1px solid rgba(239,68,68,0.4);color:#f87171;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Excluir"><i class="fas fa-trash"></i></button></div></div>';
                 }).join('');
-                container.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;"><h3 style="font-size:1.1rem;font-weight:800;color:#3b82f6;margin:0;">Trabalhos e Serviços</h3><button type="button" onclick="window._kingFinanceOpenModal(\'trabalho\')" style="padding:8px 16px;background:#2563eb;color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Registrar Serviço</button></div><p style="font-size:11px;color:#94a3b8;margin:0 0 12px 0;">Controle de serviços prestados. Registre entradas (pagamentos parciais) e acompanhe a quitação.</p><div style="display:flex;flex-direction:column;gap:1rem;">' + cardsTrab + '</div>';
+                container.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;"><h3 style="font-size:1.1rem;font-weight:800;color:#3b82f6;margin:0;">Trabalhos e Serviços (A Receber)</h3><button type="button" onclick="window._kingFinanceOpenModal(\'trabalho\')" style="padding:8px 16px;background:#2563eb;color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Registrar Serviço</button></div><p style="font-size:11px;color:var(--finance-text-secondary);margin:0 0 12px 0;">Controle de serviços prestados. Registre entradas parciais e acompanhe o que falta receber.</p>' + subTabsTrab + '<div style="display:flex;flex-direction:column;gap:1rem;">' + cardsTrab + '</div>';
                 return;
             }
             if (tabId === 'bens') {
-                if (window._kingFinanceBensFiltro !== 'emprestimo' && window._kingFinanceBensFiltro !== 'devolvidos') window._kingFinanceBensFiltro = 'emprestimo';
-                const list = db.bens || [];
-                var emEmprestimo = list.filter(function (b) { return !b.devolvido; });
-                var devolvidos = list.filter(function (b) { return !!b.devolvido; });
-                var filtroAtual = window._kingFinanceBensFiltro || 'emprestimo';
-                var listToShow = filtroAtual === 'devolvidos' ? devolvidos : emEmprestimo;
-                var fmtDataBem = function (d) { if (!d || d.length < 10) return ''; var p = d.slice(0, 10).split('-'); return p[2] + '/' + p[1] + '/' + p[0]; };
-                var cardsBens = listToShow.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;grid-column:1/-1;">' + (filtroAtual === 'devolvidos' ? 'Nenhuma ferramenta devolvida.' : 'Nenhuma ferramenta em empréstimo.') + '</p>' : listToShow.map(function (b) {
-                    var isDevolvido = !!b.devolvido;
-                    var cardOpacity = isDevolvido ? 'opacity:0.75;' : '';
-                    var cardStyleExtra = isDevolvido ? 'background:rgba(30,30,35,0.6);border-color:rgba(255,255,255,0.06);' : '';
-                    var textMuted = isDevolvido ? 'color:#64748b !important;' : '';
-                    var fotoHtml = b.foto ? '<div role="button" tabindex="0" onclick="window._kingFinanceExpandFoto && window._kingFinanceExpandFoto(this)" style="flex-shrink:0;width:80px;height:80px;margin-right:14px;cursor:pointer;' + (isDevolvido ? 'opacity:0.7;' : '') + '"><img src="' + b.foto.replace(/"/g, '&quot;') + '" style="width:80px;height:80px;border-radius:12px;object-fit:cover;border:1px solid rgba(255,255,255,0.1);display:block;pointer-events:none;" alt=""></div>' : '';
-                    var datasHtml = (b.dataEmprestimo || b.previsaoEntrega || b.dataDevolucao) ? '<p style="font-size:9px;color:#64748b;margin:4px 0 0 0;">' + (b.dataEmprestimo ? 'Emprestada: ' + fmtDataBem(b.dataEmprestimo) : '') + (b.dataEmprestimo && b.previsaoEntrega ? ' · ' : '') + (b.previsaoEntrega ? 'Entrega prevista: ' + fmtDataBem(b.previsaoEntrega) : '') + (b.dataDevolucao ? (b.dataEmprestimo || b.previsaoEntrega ? ' · ' : '') + 'Devolvida: ' + fmtDataBem(b.dataDevolucao) : '') + '</p>' : '';
-                    var btnDarBaixa = !isDevolvido ? '<button type="button" onclick="window._kingFinanceDarBaixaBem && window._kingFinanceDarBaixaBem(\'' + b.id + '\')" style="padding:6px 12px;background:rgba(34,197,94,0.2);border:1px solid rgba(34,197,94,0.5);border-radius:8px;color:#86efac;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;" title="Ferramenta devolvida"><i class="fas fa-check-circle" style="margin-right:4px;"></i>Dar baixa</button>' : '';
-                    var btnReabrir = isDevolvido ? '<button type="button" onclick="window._kingFinanceReabrirBem && window._kingFinanceReabrirBem(\'' + b.id + '\')" style="padding:6px 12px;background:rgba(168,85,247,0.2);border:1px solid rgba(168,85,247,0.5);border-radius:8px;color:#a78bfa;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;" title="Voltar a empréstimo"><i class="fas fa-redo" style="margin-right:4px;"></i>Reabrir empréstimo</button>' : '';
-                    return '<div class="kf-card" style="' + styleKfCard + cardOpacity + cardStyleExtra + 'display:flex;justify-content:space-between;align-items:flex-start;gap:12px;"><div style="display:flex;align-items:flex-start;flex:1;min-width:0;">' + fotoHtml + '<div style="min-width:0;"><p style="font-size:10px;font-weight:800;color:#a855f7;margin:0;' + textMuted + '">' + (isDevolvido ? 'Devolvida' : 'Ferramenta emprestada') + '</p><h4 style="font-size:14px;font-weight:800;margin:4px 0 2px 0;' + textMuted + '">' + escapeHtmlFinance((b.nome || '').slice(0, 25)) + '</h4><p style="font-size:12px;font-weight:800;color:#f1f5f9;margin:2px 0 4px 0;' + textMuted + '">Com: ' + escapeHtmlFinance((b.possuidor || '').slice(0, 30)) + '</p><p style="font-size:12px;font-weight:800;color:#22c55e;margin:0 0 4px 0;' + textMuted + '">R$ ' + fmt(b.valorAluguel) + '/mês</p>' + datasHtml + '</div></div><div style="display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap;align-items:center;">' + btnDarBaixa + btnReabrir + '<button type="button" onclick="window._kingFinanceEditBem && window._kingFinanceEditBem(\'' + b.id + '\')" style="background:none;border:1px solid rgba(168,85,247,0.5);color:#a855f7;cursor:pointer;padding:6px 10px;border-radius:8px;" title="Editar"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="window._kingFinanceDelete(\'bens\',\'' + b.id + '\')" style="background:none;border:none;color:#64748b;cursor:pointer;" title="Excluir"><i class="fas fa-trash"></i></button></div></div>';
-                }).join('');
-                var subTabs = '<div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center;"><button type="button" onclick="window._kingFinanceBensFiltro=\'emprestimo\'; if(window.renderUnifiedKingTab) window.renderUnifiedKingTab(\'bens\')" style="padding:10px 18px;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ' + (filtroAtual === 'emprestimo' ? '#a855f7' : 'rgba(255,255,255,0.2)') + ';background:' + (filtroAtual === 'emprestimo' ? 'rgba(168,85,247,0.25)' : 'transparent') + ';color:' + (filtroAtual === 'emprestimo' ? '#c4b5fd' : '#94a3b8') + ';"><i class="fas fa-tools" style="margin-right:6px;"></i>Em empréstimo (' + emEmprestimo.length + ')</button><button type="button" onclick="window._kingFinanceBensFiltro=\'devolvidos\'; if(window.renderUnifiedKingTab) window.renderUnifiedKingTab(\'bens\')" style="padding:10px 18px;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ' + (filtroAtual === 'devolvidos' ? '#64748b' : 'rgba(255,255,255,0.2)') + ';background:' + (filtroAtual === 'devolvidos' ? 'rgba(100,116,139,0.2)' : 'transparent') + ';color:' + (filtroAtual === 'devolvidos' ? '#94a3b8' : '#64748b') + ';"><i class="fas fa-check-circle" style="margin-right:6px;"></i>Devolvidos (' + devolvidos.length + ')</button><button type="button" onclick="window._kingFinanceBensTelaCheia && window._kingFinanceBensTelaCheia(\'' + filtroAtual + '\')" style="padding:10px 18px;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid rgba(168,85,247,0.5);background:rgba(168,85,247,0.15);color:#c4b5fd;"><i class="fas fa-expand" style="margin-right:6px;"></i>Ver em tela cheia</button></div>';
-                container.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;flex-wrap:wrap;gap:12px;"><h3 style="font-size:1.1rem;font-weight:800;color:#a855f7;margin:0;">Empréstimo de ferramentas</h3><button type="button" onclick="window._kingFinanceOpenModal(\'bem\')" style="padding:8px 16px;background:#7c3aed;color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Registrar ferramenta</button></div><p style="font-size:11px;color:#94a3b8;margin:0 0 12px 0;">Controle de ferramentas que você emprestou. Use <strong>Dar baixa</strong> quando receber de volta.</p>' + subTabs + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;">' + cardsBens + '</div>';
+                if (window.switchUnifiedFinanceTab) window.switchUnifiedFinanceTab('resumo');
                 return;
             }
             if (tabId === 'cartoes') {
@@ -1598,21 +1672,49 @@ window.initFinancePane = async function () {
                     contentArea = '<p style="color:#64748b;text-align:center;padding:2rem;">Selecione uma pessoa acima.</p>';
                 } else {
                     var contas = person.contas || [];
+                    var filtroMesT = window._kingFinanceTerceirosMesFiltro || 'todos';
+                    var proxDateT = new Date(currentYearT, currentMonthT + 1, 1);
+                    var proximoMesRef = proxDateT.getFullYear() + '-' + String(proxDateT.getMonth() + 1).padStart(2, '0');
+                    var proximoMesNome = proxDateT.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+                    var mesAtualNome = new Date(currentYearT, currentMonthT, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+
+                    var contasFiltradas = contas.filter(function (c) {
+                        if (filtroMesT === 'todos') return true;
+                        var v = (c.dataVencimento || '').trim().slice(0, 7);
+                        if (filtroMesT === 'atual') return v === mesRef;
+                        if (filtroMesT === 'proximo') return v === proximoMesRef;
+                        return true;
+                    });
+
+                    var totalFiltradoValor = contasFiltradas.reduce(function(acc, c) { return acc + (Number(c.valor) || 0); }, 0);
+                    var totalFiltradoPago = contasFiltradas.reduce(function(acc, c) {
+                        return acc + (c.pagamentos || []).reduce(function(a, x) { return a + (Number(x.valor) || 0); }, 0);
+                    }, 0);
+                    var totalFiltradoFalta = Math.max(0, totalFiltradoValor - totalFiltradoPago);
+
+                    var filterButtonsT = '<div style="display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center;background:var(--finance-card-inner);padding:10px 14px;border-radius:14px;border:1px solid var(--finance-border);">' +
+                        '<span style="font-size:12px;font-weight:700;color:var(--finance-text-secondary);"><i class="fas fa-filter" style="margin-right:4px;"></i>Vencimento:</span>' +
+                        '<button type="button" onclick="window._kingFinanceTerceirosMesFiltro=\'todos\'; if(window.renderUnifiedKingTab) window.renderUnifiedKingTab(\'terceiros\')" style="padding:6px 14px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ' + (filtroMesT === 'todos' ? '#8b5cf6' : 'var(--finance-border)') + ';background:' + (filtroMesT === 'todos' ? 'rgba(139,92,246,0.3)' : 'transparent') + ';color:' + (filtroMesT === 'todos' ? '#a78bfa' : 'var(--finance-text-secondary)') + ';">Todas (' + contas.length + ')</button>' +
+                        '<button type="button" onclick="window._kingFinanceTerceirosMesFiltro=\'atual\'; if(window.renderUnifiedKingTab) window.renderUnifiedKingTab(\'terceiros\')" style="padding:6px 14px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ' + (filtroMesT === 'atual' ? '#8b5cf6' : 'var(--finance-border)') + ';background:' + (filtroMesT === 'atual' ? 'rgba(139,92,246,0.3)' : 'transparent') + ';color:' + (filtroMesT === 'atual' ? '#a78bfa' : 'var(--finance-text-secondary)') + ';">Este Mês (' + mesAtualNome + ')</button>' +
+                        '<button type="button" onclick="window._kingFinanceTerceirosMesFiltro=\'proximo\'; if(window.renderUnifiedKingTab) window.renderUnifiedKingTab(\'terceiros\')" style="padding:6px 14px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ' + (filtroMesT === 'proximo' ? '#8b5cf6' : 'var(--finance-border)') + ';background:' + (filtroMesT === 'proximo' ? 'rgba(139,92,246,0.3)' : 'transparent') + ';color:' + (filtroMesT === 'proximo' ? '#a78bfa' : 'var(--finance-text-secondary)') + ';">Mês Que Vem (' + proximoMesNome + ')</button>' +
+                        (filtroMesT !== 'todos' ? '<span style="font-size:11px;font-weight:700;color:#fcd34d;margin-left:auto;"><i class="fas fa-coins" style="margin-right:4px;"></i>Total a pagar: R$ ' + fmt(totalFiltradoFalta) + ' (' + contasFiltradas.length + ' parcela' + (contasFiltradas.length === 1 ? '' : 's') + ')</span>' : '') +
+                    '</div>';
+
                     var formatPayDateT = function (p) { var dt = p.data || ''; if (/^\d{4}-\d{2}-\d{2}$/.test(dt)) { var pt = dt.split('-'); dt = pt[2] + '/' + pt[1] + '/' + pt[0]; } return dt + (p.hora ? ' às ' + p.hora : ''); };
-                    var cardsContas = contas.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">Nenhuma conta. Clique em <strong>+ Nova conta</strong> (ex: Cartão X, Cartão Y, Aluguel).</p>' : contas.map(function (c, idx) {
+                    var cardsContas = contasFiltradas.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">' + (filtroMesT === 'todos' ? 'Nenhuma conta cadastrada para esta pessoa. Clique em <strong>+ Nova conta</strong>.' : 'Nenhuma conta com vencimento para ' + (filtroMesT === 'atual' ? 'este mês' : 'o mês que vem') + '.') + '</p>' : contasFiltradas.map(function (c, idx) {
                         var num = idx + 1;
                         var pago = (c.pagamentos || []).reduce(function (a, p) { return a + (Number(p.valor) || 0); }, 0);
                         var restante = (Number(c.valor) || 0) - pago;
                         var pctD = (Number(c.valor) || 0) > 0 ? Math.round((pago / (c.valor || 1)) * 100) : 100;
-                        var pagamentosHtmlT = (c.pagamentos || []).length ? '<div style="margin-bottom:0.75rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 6px 0;">Pagamentos (clique em Excluir para remover um pagamento errado)</p>' + (c.pagamentos || []).map(function (p, pIdx) { return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);gap:8px;"><span style="font-size:11px;color:#cbd5e1;">R$ ' + fmt(Number(p.valor) || 0) + ' em ' + formatPayDateT(p) + '</span><div style="display:flex;gap:6px;"><button type="button" onclick="event.stopPropagation(); window._kingFinanceEditarPagamentoTerceiro && window._kingFinanceEditarPagamentoTerceiro(\'' + (person.id || '').replace(/'/g, "\\'") + '\',\'' + (c.id || '').replace(/'/g, "\\'") + '\',' + pIdx + ')" style="background:rgba(139,92,246,0.25);border:1px solid rgba(139,92,246,0.5);color:#a78bfa;cursor:pointer;padding:4px 10px;border-radius:8px;font-size:10px;font-weight:700;" title="Editar"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="event.stopPropagation(); window._kingFinanceExcluirPagamentoTerceiro && window._kingFinanceExcluirPagamentoTerceiro(\'' + (person.id || '').replace(/'/g, "\\'") + '\',\'' + (c.id || '').replace(/'/g, "\\'") + '\',' + pIdx + ')" style="background:rgba(239,68,68,0.25);border:1px solid rgba(239,68,68,0.5);color:#fca5a5;cursor:pointer;padding:4px 10px;border-radius:8px;font-size:10px;font-weight:700;" title="Excluir este pagamento"><i class="fas fa-trash"></i></button></div></div>'; }).join('') + '</div>' : '';
+                        var pagamentosHtmlT = (c.pagamentos || []).length ? '<div style="margin-bottom:0.75rem;"><p style="font-size:9px;font-weight:800;color:var(--finance-text-secondary);margin:0 0 6px 0;">Pagamentos registrados (clique em Excluir para remover)</p>' + (c.pagamentos || []).map(function (p, pIdx) { return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--finance-border);gap:8px;"><span style="font-size:11px;color:var(--finance-text-secondary);">R$ ' + fmt(Number(p.valor) || 0) + ' em ' + formatPayDateT(p) + '</span><div style="display:flex;gap:6px;"><button type="button" onclick="event.stopPropagation(); window._kingFinanceEditarPagamentoTerceiro && window._kingFinanceEditarPagamentoTerceiro(\'' + (person.id || '').replace(/'/g, "\\'") + '\',\'' + (c.id || '').replace(/'/g, "\\'") + '\',' + pIdx + ')" style="background:rgba(139,92,246,0.25);border:1px solid rgba(139,92,246,0.5);color:#a78bfa;cursor:pointer;padding:4px 10px;border-radius:8px;font-size:10px;font-weight:700;" title="Editar"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="event.stopPropagation(); window._kingFinanceExcluirPagamentoTerceiro && window._kingFinanceExcluirPagamentoTerceiro(\'' + (person.id || '').replace(/'/g, "\\'") + '\',\'' + (c.id || '').replace(/'/g, "\\'") + '\',' + pIdx + ')" style="background:rgba(239,68,68,0.25);border:1px solid rgba(239,68,68,0.5);color:#fca5a5;cursor:pointer;padding:4px 10px;border-radius:8px;font-size:10px;font-weight:700;" title="Excluir este pagamento"><i class="fas fa-trash"></i></button></div></div>'; }).join('') + '</div>' : '';
                         var vencStr = (c.dataVencimento || '').trim(); if (/^\d{4}-\d{2}-\d{2}$/.test(vencStr)) { var pt = vencStr.split('-'); vencStr = pt[2] + '/' + pt[1] + '/' + pt[0]; }
                         var tipoLabel = (c.tipo === 'recorrente') ? 'Mensal' : 'Única vez';
                         var descStr = (c.descricao || '').trim();
                         var descHtml = descStr ? '<p style="font-size:11px;color:#c4b5fd;margin:0 0 6px 0;line-height:1.4;"><i class="fas fa-tag" style="margin-right:5px;font-size:10px;color:#a78bfa;"></i>' + escapeHtmlFinance(descStr) + '</p>' : '';
-                        var subtituloConta = (vencStr || tipoLabel) ? '<p style="font-size:10px;color:#94a3b8;margin:0 0 6px 0;">Venc: ' + (vencStr || '-') + ' · ' + tipoLabel + '</p>' : '';
-                        return '<div class="kf-card" style="' + styleKfCard + 'border-left:4px solid #8b5cf6;"><div style="display:flex;justify-content:space-between;margin-bottom:0.4rem;align-items:center;"><span style="font-size:12px;font-weight:800;color:#94a3b8;">' + num + '.</span><h4 style="font-size:14px;font-weight:800;margin:0;flex:1;">' + (c.nomeConta || 'Conta').replace(/</g, ' ').slice(0, 50) + '</h4><div style="display:flex;gap:6px;"><button type="button" onclick="window._kingFinanceEditContaTerceiro && window._kingFinanceEditContaTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="background:none;border:1px solid rgba(139,92,246,0.5);color:#a78bfa;cursor:pointer;padding:4px 8px;border-radius:8px;" title="Editar conta"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="window._kingFinanceDeleteContaTerceiro && window._kingFinanceDeleteContaTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="background:none;border:none;color:#64748b;cursor:pointer;" title="Excluir esta conta"><i class="fas fa-trash"></i></button></div></div>' + descHtml + subtituloConta + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;"><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;">TOTAL LIQUIDADO</p><p style="font-size:16px;font-weight:800;color:#86efac;margin:0;">R$ ' + fmt(pago) + '</p><p style="font-size:10px;color:#94a3b8;margin:0;">' + pctD + '% Completo</p></div><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;">VALOR DA NEGOCIAÇÃO</p><p style="font-size:16px;font-weight:800;color:#f59e0b;margin:0 0 6px 0;">R$ ' + fmt(restante) + '</p><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamentoTerceiro && window._kingFinanceRegistrarPagamentoTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="padding:6px 12px;background:rgba(245,158,11,0.35);color:#fcd34d;border:1px solid rgba(245,158,11,0.6);border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;">Pagar mais</button></div></div>' + pagamentosHtmlT + '<div style="height:6px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:0.75rem;"><div style="height:100%;width:' + pctD + '%;background:#8b5cf6;border-radius:999px;"></div></div><button type="button" onclick="window._kingFinanceRegistrarPagamentoTerceiro && window._kingFinanceRegistrarPagamentoTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="width:100%;padding:12px;background:#8b5cf6;color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;">Efetuar pagamento</button></div>';
+                        var subtituloConta = (vencStr || tipoLabel) ? '<p style="font-size:10px;color:var(--finance-text-secondary);margin:0 0 6px 0;">Venc: ' + (vencStr || '-') + ' · ' + tipoLabel + '</p>' : '';
+                        return '<div class="kf-card" style="' + styleKfCard + 'border-left:4px solid #8b5cf6;"><div style="display:flex;justify-content:space-between;margin-bottom:0.4rem;align-items:center;"><span style="font-size:12px;font-weight:800;color:var(--finance-text-secondary);">' + num + '.</span><h4 style="font-size:14px;font-weight:800;margin:0;flex:1;color:var(--finance-text-primary);">' + (c.nomeConta || 'Conta').replace(/</g, ' ').slice(0, 50) + '</h4><div style="display:flex;gap:6px;"><button type="button" onclick="window._kingFinanceEditContaTerceiro && window._kingFinanceEditContaTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="background:none;border:1px solid rgba(139,92,246,0.5);color:#a78bfa;cursor:pointer;padding:4px 8px;border-radius:8px;" title="Editar conta"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="window._kingFinanceDeleteContaTerceiro && window._kingFinanceDeleteContaTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="background:none;border:none;color:#64748b;cursor:pointer;" title="Excluir esta conta"><i class="fas fa-trash"></i></button></div></div>' + descHtml + subtituloConta + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;"><div style="background:var(--finance-card-inner);padding:0.75rem;border-radius:1rem;border:1px solid var(--finance-border);"><p style="font-size:9px;font-weight:800;color:var(--finance-text-secondary);margin:0 0 4px 0;">TOTAL LIQUIDADO</p><p style="font-size:16px;font-weight:800;color:#86efac;margin:0;">R$ ' + fmt(pago) + '</p><p style="font-size:10px;color:var(--finance-text-secondary);margin:0;">' + pctD + '% Completo</p></div><div style="background:var(--finance-card-inner);padding:0.75rem;border-radius:1rem;border:1px solid var(--finance-border);"><p style="font-size:9px;font-weight:800;color:var(--finance-text-secondary);margin:0 0 4px 0;">VALOR DA NEGOCIAÇÃO</p><p style="font-size:16px;font-weight:800;color:#f59e0b;margin:0 0 6px 0;">R$ ' + fmt(restante) + '</p><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamentoTerceiro && window._kingFinanceRegistrarPagamentoTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="padding:6px 12px;background:rgba(245,158,11,0.35);color:#fcd34d;border:1px solid rgba(245,158,11,0.6);border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;">Pagar mais</button></div></div>' + pagamentosHtmlT + '<div style="height:6px;background:var(--finance-border);border-radius:999px;overflow:hidden;margin-bottom:0.75rem;"><div style="height:100%;width:' + pctD + '%;background:#8b5cf6;border-radius:999px;"></div></div><button type="button" onclick="window._kingFinanceRegistrarPagamentoTerceiro && window._kingFinanceRegistrarPagamentoTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="width:100%;padding:12px;background:#8b5cf6;color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;">Efetuar pagamento</button></div>';
                     }).join('');
-                    contentArea = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px;"><h4 style="font-size:1rem;font-weight:800;color:#a78bfa;margin:0;">' + (person.nome || 'Pessoa').replace(/</g, ' ') + '</h4><div style="display:flex;gap:8px;"><button type="button" onclick="window._kingFinanceImportarTerceirosImagem && window._kingFinanceImportarTerceirosImagem()" style="padding:8px 16px;background:rgba(34,197,94,0.25);color:#86efac;border:1px solid rgba(34,197,94,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-image" style="margin-right:6px;"></i>Importar imagem</button><button type="button" onclick="window._kingFinanceEditTerceiro && window._kingFinanceEditTerceiro(\'' + person.id + '\')" style="padding:8px 16px;background:rgba(139,92,246,0.25);color:#a78bfa;border:1px solid rgba(139,92,246,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-pencil-alt" style="margin-right:6px;"></i>Editar pessoa</button><button type="button" onclick="window._kingFinanceOpenModal(\'contaPessoa\', \'' + person.id + '\')" style="padding:8px 16px;background:#8b5cf6;color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Nova conta</button><button type="button" onclick="if(confirm(\'Excluir esta pessoa e todas as contas?\')) window._kingFinanceDelete(\'terceiros\',\'' + person.id + '\')" style="padding:8px 16px;background:rgba(244,63,94,0.25);color:#fda4af;border:1px solid rgba(244,63,94,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-trash" style="margin-right:6px;"></i>Excluir pessoa</button></div></div><div style="display:flex;flex-direction:column;gap:1rem;">' + cardsContas + '</div>';
+                    contentArea = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px;"><h4 style="font-size:1rem;font-weight:800;color:#a78bfa;margin:0;">' + (person.nome || 'Pessoa').replace(/</g, ' ') + '</h4><div style="display:flex;gap:8px;"><button type="button" onclick="window._kingFinanceImportarTerceirosImagem && window._kingFinanceImportarTerceirosImagem()" style="padding:8px 16px;background:rgba(34,197,94,0.25);color:#86efac;border:1px solid rgba(34,197,94,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-image" style="margin-right:6px;"></i>Importar imagem</button><button type="button" onclick="window._kingFinanceEditTerceiro && window._kingFinanceEditTerceiro(\'' + person.id + '\')" style="padding:8px 16px;background:rgba(139,92,246,0.25);color:#a78bfa;border:1px solid rgba(139,92,246,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-pencil-alt" style="margin-right:6px;"></i>Editar pessoa</button><button type="button" onclick="window._kingFinanceOpenModal(\'contaPessoa\', \'' + person.id + '\')" style="padding:8px 16px;background:#8b5cf6;color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Nova conta</button><button type="button" onclick="if(confirm(\'Excluir esta pessoa e todas as contas?\')) window._kingFinanceDelete(\'terceiros\',\'' + person.id + '\')" style="padding:8px 16px;background:rgba(244,63,94,0.25);color:#fda4af;border:1px solid rgba(244,63,94,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-trash" style="margin-right:6px;"></i>Excluir pessoa</button></div></div>' + filterButtonsT + '<div style="display:flex;flex-direction:column;gap:1rem;">' + cardsContas + '</div>';
                 }
                 container.innerHTML = '<div style="margin-bottom:1rem;"><h3 style="font-size:1.1rem;font-weight:800;color:#8b5cf6;margin:0 0 8px 0;">Quem eu devo</h3><p style="font-size:11px;color:#94a3b8;margin:0 0 12px 0;">Uma aba por pessoa. Em cada aba, adicione as contas (Cartão X, Cartão Y, Aluguel, etc.).</p><div class="kf-card" style="' + styleKfCard + 'display:flex;align-items:center;justify-content:center;gap:2rem;margin-bottom:1.5rem;flex-wrap:wrap;padding:1.5rem;">' + bolinhasT + '</div></div>' + faltaEsteMesHtml + personTabs + '<div class="kf-card" style="' + styleKfCard + 'padding:1.5rem;">' + contentArea + '</div>';
                 return;
@@ -2812,615 +2914,11 @@ window.initFinancePane = async function () {
     }
 };
 
-// ========== MODO KING FINANCE (Fluxo, Trampo, Bens, Cartões, Serasa) ==========
+// ========== REDIRECIONAMENTO COMPATIBILIDADE ==========
 window.showKingFinancePane = async function () {
-    const financeContent = document.getElementById('finance-content');
-    if (!financeContent) return;
-    financeContent.innerHTML = '<p style="text-align:center;padding:40px;color:var(--finance-text-secondary,#888);"><i class="fas fa-spinner fa-spin"></i> Carregando King Finance...</p>';
-
-    const fmt = (v) => Number(v || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    let db = { fluxo: [], trabalhos: [], bens: [], cartoes: [], dividas: [], terceiros: [] };
-    const profileId = localStorage.getItem('finance_current_profile_id') || '';
-    try {
-        const saved = localStorage.getItem('king_finance_v9');
-        if (saved) db = JSON.parse(saved);
-    } catch (e) { }
-    // Sync: servidor é a fonte de verdade para Serasa / Quem eu devo / Trabalhos / Bens
-    try {
-        const kingDataUrl = `${env.API_URL}/api/finance/king-data${profileId ? '?profile_id=' + encodeURIComponent(profileId) : ''}`;
-        const kingRes = await fetch(kingDataUrl, { headers: env.HEADERS_AUTH });
-        if (kingRes.ok) {
-            const kingJson = await kingRes.json();
-            const remote = kingJson.data || kingJson;
-            if (remote && (Array.isArray(remote.dividas) || Array.isArray(remote.terceiros) || Array.isArray(remote.trabalhos) || Array.isArray(remote.bens))) {
-                if (Array.isArray(remote.dividas)) db.dividas = remote.dividas;
-                if (Array.isArray(remote.terceiros)) db.terceiros = remote.terceiros;
-                if (Array.isArray(remote.trabalhos)) db.trabalhos = remote.trabalhos;
-                if (Array.isArray(remote.bens)) db.bens = remote.bens;
-            }
-            try { localStorage.removeItem('king_finance_v9'); } catch (_) { }
-        }
-    } catch (e) { console.warn('King-data sync load:', e); }
-
-    const now = new Date();
-    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${lastDay}`;
-
-    let receitas = 0, despesas = 0;
-    let transactions = [], cards = [];
-    try {
-        const dashRes = await fetch(`${env.API_URL}/api/finance/dashboard?dateFrom=${monthStart}&dateTo=${monthEnd}${profileId ? '&profile_id=' + profileId : ''}`, { headers: env.HEADERS_AUTH });
-        if (dashRes.ok) {
-            const dashData = (await dashRes.json()).data || {};
-            receitas = Number(dashData.totalIncome) || 0;
-            despesas = Number(dashData.totalExpense) || 0;
-        }
-    } catch (e) { }
-    try {
-        const q = { limit: '500', dateFrom: monthStart, dateTo: monthEnd };
-        if (profileId) q.profile_id = profileId;
-        transactions = await env.fetchAllTransactions(q);
-    } catch (e) { }
-    try {
-        const cardRes = await fetch(`${env.API_URL}/api/finance/cards`, { headers: env.HEADERS_AUTH });
-        if (cardRes.ok) {
-            const cardData = (await cardRes.json()).data || [];
-            cards = Array.isArray(cardData) ? cardData : [];
-        }
-    } catch (e) { }
-
-    const totalDividas = (db.dividas || []).reduce((a, b) => {
-        const pago = (b.pagamentos || []).reduce((acc, p) => acc + (Number(p.valor) || 0), 0);
-        return a + (Number(b.valorTotal) || 0) - pago;
-    }, 0);
-    const totalTrabalhos = (db.trabalhos || []).reduce((a, b) => a + (Number(b.valor) || 0), 0);
-    const saldo = receitas - despesas;
-
-    const totalDividasGeral = (db.dividas || []).reduce((a, b) => a + (Number(b.valorTotal) || 0), 0);
-    const totalPagoGeral = (db.dividas || []).reduce((a, b) => a + (b.pagamentos || []).reduce((acc, p) => acc + (Number(p.valor) || 0), 0), 0);
-    var rawScorePct = totalDividasGeral > 0 ? (totalPagoGeral / totalDividasGeral) * 100 : 100;
-    const scoreSerasaPct = rawScorePct > 0 && rawScorePct < 1 ? Math.round(rawScorePct * 10) / 10 : Math.round(rawScorePct);
-    const scoreSerasaLabel = scoreSerasaPct >= 100 ? 'Em dia' : scoreSerasaPct >= 50 ? 'Em acordo' : 'Quitando';
-
-    window._kingFinanceDb = db;
-    window._kingFinanceTransactions = transactions;
-    window._kingFinanceCards = cards;
-    window._kingFinanceStats = { receitas, despesas, totalDividas, totalTrabalhos, saldo, scoreSerasaPct, scoreSerasaLabel };
-
-    const fluxoList = transactions.map(t => ({
-        id: t.id,
-        tipo: (t.type || '').toUpperCase() === 'INCOME' ? 'receita' : 'despesa',
-        valor: Number(t.amount) || 0,
-        descricao: t.description || '',
-        data: (t.transaction_date || t.date || '').toString().slice(0, 10)
-    }));
-    const cartoesList = cards.map(c => ({
-        id: c.id,
-        nome: c.name || '',
-        limite: Number(c.limit_amount) || 0,
-        diaFechamento: c.closing_day || ''
-    }));
-
-    const html = `
-        <style>
-            .kf-tab { padding: 10px 16px; border-radius: 12px; border: none; background: rgba(255,255,255,0.05); color: #94a3b8; font-weight: 700; cursor: pointer; font-size: 0.8rem; }
-            .kf-tab.active { background: #D4AF37; color: #000; }
-            .kf-card { background: #111; padding: 1.5rem; border-radius: 1.5rem; border: 1px solid rgba(255,255,255,0.05); }
-        </style>
-        <div class="king-finance-pane" style="max-width: 900px; margin: 0 auto;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
-                <h2 style="font-size: 1.5rem; font-weight: 800; color: #f1f5f9; margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">King Finance</h2>
-                <button type="button" onclick="window.initFinancePane && window.initFinancePane()" style="padding: 8px 16px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; color: #94a3b8; font-size: 0.8rem; font-weight: 600; cursor: pointer;">Voltar à visão clássica</button>
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
-                <div class="kf-card"><p style="font-size: 10px; font-weight: 800; color: #22c55e; text-transform: uppercase; margin: 0 0 4px 0;">Receitas Totais</p><h2 style="font-size: 1.75rem; font-weight: 800; margin: 0;">R$ ${fmt(receitas)}</h2></div>
-                <div class="kf-card"><p style="font-size: 10px; font-weight: 800; color: #f43f5e; text-transform: uppercase; margin: 0 0 4px 0;">Despesas Totais</p><h2 style="font-size: 1.75rem; font-weight: 800; margin: 0;">R$ ${fmt(despesas)}</h2></div>
-                <div class="kf-card"><p style="font-size: 10px; font-weight: 800; color: #D4AF37; text-transform: uppercase; margin: 0 0 4px 0;">Dívidas Pendentes</p><h2 style="font-size: 1.75rem; font-weight: 800; margin: 0;">R$ ${fmt(totalDividas)}</h2></div>
-            </div>
-            <div style="background: #D4AF37; padding: 2rem; border-radius: 3rem; text-align: center; margin-bottom: 2rem; box-shadow: 0 0 50px rgba(212,175,55,0.2);">
-                <p style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2em; opacity: 0.8; color: #000; margin: 0 0 8px 0;">Saldo Disponível (KING)</p>
-                <h1 style="font-size: 3rem; font-weight: 800; margin: 0; color: #000; letter-spacing: -0.02em;">R$ ${fmt(saldo)}</h1>
-            </div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.5rem;">
-                <button type="button" class="kf-tab active" data-king-tab="fluxo">Fluxo</button>
-                <button type="button" class="kf-tab" data-king-tab="trabalhos">Trabalhos</button>
-                <button type="button" class="kf-tab" data-king-tab="bens">Bens</button>
-                <button type="button" class="kf-tab" data-king-tab="cartoes">Cartões</button>
-                <button type="button" class="kf-tab" data-king-tab="serasa">Serasa</button>
-            </div>
-            <div id="king-finance-tab-content"></div>
-        </div>
-        <div id="king-finance-modal" class="king-finance-modal-wrap">
-            <div class="king-finance-modal-box">
-                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--finance-indigo, #3b82f6); border-radius: 24px 24px 0 0;"></div>
-                <h3 id="king-finance-modal-title" class="king-finance-modal-title">Novo</h3>
-                <form id="king-finance-modal-form" class="king-finance-modal-form"></form>
-                <button type="button" id="king-finance-modal-cancel" class="king-finance-modal-cancel">Cancelar</button>
-            </div>
-        </div>
-    `;
-    financeContent.innerHTML = html;
-
-    function renderTab(tabId) {
-        const container = document.getElementById('king-finance-tab-content');
-        if (!container) return;
-        document.querySelectorAll('.kf-tab').forEach(btn => { btn.classList.toggle('active', btn.getAttribute('data-king-tab') === tabId); });
-        const db = window._kingFinanceDb || { fluxo: [], trabalhos: [], bens: [], cartoes: [], dividas: [], terceiros: [] };
-        const fluxoList = window._kingFinanceTransactions || [];
-        const cartoesList = window._kingFinanceCards || [];
-        const fmt = (v) => Number(v || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-
-        if (tabId === 'fluxo') {
-            const list = fluxoList.map(t => ({ id: t.id, tipo: (t.type || '').toUpperCase() === 'INCOME' ? 'receita' : 'despesa', valor: Number(t.amount) || 0, descricao: t.description || '', data: (t.transaction_date || t.date || '').toString().slice(0, 10) }));
-            container.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                    <h3 style="font-size: 1.1rem; font-weight: 800; color: #f1f5f9; margin: 0;">Fluxo de Caixa</h3>
-                    <button type="button" onclick="window.showNovoLancamentoChoiceModal && window.showNovoLancamentoChoiceModal()" style="padding: 8px 16px; background: #fff; color: #000; border: none; border-radius: 12px; font-size: 10px; font-weight: 800; cursor: pointer;">+ Novo Lançamento</button>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                    ${list.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">Nenhum lançamento neste mês. Use + Novo Lançamento acima ou a aba Resumo.</p>' : list.map(f => `
-                        <div class="kf-card" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem;">
-                            <div style="display: flex; align-items: center; gap: 1rem;">
-                                <span style="color: ${f.tipo === 'receita' ? '#22c55e' : '#f43f5e'};">${f.tipo === 'receita' ? '+' : '-'}</span>
-                                <div><p style="font-size: 12px; font-weight: 700; margin: 0;">${(f.descricao || '').slice(0, 40)}</p><p style="font-size: 9px; color: #64748b; margin: 4px 0 0 0;">${f.data}</p></div>
-                            </div>
-                            <span style="font-weight: 800; color: ${f.tipo === 'receita' ? '#22c55e' : '#f43f5e'};">R$ ${fmt(f.valor)}</span>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            return;
-        }
-        if (tabId === 'trabalhos') {
-            const list = db.trabalhos || [];
-            const formatPayDateTrab = (p) => { const dt = p.data || ''; if (/^\d{4}-\d{2}-\d{2}$/.test(dt)) { const pt = dt.split('-'); return pt[2] + '/' + pt[1] + '/' + pt[0] + (p.hora ? ' às ' + p.hora : ''); } return dt + (p.hora ? ' às ' + p.hora : ''); };
-            const cardsTrab = list.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">Nenhum trabalho. Clique em + Registrar Serviço.</p>' : list.map(t => {
-                const pago = (t.pagamentos || []).reduce((a, p) => a + (Number(p.valor) || 0), 0);
-                const restante = Math.max(0, (Number(t.valor) || 0) - pago);
-                const pctD = (Number(t.valor) || 0) > 0 ? Math.round((pago / (t.valor || 1)) * 100) : 100;
-                const quitado = pago >= (Number(t.valor) || 0);
-                const ultimoPag = (t.pagamentos || []).length ? t.pagamentos[t.pagamentos.length - 1] : null;
-                const dataQuitStr = quitado && ultimoPag ? '<p style="font-size:10px;color:#22c55e;margin:4px 0 0 0;"><i class="fas fa-check-circle"></i> Quitado em ' + formatPayDateTrab(ultimoPag) + '</p>' : '';
-                const pagamentosHtmlT = (t.pagamentos || []).length ? '<div style="margin-top:12px;"><p style="font-size:9px;font-weight:800;color:rgba(255,255,255,0.5);margin:0 0 6px 0;letter-spacing:0.05em;">ENTRADAS</p>' + (t.pagamentos || []).map(p => '<p style="font-size:11px;color:#cbd5e1;margin:0 0 4px 0;">R$ ' + fmt(Number(p.valor) || 0) + ' em ' + formatPayDateTrab(p) + '</p>').join('') + '</div>' : '';
-                const datasStr = (t.data || t.dataPrevista) ? ' · ' + (t.data ? 'Trabalho: ' + (t.data.length >= 10 ? t.data.split('-').reverse().join('/') : t.data) : '') + (t.dataPrevista ? (t.data ? ' ' : '') + 'Previsto: ' + (t.dataPrevista.length >= 10 ? t.dataPrevista.split('-').reverse().join('/') : t.dataPrevista) : '') : '';
-                const cardStyle = 'background:linear-gradient(135deg,rgba(59,130,246,0.18) 0%,rgba(37,99,235,0.1) 50%,#111 100%);border:1px solid rgba(59,130,246,0.3);border-radius:20px;padding:1.5rem;min-height:180px;display:flex;flex-direction:column;position:relative;';
-                const totalTrab = Number(t.valor) || 0;
-                const valoresRow = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;background:rgba(0,0,0,0.3);padding:14px 16px;border-radius:14px;border:1px solid rgba(255,255,255,0.08);">' +
-                    '<div><p style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.6);margin:0 0 4px 0;text-transform:uppercase;letter-spacing:0.04em;">Valor Total</p><p style="font-size:1.25rem;font-weight:800;margin:0;color:#38bdf8;">R$ ' + fmt(totalTrab) + '</p></div>' +
-                    '<div><p style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.6);margin:0 0 4px 0;text-transform:uppercase;letter-spacing:0.04em;">Valor Recebido</p><p style="font-size:1.25rem;font-weight:800;margin:0;color:#22c55e;">R$ ' + fmt(pago) + '</p></div>' +
-                    '<div style="text-align:right;"><p style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.6);margin:0 0 4px 0;text-transform:uppercase;letter-spacing:0.04em;">Falta Receber</p><p style="font-size:1.25rem;font-weight:800;margin:0;color:' + (restante > 0 ? '#f87171' : '#22c55e') + ';">' + (restante > 0 ? 'R$ ' + fmt(restante) : 'Quitado') + '</p></div>' +
-                '</div>';
-                return '<div class="kf-card" style="' + cardStyle + '"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;"><div><p style="font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;letter-spacing:0.1em;">SERVIÇO PRESTADO</p><h4 style="font-size:1.15rem;font-weight:800;margin:0;color:#fff;">' + (t.cliente || '').slice(0, 35) + '</h4><p style="font-size:10px;color:rgba(255,255,255,0.5);margin:4px 0 0 0;">' + (t.servico || '').slice(0, 50) + (datasStr ? datasStr : '') + '</p></div><button type="button" onclick="window._kingFinanceEditTrabalho && window._kingFinanceEditTrabalho(\'' + String(t.id).replace(/'/g, "\\'") + '\')" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#60a5fa;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Editar"><i class="fas fa-pencil-alt"></i></button></div>' + valoresRow + '<div style="height:8px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;width:' + pctD + '%;background:linear-gradient(90deg,#22c55e,#3b82f6);border-radius:999px;transition:width 0.3s;"></div></div><p style="font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 12px 0;">' + pctD + '% recebido</p>' + dataQuitStr + pagamentosHtmlT + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;"><button type="button" onclick="window._kingFinanceRegistrarEntradaTrabalho && window._kingFinanceRegistrarEntradaTrabalho(\'' + t.id + '\')" style="flex:1;min-width:140px;padding:10px 16px;background:#22c55e;color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;"><i class="fas fa-plus" style="margin-right:6px;"></i>Registrar entrada</button><button type="button" onclick="window._kingFinanceDelete(\'trabalhos\',\'' + t.id + '\')" style="background:none;border:1px solid rgba(239,68,68,0.4);color:#f87171;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Excluir"><i class="fas fa-trash"></i></button></div></div>';
-            }).join('');
-            container.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;"><h3 style="font-size:1.1rem;font-weight:800;color:#3b82f6;margin:0;">Trabalhos e Serviços</h3><button type="button" onclick="window._kingFinanceOpenModal(\'trabalho\')" style="padding:8px 16px;background:#2563eb;color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Registrar Serviço</button></div><p style="font-size:11px;color:#94a3b8;margin:0 0 12px 0;">Controle de serviços prestados. Registre entradas (pagamentos parciais) e acompanhe a quitação.</p><div style="display:flex;flex-direction:column;gap:1rem;">' + cardsTrab + '</div>';
-            return;
-        }
-        if (tabId === 'bens') {
-            if (window._kingFinanceBensFiltro !== 'emprestimo' && window._kingFinanceBensFiltro !== 'devolvidos') window._kingFinanceBensFiltro = 'emprestimo';
-            const list = db.bens || [];
-            const emEmprestimo = list.filter(b => !b.devolvido);
-            const devolvidos = list.filter(b => !!b.devolvido);
-            const filtroAtual = window._kingFinanceBensFiltro || 'emprestimo';
-            const listToShow = filtroAtual === 'devolvidos' ? devolvidos : emEmprestimo;
-            const fmtDataBem = (d) => { if (!d || d.length < 10) return ''; const p = d.slice(0, 10).split('-'); return p[2] + '/' + p[1] + '/' + p[0]; };
-            const cardsHtml = listToShow.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;grid-column:1/-1;">' + (filtroAtual === 'devolvidos' ? 'Nenhuma ferramenta devolvida.' : 'Nenhuma ferramenta em empréstimo.') + '</p>' : listToShow.map(b => {
-                const isDevolvido = !!b.devolvido;
-                const cardStyle = isDevolvido ? 'opacity:0.75;background:rgba(30,30,35,0.6);border-color:rgba(255,255,255,0.06);' : '';
-                const textMuted = isDevolvido ? 'color:#64748b !important;' : '';
-                const fotoHtml = b.foto ? `<div role="button" tabindex="0" onclick="window._kingFinanceExpandFoto && window._kingFinanceExpandFoto(this)" style="flex-shrink:0;width:80px;height:80px;margin-right:14px;cursor:pointer;${isDevolvido ? 'opacity:0.7;' : ''}"><img src="${(b.foto || '').replace(/"/g, '&quot;')}" style="width:80px;height:80px;border-radius:12px;object-fit:cover;border:1px solid rgba(255,255,255,0.1);display:block;pointer-events:none;" alt=""></div>` : '';
-                const datasHtml = (b.dataEmprestimo || b.previsaoEntrega || b.dataDevolucao) ? `<p style="font-size:9px;color:#64748b;margin:4px 0 0 0;">${b.dataEmprestimo ? 'Emprestada: ' + fmtDataBem(b.dataEmprestimo) : ''}${b.dataEmprestimo && b.previsaoEntrega ? ' · ' : ''}${b.previsaoEntrega ? 'Entrega prevista: ' + fmtDataBem(b.previsaoEntrega) : ''}${b.dataDevolucao ? (b.dataEmprestimo || b.previsaoEntrega ? ' · ' : '') + 'Devolvida: ' + fmtDataBem(b.dataDevolucao) : ''}</p>` : '';
-                const btnDarBaixa = !isDevolvido ? `<button type="button" onclick="window._kingFinanceDarBaixaBem && window._kingFinanceDarBaixaBem('${b.id}')" style="padding:6px 12px;background:rgba(34,197,94,0.2);border:1px solid rgba(34,197,94,0.5);border-radius:8px;color:#86efac;font-size:10px;font-weight:700;cursor:pointer;"><i class="fas fa-check-circle" style="margin-right:4px;"></i>Dar baixa</button>` : '';
-                const btnReabrir = isDevolvido ? `<button type="button" onclick="window._kingFinanceReabrirBem && window._kingFinanceReabrirBem('${b.id}')" style="padding:6px 12px;background:rgba(168,85,247,0.2);border:1px solid rgba(168,85,247,0.5);border-radius:8px;color:#a78bfa;font-size:10px;font-weight:700;cursor:pointer;"><i class="fas fa-redo" style="margin-right:4px;"></i>Reabrir empréstimo</button>` : '';
-                return `<div class="kf-card" style="${cardStyle}display:flex;justify-content:space-between;align-items:flex-start;gap:12px;"><div style="display:flex;align-items:flex-start;flex:1;min-width:0;">${fotoHtml}<div style="min-width:0;"><p style="font-size:10px;font-weight:800;color:#a855f7;margin:0;${textMuted}">${isDevolvido ? 'Devolvida' : 'Ferramenta emprestada'}</p><h4 style="font-size:14px;font-weight:800;margin:4px 0 2px 0;${textMuted}">${(b.nome || '').slice(0, 25)}</h4><p style="font-size:12px;font-weight:800;color:#f1f5f9;margin:2px 0 4px 0;${textMuted}">Com: ${(b.possuidor || '').slice(0, 30)}</p><p style="font-size:12px;font-weight:800;color:#22c55e;margin:0 0 4px 0;${textMuted}">R$ ${fmt(b.valorAluguel)}/mês</p>${datasHtml}</div></div><div style="display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap;">${btnDarBaixa}${btnReabrir}<button type="button" onclick="window._kingFinanceEditBem && window._kingFinanceEditBem('${b.id}')" style="background:none;border:1px solid rgba(168,85,247,0.5);color:#a855f7;cursor:pointer;padding:6px 10px;border-radius:8px;" title="Editar"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="window._kingFinanceDelete('bens','${b.id}')" style="background:none;border:none;color:#64748b;cursor:pointer;"><i class="fas fa-trash"></i></button></div></div>`;
-            }).join('');
-            const subTabs = `<div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center;"><button type="button" onclick="window._kingFinanceBensFiltro='emprestimo';if(window.renderUnifiedKingTab)window.renderUnifiedKingTab('bens')" style="padding:10px 18px;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${filtroAtual === 'emprestimo' ? '#a855f7' : 'rgba(255,255,255,0.2)'};background:${filtroAtual === 'emprestimo' ? 'rgba(168,85,247,0.25)' : 'transparent'};color:${filtroAtual === 'emprestimo' ? '#c4b5fd' : '#94a3b8'}"><i class="fas fa-tools" style="margin-right:6px;"></i>Em empréstimo (${emEmprestimo.length})</button><button type="button" onclick="window._kingFinanceBensFiltro='devolvidos';if(window.renderUnifiedKingTab)window.renderUnifiedKingTab('bens')" style="padding:10px 18px;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${filtroAtual === 'devolvidos' ? '#64748b' : 'rgba(255,255,255,0.2)'};background:${filtroAtual === 'devolvidos' ? 'rgba(100,116,139,0.2)' : 'transparent'};color:${filtroAtual === 'devolvidos' ? '#94a3b8' : '#64748b'}"><i class="fas fa-check-circle" style="margin-right:6px;"></i>Devolvidos (${devolvidos.length})</button><button type="button" onclick="window._kingFinanceBensTelaCheia && window._kingFinanceBensTelaCheia('${filtroAtual}')" style="padding:10px 18px;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid rgba(168,85,247,0.5);background:rgba(168,85,247,0.15);color:#c4b5fd"><i class="fas fa-expand" style="margin-right:6px;"></i>Ver em tela cheia</button></div>`;
-            container.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;flex-wrap:wrap;gap:12px;"><h3 style="font-size:1.1rem;font-weight:800;color:#a855f7;margin:0;">Empréstimo de ferramentas</h3><button type="button" onclick="window._kingFinanceOpenModal('bem')" style="padding:8px 16px;background:#7c3aed;color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Registrar ferramenta</button></div><p style="font-size:11px;color:#94a3b8;margin:0 0 12px 0;">Controle de ferramentas que você emprestou. Use <strong>Dar baixa</strong> quando receber de volta.</p>${subTabs}<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;">${cardsHtml}</div>`;
-            return;
-        }
-        if (tabId === 'cartoes') {
-            const curMonth = (typeof window.currentFinanceMonth === 'number' ? window.currentFinanceMonth : new Date().getMonth()) + 1;
-            const curYear = typeof window.currentFinanceYear === 'number' ? window.currentFinanceYear : new Date().getFullYear();
-            const txList = window._kingFinanceTransactions || [];
-            const spentByCard = {};
-            txList.forEach(t => {
-                if ((t.type || '').toUpperCase() !== 'EXPENSE' || !t.card_id) return;
-                const dt = (t.transaction_date || t.date || '').toString();
-                if (dt.length >= 7) {
-                    const m = parseInt(dt.substring(5, 7), 10);
-                    const y = parseInt(dt.substring(0, 4), 10);
-                    if (m === curMonth && y === curYear) {
-                        const cid = String(t.card_id);
-                        spentByCard[cid] = (spentByCard[cid] || 0) + (parseFloat(t.amount) || 0);
-                    }
-                }
-            });
-            const list = cartoesList.map(c => {
-                const cid = String(c.id);
-                const gasto = spentByCard[cid] || 0;
-                const limite = Number(c.limit_amount) || 0;
-                const disponivel = Math.max(0, limite - gasto);
-                const pctUsado = limite > 0 ? Math.min(100, Math.round((gasto / limite) * 100)) : 0;
-                return { id: c.id, nome: c.name || '', limite, gasto, disponivel, pctUsado, diaFechamento: c.closing_day || '' };
-            });
-            const cardsHtml = list.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">Nenhum cartão cadastrado. Use + Novo Cartão para adicionar.</p>' : list.map(c => `
-                <div class="kf-card" style="background:#111;padding:1.5rem;border-radius:20px;border:1px solid rgba(255,255,255,0.05);background:linear-gradient(135deg,rgba(249,115,22,0.15) 0%,rgba(234,88,12,0.08) 50%,#111 100%);border:1px solid rgba(249,115,22,0.25);min-height:180px;display:flex;flex-direction:column;"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;"><div><p style="font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;letter-spacing:0.1em;">CARTÃO DE CRÉDITO</p><h4 style="font-size:1.15rem;font-weight:800;margin:0;color:#fff;">${(c.nome || '').slice(0, 25)}</h4><p style="font-size:10px;color:rgba(255,255,255,0.5);margin:4px 0 0 0;">Fechamento: dia ${c.diaFechamento || '-'}</p></div><div style="display:flex;gap:8px;"><button type="button" onclick="window._kingFinanceEditCartao && window._kingFinanceEditCartao('${c.id}')" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#f97316;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Editar"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="window._kingFinanceDeleteCard && window._kingFinanceDeleteCard('${c.id}')" style="background:none;border:1px solid rgba(239,68,68,0.4);color:#f87171;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Excluir"><i class="fas fa-trash"></i></button></div></div><div><p style="font-size:10px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;">Limite disponível</p><p style="font-size:1.5rem;font-weight:800;margin:0 0 12px 0;color:#22c55e;">R$ ${fmt(c.disponivel)}</p><div style="height:8px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;width:${c.pctUsado}%;background:linear-gradient(90deg,#ef4444,#f97316);border-radius:999px;"></div></div><div style="display:flex;justify-content:space-between;font-size:11px;"><span style="color:#f97316;">Utilizado: R$ ${fmt(c.gasto)}</span><span style="color:rgba(255,255,255,0.6);">Limite: R$ ${fmt(c.limite)}</span></div></div></div>
-            `).join('');
-            container.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;"><h3 style="font-size:1.1rem;font-weight:800;color:#f97316;margin:0;">Cartões de Crédito</h3><button type="button" onclick="window._kingFinanceOpenModal(\'cartao\')" style="padding:8px 16px;background:#ea580c;color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Novo Cartão</button></div><p style="font-size:11px;color:#94a3b8;margin:0 0 12px 0;">Gasto do mês atual com base nas despesas vinculadas a cada cartão.</p><div style="display:flex;flex-direction:column;gap:1rem;">' + cardsHtml + '</div>';
-            return;
-        }
-        if (tabId === 'serasa') {
-            const list = db.dividas || [];
-            const searchTerm = (window._kingFinanceSerasaSearch || '').trim().toLowerCase();
-            const filteredList = !searchTerm ? list : list.filter(d => {
-                const nome = (d.nome || '').toLowerCase();
-                const razao = (d.razaoSocial || '').toLowerCase();
-                const emp = (d.empresaOrigem || '').toLowerCase();
-                const valStr = ('' + (Number(d.valorTotal) || 0)).replace('.', ',').replace(/\D/g, '');
-                return nome.indexOf(searchTerm) >= 0 || razao.indexOf(searchTerm) >= 0 || emp.indexOf(searchTerm) >= 0 || (searchTerm.replace(/\D/g, '').length >= 1 && valStr.indexOf(searchTerm.replace(/\D/g, '')) >= 0);
-            });
-            const stats = window._kingFinanceStats || {};
-            const scorePct = stats.scoreSerasaPct !== undefined ? stats.scoreSerasaPct : 0;
-            const scorePctDisplay = (typeof scorePct === 'number' && scorePct > 0 && scorePct < 1) ? scorePct.toFixed(1).replace('.', ',') : Math.round(scorePct);
-            const scoreLabel = stats.scoreSerasaLabel || '-';
-            const totalValorAtual = list.reduce((a, d) => a + (Number(d.valorAtual != null ? d.valorAtual : d.valorTotal) || 0), 0);
-            const totalFaltaPagar = list.reduce((a, d) => {
-                const pago = (d.pagamentos || []).reduce((ac, p) => ac + (Number(p.valor) || 0), 0);
-                return a + Math.max(0, (Number(d.valorTotal) || 0) - pago);
-            }, 0);
-            const totalNegociacao = list.reduce((a, d) => a + (Number(d.valorTotal) || 0), 0);
-            const searchValueEsc = (window._kingFinanceSerasaSearch || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-            container.innerHTML = `
-                <div style="margin-bottom: 1rem;">
-                    <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--finance-indigo, #6366f1); margin: 0 0 8px 0;">Serasa & Acordos</h3>
-                    <p style="font-size: 11px; color: #94a3b8; margin: 0 0 12px 0;">Indicador baseado nos acordos que você cadastrou.</p>
-                    <div class="kf-card" style="display: flex; align-items: center; justify-content: center; gap: 2rem; margin-bottom: 1.5rem; flex-wrap: wrap; padding: 1.5rem;">
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                                <div style="width: 168px; height: 168px; border-radius: 50%; background: conic-gradient(var(--finance-indigo, #6366f1) 0% ${scorePct}%, rgba(255,255,255,0.12) ${scorePct}% 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 3px rgba(99,102,241,0.3);">
-                                    <div style="width: 138px; height: 138px; border-radius: 50%; background: linear-gradient(180deg, rgba(22,22,30,0.98) 0%, rgba(12,12,18,0.99) 100%); display: flex; align-items: center; justify-content: center; box-shadow: inset 0 2px 12px rgba(0,0,0,0.4);">
-                                        <span style="font-size: 2rem; font-weight: 800; color: #a5b4fc; text-align: center; line-height: 1;">${scorePctDisplay}%</span>
-                                    </div>
-                                </div>
-                                <p style="font-size: 13px; font-weight: 700; color: #94a3b8; margin: 0; text-align: center;">${scoreLabel}</p>
-                            </div>
-                            <div><p style="font-size: 15px; font-weight: 700; color: #a5b4fc; margin: 0 0 6px 0;">Score Serasa (KING)</p><p style="font-size: 13px; color: #94a3b8; margin: 0;">Percentual das dívidas já quitadas.</p></div>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                                <div style="width: 168px; height: 168px; border-radius: 50%; background: linear-gradient(180deg, rgba(245,158,11,0.45) 0%, rgba(245,158,11,0.3) 100%); border: 2px solid rgba(245,158,11,0.6); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(245,158,11,0.2), inset 0 0 30px rgba(245,158,11,0.08);">
-                                    <div style="width: 138px; height: 138px; border-radius: 50%; background: linear-gradient(180deg, rgba(20,18,12,0.97) 0%, rgba(14,12,8,0.99) 100%); display: flex; align-items: center; justify-content: center; box-shadow: inset 0 2px 12px rgba(0,0,0,0.5);">
-                                        <span style="font-size: 1.25rem; font-weight: 800; color: #fcd34d; text-align: center; line-height: 1; display: block;">R$ ${fmt(totalValorAtual)}</span>
-                                    </div>
-                                </div>
-                                <p style="font-size: 13px; font-weight: 700; color: #fcd34d; margin: 0; text-align: center;">Valor total atual</p>
-                            </div>
-                            <div><p style="font-size: 13px; color: #94a3b8; margin: 0;">Soma do valor atual (juros/correções) de todas as contas.</p></div>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                                <div style="width: 168px; height: 168px; border-radius: 50%; background: linear-gradient(180deg, rgba(239,68,68,0.45) 0%, rgba(239,68,68,0.28) 100%); border: 2px solid rgba(239,68,68,0.6); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(239,68,68,0.2), inset 0 0 30px rgba(239,68,68,0.08);">
-                                    <div style="width: 138px; height: 138px; border-radius: 50%; background: linear-gradient(180deg, rgba(28,12,12,0.97) 0%, rgba(18,8,8,0.99) 100%); display: flex; align-items: center; justify-content: center; box-shadow: inset 0 2px 12px rgba(0,0,0,0.5);">
-                                        <span style="font-size: 1.25rem; font-weight: 800; color: #fca5a5; text-align: center; line-height: 1; display: block;">R$ ${fmt(totalFaltaPagar)}</span>
-                                    </div>
-                                </div>
-                                <p style="font-size: 13px; font-weight: 700; color: #fca5a5; margin: 0; text-align: center;">Falta pagar</p>
-                            </div>
-                            <div><p style="font-size: 13px; color: #94a3b8; margin: 0;">Total que ainda falta pagar em todos os acordos.</p></div>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                                <div style="width: 168px; height: 168px; border-radius: 50%; background: linear-gradient(180deg, rgba(100,116,139,0.4) 0%, rgba(71,85,105,0.35) 100%); border: 2px solid rgba(148,163,184,0.5); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 16px rgba(100,116,139,0.15), inset 0 0 24px rgba(0,0,0,0.2);">
-                                    <div style="width: 138px; height: 138px; border-radius: 50%; background: linear-gradient(180deg, rgba(30,30,35,0.98) 0%, rgba(18,18,22,0.99) 100%); display: flex; align-items: center; justify-content: center; box-shadow: inset 0 2px 12px rgba(0,0,0,0.5);">
-                                        <span style="font-size: 1.25rem; font-weight: 800; color: #cbd5e1; text-align: center; line-height: 1; display: block;">R$ ${fmt(totalNegociacao)}</span>
-                                    </div>
-                                </div>
-                                <p style="font-size: 13px; font-weight: 700; color: #94a3b8; margin: 0; text-align: center;">Valor da negociação (total)</p>
-                            </div>
-                            <div><p style="font-size: 13px; color: #94a3b8; margin: 0;">Total acordado em todos os acordos. Não diminui ao pagar; referência para quando quitar.</p></div>
-                        </div>
-                    </div>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
-                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; min-width: 0;">
-                        <span style="font-size: 1rem; font-weight: 800; color: #f1f5f9;">Acordos</span>
-                        <span style="font-size: 12px; color: #94a3b8;">Total: ${list.length} conta(s)${searchTerm ? ' · Mostrando ' + filteredList.length : ''}</span>
-                        <div style="flex: 1; min-width: 180px; max-width: 320px;">
-                            <label style="position: relative; display: block;">
-                                <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 12px;"></i>
-                                <input type="text" id="serasa-search-input" placeholder="Pesquisar por nome do banco/credor ou valor" value="${searchValueEsc}" style="width: 100%; padding: 10px 10px 10px 36px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; color: #f1f5f9; font-size: 12px;">
-                            </label>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <button type="button" onclick="window._kingFinanceSerasaSelectAll && window._kingFinanceSerasaSelectAll()" style="padding: 8px 16px; background: rgba(99,102,241,0.2); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.4); border-radius: 12px; font-size: 10px; font-weight: 800; cursor: pointer;"><i class="fas fa-check-double" style="margin-right: 6px;"></i>Selecionar todos</button>
-                        <button type="button" id="serasa-excluir-todos-btn" disabled onclick="window._kingFinanceSerasaExcluirTodos && window._kingFinanceSerasaExcluirTodos()" style="padding: 8px 16px; background: rgba(244,63,94,0.25); color: #fda4af; border: 1px solid rgba(244,63,94,0.5); border-radius: 12px; font-size: 10px; font-weight: 800; cursor: pointer;"><i class="fas fa-trash" style="margin-right: 6px;"></i>Excluir selecionados</button>
-                        <button type="button" onclick="window._kingFinanceImportarSerasaPdf && window._kingFinanceImportarSerasaPdf('pdf')" style="padding: 8px 16px; background: rgba(99,102,241,0.25); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.5); border-radius: 12px; font-size: 10px; font-weight: 800; cursor: pointer;"><i class="fas fa-file-pdf" style="margin-right: 6px;"></i>Importar PDF (valores)</button>
-                        <button type="button" onclick="window._kingFinanceImportarSerasaPdf && window._kingFinanceImportarSerasaPdf('image')" style="padding: 8px 16px; background: rgba(34,197,94,0.25); color: #86efac; border: 1px solid rgba(34,197,94,0.5); border-radius: 12px; font-size: 10px; font-weight: 800; cursor: pointer;"><i class="fas fa-image" style="margin-right: 6px;"></i>Importar imagem</button>
-                        <button type="button" onclick="window._kingFinanceOpenModal('divida')" style="padding: 8px 16px; background: var(--finance-indigo, #6366f1); color: #fff; border: none; border-radius: 12px; font-size: 10px; font-weight: 800; cursor: pointer;">+ Novo Acordo</button>
-                    </div>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 1rem;">
-                    ${filteredList.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">' + (list.length === 0 ? 'Nenhum acordo. Clique em + Novo Acordo.' : 'Nenhum acordo corresponde à pesquisa.') + '</p>' : filteredList.map((d, idx) => {
-                const num = idx + 1;
-                const pago = (d.pagamentos || []).reduce((a, p) => a + (Number(p.valor) || 0), 0);
-                const restante = (Number(d.valorTotal) || 0) - pago;
-                const pct = (Number(d.valorTotal) || 0) > 0 ? Math.round((pago / (d.valorTotal || 1)) * 100) : 100;
-                const formatPayDate = (p) => {
-                    let dt = p.data || '';
-                    if (/^\d{4}-\d{2}-\d{2}$/.test(dt)) { const pt = dt.split('-'); dt = pt[2] + '/' + pt[1] + '/' + pt[0]; }
-                    return dt + (p.hora ? ' às ' + p.hora : '');
-                };
-                const pagamentosHtml = (d.pagamentos || []).length ? '<div style="margin-bottom: 0.75rem;"><p style="font-size: 9px; font-weight: 800; color: #94a3b8; margin: 0 0 6px 0;">Pagamentos</p>' + (d.pagamentos || []).map(p => '<p style="font-size: 11px; color: #cbd5e1; margin: 0 0 4px 0;">R$ ' + fmt(Number(p.valor) || 0) + ' em ' + formatPayDate(p) + '</p>').join('') + '</div>' : '';
-                const detalhesHtml = (d.numeroContrato || d.dataDivida || d.produtoServico || d.empresaOrigem) ? '<p style="font-size: 10px; color: #94a3b8; margin: 0 0 6px 0;">' + (d.empresaOrigem ? 'Origem ' + (d.empresaOrigem || '').slice(0, 20) + (d.empresaOrigem.length > 20 ? '+' : '') : '') + (d.numeroContrato ? (d.empresaOrigem ? ' · ' : '') + 'Contrato ' + d.numeroContrato : '') + (d.dataDivida ? ' · Data ' + d.dataDivida : '') + (d.produtoServico ? ' · ' + (d.produtoServico || '').slice(0, 25) + ((d.produtoServico || '').length > 25 ? '+' : '') : '') + '</p>' : '';
-                const origAtualHtml = (d.valorOriginal != null || d.valorAtual != null) ? '<p style="font-size: 10px; color: #94a3b8; margin: 0 0 6px 0;">Orig. R$ ' + fmt(d.valorOriginal) + ' · Atual R$ ' + fmt(d.valorAtual) + '</p>' : '';
-                const titulo = (d.empresaOrigem && !/n[aã]o\s+reconhece|reconhece\s+a\s+empresa/i.test(d.empresaOrigem) ? (d.empresaOrigem || '').replace(/</g, ' ') : (/n[aã]o\s+reconhece|reconhece\s+a\s+empresa/i.test(d.nome || '') ? 'Credor' : (d.nome || ''))).slice(0, 35);
-                return `
-                            <div class="kf-card" style="border-left: 4px solid var(--finance-indigo, #6366f1); cursor: pointer;" onclick="if (!event.target.closest('button') && !event.target.closest('input[type=checkbox]')) window._kingFinanceVerDetalhesDivida && window._kingFinanceVerDetalhesDivida('${d.id}')">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem; align-items: center; gap: 8px;"><input type="checkbox" class="serasa-acordo-cb" data-divida-id="${d.id}" onclick="event.stopPropagation(); window._kingFinanceSerasaUpdateExcluirBtn && window._kingFinanceSerasaUpdateExcluirBtn()" style="cursor: pointer; flex-shrink: 0;"><span style="font-size: 12px; font-weight: 800; color: #94a3b8; min-width: 28px;">${num}.</span><h4 style="font-size: 14px; font-weight: 800; margin: 0; flex: 1;">${titulo}</h4><button type="button" onclick="event.stopPropagation(); window._kingFinanceDelete('dividas','${d.id}')" style="background: none; border: none; color: #64748b; cursor: pointer;"><i class="fas fa-trash"></i></button></div>
-                                <p style="font-size: 10px; margin: 0 0 6px 0;"><a href="javascript:void(0)" onclick="event.stopPropagation(); window._kingFinanceVerDetalhesDivida && window._kingFinanceVerDetalhesDivida('${d.id}')" style="color: var(--finance-indigo, #6366f1);">Ver detalhes</a></p>
-                                ${detalhesHtml}
-                                ${origAtualHtml}
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-                                    <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 1rem;"><p style="font-size: 9px; font-weight: 800; color: #94a3b8; margin: 0 0 4px 0; letter-spacing: 0.02em;">TOTAL LIQUIDADO</p><p style="font-size: 16px; font-weight: 800; color: #86efac; margin: 0 0 2px 0;">R$ ${fmt(pago)}</p><p style="font-size: 10px; color: #94a3b8; margin: 0;">${pct}% Completo</p></div>
-                                    <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 1rem; position: relative;"><p style="font-size: 9px; font-weight: 800; color: #94a3b8; margin: 0 0 4px 0; letter-spacing: 0.02em;">VALOR DA NEGOCIAÇÃO</p><p style="font-size: 16px; font-weight: 800; color: #f59e0b; margin: 0 0 6px 0;">R$ ${fmt(restante)}</p><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamento('${d.id}')" style="padding: 6px 12px; background: rgba(245,158,11,0.35); color: #fcd34d; border: 1px solid rgba(245,158,11,0.6); border-radius: 10px; font-size: 10px; font-weight: 700; cursor: pointer;">Pagar mais</button><button type="button" onclick="event.stopPropagation(); window._kingFinanceEditarValorDivida && window._kingFinanceEditarValorDivida('${d.id}')" style="position: absolute; top: 4px; right: 4px; background: rgba(99,102,241,0.25); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.4); border-radius: 8px; padding: 4px 8px; font-size: 9px; font-weight: 700; cursor: pointer;" title="Alterar valor total da dívida"><i class="fas fa-pen"></i></button></div>
-                                </div>
-                                ${pagamentosHtml}
-                                <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 999px; overflow: hidden; margin-bottom: 0.75rem;"><div style="height: 100%; width: ${pct}%; background: var(--finance-indigo, #6366f1); border-radius: 999px;"></div></div>
-                                <button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamento('${d.id}')" style="width: 100%; padding: 12px; background: var(--finance-indigo, #6366f1); color: #fff; border: none; border-radius: 12px; font-size: 11px; font-weight: 800; cursor: pointer; letter-spacing: 0.02em;">Efetuar pagamento</button>
-                            </div>
-                        `;
-            }).join('')}
-                </div>
-            `;
-            const searchInput = document.getElementById('serasa-search-input');
-            if (searchInput) searchInput.oninput = function () {
-                const v = this.value;
-                window._kingFinanceSerasaSearch = v;
-                if (window.renderUnifiedKingTab) window.renderUnifiedKingTab('serasa');
-                setTimeout(() => {
-                    const inp = document.getElementById('serasa-search-input');
-                    if (inp) { inp.focus(); inp.value = v; inp.setSelectionRange(v.length, v.length); }
-                }, 0);
-            };
-            if (window._kingFinanceSerasaUpdateExcluirBtn) window._kingFinanceSerasaUpdateExcluirBtn();
-            return;
-        }
+    if (typeof window.initFinancePane === 'function') {
+        window.initFinancePane();
     }
-
-    window._kingFinanceOpenModal = function (modalType) {
-        const modal = document.getElementById('king-finance-modal');
-        const formEl = document.getElementById('king-finance-modal-form');
-        const titleEl = document.getElementById('king-finance-modal-title');
-        if (!modal || !formEl || !titleEl) return;
-        window._kingFinanceModalType = modalType;
-        const titles = { fluxo: 'Novo lançamento', trabalho: 'Novo trabalho', bem: 'Novo bem', cartao: 'Novo cartão', divida: 'Novo acordo' };
-        titleEl.textContent = titles[modalType] || 'Novo';
-        let fields = '';
-        if (modalType === 'fluxo') {
-            const cards = window._kingFinanceCards || [];
-            const cardOpts = cards.map(c => '<option value="' + (c.id || '') + '">' + (c.name || 'Cartão').replace(/</g, ' ').slice(0, 30) + '</option>').join('');
-            fields = `
-                <select name="tipo" id="fluxo-tipo-kf" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;"><option value="despesa">Saída</option><option value="receita">Entrada</option></select>
-                <div id="fluxo-forma-wrap-kf" style="display:none;"><p style="margin:0 0 6px 0;font-size:11px;color:#94a3b8;">Forma de pagamento</p><select name="forma" id="fluxo-forma-kf" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;"><option value="pix">PIX</option><option value="cartao">Cartão de crédito</option></select><div id="fluxo-cartao-wrap-kf" style="display:none;margin-top:8px;"><select name="cartao_id" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;"><option value="">Selecione o cartão</option>${cardOpts}</select></div></div>
-                <input name="descricao" placeholder="O que foi?" required style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;">
-                <input name="valor" type="number" step="0.01" placeholder="Valor R$" required style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;">
-                <input name="data" type="date" required style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;">
-            `;
-        } else if (modalType === 'trabalho') {
-            fields = `
-                <input name="cliente" placeholder="Nome do cliente" required style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;">
-                <input name="servico" placeholder="Qual serviço?" required style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;">
-                <input name="valor" type="number" step="0.01" placeholder="Valor total R$" required style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;">
-                <label style="font-size:0.8rem;color:#facc15;margin:8px 0 4px 0;display:block;"><i class="fas fa-coins" style="margin-right:5px;"></i>Entrada recebida agora (AV/Sinal) — deixe 0 se não recebeu nada</label>
-                <input name="entrada" type="number" step="0.01" min="0" placeholder="R$ 0,00" style="width:100%;padding:12px;background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.35);border-radius:1rem;color:#fef08a;font-size:12px;">
-                <label style="font-size:0.8rem;color:var(--finance-text-secondary);margin:8px 0 4px 0;display:block;">Data do trabalho</label>
-                <input name="data" type="date" placeholder="Data do trabalho" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;">
-                <label style="font-size:0.8rem;color:var(--finance-text-secondary);margin:8px 0 4px 0;display:block;">Data prevista para recebimento</label>
-                <input name="dataPrevista" type="date" placeholder="Data prevista" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;">
-            `;
-        } else if (modalType === 'bem') {
-            const baseStyle = 'width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;';
-            fields = `
-                <input name="nome" placeholder="Ferramenta ou objeto emprestado" required style="${baseStyle}">
-                <input name="possuidor" placeholder="Quem está com a ferramenta?" required style="${baseStyle}">
-                <input name="valorAluguel" type="number" step="0.01" min="0" placeholder="Valor aluguel R$ (opcional)" style="${baseStyle}">
-                <label style="font-size:0.8rem;color:var(--finance-text-secondary);margin:8px 0 4px 0;display:block;">Data que foi emprestada</label>
-                <input name="dataEmprestimo" type="date" style="${baseStyle}">
-                <label style="font-size:0.8rem;color:var(--finance-text-secondary);margin:8px 0 4px 0;display:block;">Previsão para entrega</label>
-                <input name="previsaoEntrega" type="date" style="${baseStyle}">
-                <div style="margin:12px 0;">
-                    <p style="font-size:0.8rem;color:var(--finance-text-secondary);margin:0 0 8px 0;">Foto (ferramenta ou pessoa)</p>
-                    <div class="kf-bem-photo-row" style="display:flex;gap:8px;flex-wrap:wrap;">
-                        <button type="button" id="bem-btn-camera-kf" style="padding:10px 16px;background:rgba(168,85,247,0.3);border:1px solid rgba(168,85,247,0.6);color:#a78bfa;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;"><i class="fas fa-camera" style="margin-right:6px;"></i>Tirar foto</button>
-                        <button type="button" id="bem-btn-import-kf" style="padding:10px 16px;background:rgba(168,85,247,0.3);border:1px solid rgba(168,85,247,0.6);color:#a78bfa;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;"><i class="fas fa-file-image" style="margin-right:6px;"></i>Importar foto</button>
-                        <input type="file" id="bem-foto-camera-kf" accept="image/*" capture="environment" style="display:none">
-                        <input type="file" id="bem-foto-import-kf" accept="image/*" style="display:none">
-                    </div>
-                    <input type="hidden" name="foto">
-                    <div id="bem-foto-preview-kf" style="margin-top:10px;"></div>
-                </div>
-            `;
-        } else if (modalType === 'cartao') {
-            fields = `
-                <input name="nome" placeholder="Nome do banco" required style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;">
-                <input name="limite" type="number" step="0.01" placeholder="Limite total R$" required style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;">
-                <input name="diaFechamento" type="number" min="1" max="31" placeholder="Dia do fechamento (1 a 31)" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;">
-            `;
-        } else if (modalType === 'divida') {
-            fields = `
-                <input name="nome" placeholder="Credor (ex: Nubank)" required style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;">
-                <input name="valorTotal" type="number" step="0.01" placeholder="Valor total dívida R$" required style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><input name="parcelas" type="number" placeholder="Nº parcelas" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;"><input name="valorParcela" type="number" step="0.01" placeholder="R$ parcela" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;"></div>
-            `;
-        }
-        formEl.innerHTML = fields + '<button type="submit" style="width:100%;padding:14px;background:#D4AF37;color:#000;border:none;border-radius:1rem;font-size:12px;font-weight:800;cursor:pointer;">Salvar no Sistema</button>';
-        if (modalType === 'bem') {
-            const processBemFotoKf = (file) => { if (!file || !file.type.match(/^image\//)) return; const r = new FileReader(); r.onload = () => { const b64 = r.result; const inp = formEl.querySelector('input[name="foto"]'); if (inp) inp.value = b64; const prev = document.getElementById('bem-foto-preview-kf'); if (prev) prev.innerHTML = '<div style="position:relative;display:inline-block;"><img src="' + (b64 || '').replace(/"/g, '&quot;') + '" style="max-width:120px;max-height:120px;border-radius:12px;object-fit:cover;border:1px solid rgba(255,255,255,0.2);" alt="Preview"><button type="button" onclick="window._kingFinanceRemoverFotoBem && window._kingFinanceRemoverFotoBem(\'bem-foto-preview-kf\')" style="position:absolute;top:-8px;right:-8px;width:28px;height:28px;border:none;background:rgba(239,68,68,0.9);color:#fff;font-size:18px;line-height:1;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 2px 8px rgba(0,0,0,0.3);" title="Remover foto">&times;</button></div>'; }; r.readAsDataURL(file); };
-            const camInpKf = document.getElementById('bem-foto-camera-kf'); const impInpKf = document.getElementById('bem-foto-import-kf'); const btnCamKf = document.getElementById('bem-btn-camera-kf'); const btnImpKf = document.getElementById('bem-btn-import-kf');
-            if (btnCamKf && camInpKf) btnCamKf.onclick = () => { camInpKf.value = ''; camInpKf.click(); };
-            if (btnImpKf && impInpKf) btnImpKf.onclick = () => { impInpKf.value = ''; impInpKf.click(); };
-            if (camInpKf) camInpKf.onchange = () => { if (camInpKf.files && camInpKf.files[0]) processBemFotoKf(camInpKf.files[0]); };
-            if (impInpKf) impInpKf.onchange = () => { if (impInpKf.files && impInpKf.files[0]) processBemFotoKf(impInpKf.files[0]); };
-        }
-        if (modalType === 'fluxo') {
-            const tipoElKf = document.getElementById('fluxo-tipo-kf');
-            const formaWrapKf = document.getElementById('fluxo-forma-wrap-kf');
-            const formaElKf = document.getElementById('fluxo-forma-kf');
-            const cartaoWrapKf = document.getElementById('fluxo-cartao-wrap-kf');
-            if (tipoElKf && formaWrapKf) tipoElKf.onchange = function () { formaWrapKf.style.display = this.value === 'despesa' ? 'block' : 'none'; if (cartaoWrapKf) cartaoWrapKf.style.display = 'none'; };
-            if (formaElKf && cartaoWrapKf) formaElKf.onchange = function () { cartaoWrapKf.style.display = this.value === 'cartao' ? 'block' : 'none'; };
-        }
-        formEl.onsubmit = async function (e) {
-            e.preventDefault();
-            const fd = new FormData(formEl);
-            const data = Object.fromEntries(fd);
-            const modalType = window._kingFinanceModalType;
-            // Validação de valores numéricos
-            if (modalType === 'fluxo') {
-                const v = parseFloat(String(data.valor || '').replace(',', '.'));
-                if (isNaN(v) || v <= 0) { alert('Informe um valor válido maior que zero.'); return; }
-            } else if (modalType === 'cartao') {
-                const limite = parseFloat(String(data.limite || '').replace(',', '.'));
-                if (isNaN(limite) || limite <= 0) { alert('Informe um limite válido maior que zero.'); return; }
-                const dia = data.diaFechamento ? parseInt(data.diaFechamento, 10) : null;
-                if (dia !== null && (isNaN(dia) || dia < 1 || dia > 31)) { alert('Dia de fechamento deve ser entre 1 e 31.'); return; }
-            } else if (modalType === 'trabalho') {
-                const v = parseFloat(String(data.valor || '').replace(',', '.'));
-                if (isNaN(v) || v <= 0) { alert('Informe um valor válido maior que zero.'); return; }
-            } else if (modalType === 'bem') {
-                const v = parseFloat(String(data.valorAluguel || '0').replace(',', '.'));
-                if (isNaN(v) || v < 0) { alert('Valor de aluguel deve ser zero ou positivo.'); return; }
-            } else if (modalType === 'divida') {
-                const v = parseFloat(String(data.valorTotal || '').replace(',', '.'));
-                if (isNaN(v) || v <= 0) { alert('Informe o valor total da dívida (maior que zero).'); return; }
-            }
-            if (modalType === 'fluxo') {
-                try {
-                    const profileId = localStorage.getItem('finance_current_profile_id') || null;
-                    const bodyFluxoKf = { type: data.tipo === 'receita' ? 'INCOME' : 'EXPENSE', amount: parseFloat(data.valor) || 0, description: data.descricao || '', transaction_date: data.data || new Date().toISOString().slice(0, 10), profile_id: profileId ? parseInt(profileId, 10) : null };
-                    if (data.tipo === 'despesa' && data.forma === 'cartao' && data.cartao_id) bodyFluxoKf.card_id = parseInt(data.cartao_id, 10) || null;
-                    const res = await fetch(`${env.API_URL}/api/finance/transactions`, {
-                        method: 'POST',
-                        headers: Object.assign({ 'Content-Type': 'application/json' }, env.HEADERS_AUTH),
-                        body: JSON.stringify(bodyFluxoKf)
-                    });
-                    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || 'Erro ao criar');
-                    window._kingFinanceTransactions = window._kingFinanceTransactions || [];
-                    const created = (await res.json()).data || {};
-                    window._kingFinanceTransactions.push(created);
-                    modal.style.display = 'none';
-                    if (document.getElementById('finance-king-content') && window.loadFinanceTransactions) {
-                        await window.loadFinanceTransactions();
-                        if (window._financeActiveTab === 'fluxo' && window.renderUnifiedKingTab) window.renderUnifiedKingTab('fluxo');
-                    } else window.showKingFinancePane();
-                } catch (err) {
-                    alert(err.message || 'Erro ao salvar lançamento.');
-                }
-            }
-            if (modalType === 'cartao') {
-                try {
-                    const res = await fetch(`${env.API_URL}/api/finance/cards`, {
-                        method: 'POST',
-                        headers: Object.assign({ 'Content-Type': 'application/json' }, env.HEADERS_AUTH),
-                        body: JSON.stringify({
-                            name: data.nome || '',
-                            limit_amount: parseFloat(data.limite) || 0,
-                            closing_day: data.diaFechamento ? parseInt(data.diaFechamento, 10) : null
-                        })
-                    });
-                    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || 'Erro ao criar');
-                    const created = (await res.json()).data || {};
-                    window._kingFinanceCards = window._kingFinanceCards || [];
-                    window._kingFinanceCards.push(created);
-                    modal.style.display = 'none';
-                    if (document.getElementById('finance-king-content') && window.renderUnifiedKingTab) { window.renderUnifiedKingTab('cartoes'); } else window.showKingFinancePane();
-                } catch (err) {
-                    alert(err.message || 'Erro ao salvar cartão.');
-                }
-            } else {
-                const id = Date.now().toString();
-                const db = window._kingFinanceDb || { fluxo: [], trabalhos: [], bens: [], cartoes: [], dividas: [], terceiros: [] };
-                const coll = { trabalho: 'trabalhos', bem: 'bens', divida: 'dividas' }[modalType];
-                if (!coll) return;
-                let entry = { id, ...data };
-                if (modalType === 'trabalho') {
-                    entry.valor = parseFloat(data.valor) || 0;
-                    const vEntrada = parseFloat(String(data.entrada || '0').replace(',', '.'));
-                    entry.pagamentos = [];
-                    if (!isNaN(vEntrada) && vEntrada > 0) {
-                        entry.pagamentos.push({
-                            id: Date.now().toString(),
-                            valor: vEntrada,
-                            data: data.data || new Date().toISOString().slice(0, 10),
-                            obs: 'Entrada / Sinal (AV)'
-                        });
-                    }
-                }
-                if (modalType === 'bem') entry.valorAluguel = parseFloat(data.valorAluguel) || 0;
-                if (modalType === 'divida') {
-                    entry.valorTotal = parseFloat(data.valorTotal) || 0;
-                    entry.valorParcela = parseFloat(data.valorParcela) || 0;
-                    entry.parcelas = parseInt(data.parcelas, 10) || 0;
-                    entry.pagamentos = [];
-                }
-                db[coll] = db[coll] || [];
-                db[coll].unshift(entry);
-                window._kingFinanceDb = db;
-                if (window._kingFinancePersist) window._kingFinancePersist(db);
-                modal.style.display = 'none';
-                if (document.getElementById('finance-king-content') && window.renderUnifiedKingTab) {
-                    var tab = window._financeActiveTab || 'fluxo';
-                    if (modalType === 'divida') {
-                        var d = window._kingFinanceDb.dividas || [];
-                        var tdg = d.reduce(function (a, b) { return a + (Number(b.valorTotal) || 0); }, 0);
-                        var tpg = d.reduce(function (a, b) { return a + (b.pagamentos || []).reduce(function (acc, p) { return acc + (Number(p.valor) || 0); }, 0); }, 0);
-                        window._kingFinanceStats = window._kingFinanceStats || {};
-                        window._kingFinanceStats.totalDividas = d.reduce(function (a, b) { var p = (b.pagamentos || []).reduce(function (ac, x) { return ac + (Number(x.valor) || 0); }, 0); return a + (Number(b.valorTotal) || 0) - p; }, 0);
-                        var rawPct = tdg > 0 ? (tpg / tdg) * 100 : 100; window._kingFinanceStats.scoreSerasaPct = rawPct > 0 && rawPct < 1 ? Math.round(rawPct * 10) / 10 : Math.round(rawPct);
-                        window._kingFinanceStats.scoreSerasaLabel = window._kingFinanceStats.scoreSerasaPct >= 100 ? 'Em dia' : window._kingFinanceStats.scoreSerasaPct >= 50 ? 'Em acordo' : 'Quitando';
-                        var el1 = document.getElementById('finance-total-dividas'); if (el1) el1.textContent = 'R$ ' + (Number(window._kingFinanceStats.totalDividas) || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                        var el2 = document.getElementById('finance-score-serasa'); if (el2) { var _s = window._kingFinanceStats.scoreSerasaPct; el2.textContent = (typeof _s === 'number' && _s > 0 && _s < 1 ? _s.toFixed(1).replace('.', ',') : Math.round(_s || 0)) + '% · ' + (window._kingFinanceStats.scoreSerasaLabel || '-'); }
-                    }
-                    window.renderUnifiedKingTab(tab);
-                } else renderTab(document.querySelector('.kf-tab.active')?.getAttribute('data-king-tab') || 'fluxo');
-                return;
-            }
-            modal.style.display = 'none';
-        };
-        window._kingFinanceModalType = modalType;
-        modal.style.display = 'flex';
-    };
-
-    window._kingFinanceDelete = function (collection, id) {
-        const db = window._kingFinanceDb || { fluxo: [], trabalhos: [], bens: [], cartoes: [], dividas: [], terceiros: [] };
-        if (!db[collection]) return;
-        db[collection] = db[collection].filter(item => String(item.id) !== String(id));
-        window._kingFinanceDb = db;
-        if (window._kingFinancePersist) window._kingFinancePersist(db);
-        if (document.getElementById('finance-king-content') && window.renderUnifiedKingTab) {
-            if (collection === 'dividas') {
-                var d = db.dividas || [];
-                window._kingFinanceStats = window._kingFinanceStats || {};
-                window._kingFinanceStats.totalDividas = d.reduce(function (a, b) { var p = (b.pagamentos || []).reduce(function (ac, x) { return ac + (Number(x.valor) || 0); }, 0); return a + (Number(b.valorTotal) || 0) - p; }, 0);
-                var tdg = d.reduce(function (a, b) { return a + (Number(b.valorTotal) || 0); }, 0);
-                var tpg = d.reduce(function (a, b) { return a + (b.pagamentos || []).reduce(function (ac, p) { return ac + (Number(p.valor) || 0); }, 0); }, 0);
-                var rawPct = tdg > 0 ? (tpg / tdg) * 100 : 100; window._kingFinanceStats.scoreSerasaPct = rawPct > 0 && rawPct < 1 ? Math.round(rawPct * 10) / 10 : Math.round(rawPct);
-                window._kingFinanceStats.scoreSerasaLabel = window._kingFinanceStats.scoreSerasaPct >= 100 ? 'Em dia' : window._kingFinanceStats.scoreSerasaPct >= 50 ? 'Em acordo' : 'Quitando';
-                var el1 = document.getElementById('finance-total-dividas'); if (el1) el1.textContent = 'R$ ' + (Number(window._kingFinanceStats.totalDividas) || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                var el2 = document.getElementById('finance-score-serasa'); if (el2) { var _s = window._kingFinanceStats.scoreSerasaPct; el2.textContent = (typeof _s === 'number' && _s > 0 && _s < 1 ? _s.toFixed(1).replace('.', ',') : Math.round(_s || 0)) + '% · ' + (window._kingFinanceStats.scoreSerasaLabel || '-'); }
-            }
-            window.renderUnifiedKingTab(window._financeActiveTab || 'fluxo');
-        } else renderTab(document.querySelector('.kf-tab.active')?.getAttribute('data-king-tab') || 'fluxo');
-    };
-
-    document.getElementById('king-finance-modal-cancel').addEventListener('click', () => {
-        document.getElementById('king-finance-modal').style.display = 'none';
-    });
-    financeContent.querySelectorAll('.kf-tab').forEach(btn => {
-        btn.addEventListener('click', () => renderTab(btn.getAttribute('data-king-tab')));
-    });
-    renderTab('fluxo');
 };
 
 function getFluxoPartialPayments() {
