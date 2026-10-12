@@ -69,8 +69,8 @@ async function main() {
 
   // Extrair TOOLS do código
   const toolsStart = code.indexOf('const TOOLS = [');
-  const toolsEnd = code.indexOf(';\n\n// ─── Gerador de Link Direto', toolsStart);
-  const toolsSnippet = code.slice(toolsStart, toolsEnd + 1);
+  const toolsEnd = code.indexOf('];\n\n\n// ─── Gerador de Link Direto', toolsStart);
+  const toolsSnippet = code.slice(toolsStart, (toolsEnd !== -1 ? toolsEnd + 2 : code.indexOf('];', toolsStart) + 2));
 
   // Extrair SYSTEM_PROMPT
   const spStart = code.indexOf('const SYSTEM_PROMPT = `');

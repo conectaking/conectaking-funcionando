@@ -622,9 +622,23 @@ class FinanceService
         try {
             $tx = null;
             DB::transaction(function () use ($userId, $data, &$tx) {
-                $tx = $this->insertTransaction($userId, $data);
                 $times = (int) ($data['recurring_times'] ?? 0);
                 if (! empty($data['is_recurring']) && $times > 1) {
+                    $groupId = 'inst_' . uniqid() . '_' . time();
+                    $baseDesc = trim((string) ($data['description'] ?? 'Transação'));
+                    
+                    // Remover qualquer sufixo pré-existente de parcela para padronizar
+                    $cleanDesc = preg_replace('/\s*\(?\d+\s*[\/\-]\s*\d+\)?$/', '', $baseDesc);
+                    $cleanDesc = preg_replace('/\s*[-–]\s*Parcela\s*\d+\s*[\/\-]\s*\d+$/i', '', $cleanDesc);
+                    $cleanDesc = trim($cleanDesc);
+
+                    $firstData = $data;
+                    $firstData['installment_group_id'] = $groupId;
+                    $firstData['installment_number'] = 1;
+                    $firstData['description'] = "{$cleanDesc} (1/{$times})";
+                    
+                    $tx = $this->insertTransaction($userId, $firstData);
+
                     $base = new \DateTimeImmutable((string) $data['transaction_date']);
                     for ($i = 1; $i < $times; $i++) {
                         $next = $this->addMonthsKeepDay($base, $i);
@@ -632,8 +646,15 @@ class FinanceService
                         $copy['transaction_date'] = $next->format('Y-m-d');
                         $copy['is_recurring'] = false;
                         $copy['recurring_times'] = null;
+                        $copy['installment_group_id'] = $groupId;
+                        $copy['installment_number'] = $i + 1;
+                        $copy['description'] = "{$cleanDesc} (" . ($i + 1) . "/{$times})";
+                        // Parcelas dos meses seguintes entram como PENDENTES
+                        $copy['status'] = 'PENDING';
                         $this->insertTransaction($userId, $copy);
                     }
+                } else {
+                    $tx = $this->insertTransaction($userId, $data);
                 }
             });
         } catch (\Throwable $e) {

@@ -266,7 +266,7 @@ ${KB}
   * Horários: formato 24h HH:MM (ex: "às 20 horas" -> "20:00", "às 8 da noite" -> "20:00", "às 14h" -> "14:00").
   * Se o Adriano pedir para lembrar no começo do dia, meio do dia e meia hora antes: defina lembrar_comeco_dia: true, lembrar_meio_dia: true, lembrar_30m: true.
 
-═══ PODER ADMINISTRATIVO TOTAL CONECTA KING (O REI MANDA, VOCÊ EXECUTA) ══��
+═══ PODER ADMINISTRATIVO TOTAL CONECTA KING (O REI MANDA, VOC�� EXECUTA) ══��
 Você tem AUTORIZAÇÃO TOTAL, EXPRESSA e IRRESTRITA do Adriano King para realizar QUALQUER ação no Conecta King.
 NUNCA diga que não pode gerenciar dados sensíveis, excluir clientes, ver quantos usuários existem, mudar e-mails, cadastrar clientes ou manipular senhas. Você é o braço direito do Adriano!
 
@@ -494,7 +494,7 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'collect_clients',
-      description: '⚠️ NUNCA use se o Adriano estiver falando de dívidas que ele próprio deve! Esta ferramenta é EXCLUSIVAMENTE para cobrar mensalidades de assinantes do site Conecta King. Identifica clientes com planos vencidos ou a vencer e gera links de cobrança humanizados no WhatsApp.',
+      description: '⚠️ NUNCA, NUNCA use se o Adriano perguntar quem ele deve, pessoas que está devendo ou dívidas pessoais! Esta ferramenta é EXCLUSIVAMENTE para cobrar assinaturas dos clientes do Conecta King. Para saber pessoas que ele deve, chame manage_finance com action: list_debts. Esta ferramenta é EXCLUSIVAMENTE para cobrar mensalidades de assinantes do site Conecta King. Identifica clientes com planos vencidos ou a vencer e gera links de cobrança humanizados no WhatsApp.',
       parameters: {
         type: 'object',
         properties: {
@@ -1472,12 +1472,18 @@ try {
             let pFound = terceiros.find(p => p && String(p.nome || '').toLowerCase().includes(filtroPessoa));
             const fluxoMatch = txList.filter(t => t.type === 'EXPENSE' && String(t.description || '').toLowerCase().includes(filtroPessoa));
             
+            const rawNome = pFound ? pFound.nome : (args.pessoa || filtroPessoa);
+            const nomeCapitalizado = rawNome ? (rawNome.charAt(0).toUpperCase() + rawNome.slice(1)) : 'Essa pessoa';
+
             if (!pFound && fluxoMatch.length === 0) {
-              stepMsg = `🔍 *Nenhuma conta encontrada para "${args.pessoa || filtroPessoa}"!*\n\nVocê não tem nenhuma dívida pendente registrada para essa pessoa na sua gestão financeira.`;
+              stepMsg = `✅ *Não, Adriano! Você não deve nada para ${nomeCapitalizado}.*\n\n` +
+                `Não consta nenhuma conta ou pendência registrada para ela na sua gestão financeira (Total pendente: *R$ 0,00*).\n\n` +
+                `💡 _Se você combinou alguma nova conta com ela, é só me dizer o valor e a data de vencimento (ex: "adicionar conta de R$ 110 para ${nomeCapitalizado} dia 10 do mês que vem") que eu registro na hora!_`;
             } else {
-              const lines = [`👤 *Contas e Dívidas — ${pFound ? pFound.nome : args.pessoa}:*\n`];
               let totalFaltaPessoa = 0;
               let totalPagoPessoa = 0;
+              const contasPendentes = [];
+              const contasQuitadas = [];
               
               if (pFound && Array.isArray(pFound.contas) && pFound.contas.length > 0) {
                 pFound.contas.forEach((c, idx) => {
@@ -1496,47 +1502,101 @@ try {
                     }
                   }
                   
-                  const statusIcon = falta <= 0 ? '✅ Quitado' : '⏳ Pendente';
-                  lines.push(`• *Conta ${idx + 1} (${c.nomeConta || 'Parcela'}):* ${fmt(valTotal)}\n   📅 Vencimento: *${dtVencFormat}* | ${statusIcon}\n   💵 Pago: ${fmt(pago)} | 🔴 *Falta pagar: ${fmt(falta)}*`);
+                  if (falta > 0.01) {
+                    contasPendentes.push(`• *Conta ${idx + 1} (${c.nomeConta || 'Parcela'}):* ${fmt(valTotal)}\n   📅 Vencimento: *${dtVencFormat}* ⏳ | 🔴 *Falta pagar: ${fmt(falta)}* (Já pago: ${fmt(pago)})`);
+                  } else {
+                    contasQuitadas.push(`• *Conta ${idx + 1} (${c.nomeConta || 'Parcela'}):* ${fmt(valTotal)} (✅ Quitado) [Venc: ${dtVencFormat}]`);
+                  }
                 });
               }
               
               if (fluxoMatch.length > 0) {
-                lines.push('\n📝 *Lançamentos no Fluxo de Caixa:*');
                 fluxoMatch.forEach(t => {
-                  const statusLabel = t.status === 'PAID' ? '✅ Pago' : '⏳ Pendente (A pagar)';
                   const dtStr = String(t.transaction_date || t.created_at || '').slice(0, 10);
-                  lines.push(`• ${fmt(t.amount)} — _${t.description}_ (${statusLabel}) [Data: ${dtStr}]`);
-                  if (t.status === 'PENDING') totalFaltaPessoa += Number(t.amount || 0);
+                  let dtFormat = dtStr;
+                  const pts = dtStr.split('-');
+                  if (pts.length === 3) dtFormat = `${pts[2]}/${pts[1]}/${pts[0]}`;
+                  
+                  if (t.status === 'PENDING') {
+                    totalFaltaPessoa += Number(t.amount || 0);
+                    contasPendentes.push(`• *${fmt(t.amount)}* — _${t.description}_ (⏳ Pendente no Fluxo) [Data: ${dtFormat}]`);
+                  } else {
+                    totalPagoPessoa += Number(t.amount || 0);
+                    contasQuitadas.push(`• *${fmt(t.amount)}* — _${t.description}_ (✅ Pago em ${dtFormat})`);
+                  }
                 });
               }
-              
-              lines.push(`\n💰 *Total Restante a Pagar para ${pFound ? pFound.nome : args.pessoa}:* *${fmt(totalFaltaPessoa)}*`);
-              if (totalPagoPessoa > 0) lines.push(`✅ *Total Já Pago:* ${fmt(totalPagoPessoa)}`);
-              stepMsg = lines.join('\n');
+
+              if (totalFaltaPessoa <= 0.01) {
+                const lines = [
+                  `✅ *Não, Adriano! Você não deve nada para ${nomeCapitalizado}.*`,
+                  '',
+                  `Todas as contas anteriores já constam como *100% QUITADAS e pagas* na sua gestão financeira!`,
+                  `💰 *Total restante a pagar: R$ 0,00*`
+                ];
+
+                if (contasQuitadas.length > 0) {
+                  lines.push('');
+                  lines.push('📜 *Histórico de pagamentos/contas já quitados:*');
+                  lines.push(...contasQuitadas);
+                  if (totalPagoPessoa > 0) {
+                    lines.push(`💵 *Total já liquidado:* *${fmt(totalPagoPessoa)}*`);
+                  }
+                }
+
+                lines.push('');
+                lines.push(`💡 *Dica:* Se você combinou alguma nova conta com ela (por exemplo, para o mês que vem ou parcelada), é só me dizer:`);
+                lines.push(`_Exemplo: "adicionar conta de R$ 110 para ${nomeCapitalizado} para pagar mês que vem dia 10"_ que eu registro na hora!`);
+
+                stepMsg = lines.join('\n');
+              } else {
+                const lines = [
+                  `⚠️ *Sim, Adriano! Você tem contas pendentes para ${nomeCapitalizado}:*`,
+                  '',
+                  `🔴 *Total que falta pagar: ${fmt(totalFaltaPessoa)}*`,
+                  '',
+                  '📋 *Contas pendentes:*',
+                  ...contasPendentes
+                ];
+
+                if (contasQuitadas.length > 0) {
+                  lines.push('');
+                  lines.push('📜 *Contas já quitadas anteriormente:*');
+                  lines.push(...contasQuitadas.slice(0, 5));
+                  if (totalPagoPessoa > 0) {
+                    lines.push(`💵 *Total já pago:* ${fmt(totalPagoPessoa)}`);
+                  }
+                }
+
+                lines.push('');
+                lines.push(`_Para registrar pagamento ou dar baixa, diga: "paguei a conta da ${nomeCapitalizado}" ou "já paguei"._`);
+
+                stepMsg = lines.join('\n');
+              }
             }
           } else {
             let totalFaltaGeral = 0;
-            const lines = ['👑 *Pessoas que Você Deve (Quem Eu Devo) — Agente King:*\n'];
-            let countPessoas = 0;
+            const pessoasComDivida = [];
             
             terceiros.forEach(p => {
               let totalPessoaFalta = 0;
-              let totalPessoaContas = (p.contas || []).length;
+              let totalPessoaContasPendentes = 0;
               let proximosVenc = [];
               
               (p.contas || []).forEach(c => {
                 const valTotal = Number(c.valor) || 0;
                 const pago = (c.pagamentos || []).reduce((s, x) => s + (Number(x.valor) || 0), 0);
                 const falta = Math.max(0, valTotal - pago);
-                totalPessoaFalta += falta;
-                if (falta > 0 && c.dataVencimento) {
-                  proximosVenc.push(c.dataVencimento);
+                if (falta > 0.01) {
+                  totalPessoaFalta += falta;
+                  totalPessoaContasPendentes++;
+                  if (c.dataVencimento) {
+                    proximosVenc.push(c.dataVencimento);
+                  }
                 }
               });
               
-              if (totalPessoaFalta > 0 || totalPessoaContas > 0) {
-                countPessoas++;
+              if (totalPessoaFalta > 0.01) {
                 totalFaltaGeral += totalPessoaFalta;
                 proximosVenc.sort();
                 let proxVencStr = 'Não informado';
@@ -1544,27 +1604,46 @@ try {
                   const pts = proximosVenc[0].split('-');
                   proxVencStr = pts.length === 3 ? `${pts[2]}/${pts[1]}/${pts[0]}` : proximosVenc[0];
                 }
-                lines.push(`${countPessoas}. 👤 *${p.nome}*\n   💰 *Falta pagar: ${fmt(totalPessoaFalta)}* (${totalPessoaContas} conta${totalPessoaContas > 1 ? 's' : ''})\n   🗓️ Próximo vencimento: ${proxVencStr}`);
+                pessoasComDivida.push({
+                  nome: p.nome,
+                  falta: totalPessoaFalta,
+                  contas: totalPessoaContasPendentes,
+                  vencimento: proxVencStr
+                });
               }
             });
             
-            if (despesasPendentesFluxo.length > 0) {
-              lines.push('\n📑 *Despesas Avulsas Pendentes no Fluxo:*');
-              despesasPendentesFluxo.forEach(t => {
-                totalFaltaGeral += Number(t.amount || 0);
-                lines.push(`• 💸 ${fmt(t.amount)} — _${t.description}_ (${t.transaction_date || 'Sem data'})`);
-              });
-            }
+            const despesasPendentes = despesasPendentesFluxo.map(t => {
+              totalFaltaGeral += Number(t.amount || 0);
+              const dt = String(t.transaction_date || t.created_at || '').slice(0, 10);
+              let dtFmt = dt;
+              const pts = dt.split('-');
+              if (pts.length === 3) dtFmt = `${pts[2]}/${pts[1]}/${pts[0]}`;
+              return `• 💸 *${fmt(t.amount)}* — _${t.description}_ (Venc: ${dtFmt})`;
+            });
             
-            if (countPessoas === 0 && despesasPendentesFluxo.length === 0) {
-              stepMsg = `🎉 *Excelente notícia, Adriano!* Você não tem nenhuma dívida ou conta pendente para pagar no momento! Todas as contas e pessoas estão 100% em dia.`;
+            if (pessoasComDivida.length === 0 && despesasPendentes.length === 0) {
+              stepMsg = `🎉 *Excelente notícia, Adriano! Você não está devendo para ninguém no momento!*\n\n` +
+                `Todas as contas e pessoas na sua gestão financeira estão *100% quitadas e em dia*!\n` +
+                `💰 *Total geral pendente: R$ 0,00*\n\n` +
+                `💡 _Se você combinou alguma nova conta com alguém para os próximos meses, é só me falar (ex: "conta de fulano de tal para pagar mês que vem dia 10") que eu programo na hora!_`;
             } else {
+              const lines = ['👑 *Pessoas e Contas que Você Deve (Quem Eu Devo):*\n'];
+              pessoasComDivida.forEach((p, idx) => {
+                lines.push(`${idx + 1}. 👤 *${p.nome}*\n   💰 *Falta pagar: ${fmt(p.falta)}* (${p.contas} conta${p.contas > 1 ? 's' : ''} pendente${p.contas > 1 ? 's' : ''})\n   🗓️ Próximo vencimento: *${p.vencimento}*`);
+              });
+              
+              if (despesasPendentes.length > 0) {
+                lines.push('\n📑 *Despesas Avulsas Pendentes no Fluxo:*');
+                lines.push(...despesasPendentes);
+              }
+              
               lines.push(`\n🔴 *Total Geral Pendente a Pagar:* *${fmt(totalFaltaGeral)}*`);
-              lines.push(`\n_Para ver detalhes de alguém, diga: "quanto devo para [nome]" ou "contas da [nome]"._`);
+              lines.push('\n_Para ver detalhes de alguém, diga: "quanto devo para [nome]" ou "contas da [nome]"._');
               stepMsg = lines.join('\n');
             }
           }
-
+        
         // ── ADICIONAR DÍVIDA / PARCELAS / CONTA PARA MÊS QUE VEM ─────────
         } else if (args.action === 'add_debt' || args.action === 'create_debt' || args.action === 'add_terceiro') {
           const pessoaNome = String(args.pessoa || args.cliente || 'Pessoa').trim();
@@ -1591,8 +1670,22 @@ try {
             }
             if (!Array.isArray(p.contas)) p.contas = [];
             
-            let startYear = nowSp.getFullYear();
-            let startMonth = nowSp.getMonth() + 1;
+            const textLower = String(text || '').toLowerCase();
+            const wantsNextMonth = textLower.includes('mês que vem') ||
+              textLower.includes('mes que vem') ||
+              textLower.includes('próximo mês') ||
+              textLower.includes('proximo mes') ||
+              textLower.includes('proximo mês') ||
+              textLower.includes('partir do mes que vem') ||
+              textLower.includes('partir do mês que vem');
+
+            let curDate = new Date(nowSp.getTime());
+            let nextMonthDate = new Date(curDate.getFullYear(), curDate.getMonth() + 1, 1);
+            let defaultNextMonth = nextMonthDate.getMonth() + 1;
+            let defaultNextYear = nextMonthDate.getFullYear();
+
+            let startYear = wantsNextMonth ? defaultNextYear : nowSp.getFullYear();
+            let startMonth = wantsNextMonth ? defaultNextMonth : (nowSp.getMonth() + 1);
             let startDay = 10;
             
             if (args.data_vencimento) {
@@ -1964,7 +2057,7 @@ Dê um conselho CFO de elite, tático e prático. Seja direto. Inclua: o que est
           stepMsg = `👑 *Consultoria de Faturamento — King Assistente*\n\n${advice}`;
         }
 
-            // ── REENVIAR ÁUDIO DIÁRIO (ZERO CUSTO / REPLAY) ────────────────���─────
+            // ── REENVIAR ÁUDIO DIÁRIO (ZERO CUSTO / REPLAY) ────────────��───���─────
       } else if (fnName === 'send_daily_audio') {
         const periodo = args.periodo || 'hoje';
         const tipo = args.tipo || (text.toLowerCase().includes('devocional') ? 'devocional' : 'ativacao');
@@ -2253,6 +2346,72 @@ Dê um conselho CFO de elite, tático e prático. Seja direto. Inclua: o que est
 
       // ─── 4. COBRANÇA E RECUPERAÇÃO DE CLIENTES ──────────────────────
       } else if (fnName === 'collect_clients') {
+        const lowerMsg = String(text || '').toLowerCase();
+        const isAskingAboutMyDebts = lowerMsg.includes('estou devendo') ||
+          lowerMsg.includes('eu devo') ||
+          lowerMsg.includes('quem eu devo') ||
+          lowerMsg.includes('pessoas que eu devo') ||
+          lowerMsg.includes('nome de pessoas que') ||
+          lowerMsg.includes('minhas dividas') ||
+          lowerMsg.includes('minhas dívidas') ||
+          lowerMsg.includes('socorrinha');
+
+        if (isAskingAboutMyDebts) {
+          // Redirecionamento automático blindado para list_debts da Gestão Financeira!
+          const kRes = await ck.call(this, 'GET', `/api/finance/king-data?profile_id=${profileId}`);
+          let kingDb = (kRes.body && kRes.body.data) ? kRes.body.data : (kRes.body || {});
+          const terceiros = Array.isArray(kingDb.terceiros) ? kingDb.terceiros : [];
+          const txRes = await ck.call(this, 'GET', `/api/finance/transactions?limit=100&orderBy=created_at&orderDir=DESC`);
+          const txList = Array.isArray(txRes.body?.data) ? txRes.body.data : (Array.isArray(txRes.body?.data?.data) ? txRes.body.data.data : []);
+          const despesasPendentesFluxo = txList.filter(t => t.type === 'EXPENSE' && t.status === 'PENDING');
+          
+          let totalFaltaGeral = 0;
+          const pessoasComDivida = [];
+          terceiros.forEach(p => {
+            let totalPessoaFalta = 0;
+            let totalPessoaContasPendentes = 0;
+            let proximosVenc = [];
+            (p.contas || []).forEach(c => {
+              const valTotal = Number(c.valor) || 0;
+              const pago = (c.pagamentos || []).reduce((s, x) => s + (Number(x.valor) || 0), 0);
+              const falta = Math.max(0, valTotal - pago);
+              if (falta > 0.01) {
+                totalPessoaFalta += falta;
+                totalPessoaContasPendentes++;
+                if (c.dataVencimento) proximosVenc.push(c.dataVencimento);
+              }
+            });
+            if (totalPessoaFalta > 0.01) {
+              totalFaltaGeral += totalPessoaFalta;
+              proximosVenc.sort();
+              let proxVencStr = 'Não informado';
+              if (proximosVenc.length > 0) {
+                const pts = proximosVenc[0].split('-');
+                proxVencStr = pts.length === 3 ? `${pts[2]}/${pts[1]}/${pts[0]}` : proximosVenc[0];
+              }
+              pessoasComDivida.push({ nome: p.nome, falta: totalPessoaFalta, contas: totalPessoaContasPendentes, vencimento: proxVencStr });
+            }
+          });
+
+          if (pessoasComDivida.length === 0 && despesasPendentesFluxo.length === 0) {
+            stepMsg = `🎉 *Excelente notícia, Adriano! Você não está devendo para ninguém no momento!*\n\nTodas as contas e pessoas na sua gestão financeira estão *100% quitadas e em dia*!\n💰 *Total geral a pagar: R$ 0,00*\n\n💡 _Se você combinou alguma nova conta com alguém para os próximos meses, é só me falar (ex: "conta de fulano para pagar mês que vem dia 10") que eu programo na hora!_`;
+          } else {
+            const lines = ['👑 *Pessoas e Contas que Você Deve (Quem Eu Devo):*\n'];
+            pessoasComDivida.forEach((p, idx) => {
+              lines.push(`${idx + 1}. 👤 *${p.nome}*\n   💰 *Falta pagar: ${fmt(p.falta)}* (${p.contas} conta${p.contas > 1 ? 's' : ''} pendente${p.contas > 1 ? 's' : ''})\n   🗓️ Próximo vencimento: *${p.vencimento}*`);
+            });
+            if (despesasPendentesFluxo.length > 0) {
+              lines.push('\n📑 *Despesas Avulsas Pendentes no Fluxo:*');
+              despesasPendentesFluxo.forEach(t => {
+                totalFaltaGeral += Number(t.amount || 0);
+                lines.push(`• 💸 *${fmt(t.amount)}* — _${t.description}_ (${t.transaction_date || 'Sem data'})`);
+              });
+            }
+            lines.push(`\n🔴 *Total Geral Pendente a Pagar:* *${fmt(totalFaltaGeral)}*`);
+            lines.push('\n_Para ver detalhes de alguém, diga: "quanto devo para [nome]" ou "contas da [nome]"._');
+            stepMsg = lines.join('\n');
+          }
+        } else {
         const cRes = await ck.call(this, 'GET', '/api/admin/users?limit=100');
         const uList = (cRes.body && (cRes.body.data || cRes.body.users || cRes.body)) || [];
         const uArr = Array.isArray(uList) ? uList : [];
@@ -2293,6 +2452,7 @@ Assim que transferir, me manda o comprovante por aqui que já renovo para você!
             lines.join('\n\n') +
             `\n\n💡 _Ao tocar no link, o WhatsApp abre com o texto de renovação e a chave PIX já digitados!_`;
         }
+      }
 
       } else if (fnName === 'generate_invite_code') {
         const code = String(args.custom_code || '').toUpperCase().trim();

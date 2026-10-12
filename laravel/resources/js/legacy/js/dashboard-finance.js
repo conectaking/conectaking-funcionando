@@ -760,7 +760,7 @@ window.initFinancePane = async function () {
                 </div>
                 
                 <!-- Saldo disponível -->
-                <div onclick="openFinanceDetailModal('balance')" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(59, 130, 246, 0.3); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(59, 130, 246, 0.5)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(59, 130, 246, 0.3)'; this.style.transform='translateY(0)'">
+                <div onclick="filterByBalance()" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(59, 130, 246, 0.3); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(59, 130, 246, 0.5)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(59, 130, 246, 0.3)'; this.style.transform='translateY(0)'">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
                         <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(59, 130, 246, 0.1); display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-wallet" style="color: var(--finance-neon-blue); font-size: 1rem;"></i>
@@ -771,7 +771,7 @@ window.initFinancePane = async function () {
                 </div>
                 
                 <!-- Total recebido -->
-                <div onclick="openFinanceDetailModal('income')" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(34, 197, 94, 0.3); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(34, 197, 94, 0.5)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(34, 197, 94, 0.3)'; this.style.transform='translateY(0)'">
+                <div onclick="filterByPaidIncome()" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(34, 197, 94, 0.3); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(34, 197, 94, 0.5)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(34, 197, 94, 0.3)'; this.style.transform='translateY(0)'">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
                         <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(34, 197, 94, 0.1); display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-check-circle" style="color: var(--finance-neon-green); font-size: 1rem;"></i>
@@ -836,8 +836,11 @@ window.initFinancePane = async function () {
                 <div>
             
                     <!-- Transactions Header -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                        <h4 style="font-size: 1.125rem; font-weight: 700; color: var(--finance-text-primary);">Transações Recentes</h4>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <h4 id="finance-transactions-title" style="font-size: 1.125rem; font-weight: 700; color: var(--finance-text-primary); margin: 0;">Transações Recentes</h4>
+                            <span id="finance-transactions-filter-badge" style="display: none; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;"></span>
+                        </div>
                         <button onclick="showAllTransactions()" style="color: var(--finance-indigo); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; background: none; border: none; cursor: pointer;">Ver Todas</button>
                     </div>
                     
@@ -3111,11 +3114,12 @@ function buildUnifiedFinanceFeed(apiTransactions, kingDb, currentMonth, currentY
             category_color: t.category_color,
             account_name: t.account_name,
             is_recurring: t.is_recurring,
-            installment_current: t.installment_current,
-            installment_total: t.installment_total,
+            installment_current: t.installment_number || t.installment_current,
+            installment_total: t.recurring_times || t.installment_total,
+            installment_group_id: t.installment_group_id,
             created_at: t.created_at
         };
-        if (type !== 'EXPENSE') {
+        if (type !== 'EXPENSE' || (t.status || '').toUpperCase() === 'PAID') {
             items.push(baseItem);
             return;
         }
@@ -3245,7 +3249,20 @@ window.loadFinanceTransactions = async function () {
             window.currentFinanceFilter = null;
             renderFinanceTransactions(unifiedFeed, cardFilter);
             window._financeCardFilter = null;
+        } else if (window.currentFinanceFilter === 'paid-expense') {
+            window.filterByPaidExpense();
+        } else if (window.currentFinanceFilter === 'pending-expense') {
+            window.filterByPendingExpense();
+        } else if (window.currentFinanceFilter === 'paid-income') {
+            window.filterByPaidIncome();
+        } else if (window.currentFinanceFilter === 'pending-income') {
+            window.filterByPendingIncome();
+        } else if (window.currentFinanceFilter === 'pending-expense-previous') {
+            window.filterByPendingExpensePrevious();
         } else {
+            if (window.setFinanceTransactionsTitle) {
+                window.setFinanceTransactionsTitle('Transações Recentes', null);
+            }
             renderFinanceTransactions(unifiedFeed, window.currentFinanceTab || 'all');
         }
         if (window.refreshFinanceSummaryCards) window.refreshFinanceSummaryCards();
@@ -3883,25 +3900,6 @@ function renderFinanceTransactions(transactions, filterTab = 'all') {
     const transactionsList = document.getElementById('finance-transactions-list');
     if (!transactionsList) return;
 
-    // Clique em "Total recebido": mostrar receitas pagas e, abaixo, resumo "O que foi pago" com botão para ver despesas
-    const hasBothTypes = transactions.some(t => (t.type || '').toUpperCase() === 'EXPENSE') && transactions.some(t => (t.type || '').toUpperCase() === 'INCOME');
-    if (filterTab === 'income' && window.currentFinanceFilter === 'paid-income' && hasBothTypes) {
-        const incomePaid = transactions.filter(t => (t.type || '').toUpperCase() === 'INCOME' && (t.status || '').toUpperCase() === 'PAID');
-        const expensePaid = transactions.filter(t => (t.type || '').toUpperCase() === 'EXPENSE' && (t.status || '').toUpperCase() === 'PAID');
-        const totalGasto = expensePaid.reduce((s, t) => s + parseFloat(t.amount || 0), 0);
-        window.currentFinanceFilter = null;
-        renderFinanceTransactions(incomePaid, 'income');
-        window.currentFinanceFilter = 'paid-income';
-        const list = document.getElementById('finance-transactions-list');
-        if (list) {
-            const bloco = document.createElement('div');
-            bloco.style.cssText = 'margin-top:24px;padding:16px;background:var(--finance-card-dark);border:1px solid rgba(239,68,68,0.2);border-radius:12px;';
-            bloco.innerHTML = '<p style="color:var(--finance-text-secondary);font-size:0.8rem;font-weight:700;margin:0 0 8px 0;">O que foi pago (este m\u00eas)</p><p style="color:#ef4444;font-size:1.25rem;font-weight:700;margin:0 0 12px 0;">R$ ' + (typeof formatCurrency === 'function' ? formatCurrency(totalGasto) : totalGasto.toFixed(2).replace('.', ',')) + '</p><button type="button" onclick="filterByPaidExpense()" style="padding:8px 14px;background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.4);border-radius:8px;color:#fca5a5;font-size:0.8rem;font-weight:600;cursor:pointer;"><i class="fas fa-list" style="margin-right:6px;"></i>Ver lista de despesas</button>';
-            list.appendChild(bloco);
-        }
-        return;
-    }
-
     // Filtrar transações por aba
     let filteredTransactions = transactions;
     if (filterTab === 'income') {
@@ -4033,10 +4031,30 @@ function renderFinanceTransactions(transactions, filterTab = 'all') {
             const infoParts = [categoryInfo, accountInfo].filter(Boolean);
             if (isRecurring) infoParts.push('<i class="fas fa-sync-alt" style="color: #f59e0b;"></i> Fixa');
 
-            // Parcelamento (se houver)
-            const installmentInfo = transaction.installment_current && transaction.installment_total
-                ? `(${transaction.installment_current}/${transaction.installment_total})`
-                : '';
+            // Status badge (Pago / Pendente / A Pagar / A Receber)
+            const isPaid = status === 'PAID';
+            let statusBadge = '';
+            if (isPaid) {
+                statusBadge = `<span style="font-size: 0.65rem; font-weight: 700; padding: 2px 7px; border-radius: 6px; background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;"><i class="fas fa-check-circle" style="font-size: 0.65rem;"></i>${isIncome ? 'Recebido' : 'Pago'}</span>`;
+            } else {
+                statusBadge = `<span style="font-size: 0.65rem; font-weight: 700; padding: 2px 7px; border-radius: 6px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;"><i class="fas fa-clock" style="font-size: 0.65rem;"></i>${isIncome ? 'A Receber' : 'A Pagar'}</span>`;
+            }
+
+            // Parcelamento badge (ex: 1ª de 10, 2ª de 10)
+            let installmentBadge = '';
+            let rawDesc = transaction.description || 'Sem descrição';
+            let descClean = rawDesc;
+            if (transaction.installment_current && transaction.installment_total) {
+                installmentBadge = `<span style="font-size: 0.65rem; font-weight: 800; padding: 2px 7px; border-radius: 6px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); flex-shrink: 0;">${transaction.installment_current}ª de ${transaction.installment_total}</span>`;
+                descClean = descClean.replace(/\s*\(\d+\/\d+\)$/, '');
+            } else {
+                const matchInst = rawDesc.match(/\((\d+)\/(\d+)\)/);
+                if (matchInst) {
+                    installmentBadge = `<span style="font-size: 0.65rem; font-weight: 800; padding: 2px 7px; border-radius: 6px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); flex-shrink: 0;">${matchInst[1]}ª de ${matchInst[2]}</span>`;
+                    descClean = descClean.replace(/\s*\(\d+\/\d+\)$/, '');
+                }
+            }
+
             const canEdit = src === 'fluxo' && (typeof transaction.id === 'number' || (transaction.id != null && String(transaction.id).match(/^[0-9]+$/)));
             const onClickAction = canEdit ? 'editFinanceTransaction(' + transaction.id + ')' : "switchUnifiedFinanceTab('" + (src === 'trabalho' ? 'trabalhos' : src === 'bem' ? 'bens' : src === 'serasa' ? 'serasa' : src === 'terceiros' ? 'terceiros' : src === 'cartao' ? 'cartoes' : 'fluxo') + "')";
 
@@ -4054,7 +4072,9 @@ function renderFinanceTransactions(transactions, filterTab = 'all') {
                             <div style="flex: 1; min-width: 0;">
                                 <p style="color: var(--finance-text-primary); font-weight: 700; margin-bottom: 4px; font-size: 0.875rem; word-break: break-word; overflow-wrap: break-word; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0;">
                                     ${sourceLabel ? '<span style="font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 6px; background: ' + (srcColor || 'rgba(255,255,255,0.1)') + '; color: #fff; flex-shrink: 0;">' + sourceLabel + '</span>' : ''}
-                                    <span style="min-width: 0; flex: 1;">${transaction.description || 'Sem descrição'} ${installmentInfo}</span>
+                                    ${installmentBadge}
+                                    ${statusBadge}
+                                    <span style="min-width: 0; flex: 1;">${descClean}</span>
                                 </p>
                                 <p style="color: var(--finance-text-secondary); font-size: 0.9rem; margin: 0; font-weight: 600;">
                                     ${fullDateStr} · ${timeStr}
@@ -4096,6 +4116,14 @@ window.currentFinanceYear = now.getFullYear();
 
 window.switchFinanceTab = function (tab) {
     window.currentFinanceTab = tab;
+    window.currentFinanceFilter = null;
+    if (tab === 'income') {
+        if (window.setFinanceTransactionsTitle) window.setFinanceTransactionsTitle('Receitas do Mês', 'Receitas', '#4ade80', 'rgba(34,197,94,0.15)');
+    } else if (tab === 'expense') {
+        if (window.setFinanceTransactionsTitle) window.setFinanceTransactionsTitle('Despesas do Mês', 'Despesas', '#f87171', 'rgba(239,68,68,0.15)');
+    } else {
+        if (window.setFinanceTransactionsTitle) window.setFinanceTransactionsTitle('Transações Recentes', null);
+    }
 
     // Atualizar botões de aba
     document.querySelectorAll('.finance-tab-btn').forEach(btn => {
@@ -5617,21 +5645,43 @@ window.closeFinanceChartsModal = function () {
 };
 
 // Funções de filtro para os cards clicáveis
+window.setFinanceTransactionsTitle = function (title, badgeText, badgeColor, badgeBg) {
+    const titleEl = document.getElementById('finance-transactions-title');
+    const badgeEl = document.getElementById('finance-transactions-filter-badge');
+    if (titleEl) {
+        titleEl.textContent = title || 'Transações Recentes';
+    }
+    if (badgeEl) {
+        if (badgeText) {
+            badgeEl.textContent = badgeText;
+            badgeEl.style.display = 'inline-block';
+            badgeEl.style.color = badgeColor || '#fff';
+            badgeEl.style.background = badgeBg || 'rgba(255,255,255,0.1)';
+            badgeEl.style.border = '1px solid ' + (badgeColor ? badgeColor + '55' : 'rgba(255,255,255,0.2)');
+        } else {
+            badgeEl.style.display = 'none';
+        }
+    }
+};
+
 window.showAllTransactions = function () {
     // Limpar filtros e mostrar TODAS as transações
     window.currentFinanceTab = 'all';
     window.currentFinanceFilter = null;
+    window.setFinanceTransactionsTitle('Transações Recentes', null);
 
     // Atualizar aba ativa
     document.querySelectorAll('.finance-tab-btn').forEach(btn => {
         btn.classList.remove('active');
         btn.style.color = 'var(--finance-text-secondary)';
+        btn.style.borderBottomColor = 'transparent';
     });
 
     const allBtn = document.querySelector('[data-tab="all"]');
     if (allBtn) {
         allBtn.classList.add('active');
         allBtn.style.color = 'var(--finance-text-primary)';
+        allBtn.style.borderBottomColor = '#667eea';
     }
 
     // Renderizar todas as transações sem filtros
@@ -5644,9 +5694,11 @@ window.showAllTransactions = function () {
 };
 
 window.filterByPendingIncome = function () {
-    // Filtrar apenas receitas pendentes - NÃO atualizar cards de resumo
+    // Filtrar apenas receitas pendentes
     window.currentFinanceFilter = 'pending-income';
     window.currentFinanceTab = 'income';
+    window.setFinanceTransactionsTitle('Falta Receber', 'Pendente', '#4ade80', 'rgba(34, 197, 94, 0.15)');
+
     const transactions = window.allFinanceTransactions || [];
     const filtered = transactions.filter(t =>
         (t.type || '').toUpperCase() === 'INCOME' &&
@@ -5660,14 +5712,21 @@ window.filterByPendingIncome = function () {
         btn.style.borderBottomColor = 'transparent';
     });
 
-    // NÃO atualizar cards de resumo - apenas filtrar transações abaixo
-    // Renderizar transações filtradas
+    const incomeBtn = document.querySelector('[data-tab="income"]');
+    if (incomeBtn) {
+        incomeBtn.classList.add('active');
+        incomeBtn.style.color = 'var(--finance-text-primary)';
+        incomeBtn.style.borderBottomColor = '#22c55e';
+    }
+
     renderFinanceTransactions(filtered, 'income');
 };
 
 window.filterByPendingExpensePrevious = function () {
     window.currentFinanceTab = 'expense';
     window.currentFinanceFilter = 'pending-expense-previous';
+    window.setFinanceTransactionsTitle('Falta Pagar (Meses Anteriores)', 'Anterior / Atrasado', '#fbbf24', 'rgba(245, 158, 11, 0.15)');
+
     const transactions = window.allFinanceTransactions || [];
     const antesDoMes = financeTransactionsBeforeCurrentMonth(transactions);
     const filtered = antesDoMes.filter(t =>
@@ -5677,11 +5736,13 @@ window.filterByPendingExpensePrevious = function () {
     document.querySelectorAll('.finance-tab-btn').forEach(btn => {
         btn.classList.remove('active');
         btn.style.color = 'var(--finance-text-secondary)';
+        btn.style.borderBottomColor = 'transparent';
     });
     const expenseBtn = document.querySelector('[data-tab="expense"]');
     if (expenseBtn) {
         expenseBtn.classList.add('active');
         expenseBtn.style.color = 'var(--finance-text-primary)';
+        expenseBtn.style.borderBottomColor = '#ef4444';
     }
     renderFinanceTransactions(filtered, 'expense');
 };
@@ -5717,6 +5778,8 @@ window.filterByPendingExpense = function () {
     // Filtrar apenas despesas pendentes DESTE mês
     window.currentFinanceTab = 'expense';
     window.currentFinanceFilter = 'pending-expense';
+    window.setFinanceTransactionsTitle('Falta Pagar (Este Mês)', 'Pendente', '#f87171', 'rgba(239, 68, 68, 0.15)');
+
     const transactions = window.allFinanceTransactions || [];
     const doMes = financeTransactionsCurrentMonthOnly(transactions);
     const filtered = doMes.filter(t =>
@@ -5728,57 +5791,59 @@ window.filterByPendingExpense = function () {
     document.querySelectorAll('.finance-tab-btn').forEach(btn => {
         btn.classList.remove('active');
         btn.style.color = 'var(--finance-text-secondary)';
+        btn.style.borderBottomColor = 'transparent';
     });
 
     const expenseBtn = document.querySelector('[data-tab="expense"]');
     if (expenseBtn) {
         expenseBtn.classList.add('active');
         expenseBtn.style.color = 'var(--finance-text-primary)';
+        expenseBtn.style.borderBottomColor = '#ef4444';
     }
 
-    // NÃO atualizar cards de resumo - apenas filtrar transações abaixo
-    // Renderizar transações filtradas
     renderFinanceTransactions(filtered, 'expense');
 };
 
 window.filterByBalance = function () {
-    // Mostrar todas as transações (saldo disponível) - NÃO atualizar cards de resumo
+    // Mostrar todas as transações (saldo disponível)
     window.currentFinanceTab = 'all';
     window.currentFinanceFilter = null;
+    window.setFinanceTransactionsTitle('Saldo Disponível (Todas as Transações)', 'Geral', '#60a5fa', 'rgba(59, 130, 246, 0.15)');
+
     const transactions = window.allFinanceTransactions || [];
 
     // Atualizar aba ativa
     document.querySelectorAll('.finance-tab-btn').forEach(btn => {
         btn.classList.remove('active');
         btn.style.color = 'var(--finance-text-secondary)';
+        btn.style.borderBottomColor = 'transparent';
     });
     const allBtn = document.querySelector('[data-tab="all"]');
     if (allBtn) {
         allBtn.classList.add('active');
         allBtn.style.color = 'var(--finance-text-primary)';
+        allBtn.style.borderBottomColor = '#667eea';
     }
 
-    // NÃO atualizar cards de resumo - apenas mostrar todas as transações abaixo
     renderFinanceTransactions(transactions, 'all');
 };
 
 window.filterByMonthlyIncomeFromCard = function () {
-    window._financeCardFilter = 'income';
-    if (window.loadFinanceTransactions) window.loadFinanceTransactions();
+    window.filterByPaidIncome();
 };
 window.filterByMonthlyExpenseFromCard = function () {
-    window._financeCardFilter = 'expense';
-    if (window.loadFinanceTransactions) window.loadFinanceTransactions();
+    window.filterByPaidExpense();
 };
 window.filterByTotalBalanceFromCard = function () {
-    window._financeCardFilter = 'all';
-    if (window.loadFinanceTransactions) window.loadFinanceTransactions();
+    window.filterByBalance();
 };
 
 window.filterByPaidIncome = function () {
     // Total recebido: mostrar só receitas PAGAS DESTE mês
     window.currentFinanceTab = 'income';
     window.currentFinanceFilter = 'paid-income';
+    window.setFinanceTransactionsTitle('Total Recebido (Este Mês)', 'Recebido', '#4ade80', 'rgba(34, 197, 94, 0.15)');
+
     const transactions = window.allFinanceTransactions || [];
     const doMes = financeTransactionsCurrentMonthOnly(transactions);
     const onlyPaidIncome = doMes.filter(t => (t.type || '').toUpperCase() === 'INCOME' && (t.status || '').toUpperCase() === 'PAID');
@@ -5786,11 +5851,13 @@ window.filterByPaidIncome = function () {
     document.querySelectorAll('.finance-tab-btn').forEach(btn => {
         btn.classList.remove('active');
         btn.style.color = 'var(--finance-text-secondary)';
+        btn.style.borderBottomColor = 'transparent';
     });
     const incomeBtn = document.querySelector('[data-tab="income"]');
     if (incomeBtn) {
         incomeBtn.classList.add('active');
         incomeBtn.style.color = 'var(--finance-text-primary)';
+        incomeBtn.style.borderBottomColor = '#22c55e';
     }
 
     renderFinanceTransactions(onlyPaidIncome, 'income');
@@ -5800,6 +5867,8 @@ window.filterByPaidExpense = function () {
     // O que foi pago: só despesas PAGAS DESTE mês
     window.currentFinanceTab = 'expense';
     window.currentFinanceFilter = 'paid-expense';
+    window.setFinanceTransactionsTitle('O Que Foi Pago (Este Mês)', 'Pago', '#4ade80', 'rgba(34, 197, 94, 0.15)');
+
     const transactions = window.allFinanceTransactions || [];
     const doMes = financeTransactionsCurrentMonthOnly(transactions);
     const filtered = doMes.filter(t =>
@@ -5811,12 +5880,14 @@ window.filterByPaidExpense = function () {
     document.querySelectorAll('.finance-tab-btn').forEach(btn => {
         btn.classList.remove('active');
         btn.style.color = 'var(--finance-text-secondary)';
+        btn.style.borderBottomColor = 'transparent';
     });
 
     const expenseBtn = document.querySelector('[data-tab="expense"]');
     if (expenseBtn) {
         expenseBtn.classList.add('active');
         expenseBtn.style.color = 'var(--finance-text-primary)';
+        expenseBtn.style.borderBottomColor = '#ef4444';
     }
 
     renderFinanceTransactions(filtered, 'expense');
