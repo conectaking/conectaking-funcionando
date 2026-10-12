@@ -205,7 +205,7 @@ ${KB}
    - "PAID": Já saiu ou já entrou do bolso/conta hoje.
    - "PENDING": Vai sair ou vai entrar no futuro (parcelas, contas a vencer).
 
-═══ REGRAS SUPREMAS DE QUEM EU DEVO (TERCEIROS), DÍVIDAS E PARCELAS (BLINDADAS) ═══
+═══ REGRAS SUPREMAS DE QUEM EU DEVO (TERCEIROS), DÍVIDAS E PARCELAS (BLINDADAS) ═���═
 1. DISTINÇÃO CRÍTICA (NUNCA CONFUNDA DÍVIDAS COM CLIENTES OU TRABALHOS):
    - "QUEM EU ESTOU DEVENDO", "PESSOAS QUE EU DEVO", "ME PASSA O NOME DE QUEM ESTOU DEVENDO", "QUANTO DEVO PARA SOCORRINHA?", "CONTAS QUE FALTA PAGAR PARA [PESSOA]":
      -> É SEMPRE E OBRIGATORIAMENTE GESTÃO FINANCEIRA: Chame 'manage_finance' com action: 'list_debts'!
@@ -214,12 +214,19 @@ ${KB}
      -> ⚠️ NUNCA chame 'receivables_list' ou fale de trabalhos a receber quando ele perguntar sobre quem ele está devendo! Trabalhos a receber são clientes que devem ao Adriano, não o contrário!
 
 2. CONSULTAR DÍVIDAS, PESSOAS E PARCELAS (action: 'list_debts'):
+   - ÁUDIO / TRANSCRIÇÃO DE VOZ: "sua coiminha", "coiminha", "socorrinha", "socorro", "cozinha" (no contexto de contas/dívidas) refere-se SEMPRE à "Socorrinha"!
+   - "quanto era a prestação total as parcelas que eu tinha que pagar o mês que vem da sua coiminha?", "qual o valor total da parcela do mês que vem somente o que devo pagar para socorrinha?", "quanto tenho que pagar mês que vem para [pessoa]?":
+     -> Chame 'manage_finance' com action: 'list_debts', pessoa: 'Socorrinha', mes: 'proximo' (ou periodo: 'mes_que_vem')!
+   - "quantas parcelas eu tenho que pagar o mês que vem", "quanto tenho que pagar o mês que vem" (geral, sem pessoa específica):
+     -> Chame 'manage_finance' com action: 'list_debts', mes: 'proximo' (ou periodo: 'mes_que_vem')!
+   - "quantas contas que eu tenho que eu tô devendo da socorrinha?", "quantas contas eu devo para [pessoa]":
+     -> Chame 'manage_finance' com action: 'list_debts', pessoa: 'Socorrinha'!
    - "quem eu estou devendo?", "me passa o nome de pessoas que estou devendo":
      -> Chame 'manage_finance' com action: 'list_debts'!
-   - "quanto eu devo para Socorrinha?", "quais contas devo para Socorrinha, as datas e quantas parcelas?":
-     -> Chame 'manage_finance' com action: 'list_debts' e pessoa: 'Socorrinha'!
-   - "qual o valor total da parcela do mês que vem somente o que devo pagar para socorrinha?", "quanto tenho que pagar mês que vem para [pessoa]?", "o que devo no mês que vem?":
-     -> Chame 'manage_finance' com action: 'list_debts', pessoa: 'Socorrinha', mes: 'proximo' (ou periodo: 'mes_que_vem')!
+   - REGRAS SUPREMAS DE RESPOSTA (LÓGICA E PRECISÃO CIRÚRGICA):
+     -> Se o Adriano perguntar de uma PESSOA ESPECÍFICA (ex: Socorrinha), responda APENAS sobre aquela pessoa! NUNCA mencione outras pessoas!
+     -> Se ele perguntar de um MÊS ESPECÍFICO (ex: mês que vem), informe a QUANTIDADE de parcelas e o VALOR TOTAL SOMENTE DAQUELE MÊS! NUNCA adicione parcelas de outros meses nem total acumulado futuro se ele não pediu! Se ele perguntar dos outros meses, aí sim responda dos outros meses!
+     -> Se ele perguntar QUANTAS parcelas ou contas, destaque de imediato a QUANTIDADE EXATA de parcelas/contas no início da resposta!
 
 3. CONTA PARA PAGAR MÊS QUE VEM (DATA ESPECÍFICA):
    - Se o Adriano disser "conta de fulano de tal que é para pagar mês que vem data 10", "conta de R$ 110 para Socorrinha pagar mês que vem dia 10", "leite para Sara que devo para Socorrinha":
@@ -273,7 +280,7 @@ ${KB}
   * Se o Adriano pedir para lembrar no começo do dia, meio do dia e meia hora antes: defina lembrar_comeco_dia: true, lembrar_meio_dia: true, lembrar_30m: true.
 
 ═══ PODER ADMINISTRATIVO TOTAL CONECTA KING (O REI MANDA, VOC�� EXECUTA) ══��
-Você tem AUTORIZAÇÃO TOTAL, EXPRESSA e IRRESTRITA do Adriano King para realizar QUALQUER ação no Conecta King.
+Você tem AUTORIZA��ÃO TOTAL, EXPRESSA e IRRESTRITA do Adriano King para realizar QUALQUER ação no Conecta King.
 NUNCA diga que não pode gerenciar dados sensíveis, excluir clientes, ver quantos usuários existem, mudar e-mails, cadastrar clientes ou manipular senhas. Você é o braço direito do Adriano!
 
 ═══ REGRAS CRÍTICAS DE CONTEXTO E MEMÓRIA MULTI-TURNO ═══
@@ -786,10 +793,30 @@ try {
       const today = new Date().toISOString().slice(0, 10);
 
       for (const toolCall of choice.tool_calls) {
-        const fnName = toolCall.function?.name;
+        let fnName = toolCall.function?.name;
         let args = {};
         try { args = JSON.parse(toolCall.function?.arguments || '{}'); } catch (_) {}
         let stepMsg = '';
+
+        // Interceptação blindada se o LLM chamou collect_clients ou list_clients para dívidas pessoais
+        const lowerInputMsg = String(text || '').toLowerCase();
+        const isAskingAboutMyDebtsEarly = lowerInputMsg.includes('estou devendo') ||
+          lowerInputMsg.includes('eu devo') ||
+          lowerInputMsg.includes('quem eu devo') ||
+          lowerInputMsg.includes('pessoas que eu devo') ||
+          lowerInputMsg.includes('nome de pessoas que') ||
+          lowerInputMsg.includes('minhas dividas') ||
+          lowerInputMsg.includes('minhas dívidas') ||
+          lowerInputMsg.includes('prestação') ||
+          lowerInputMsg.includes('prestacao') ||
+          lowerInputMsg.includes('parcelas') ||
+          lowerInputMsg.includes('parcela') ||
+          /socorr|coimin|coinh|sua\s*coim|socorin/i.test(lowerInputMsg);
+
+        if ((fnName === 'collect_clients' || fnName === 'list_clients') && isAskingAboutMyDebtsEarly) {
+          fnName = 'manage_finance';
+          args = { action: 'list_debts', ...args };
+        }
 
       // ── LISTAR CLIENTES / VISÃO GERAL DE USUÁRIOS ──���─────────────────────
       
@@ -1085,7 +1112,7 @@ try {
           stepMsg = `⚠️ *Não foi possível consultar os usuários:* ${r.body?.message || 'Falha de comunicação com o servidor Conecta King.'}`;
         }
 
-      // ── CADASTRAR CLIENTE ────────────────────────────────────────────────
+      // ── CADASTRAR CLIENTE ──────────────────���─────────────────────────────
       } else if (fnName === 'register_client') {
         const codeToUse = args.code || session.lastGeneratedCode || null;
         const payload = {
@@ -1537,9 +1564,36 @@ try {
           const txList = Array.isArray(txRes.body?.data) ? txRes.body.data : (Array.isArray(txRes.body?.data?.data) ? txRes.body.data.data : []);
           const despesasPendentesFluxo = txList.filter(t => t.type === 'EXPENSE' && t.status === 'PENDING');
           
-          const filtroPessoa = String(args.pessoa || args.cliente || '').trim().toLowerCase();
+          // ── 1. Normalização Inteligente de Nomes (Fuzzy / Áudio / Transcrição) ──
+          function normalizarNomePessoa(str) {
+            if (!str) return '';
+            const s = String(str).toLowerCase().trim();
+            // Erros comuns de transcrição de áudio: "sua coiminha", "coiminha", "socorrinha", "socorro", "cozinha"
+            if (/socorr|coimin|coinh|sua\s*coim|socorin/i.test(s)) return 'socorrinha';
+            return s;
+          }
 
-          // ── Identificar Filtro de Mês/Período ──
+          const lowerText = String(text || '').toLowerCase();
+          let filtroPessoa = normalizarNomePessoa(args.pessoa || args.cliente || '');
+
+          // Se não veio em args.pessoa, extrai da mensagem do usuário
+          if (!filtroPessoa) {
+            if (/socorr|coimin|coinh|sua\s*coim|socorin/i.test(lowerText)) {
+              filtroPessoa = 'socorrinha';
+            } else {
+              for (const p of terceiros) {
+                if (p && p.nome) {
+                  const pNorm = normalizarNomePessoa(p.nome);
+                  if (pNorm.length >= 3 && lowerText.includes(pNorm)) {
+                    filtroPessoa = pNorm;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+
+          // ── 2. Identificar Filtro de Mês / Período ──
           const anoAtual = nowSp.getFullYear();
           const mesAtual = nowSp.getMonth() + 1; // 1-12
           let anoProx = anoAtual;
@@ -1549,7 +1603,6 @@ try {
           const proxMesYYYYMM = `${anoProx}-${String(mesProx).padStart(2, '0')}`;
           const mesesNomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
-          const lowerText = String(text || '').toLowerCase();
           const argMes = String(args.mes || args.periodo || '').toLowerCase();
 
           let targetMesYYYYMM = null;
@@ -1600,10 +1653,14 @@ try {
           }
 
           if (filtroPessoa) {
-            let pFound = terceiros.find(p => p && String(p.nome || '').toLowerCase().includes(filtroPessoa));
-            const fluxoMatch = txList.filter(t => t.type === 'EXPENSE' && String(t.description || '').toLowerCase().includes(filtroPessoa));
+            let pFound = terceiros.find(p => {
+              if (!p || !p.nome) return false;
+              const pNorm = normalizarNomePessoa(p.nome);
+              return pNorm.includes(filtroPessoa) || filtroPessoa.includes(pNorm);
+            });
+            const fluxoMatch = txList.filter(t => t.type === 'EXPENSE' && normalizarNomePessoa(t.description).includes(filtroPessoa));
             
-            const rawNome = pFound ? pFound.nome : (args.pessoa || filtroPessoa);
+            const rawNome = pFound ? pFound.nome : (filtroPessoa === 'socorrinha' ? 'Socorrinha' : (args.pessoa || filtroPessoa));
             const nomeCapitalizado = rawNome ? (rawNome.charAt(0).toUpperCase() + rawNome.slice(1)) : 'Essa pessoa';
 
             if (!pFound && fluxoMatch.length === 0) {
@@ -1684,12 +1741,16 @@ try {
               // SE ADRIANO PERGUNTOU ESPECIFICAMENTE POR UM MÊS (ex: mês que vem)
               if (targetMesYYYYMM) {
                 if (contasDoMesPendentes.length > 0) {
+                  const qtdParcelasMes = contasDoMesPendentes.length;
+                  const parcelasLabel = qtdParcelasMes === 1 ? '1 parcela' : `${qtdParcelasMes} parcelas`;
+
                   const lines = [
-                    `📅 *Total da parcela para ${nomeCapitalizado} no ${targetMesLabel}:*`,
+                    `📅 *Parcelas para ${nomeCapitalizado} no ${targetMesLabel}:*`,
                     '',
-                    `💰 *Valor total a pagar no mês:* *${fmt(totalFaltaPessoaMes)}*`,
+                    `🔢 *Quantidade de parcelas:* *${parcelasLabel}*`,
+                    `💰 *Valor total a pagar (somente neste mês):* *${fmt(totalFaltaPessoaMes)}*`,
                     '',
-                    `📋 *Parcelas com vencimento neste mês:*`
+                    `📋 *Detalhamento das parcelas do mês:*`
                   ];
 
                   contasDoMesPendentes.forEach(c => {
@@ -1697,29 +1758,22 @@ try {
                     lines.push(`• *${c.nomeConta}:* *${fmt(c.falta)}*${descTxt}\n   📅 Vencimento: *${c.dtFormat}* ⏳`);
                   });
 
-                  const outrasParcelas = todasContasPendentes.filter(c => c.yyyymm !== targetMesYYYYMM);
-                  if (outrasParcelas.length > 0) {
-                    lines.push('');
-                    lines.push(`ℹ️ *Demais parcelas em outros meses:*`);
-                    lines.push(`• *Total acumulado geral (todas as parcelas futuras):* *${fmt(totalFaltaPessoaGeral)}* (${todasContasPendentes.length} parcelas no total)`);
-                    lines.push(`• _As demais parcelas vencem nos meses posteriores._`);
-                  }
-
+                  // REGRA DE OURO: NÃO MOSTRAR DEMAIS MESES NEM TOTAL ACUMULADO FUTURO!
                   lines.push('');
-                  lines.push(`_Para dar baixa ou registrar pagamento, diga: "paguei a conta da ${nomeCapitalizado}" ou "já paguei"._`);
+                  lines.push(`💡 _Para consultar parcelas de outros meses ou todas as contas dela, diga: "quantas contas devo para ${nomeCapitalizado}" ou pergunte pelo mês desejado._`);
                   stepMsg = lines.join('\n');
                 } else if (totalFaltaPessoaGeral > 0.01) {
-                  stepMsg = `✅ *Adriano, você não tem parcelas vencendo no ${targetMesLabel} para ${nomeCapitalizado}!* (Total no mês: *R$ 0,00*).\n\n` +
-                    `Você possui *${todasContasPendentes.length} parcela(s)* em outros meses que somam *${fmt(totalFaltaPessoaGeral)}* no total geral.\n\n` +
-                    `_Para ver todas as parcelas, diga: "todas as contas da ${nomeCapitalizado}"._`;
+                  stepMsg = `✅ *Adriano, você tem 0 parcelas para pagar no ${targetMesLabel} para ${nomeCapitalizado}!* (Total no mês: *R$ 0,00*).\n\n` +
+                    `Você não tem nenhuma conta dela vencendo nesse mês.\n\n` +
+                    `💡 _Para consultar as contas de outros meses ou todas as contas dela, diga: "quantas contas devo para ${nomeCapitalizado}"._`;
                 } else {
                   stepMsg = `✅ *Não, Adriano! Você não deve nada para ${nomeCapitalizado}.*\n\nTodas as contas anteriores já constam como *100% QUITADAS* (Total pendente: *R$ 0,00*).`;
                 }
               } else {
-                // SEM FILTRO DE MÊS ESPECÍFICO: MOSTRA TOTAL GERAL E AGRUPA POR MÊS
+                // SEM FILTRO DE MÊS ESPECÍFICO (ex: "quantas contas que eu tenho que eu tô devendo da socorrinha")
                 if (totalFaltaPessoaGeral <= 0.01) {
                   const lines = [
-                    `✅ *Não, Adriano! Você não deve nada para ${nomeCapitalizado}.*`,
+                    `✅ *Adriano, você tem 0 contas pendentes para ${nomeCapitalizado}!*`,
                     '',
                     `Todas as contas anteriores já constam como *100% QUITADAS e pagas* na sua gestão financeira!`,
                     `💰 *Total restante a pagar: R$ 0,00*`
@@ -1734,8 +1788,6 @@ try {
                     }
                   }
 
-                  lines.push('');
-                  lines.push(`💡 *Dica:* Se você combinou alguma nova conta com ela, é só me dizer: "adicionar conta de R$ 110 para ${nomeCapitalizado} pagar mês que vem dia 10" que eu registro na hora!`);
                   stepMsg = lines.join('\n');
                 } else {
                   const gruposPorMes = {};
@@ -1747,11 +1799,14 @@ try {
                   });
 
                   const chavesOrdenadas = Object.keys(gruposPorMes).sort();
+                  const qtdContasTotal = todasContasPendentes.length;
+                  const contasTotalLabel = qtdContasTotal === 1 ? '1 conta/parcela' : `${qtdContasTotal} contas/parcelas`;
 
                   const lines = [
-                    `⚠️ *Sim, Adriano! Você tem contas pendentes para ${nomeCapitalizado}:*`,
+                    `⚠️ *Adriano, você tem ${contasTotalLabel} pendente${qtdContasTotal > 1 ? 's' : ''} para ${nomeCapitalizado}:*`,
                     '',
-                    `🔴 *Total geral que falta pagar: ${fmt(totalFaltaPessoaGeral)}* (${todasContasPendentes.length} parcelas ao todo)`,
+                    `🔢 *Quantidade total de contas:* *${qtdContasTotal}*`,
+                    `💰 *Total geral que falta pagar: ${fmt(totalFaltaPessoaGeral)}*`,
                     ''
                   ];
 
@@ -1772,17 +1827,8 @@ try {
                     });
                   });
 
-                  if (contasQuitadas.length > 0) {
-                    lines.push('');
-                    lines.push('📜 *Contas já quitadas anteriormente:*');
-                    lines.push(...contasQuitadas.slice(0, 3));
-                    if (totalPagoPessoaGeral > 0) {
-                      lines.push(`💵 *Total já pago:* ${fmt(totalPagoPessoaGeral)}`);
-                    }
-                  }
-
                   lines.push('');
-                  lines.push(`_Para registrar pagamento ou dar baixa, diga: "paguei a conta da ${nomeCapitalizado}" ou "já paguei"._`);
+                  lines.push(`💡 _Para saber apenas as parcelas de um mês, diga: "quanto tenho que pagar mês que vem para ${nomeCapitalizado}"._`);
                   stepMsg = lines.join('\n');
                 }
               }
@@ -1791,6 +1837,7 @@ try {
             // SEM FILTRO DE PESSOA (CONSULTA GERAL DE DÍVIDAS)
             let totalFaltaGeral = 0;
             let totalFaltaMes = 0;
+            let totalContasMes = 0;
             const pessoasComDividaGeral = [];
             const pessoasComDividaMes = [];
 
@@ -1826,32 +1873,30 @@ try {
 
               if (faltaPessoaMes > 0.01) {
                 totalFaltaMes += faltaPessoaMes;
+                totalContasMes += contasPessoaMes;
                 pessoasComDividaMes.push({ nome: p.nome, falta: faltaPessoaMes, contas: contasPessoaMes });
               }
             });
 
             if (targetMesYYYYMM) {
               if (pessoasComDividaMes.length > 0) {
+                const parcelasTotalLabel = totalContasMes === 1 ? '1 parcela' : `${totalContasMes} parcelas`;
                 const lines = [
-                  `📅 *Contas e Pessoas para Pagar no ${targetMesLabel}:*`,
+                  `📅 *Parcelas para pagar no ${targetMesLabel}:*`,
                   '',
-                  `💰 *Total a pagar no mês:* *${fmt(totalFaltaMes)}*`,
+                  `🔢 *Quantidade total de parcelas no mês:* *${parcelasTotalLabel}*`,
+                  `💰 *Total a pagar (somente neste mês):* *${fmt(totalFaltaMes)}*`,
                   '',
                   `📋 *Detalhamento por pessoa:*`
                 ];
                 pessoasComDividaMes.forEach((p, idx) => {
                   lines.push(`${idx + 1}. 👤 *${p.nome}*\n   💰 *A pagar no mês: ${fmt(p.falta)}* (${p.contas} parcela${p.contas > 1 ? 's' : ''})`);
                 });
-                if (totalFaltaGeral > totalFaltaMes) {
-                  lines.push('');
-                  lines.push(`ℹ️ *Total geral acumulado com os demais meses:* *${fmt(totalFaltaGeral)}*`);
-                }
                 lines.push('');
-                lines.push('_Para ver detalhes de alguém, diga: "quanto devo para [nome] no mês que vem"._');
+                lines.push('_Para ver detalhes de alguém, diga: "quanto devo para [nome] no mês que vem" ou pergunte de outros meses._');
                 stepMsg = lines.join('\n');
               } else {
-                stepMsg = `🎉 *Excelente notícia, Adriano! Nenhuma conta vencendo no ${targetMesLabel}!* (Total: *R$ 0,00*).\n\n` +
-                  (totalFaltaGeral > 0 ? `Você tem parcelas em outros meses somando *${fmt(totalFaltaGeral)}*.` : 'Todas as contas estão 100% quitadas!');
+                stepMsg = `🎉 *Excelente notícia, Adriano! Você tem 0 parcelas para pagar no ${targetMesLabel}!* (Total: *R$ 0,00*).\n\nNenhuma conta ou parcela vence nesse mês!`;
               }
             } else {
               const despesasPendentes = despesasPendentesFluxo.map(t => {
@@ -1866,8 +1911,7 @@ try {
               if (pessoasComDividaGeral.length === 0 && despesasPendentes.length === 0) {
                 stepMsg = `🎉 *Excelente notícia, Adriano! Você não está devendo para ninguém no momento!*` +
                   `\n\nTodas as contas e pessoas na sua gestão financeira estão *100% quitadas e em dia*!` +
-                  `\n💰 *Total geral pendente: R$ 0,00*\n\n` +
-                  `💡 _Se você combinou alguma nova conta com alguém para os próximos meses, é só me falar (ex: "conta de fulano de tal para pagar mês que vem dia 10") que eu programo na hora!_`;
+                  `\n💰 *Total geral pendente: R$ 0,00*`;
               } else {
                 const lines = ['👑 *Pessoas e Contas que Você Deve (Quem Eu Devo):*\n'];
                 pessoasComDividaGeral.forEach((p, idx) => {
@@ -2049,7 +2093,7 @@ try {
           
           let p = terceiros.find(x => x && String(x.nome || '').toLowerCase().includes(pessoaBusca));
           if (!p) {
-            stepMsg = `⚠️ Não encontrei nenhuma pessoa com o nome "${args.pessoa}" na aba Quem eu devo.`;
+            stepMsg = `��️ Não encontrei nenhuma pessoa com o nome "${args.pessoa}" na aba Quem eu devo.`;
           } else {
             const contasPendentes = (p.contas || []).filter(c => {
               const pago = (c.pagamentos || []).reduce((s, x) => s + (Number(x.valor) || 0), 0);
@@ -2613,7 +2657,7 @@ Dê um conselho CFO de elite, tático e prático. Seja direto. Inclua: o que est
           }
         }
 
-      // ─── 4. COBRANÇA E RECUPERAÇÃO DE CLIENTES ──────────────────────
+      // ──�� 4. COBRANÇA E RECUPERAÇÃO DE CLIENTES ──────────────────────
       } else if (fnName === 'collect_clients') {
         const lowerMsg = String(text || '').toLowerCase();
         const isAskingAboutMyDebts = lowerMsg.includes('estou devendo') ||
@@ -2752,7 +2796,7 @@ Assim que transferir, me manda o comprovante por aqui que já renovo para você!
           `_(Ao tocar, abre no app Google Agenda do seu celular com alarme e notificação prontos!)_\n\n` +
           `🔔 *Lembretes Ativos Configurados:*\n` +
           `• ☀️ *Começo do dia:* Aviso às 08h–09h da manhã no Telegram\n` +
-          `• 🌤️ *Meio do dia:* Aviso às 12h–13h no Telegram\n` +
+          `• 🌤�� *Meio do dia:* Aviso às 12h–13h no Telegram\n` +
           `• ⏰ *30 minutos antes:* Alarme no Google Agenda e aviso no Telegram\n` +
           `• ⚡ *15 minutos antes e na hora exata:* Alarme e aviso no Telegram`;
         toolResponses.push(singleMsg);

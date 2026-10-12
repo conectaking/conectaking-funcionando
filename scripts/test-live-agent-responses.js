@@ -71,7 +71,9 @@ async function main() {
   const liveJsCode = execNode.parameters.jsCode;
 
   const testPhrases = [
-    "eu devo alguma coisa para socorrinha"
+    "quanto era a prestação total as parcelas que eu tinha que pagar o mês que vem da sua coiminha",
+    "quantas parcelas eu tenho que pagar o mês que vem",
+    "quantas contas que eu tenho que eu tô devendo da socorrinha"
   ];
 
   for (const phrase of testPhrases) {
@@ -135,7 +137,7 @@ async function main() {
 
     const hookRes = await callWebhook("/webhook/temp-test-admin", {
       text: phrase,
-      chatId: "test_chat_simulation",
+      chatId: "test_chat_simulation_" + Date.now(),
       hadVoice: false
     });
 
