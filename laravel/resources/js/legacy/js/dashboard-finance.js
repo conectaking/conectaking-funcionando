@@ -450,6 +450,7 @@ window.initFinancePane = async function () {
                 }
 
                 /* Light Theme (Modo Branco) */
+                body.light-theme #finance-content,
                 #finance-content.finance-theme-light,
                 .finance-theme-light {
                     --finance-bg: #f8fafc;
@@ -460,7 +461,7 @@ window.initFinancePane = async function () {
                     --finance-border-subtle: rgba(0, 0, 0, 0.04);
                     --finance-text-primary: #0f172a;
                     --finance-text-secondary: #475569;
-                    --finance-text-muted: #94a3b8;
+                    --finance-text-muted: #64748b;
                     --finance-input-bg: #ffffff;
                     --finance-input-border: #cbd5e1;
                     --finance-indigo: #2563eb;
@@ -483,61 +484,293 @@ window.initFinancePane = async function () {
                     transition: background 0.25s ease, color 0.25s ease;
                 }
 
+                /* Cards e painéis no modo claro */
+                body.light-theme #finance-content .finance-card-premium,
                 #finance-content.finance-theme-light .finance-card-premium,
-                #finance-content.finance-theme-light .kf-card {
+                body.light-theme #finance-content .kf-card,
+                #finance-content.finance-theme-light .kf-card,
+                body.light-theme #finance-content .king-finance-pane .kf-card,
+                #finance-content.finance-theme-light .king-finance-pane .kf-card {
                     background: #ffffff !important;
+                    color: #0f172a !important;
                     border: 1px solid rgba(0, 0, 0, 0.08) !important;
-                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
                 }
 
+                body.light-theme #finance-content .finance-card-premium:hover,
                 #finance-content.finance-theme-light .finance-card-premium:hover,
+                body.light-theme #finance-content .kf-card:hover,
                 #finance-content.finance-theme-light .kf-card:hover {
                     border-color: rgba(37, 99, 235, 0.25) !important;
-                    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08);
+                    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08) !important;
                 }
 
+                /* Sobrescrever backgrounds escuros inline (cards, gradientes que terminam em #111) */
+                body.light-theme #finance-content [style*="background: #111"],
                 #finance-content.finance-theme-light [style*="background: #111"],
-                #finance-content.finance-theme-light [style*="background:#111"] {
-                    background: #ffffff !important;
-                    border-color: rgba(0, 0, 0, 0.08) !important;
-                }
-
+                body.light-theme #finance-content [style*="background:#111"],
+                #finance-content.finance-theme-light [style*="background:#111"],
+                body.light-theme #finance-content [style*="#111 100%"],
+                #finance-content.finance-theme-light [style*="#111 100%"],
+                body.light-theme #finance-content [style*="#111100%"],
+                #finance-content.finance-theme-light [style*="#111100%"],
+                body.light-theme #finance-content [style*="background: #16161a"],
                 #finance-content.finance-theme-light [style*="background: #16161a"],
+                body.light-theme #finance-content [style*="background:#16161a"],
                 #finance-content.finance-theme-light [style*="background:#16161a"],
-                #finance-content.finance-theme-light [style*="background: var(--finance-card-dark)"] {
+                body.light-theme #finance-content [style*="background: var(--finance-card-dark)"],
+                #finance-content.finance-theme-light [style*="background: var(--finance-card-dark)"],
+                body.light-theme #finance-content [style*="background:rgba(22,22,26"],
+                #finance-content.finance-theme-light [style*="background:rgba(22,22,26"],
+                body.light-theme #finance-content [style*="background: rgba(22, 22, 26"],
+                #finance-content.finance-theme-light [style*="background: rgba(22, 22, 26"],
+                body.light-theme #finance-content [style*="background:rgba(30,30,35"],
+                #finance-content.finance-theme-light [style*="background:rgba(30,30,35"] {
                     background: #ffffff !important;
                     border-color: rgba(0, 0, 0, 0.08) !important;
                 }
 
+                /* Balanço mensal no modo claro */
+                body.light-theme #finance-content #finance-monthly-balance-card,
+                #finance-content.finance-theme-light #finance-monthly-balance-card {
+                    background: #ffffff !important;
+                    border-color: rgba(0, 0, 0, 0.08) !important;
+                }
+
+                /* Blocos internos de valores (ex: total liquidado, negociação, etc) */
+                body.light-theme #finance-content [style*="background:rgba(0,0,0,0.3)"],
                 #finance-content.finance-theme-light [style*="background:rgba(0,0,0,0.3)"],
-                #finance-content.finance-theme-light [style*="background: rgba(0,0,0,0.3)"] {
-                    background: #f8fafc !important;
+                body.light-theme #finance-content [style*="background: rgba(0,0,0,0.3)"],
+                #finance-content.finance-theme-light [style*="background: rgba(0,0,0,0.3)"],
+                body.light-theme #finance-content [style*="background: rgba(0, 0, 0, 0.3)"],
+                #finance-content.finance-theme-light [style*="background: rgba(0, 0, 0, 0.3)"] {
+                    background: #f1f5f9 !important;
                     border-color: rgba(0, 0, 0, 0.06) !important;
                 }
 
+                /* Textos claros convertidos para alto contraste escuro */
+                body.light-theme #finance-content [style*="color: #f1f5f9"],
                 #finance-content.finance-theme-light [style*="color: #f1f5f9"],
+                body.light-theme #finance-content [style*="color:#f1f5f9"],
                 #finance-content.finance-theme-light [style*="color:#f1f5f9"],
-                #finance-content.finance-theme-light [style*="color: #fff;"],
-                #finance-content.finance-theme-light [style*="color:#fff;"] {
+                body.light-theme #finance-content [style*="color: #fff"],
+                #finance-content.finance-theme-light [style*="color: #fff"],
+                body.light-theme #finance-content [style*="color:#fff"],
+                #finance-content.finance-theme-light [style*="color:#fff"],
+                body.light-theme #finance-content [style*="color: white"],
+                #finance-content.finance-theme-light [style*="color: white"],
+                body.light-theme #finance-content [style*="color:white"],
+                #finance-content.finance-theme-light [style*="color:white"],
+                body.light-theme #finance-content [style*="color: #e2e8f0"],
+                #finance-content.finance-theme-light [style*="color: #e2e8f0"],
+                body.light-theme #finance-content [style*="color:#e2e8f0"],
+                #finance-content.finance-theme-light [style*="color:#e2e8f0"] {
                     color: #0f172a !important;
                 }
 
-                #finance-content.finance-theme-light [style*="color: #64748b"],
-                #finance-content.finance-theme-light [style*="color:#64748b"] {
+                /* Textos secundários esbranquiçados convertidos para cinza escuro legível */
+                body.light-theme #finance-content [style*="color:rgba(255,255,255"],
+                #finance-content.finance-theme-light [style*="color:rgba(255,255,255"],
+                body.light-theme #finance-content [style*="color: rgba(255,255,255"],
+                #finance-content.finance-theme-light [style*="color: rgba(255,255,255"],
+                body.light-theme #finance-content [style*="color: rgba(255, 255, 255"],
+                #finance-content.finance-theme-light [style*="color: rgba(255, 255, 255"],
+                body.light-theme #finance-content [style*="color: #cbd5e1"],
+                #finance-content.finance-theme-light [style*="color: #cbd5e1"],
+                body.light-theme #finance-content [style*="color:#cbd5e1"],
+                #finance-content.finance-theme-light [style*="color:#cbd5e1"] {
                     color: #475569 !important;
                 }
 
-                #finance-content.finance-theme-light [style*="color:rgba(255,255,255,0.6)"],
-                #finance-content.finance-theme-light [style*="color: rgba(255,255,255,0.6)"] {
+                body.light-theme #finance-content [style*="color: #64748b"],
+                #finance-content.finance-theme-light [style*="color: #64748b"],
+                body.light-theme #finance-content [style*="color:#64748b"],
+                #finance-content.finance-theme-light [style*="color:#64748b"],
+                body.light-theme #finance-content [style*="color: #94a3b8"],
+                #finance-content.finance-theme-light [style*="color: #94a3b8"],
+                body.light-theme #finance-content [style*="color:#94a3b8"],
+                #finance-content.finance-theme-light [style*="color:#94a3b8"] {
                     color: #64748b !important;
                 }
 
+                /* Exceção: Botões com fundo escuro/colorido sólido devem manter texto branco */
+                body.light-theme #finance-content button[style*="background: var(--finance-indigo)"],
+                #finance-content.finance-theme-light button[style*="background: var(--finance-indigo)"],
+                body.light-theme #finance-content button[style*="background:var(--finance-indigo)"],
+                #finance-content.finance-theme-light button[style*="background:var(--finance-indigo)"],
+                body.light-theme #finance-content button[style*="background:#22c55e"],
+                #finance-content.finance-theme-light button[style*="background:#22c55e"],
+                body.light-theme #finance-content button[style*="background: #22c55e"],
+                #finance-content.finance-theme-light button[style*="background: #22c55e"],
+                body.light-theme #finance-content button[style*="background:#2563eb"],
+                #finance-content.finance-theme-light button[style*="background:#2563eb"],
+                body.light-theme #finance-content button[style*="background: #2563eb"],
+                #finance-content.finance-theme-light button[style*="background: #2563eb"],
+                body.light-theme #finance-content button[style*="background:#7c3aed"],
+                #finance-content.finance-theme-light button[style*="background:#7c3aed"],
+                body.light-theme #finance-content button[style*="background: #7c3aed"],
+                #finance-content.finance-theme-light button[style*="background: #7c3aed"],
+                body.light-theme #finance-content button[style*="linear-gradient(135deg, #3b82f6"],
+                #finance-content.finance-theme-light button[style*="linear-gradient(135deg, #3b82f6"],
+                body.light-theme #finance-content .finance-unified-tab.active,
+                #finance-content.finance-theme-light .finance-unified-tab.active {
+                    color: #ffffff !important;
+                }
+
+                /* Botões de abas unificadas inativas no modo claro */
+                body.light-theme #finance-content .finance-unified-tab:not(.active),
+                #finance-content.finance-theme-light .finance-unified-tab:not(.active) {
+                    background: #e2e8f0 !important;
+                    color: #475569 !important;
+                    border: 1px solid #cbd5e1 !important;
+                }
+
+                /* Sub-abas e filtros (Bens, Quem Eu Devo, Períodos 1M/3M/6M) no modo claro */
+                body.light-theme #finance-content button[onclick*="_kingFinanceBensFiltro"],
+                #finance-content.finance-theme-light button[onclick*="_kingFinanceBensFiltro"],
+                body.light-theme #finance-content button[onclick*="_kingFinanceTerceirosPessoaId"],
+                #finance-content.finance-theme-light button[onclick*="_kingFinanceTerceirosPessoaId"],
+                body.light-theme #finance-content .finance-period-buttons button:not(#period-1M),
+                #finance-content.finance-theme-light .finance-period-buttons button:not(#period-1M) {
+                    background: #f1f5f9 !important;
+                    border: 1px solid #cbd5e1 !important;
+                    color: #475569 !important;
+                }
+
+                /* Inputs e campos de formulário */
+                body.light-theme #finance-content input,
                 #finance-content.finance-theme-light input,
+                body.light-theme #finance-content select,
                 #finance-content.finance-theme-light select,
-                #finance-content.finance-theme-light textarea {
+                body.light-theme #finance-content textarea,
+                #finance-content.finance-theme-light textarea,
+                body.light-theme #finance-content #serasa-search-input,
+                #finance-content.finance-theme-light #serasa-search-input {
                     background-color: #ffffff !important;
                     color: #0f172a !important;
-                    border-color: #cbd5e1 !important;
+                    border: 1px solid #cbd5e1 !important;
+                }
+
+                body.light-theme #finance-content input::placeholder,
+                #finance-content.finance-theme-light input::placeholder,
+                body.light-theme #finance-content textarea::placeholder,
+                #finance-content.finance-theme-light textarea::placeholder {
+                    color: #94a3b8 !important;
+                }
+
+                /* Barras de progresso e divisores */
+                body.light-theme #finance-content [style*="background:rgba(255,255,255,0.1)"],
+                #finance-content.finance-theme-light [style*="background:rgba(255,255,255,0.1)"],
+                body.light-theme #finance-content [style*="background: rgba(255,255,255,0.1)"],
+                #finance-content.finance-theme-light [style*="background: rgba(255,255,255,0.1)"],
+                body.light-theme #finance-content [style*="background: rgba(255, 255, 255, 0.1)"],
+                #finance-content.finance-theme-light [style*="background: rgba(255, 255, 255, 0.1)"] {
+                    background: rgba(0, 0, 0, 0.08) !important;
+                }
+
+                body.light-theme #finance-content [style*="border-bottom:1px solid rgba(255,255,255,0.06)"],
+                #finance-content.finance-theme-light [style*="border-bottom:1px solid rgba(255,255,255,0.06)"],
+                body.light-theme #finance-content [style*="border-top:1px solid rgba(255,255,255,0.06)"],
+                #finance-content.finance-theme-light [style*="border-top:1px solid rgba(255,255,255,0.06)"] {
+                    border-color: rgba(0, 0, 0, 0.08) !important;
+                }
+
+                /* Bolinhas de Score e Valores no modo claro */
+                body.light-theme #finance-content [style*="linear-gradient(180deg,rgba(22,22,30,0.98)"],
+                #finance-content.finance-theme-light [style*="linear-gradient(180deg,rgba(22,22,30,0.98)"] {
+                    background: #ffffff !important;
+                    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+                }
+                body.light-theme #finance-content [style*="linear-gradient(180deg,rgba(20,18,12,0.97)"],
+                #finance-content.finance-theme-light [style*="linear-gradient(180deg,rgba(20,18,12,0.97)"] {
+                    background: #fffbeb !important;
+                    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+                }
+                body.light-theme #finance-content [style*="linear-gradient(180deg,rgba(28,12,12,0.97)"],
+                #finance-content.finance-theme-light [style*="linear-gradient(180deg,rgba(28,12,12,0.97)"] {
+                    background: #fef2f2 !important;
+                    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+                }
+                body.light-theme #finance-content [style*="linear-gradient(180deg,rgba(12,28,18,0.97)"],
+                #finance-content.finance-theme-light [style*="linear-gradient(180deg,rgba(12,28,18,0.97)"] {
+                    background: #f0fdf4 !important;
+                    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+                }
+                body.light-theme #finance-content [style*="linear-gradient(180deg,rgba(30,30,35,0.98)"],
+                #finance-content.finance-theme-light [style*="linear-gradient(180deg,rgba(30,30,35,0.98)"] {
+                    background: #f8fafc !important;
+                    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+                }
+                body.light-theme #finance-content [style*="linear-gradient(180deg,rgba(20,18,12,0.97)"] span,
+                #finance-content.finance-theme-light [style*="linear-gradient(180deg,rgba(20,18,12,0.97)"] span {
+                    color: #d97706 !important;
+                }
+                body.light-theme #finance-content [style*="linear-gradient(180deg,rgba(28,12,12,0.97)"] span,
+                #finance-content.finance-theme-light [style*="linear-gradient(180deg,rgba(28,12,12,0.97)"] span {
+                    color: #dc2626 !important;
+                }
+                body.light-theme #finance-content [style*="linear-gradient(180deg,rgba(12,28,18,0.97)"] span,
+                #finance-content.finance-theme-light [style*="linear-gradient(180deg,rgba(12,28,18,0.97)"] span {
+                    color: #16a34a !important;
+                }
+                body.light-theme #finance-content [style*="linear-gradient(180deg,rgba(30,30,35,0.98)"] span,
+                #finance-content.finance-theme-light [style*="linear-gradient(180deg,rgba(30,30,35,0.98)"] span {
+                    color: #334155 !important;
+                }
+
+                /* Header buttons no modo claro */
+                body.light-theme #finance-content #finance-theme-toggle-btn,
+                #finance-content.finance-theme-light #finance-theme-toggle-btn,
+                body.light-theme #finance-content #finance-profile-selector,
+                #finance-content.finance-theme-light #finance-profile-selector,
+                body.light-theme #finance-content button[onclick*="showMonthSelector"],
+                #finance-content.finance-theme-light button[onclick*="showMonthSelector"] {
+                    background: #ffffff !important;
+                    border: 1px solid #cbd5e1 !important;
+                    color: #0f172a !important;
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+                }
+
+                /* Modais no modo claro */
+                body.light-theme #finance-content #king-finance-modal .king-finance-modal-box,
+                #finance-content.finance-theme-light #king-finance-modal .king-finance-modal-box,
+                body.light-theme .king-finance-modal-box,
+                body.light-theme #king-finance-meta-modal-wrap > div,
+                body.light-theme #novo-lancamento-choice-overlay > div,
+                body.light-theme #general-balance-modal > div,
+                body.light-theme #finance-filters-modal > div,
+                body.light-theme #finance-transaction-modal > div {
+                    background: #ffffff !important;
+                    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+                    color: #0f172a !important;
+                }
+
+                body.light-theme #finance-content #king-finance-modal .king-finance-modal-title,
+                #finance-content.finance-theme-light #king-finance-modal .king-finance-modal-title,
+                body.light-theme .king-finance-modal-title,
+                body.light-theme #king-finance-meta-modal-wrap h3,
+                body.light-theme #novo-lancamento-choice-overlay h2,
+                body.light-theme #general-balance-modal h2,
+                body.light-theme #finance-filters-modal h2,
+                body.light-theme #finance-transaction-modal h2 {
+                    color: #0f172a !important;
+                }
+
+                body.light-theme #finance-content #king-finance-modal label,
+                #finance-content.finance-theme-light #king-finance-modal label,
+                body.light-theme #king-finance-meta-modal-wrap label,
+                body.light-theme #finance-filters-modal label,
+                body.light-theme #finance-transaction-modal label {
+                    color: #475569 !important;
+                }
+
+                body.light-theme #finance-content #king-finance-modal-cancel,
+                #finance-content.finance-theme-light #king-finance-modal-cancel,
+                body.light-theme #meta-modal-cancel {
+                    background: #f1f5f9 !important;
+                    color: #475569 !important;
+                    border: 1px solid #cbd5e1 !important;
                 }
                 
                 .finance-scrollbar::-webkit-scrollbar {
@@ -992,6 +1225,8 @@ window.initFinancePane = async function () {
             </div>
         `;
 
+        if (typeof window.applyFinanceTheme === 'function') window.applyFinanceTheme();
+
         // Abas unificadas: handler de troca e render do conteúdo King (Fluxo, Trampo, Bens, Cartões, Serasa)
         const validTabs = ['resumo', 'fluxo', 'trabalhos', 'bens', 'cartoes', 'meta', 'terceiros', 'serasa'];
         let savedTab = null;
@@ -1012,8 +1247,8 @@ window.initFinancePane = async function () {
             document.querySelectorAll('.finance-unified-tab').forEach(btn => {
                 const isActive = btn.getAttribute('data-finance-tab') === tabId;
                 btn.classList.toggle('active', isActive);
-                btn.style.background = isActive ? 'var(--finance-indigo)' : 'rgba(255,255,255,0.05)';
-                btn.style.color = isActive ? 'white' : 'var(--finance-text-secondary)';
+                btn.style.background = isActive ? 'var(--finance-indigo)' : 'var(--finance-tab-inactive-bg)';
+                btn.style.color = isActive ? 'var(--finance-tab-active-text, #ffffff)' : 'var(--finance-tab-inactive-text)';
                 btn.style.fontWeight = isActive ? '700' : '600';
             });
             const resumoEl = document.getElementById('finance-resumo-content');
@@ -1023,6 +1258,7 @@ window.initFinancePane = async function () {
                 kingEl.style.display = tabId === 'resumo' ? 'none' : 'block';
                 if (tabId !== 'resumo') window.renderUnifiedKingTab(tabId);
             }
+            if (typeof window.applyFinanceTheme === 'function') window.applyFinanceTheme();
         };
         document.querySelectorAll('.finance-unified-tab').forEach(btn => {
             btn.addEventListener('click', () => window.switchUnifiedFinanceTab(btn.getAttribute('data-finance-tab')));
@@ -1400,7 +1636,7 @@ window.initFinancePane = async function () {
                 var totalNegociacao = list.reduce(function (a, d) { return a + (Number(d.valorTotal) || 0); }, 0);
                 var searchBox = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;"><span style="font-size:1rem;font-weight:800;color:#f1f5f9;">Acordos</span><span style="font-size:12px;color:#94a3b8;">Total: ' + (list.length) + ' conta(s)</span><div style="flex:1;min-width:180px;max-width:320px;"><label style="position:relative;display:block;"><i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:12px;"></i><input type="text" id="serasa-search-input" placeholder="Pesquisar por nome do banco/credor ou valor" value="' + (window._kingFinanceSerasaSearch || '').replace(/"/g, '&quot;') + '" style="width:100%;padding:10px 10px 10px 36px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:12px;color:#f1f5f9;font-size:12px;"></label></div></div>';
                 var bolinhasSerasa = '<div style="display:flex;align-items:center;gap:1rem;"><div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="width:168px;height:168px;border-radius:50%;background:conic-gradient(var(--finance-indigo,#6366f1) 0% ' + pct + '%, rgba(255,255,255,0.12) ' + pct + '% 100%);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px rgba(99,102,241,0.3);"><div style="width:138px;height:138px;border-radius:50%;background:linear-gradient(180deg,rgba(22,22,30,0.98) 0%,rgba(12,12,18,0.99) 100%);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 2px 12px rgba(0,0,0,0.4);"><span style="font-size:2rem;font-weight:800;color:#a5b4fc;text-align:center;line-height:1;">' + pctDisplay + '%</span></div></div><p style="font-size:13px;font-weight:700;color:#94a3b8;margin:0;text-align:center;">' + label + '</p></div><div><p style="font-size:15px;font-weight:700;color:#a5b4fc;margin:0 0 6px 0;">Score Serasa (KING)</p><p style="font-size:13px;color:#94a3b8;margin:0;">Percentual das dívidas já quitadas.</p></div></div><div style="display:flex;align-items:center;gap:1rem;"><div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="width:168px;height:168px;border-radius:50%;background:linear-gradient(180deg,rgba(245,158,11,0.45) 0%,rgba(245,158,11,0.3) 100%);border:2px solid rgba(245,158,11,0.6);display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(245,158,11,0.2),inset 0 0 30px rgba(245,158,11,0.08);"><div style="width:138px;height:138px;border-radius:50%;background:linear-gradient(180deg,rgba(20,18,12,0.97) 0%,rgba(14,12,8,0.99) 100%);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 2px 12px rgba(0,0,0,0.5);"><span style="font-size:1.25rem;font-weight:800;color:#fcd34d;text-align:center;line-height:1;display:block;">R$ ' + fmt(totalValorAtual) + '</span></div></div><p style="font-size:13px;font-weight:700;color:#fcd34d;margin:0;text-align:center;">Valor total atual</p></div><div><p style="font-size:13px;color:#94a3b8;margin:0;">Soma do valor atual (juros/correções) de todas as contas.</p></div></div><div style="display:flex;align-items:center;gap:1rem;"><div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="width:168px;height:168px;border-radius:50%;background:linear-gradient(180deg,rgba(239,68,68,0.45) 0%,rgba(239,68,68,0.28) 100%);border:2px solid rgba(239,68,68,0.6);display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(239,68,68,0.2),inset 0 0 30px rgba(239,68,68,0.08);"><div style="width:138px;height:138px;border-radius:50%;background:linear-gradient(180deg,rgba(28,12,12,0.97) 0%,rgba(18,8,8,0.99) 100%);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 2px 12px rgba(0,0,0,0.5);"><span style="font-size:1.25rem;font-weight:800;color:#fca5a5;text-align:center;line-height:1;display:block;">R$ ' + fmt(totalFaltaPagar) + '</span></div></div><p style="font-size:13px;font-weight:700;color:#fca5a5;margin:0;text-align:center;">Falta pagar</p></div><div><p style="font-size:13px;color:#94a3b8;margin:0;">Total que ainda falta pagar em todos os acordos.</p></div></div><div style="display:flex;align-items:center;gap:1rem;"><div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="width:168px;height:168px;border-radius:50%;background:linear-gradient(180deg,rgba(100,116,139,0.4) 0%,rgba(71,85,105,0.35) 100%);border:2px solid rgba(148,163,184,0.5);display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(100,116,139,0.15),inset 0 0 24px rgba(0,0,0,0.2);"><div style="width:138px;height:138px;border-radius:50%;background:linear-gradient(180deg,rgba(30,30,35,0.98) 0%,rgba(18,18,22,0.99) 100%);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 2px 12px rgba(0,0,0,0.5);"><span style="font-size:1.25rem;font-weight:800;color:#cbd5e1;text-align:center;line-height:1;display:block;">R$ ' + fmt(totalNegociacao) + '</span></div></div><p style="font-size:13px;font-weight:700;color:#94a3b8;margin:0;text-align:center;">Valor da negociação (total)</p></div><div><p style="font-size:13px;color:#94a3b8;margin:0;">Total acordado em todos os acordos. Não diminui ao pagar; referência para quando quitar.</p></div></div>';
-                container.innerHTML = '<div style="margin-bottom:1rem;"><h3 style="font-size:1.1rem;font-weight:800;color:var(--finance-indigo,#6366f1);margin:0 0 8px 0;">Serasa & Acordos</h3><p style="font-size:11px;color:#94a3b8;margin:0 0 12px 0;">Indicador baseado nos acordos que você cadastrou.</p><div class="kf-card" style="' + styleKfCard + 'display:flex;align-items:center;justify-content:center;gap:2rem;margin-bottom:1.5rem;flex-wrap:wrap;padding:1.5rem;">' + bolinhasSerasa + '</div></div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px;">' + searchBox + '<div style="display:flex;gap:8px;flex-wrap:wrap;"><button type="button" onclick="window._kingFinanceSerasaSelectAll && window._kingFinanceSerasaSelectAll()" style="padding:8px 16px;background:rgba(99,102,241,0.2);color:#a5b4fc;border:1px solid rgba(99,102,241,0.4);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-check-double" style="margin-right:6px;"></i>Selecionar todos</button><button type="button" id="serasa-excluir-todos-btn" disabled onclick="window._kingFinanceSerasaExcluirTodos && window._kingFinanceSerasaExcluirTodos()" style="padding:8px 16px;background:rgba(244,63,94,0.25);color:#fda4af;border:1px solid rgba(244,63,94,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-trash" style="margin-right:6px;"></i>Excluir selecionados</button><button type="button" onclick="window._kingFinanceImportarSerasaPdf && window._kingFinanceImportarSerasaPdf(\'pdf\')" style="padding:8px 16px;background:rgba(99,102,241,0.25);color:#a5b4fc;border:1px solid rgba(99,102,241,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-file-pdf" style="margin-right:6px;"></i>Importar PDF (valores)</button><button type="button" onclick="window._kingFinanceImportarSerasaPdf && window._kingFinanceImportarSerasaPdf(\'image\')" style="padding:8px 16px;background:rgba(34,197,94,0.25);color:#86efac;border:1px solid rgba(34,197,94,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-image" style="margin-right:6px;"></i>Importar imagem</button><button type="button" onclick="window._kingFinanceOpenModal(\'divida\')" style="padding:8px 16px;background:var(--finance-indigo,#6366f1);color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Novo Acordo</button></div></div><div style="display:flex;flex-direction:column;gap:1rem;">' + (filteredList.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">' + (list.length === 0 ? 'Nenhum acordo. Clique em + Novo Acordo.' : 'Nenhum acordo corresponde à pesquisa.') + '</p>' : filteredList.map(function (d, idx) { var num = idx + 1; var pago = (d.pagamentos || []).reduce(function (a, p) { return a + (Number(p.valor) || 0); }, 0); var restante = (Number(d.valorTotal) || 0) - pago; var pctD = (Number(d.valorTotal) || 0) > 0 ? Math.round((pago / (d.valorTotal || 1)) * 100) : 100; var formatPayDate = function (p) { var dt = p.data || ''; if (/^\d{4}-\d{2}-\d{2}$/.test(dt)) { var pt = dt.split('-'); dt = pt[2] + '/' + pt[1] + '/' + pt[0]; } return dt + (p.hora ? ' às ' + p.hora : ''); }; var pagamentosHtml = (d.pagamentos || []).length ? '<div style="margin-bottom:0.75rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 6px 0;">Pagamentos</p>' + (d.pagamentos || []).map(function (p) { return '<p style="font-size:11px;color:#cbd5e1;margin:0 0 4px 0;">R$ ' + fmt(Number(p.valor) || 0) + ' em ' + formatPayDate(p) + '</p>'; }).join('') + '</div>' : ''; var detalhesStr = (d.numeroContrato || d.dataDivida || d.produtoServico || d.empresaOrigem) ? '<p style="font-size:10px;color:#94a3b8;margin:0 0 6px 0;">' + (d.empresaOrigem ? 'Origem ' + (d.empresaOrigem || '').slice(0, 20) : '') + (d.numeroContrato ? (d.empresaOrigem ? ' · ' : '') + 'Contrato ' + d.numeroContrato : '') + (d.dataDivida ? ' · Data ' + d.dataDivida : '') + (d.produtoServico ? ' · ' + (d.produtoServico || '').slice(0, 25) : '') + '</p>' : ''; var origAtualStr = (d.valorOriginal != null || d.valorAtual != null) ? '<p style="font-size:10px;color:#94a3b8;margin:0 0 6px 0;">Orig. R$ ' + fmt(d.valorOriginal) + ' · Atual R$ ' + fmt(d.valorAtual) + '</p>' : ''; return '<div class="kf-card" style="' + styleKfCard + 'border-left:4px solid var(--finance-indigo,#6366f1);cursor:pointer;" onclick="if (!event.target.closest(\'button\') && !event.target.closest(\'input[type=checkbox]\')) window._kingFinanceVerDetalhesDivida && window._kingFinanceVerDetalhesDivida(\'' + d.id + '\')"><div style="display:flex;justify-content:space-between;margin-bottom:0.75rem;align-items:center;gap:8px;"><input type="checkbox" class="serasa-acordo-cb" data-divida-id="' + d.id + '" onclick="event.stopPropagation(); window._kingFinanceSerasaUpdateExcluirBtn && window._kingFinanceSerasaUpdateExcluirBtn()" style="cursor:pointer;flex-shrink:0;"><span style="font-size:12px;font-weight:800;color:#94a3b8;min-width:28px;">' + num + '.</span><h4 style="font-size:14px;font-weight:800;margin:0;flex:1;">' + (d.nome || '').slice(0, 35) + '</h4><button type="button" onclick="event.stopPropagation(); window._kingFinanceDelete(\'dividas\',\'' + d.id + '\')" style="background:none;border:none;color:#64748b;cursor:pointer;"><i class="fas fa-trash"></i></button></div><p style="font-size:10px;margin:0 0 6px 0;"><a href="javascript:void(0)" onclick="event.stopPropagation(); window._kingFinanceVerDetalhesDivida && window._kingFinanceVerDetalhesDivida(\'' + d.id + '\')" style="color:var(--finance-indigo,#6366f1);">Ver detalhes</a></p>' + detalhesStr + origAtualStr + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;"><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;letter-spacing:0.02em;">TOTAL LIQUIDADO</p><p style="font-size:16px;font-weight:800;color:#86efac;margin:0 0 2px 0;">R$ ' + fmt(pago) + '</p><p style="font-size:10px;color:#94a3b8;margin:0;">' + pctD + '% Completo</p></div><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;position:relative;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;letter-spacing:0.02em;">VALOR DA NEGOCIA—fO</p><p style="font-size:16px;font-weight:800;color:#f59e0b;margin:0 0 6px 0;">R$ ' + fmt(restante) + '</p><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamento(\'' + d.id + '\')" style="padding:6px 12px;background:rgba(245,158,11,0.35);color:#fcd34d;border:1px solid rgba(245,158,11,0.6);border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;">Pagar mais</button><button type="button" onclick="event.stopPropagation(); window._kingFinanceEditarValorDivida && window._kingFinanceEditarValorDivida(\'' + d.id + '\')" style="position:absolute;top:4px;right:4px;background:rgba(99,102,241,0.25);color:#a5b4fc;border:1px solid rgba(99,102,241,0.4);border-radius:8px;padding:4px 8px;font-size:9px;font-weight:700;cursor:pointer;" title="Alterar valor total da dívida"><i class="fas fa-pen"></i></button></div></div>' + pagamentosHtml + '<div style="height:6px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:0.75rem;"><div style="height:100%;width:' + pctD + '%;background:var(--finance-indigo,#6366f1);border-radius:999px;"></div></div><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamento(\'' + d.id + '\')" style="width:100%;padding:12px;background:var(--finance-indigo,#6366f1);color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;letter-spacing:0.02em;">Efetuar pagamento</button></div>'; }).join('')) + '</div>';
+                container.innerHTML = '<div style="margin-bottom:1rem;"><h3 style="font-size:1.1rem;font-weight:800;color:var(--finance-indigo,#6366f1);margin:0 0 8px 0;">Serasa & Acordos</h3><p style="font-size:11px;color:#94a3b8;margin:0 0 12px 0;">Indicador baseado nos acordos que você cadastrou.</p><div class="kf-card" style="' + styleKfCard + 'display:flex;align-items:center;justify-content:center;gap:2rem;margin-bottom:1.5rem;flex-wrap:wrap;padding:1.5rem;">' + bolinhasSerasa + '</div></div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px;">' + searchBox + '<div style="display:flex;gap:8px;flex-wrap:wrap;"><button type="button" onclick="window._kingFinanceSerasaSelectAll && window._kingFinanceSerasaSelectAll()" style="padding:8px 16px;background:rgba(99,102,241,0.2);color:#a5b4fc;border:1px solid rgba(99,102,241,0.4);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-check-double" style="margin-right:6px;"></i>Selecionar todos</button><button type="button" id="serasa-excluir-todos-btn" disabled onclick="window._kingFinanceSerasaExcluirTodos && window._kingFinanceSerasaExcluirTodos()" style="padding:8px 16px;background:rgba(244,63,94,0.25);color:#fda4af;border:1px solid rgba(244,63,94,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-trash" style="margin-right:6px;"></i>Excluir selecionados</button><button type="button" onclick="window._kingFinanceImportarSerasaPdf && window._kingFinanceImportarSerasaPdf(\'pdf\')" style="padding:8px 16px;background:rgba(99,102,241,0.25);color:#a5b4fc;border:1px solid rgba(99,102,241,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-file-pdf" style="margin-right:6px;"></i>Importar PDF (valores)</button><button type="button" onclick="window._kingFinanceImportarSerasaPdf && window._kingFinanceImportarSerasaPdf(\'image\')" style="padding:8px 16px;background:rgba(34,197,94,0.25);color:#86efac;border:1px solid rgba(34,197,94,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-image" style="margin-right:6px;"></i>Importar imagem</button><button type="button" onclick="window._kingFinanceOpenModal(\'divida\')" style="padding:8px 16px;background:var(--finance-indigo,#6366f1);color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Novo Acordo</button></div></div><div style="display:flex;flex-direction:column;gap:1rem;">' + (filteredList.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">' + (list.length === 0 ? 'Nenhum acordo. Clique em + Novo Acordo.' : 'Nenhum acordo corresponde à pesquisa.') + '</p>' : filteredList.map(function (d, idx) { var num = idx + 1; var pago = (d.pagamentos || []).reduce(function (a, p) { return a + (Number(p.valor) || 0); }, 0); var restante = (Number(d.valorTotal) || 0) - pago; var pctD = (Number(d.valorTotal) || 0) > 0 ? Math.round((pago / (d.valorTotal || 1)) * 100) : 100; var formatPayDate = function (p) { var dt = p.data || ''; if (/^\d{4}-\d{2}-\d{2}$/.test(dt)) { var pt = dt.split('-'); dt = pt[2] + '/' + pt[1] + '/' + pt[0]; } return dt + (p.hora ? ' às ' + p.hora : ''); }; var pagamentosHtml = (d.pagamentos || []).length ? '<div style="margin-bottom:0.75rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 6px 0;">Pagamentos</p>' + (d.pagamentos || []).map(function (p) { return '<p style="font-size:11px;color:#cbd5e1;margin:0 0 4px 0;">R$ ' + fmt(Number(p.valor) || 0) + ' em ' + formatPayDate(p) + '</p>'; }).join('') + '</div>' : ''; var detalhesStr = (d.numeroContrato || d.dataDivida || d.produtoServico || d.empresaOrigem) ? '<p style="font-size:10px;color:#94a3b8;margin:0 0 6px 0;">' + (d.empresaOrigem ? 'Origem ' + (d.empresaOrigem || '').slice(0, 20) : '') + (d.numeroContrato ? (d.empresaOrigem ? ' · ' : '') + 'Contrato ' + d.numeroContrato : '') + (d.dataDivida ? ' · Data ' + d.dataDivida : '') + (d.produtoServico ? ' · ' + (d.produtoServico || '').slice(0, 25) : '') + '</p>' : ''; var origAtualStr = (d.valorOriginal != null || d.valorAtual != null) ? '<p style="font-size:10px;color:#94a3b8;margin:0 0 6px 0;">Orig. R$ ' + fmt(d.valorOriginal) + ' · Atual R$ ' + fmt(d.valorAtual) + '</p>' : ''; return '<div class="kf-card" style="' + styleKfCard + 'border-left:4px solid var(--finance-indigo,#6366f1);cursor:pointer;" onclick="if (!event.target.closest(\'button\') && !event.target.closest(\'input[type=checkbox]\')) window._kingFinanceVerDetalhesDivida && window._kingFinanceVerDetalhesDivida(\'' + d.id + '\')"><div style="display:flex;justify-content:space-between;margin-bottom:0.75rem;align-items:center;gap:8px;"><input type="checkbox" class="serasa-acordo-cb" data-divida-id="' + d.id + '" onclick="event.stopPropagation(); window._kingFinanceSerasaUpdateExcluirBtn && window._kingFinanceSerasaUpdateExcluirBtn()" style="cursor:pointer;flex-shrink:0;"><span style="font-size:12px;font-weight:800;color:#94a3b8;min-width:28px;">' + num + '.</span><h4 style="font-size:14px;font-weight:800;margin:0;flex:1;">' + (d.nome || '').slice(0, 35) + '</h4><button type="button" onclick="event.stopPropagation(); window._kingFinanceDelete(\'dividas\',\'' + d.id + '\')" style="background:none;border:none;color:#64748b;cursor:pointer;"><i class="fas fa-trash"></i></button></div><p style="font-size:10px;margin:0 0 6px 0;"><a href="javascript:void(0)" onclick="event.stopPropagation(); window._kingFinanceVerDetalhesDivida && window._kingFinanceVerDetalhesDivida(\'' + d.id + '\')" style="color:var(--finance-indigo,#6366f1);">Ver detalhes</a></p>' + detalhesStr + origAtualStr + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;"><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;letter-spacing:0.02em;">TOTAL LIQUIDADO</p><p style="font-size:16px;font-weight:800;color:#86efac;margin:0 0 2px 0;">R$ ' + fmt(pago) + '</p><p style="font-size:10px;color:#94a3b8;margin:0;">' + pctD + '% Completo</p></div><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;position:relative;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;letter-spacing:0.02em;">VALOR DA NEGOCIAÇÃO</p><p style="font-size:16px;font-weight:800;color:#f59e0b;margin:0 0 6px 0;">R$ ' + fmt(restante) + '</p><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamento(\'' + d.id + '\')" style="padding:6px 12px;background:rgba(245,158,11,0.35);color:#fcd34d;border:1px solid rgba(245,158,11,0.6);border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;">Pagar mais</button><button type="button" onclick="event.stopPropagation(); window._kingFinanceEditarValorDivida && window._kingFinanceEditarValorDivida(\'' + d.id + '\')" style="position:absolute;top:4px;right:4px;background:rgba(99,102,241,0.25);color:#a5b4fc;border:1px solid rgba(99,102,241,0.4);border-radius:8px;padding:4px 8px;font-size:9px;font-weight:700;cursor:pointer;" title="Alterar valor total da dívida"><i class="fas fa-pen"></i></button></div></div>' + pagamentosHtml + '<div style="height:6px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:0.75rem;"><div style="height:100%;width:' + pctD + '%;background:var(--finance-indigo,#6366f1);border-radius:999px;"></div></div><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamento(\'' + d.id + '\')" style="width:100%;padding:12px;background:var(--finance-indigo,#6366f1);color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;letter-spacing:0.02em;">Efetuar pagamento</button></div>'; }).join('')) + '</div>';
                 var searchInput = document.getElementById('serasa-search-input');
                 if (searchInput) searchInput.oninput = function () {
                     var v = this.value;
@@ -1418,6 +1654,7 @@ window.initFinancePane = async function () {
         };
         // Restaurar aba salva ao recarregar a página (após renderUnifiedKingTab estar definida)
         window.switchUnifiedFinanceTab(window._financeActiveTab);
+        if (typeof window.applyFinanceTheme === 'function') window.applyFinanceTheme();
 
         // Modal King (Fluxo, Trampo, Bens, Cartões, Serasa): cancel
         const kingModalCancel = document.getElementById('king-finance-modal-cancel');
@@ -2555,6 +2792,7 @@ window.initFinancePane = async function () {
         setTimeout(() => {
             initFinanceChart();
         }, 100);
+        if (typeof window.applyFinanceTheme === 'function') window.applyFinanceTheme();
 
     } catch (error) {
         console.error('Erro ao inicializar módulo financeiro:', error);
@@ -2925,7 +3163,7 @@ window.showKingFinancePane = async function () {
                                 ${origAtualHtml}
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
                                     <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 1rem;"><p style="font-size: 9px; font-weight: 800; color: #94a3b8; margin: 0 0 4px 0; letter-spacing: 0.02em;">TOTAL LIQUIDADO</p><p style="font-size: 16px; font-weight: 800; color: #86efac; margin: 0 0 2px 0;">R$ ${fmt(pago)}</p><p style="font-size: 10px; color: #94a3b8; margin: 0;">${pct}% Completo</p></div>
-                                    <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 1rem; position: relative;"><p style="font-size: 9px; font-weight: 800; color: #94a3b8; margin: 0 0 4px 0; letter-spacing: 0.02em;">VALOR DA NEGOCIA—fO</p><p style="font-size: 16px; font-weight: 800; color: #f59e0b; margin: 0 0 6px 0;">R$ ${fmt(restante)}</p><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamento('${d.id}')" style="padding: 6px 12px; background: rgba(245,158,11,0.35); color: #fcd34d; border: 1px solid rgba(245,158,11,0.6); border-radius: 10px; font-size: 10px; font-weight: 700; cursor: pointer;">Pagar mais</button><button type="button" onclick="event.stopPropagation(); window._kingFinanceEditarValorDivida && window._kingFinanceEditarValorDivida('${d.id}')" style="position: absolute; top: 4px; right: 4px; background: rgba(99,102,241,0.25); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.4); border-radius: 8px; padding: 4px 8px; font-size: 9px; font-weight: 700; cursor: pointer;" title="Alterar valor total da dívida"><i class="fas fa-pen"></i></button></div>
+                                    <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 1rem; position: relative;"><p style="font-size: 9px; font-weight: 800; color: #94a3b8; margin: 0 0 4px 0; letter-spacing: 0.02em;">VALOR DA NEGOCIAÇÃO</p><p style="font-size: 16px; font-weight: 800; color: #f59e0b; margin: 0 0 6px 0;">R$ ${fmt(restante)}</p><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamento('${d.id}')" style="padding: 6px 12px; background: rgba(245,158,11,0.35); color: #fcd34d; border: 1px solid rgba(245,158,11,0.6); border-radius: 10px; font-size: 10px; font-weight: 700; cursor: pointer;">Pagar mais</button><button type="button" onclick="event.stopPropagation(); window._kingFinanceEditarValorDivida && window._kingFinanceEditarValorDivida('${d.id}')" style="position: absolute; top: 4px; right: 4px; background: rgba(99,102,241,0.25); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.4); border-radius: 8px; padding: 4px 8px; font-size: 9px; font-weight: 700; cursor: pointer;" title="Alterar valor total da dívida"><i class="fas fa-pen"></i></button></div>
                                 </div>
                                 ${pagamentosHtml}
                                 <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 999px; overflow: hidden; margin-bottom: 0.75rem;"><div style="height: 100%; width: ${pct}%; background: var(--finance-indigo, #6366f1); border-radius: 999px;"></div></div>
@@ -8272,22 +8510,36 @@ try {
 
 // Gestão de Tema: Claro / Escuro (Persistente)
 window.toggleFinanceTheme = function () {
-    var cur = localStorage.getItem('ck_finance_theme') || 'dark';
-    var next = cur === 'dark' ? 'light' : 'dark';
-    try { localStorage.setItem('ck_finance_theme', next); } catch (e) {}
+    var cur = localStorage.getItem('ck_finance_theme') || localStorage.getItem('theme') || (document.body.classList.contains('light-theme') ? 'light' : 'dark');
+    var next = cur === 'light' ? 'dark' : 'light';
+    try {
+        localStorage.setItem('ck_finance_theme', next);
+        localStorage.setItem('theme', next);
+    } catch (e) {}
     window.applyFinanceTheme(next);
 };
 
 window.applyFinanceTheme = function (theme) {
-    var t = theme || localStorage.getItem('ck_finance_theme') || 'dark';
+    var t = theme || localStorage.getItem('ck_finance_theme') || localStorage.getItem('theme') || (document.body.classList.contains('light-theme') ? 'light' : 'dark');
+    var isLight = t === 'light';
+
+    if (typeof document !== 'undefined' && document.body) {
+        if (isLight) {
+            document.body.classList.add('light-theme');
+        } else {
+            document.body.classList.remove('light-theme');
+        }
+    }
+
     var pane = document.getElementById('finance-content');
     if (pane) {
         pane.classList.remove('finance-theme-dark', 'finance-theme-light');
-        pane.classList.add('finance-theme-' + t);
+        pane.classList.add('finance-theme-' + (isLight ? 'light' : 'dark'));
     }
+
     var btn = document.getElementById('finance-theme-toggle-btn');
     if (btn) {
-        if (t === 'light') {
+        if (isLight) {
             btn.innerHTML = '<i class="fas fa-moon" style="color: #6366f1;"></i> <span>Modo Dark</span>';
             btn.setAttribute('title', 'Alternar para Modo Escuro');
         } else {
@@ -8295,4 +8547,48 @@ window.applyFinanceTheme = function (theme) {
             btn.setAttribute('title', 'Alternar para Modo Claro');
         }
     }
+
+    var activeTab = window._financeActiveTab || 'resumo';
+    document.querySelectorAll('.finance-unified-tab').forEach(function (tabBtn) {
+        var isActive = tabBtn.getAttribute('data-finance-tab') === activeTab;
+        tabBtn.classList.toggle('active', isActive);
+        tabBtn.style.background = isActive ? 'var(--finance-indigo)' : 'var(--finance-tab-inactive-bg)';
+        tabBtn.style.color = isActive ? 'var(--finance-tab-active-text, #ffffff)' : 'var(--finance-tab-inactive-text)';
+    });
 };
+
+// Inicialização imediata do tema na carga
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof window.applyFinanceTheme === 'function') window.applyFinanceTheme();
+        });
+    } else {
+        if (typeof window.applyFinanceTheme === 'function') window.applyFinanceTheme();
+    }
+}
+
+// Sincronização entre abas e mudanças externas no document.body
+if (typeof window !== 'undefined') {
+    window.addEventListener('storage', function (e) {
+        if (e.key === 'theme' || e.key === 'ck_finance_theme') {
+            if (typeof window.applyFinanceTheme === 'function') window.applyFinanceTheme(e.newValue);
+        }
+    });
+
+    if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined' && document.body) {
+        try {
+            var bodyThemeObs = new MutationObserver(function () {
+                var isBodyLight = document.body.classList.contains('light-theme');
+                var pane = document.getElementById('finance-content');
+                if (pane) {
+                    var paneHasLight = pane.classList.contains('finance-theme-light');
+                    if (isBodyLight !== paneHasLight) {
+                        window.applyFinanceTheme(isBodyLight ? 'light' : 'dark');
+                    }
+                }
+            });
+            bodyThemeObs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        } catch (_) {}
+    }
+}
