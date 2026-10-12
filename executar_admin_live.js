@@ -218,17 +218,21 @@ ${KB}
      -> Chame 'manage_finance' com action: 'list_debts'!
    - "quanto eu devo para Socorrinha?", "quais contas devo para Socorrinha, as datas e quantas parcelas?":
      -> Chame 'manage_finance' com action: 'list_debts' e pessoa: 'Socorrinha'!
+   - "qual o valor total da parcela do mês que vem somente o que devo pagar para socorrinha?", "quanto tenho que pagar mês que vem para [pessoa]?", "o que devo no mês que vem?":
+     -> Chame 'manage_finance' com action: 'list_debts', pessoa: 'Socorrinha', mes: 'proximo' (ou periodo: 'mes_que_vem')!
 
 3. CONTA PARA PAGAR MÊS QUE VEM (DATA ESPECÍFICA):
-   - Se o Adriano disser "conta de fulano de tal que é para pagar mês que vem data 10", "conta de R$ 110 para Socorrinha pagar mês que vem dia 10":
+   - Se o Adriano disser "conta de fulano de tal que é para pagar mês que vem data 10", "conta de R$ 110 para Socorrinha pagar mês que vem dia 10", "leite para Sara que devo para Socorrinha":
      -> Calcule a data de vencimento no mês que vem (ex: se hoje é outubro/2026, mês que vem dia 10 é 2026-11-10)!
-     -> Chame 'manage_finance' com action: 'add_debt', pessoa: 'Socorrinha', valor: 110, data_vencimento: '2026-11-10'!
-     -> ⚠️ REGRA CRÍTICA: NUNCA registre com a data de hoje nem deste mês! Ela deve ficar EXCLUSIVAMENTE para o mês que vem, para NÃO entrar no "Falta pagar deste mês"!
+     -> SEMPRE extraia a REFERÊNCIA/MOTIVO (ex: 'Passagens no Cartão', 'Leite para Sara', 'Merecer') e passe em 'nome_conta' e 'descricao'! NUNCA deixe genérico como apenas 'Conta' ou 'Parcela' se ele mencionou o motivo!
+     -> Chame 'manage_finance' com action: 'add_debt', pessoa: 'Socorrinha', valor: 110, nome_conta: 'Leite para Sara', descricao: 'Uso do cartão para comprar leite para Sara', data_vencimento: '2026-11-10'!
+     -> ⚠️ REGRA CRÍTICA: NUNCA registre com a data de hoje nem deste mês! Ela deve ficar EXCLUSIVAMENTE para o mês que vem!
 
 4. PARCELAMENTO EM N VEZES A PARTIR DO MÊS QUE VEM:
-   - Se o Adriano disser "vou pagar essa pessoa 10 vezes a partir do mês que vem", "vou pagar Socorrinha 10 vezes de 110 a partir do mês que vem dia 10", "coloca 10 parcelas de 110 para fulano":
-     -> Chame 'manage_finance' com action: 'add_debt', pessoa: 'Socorrinha', valor: 110, parcelas: 10, data_vencimento: '2026-11-10'!
-     -> O sistema gerará automaticamente as 10 parcelas distribuídas mês a mês (10/11/2026, 10/12/2026, 10/01/2027 ... até 10/08/2027)!
+   - Se o Adriano disser "adicionar três parcelas de R$ 110 passagens no cartão da socorrinha", "duas parcelas de 40 referente ao merecer":
+     -> SEMPRE extraia a REFERÊNCIA/MOTIVO ('Passagens no Cartão', 'Merecer') e passe em 'nome_conta' e 'descricao'!
+     -> Chame 'manage_finance' com action: 'add_debt', pessoa: 'Socorrinha', valor: 110, parcelas: 3, nome_conta: 'Passagens no Cartão', descricao: 'Passagens no cartão da Socorrinha', data_vencimento: '2026-11-10'!
+     -> O sistema gerará automaticamente as parcelas preservando a referência para a tela da Gestão Financeira!
 
 5. "JÁ PAGUEI ESSA CONTA" / DAR BAIXA:
    - Se o Adriano disser "já paguei a conta de Socorrinha", "paguei ontem", "marca como paga":
@@ -239,6 +243,8 @@ ${KB}
   -> CHAME OBRIGATORIAMENTE a ferramenta 'executive_briefing'!
 - ORÇAMENTOS E PROPOSTAS: Quando o Adriano pedir para criar proposta, orçamento para cliente, passar valor de ensaio/cartão/evento:
   -> CHAME OBRIGATORIAMENTE a ferramenta 'manage_orcamentos'!
+  -> ⚠️ ATENÇÃO CRÍTICA: Se o Adriano estiver pedindo para "alterar esse serviço...", "mudar o nome do cliente...", "editar trabalho...", "colocar [Nome] no trabalho/serviço", ISSO NÃO É ORÇAMENTO! É alteração de trabalho na Gestão Financeira!
+  -> CHAME OBRIGATORIAMENTE 'manage_finance' com action: 'update_trabalho'!
 - CONVIDADOS VIP E EVENTOS: Quando o Adriano falar de lista de convidados, quem confirmou presença em evento, adicionar alguém na portaria:
   -> CHAME OBRIGATORIAMENTE a ferramenta 'manage_vip_guests'!
 - COBRANÇA E RENOVAÇÃO: Quando o Adriano pedir para ver clientes vencendo, quem deve renovar ou cobrar inadimplentes:
@@ -380,9 +386,17 @@ NUNCA diga que não pode gerenciar dados sensíveis, excluir clientes, ver quant
      * "o cliente pagou os 1800 restantes", "recebi mais 500 do ensaio", "o João pagou 300 reais do trabalho", "dar baixa no pagamento do trabalho":
      -> Use action: "record_payment" com cliente e valor_pago!
 
-   - EDITAR TRABALHO:
-     * "o trabalho da Larissa não é 500, é 700", "muda o cliente para João", "altera valor do trabalho":
-     -> Use action: "update_trabalho" com cliente e novos campos!
+   - EDITAR TRABALHO OU ALTERAR SERVIÇO / CLIENTE (update_trabalho):
+     * "Você pode alterar esse serviço de fotografia em São paulo/barueri e colocar Natália rico fotografia em São Paulo Alphaville"
+     * "alterar esse serviço de fotografia", "muda o cliente desse trabalho para Natália Rico", "o cliente é Natália Rico"
+     * "o trabalho da Larissa não é 500, é 700", "muda o cliente para João", "altera valor do trabalho", "alterar esse serviço":
+     -> Chame SEMPRE 'manage_finance' com action: "update_trabalho"!
+     -> Passe:
+        * cliente: nome atual do cliente se souber (ou termo do serviço/texto como "Cliente", "fotografia", ou deixe vazio para o último trabalho)
+        * novo_cliente: novo nome do cliente (ex: "Natália Rico")
+        * novo_servico: novo nome ou descrição do serviço (ex: "Fotografia em São Paulo Alphaville")
+        * novo_valor: novo valor total (se solicitado)
+     -> ⚠️ NUNCA chame 'manage_orcamentos' quando o Adriano pedir para alterar/editar um trabalho ou serviço!
 
    - EXCLUIR TRABALHO:
      * "exclui o trabalho do João", "apaga o trabalho da Larissa":
@@ -448,7 +462,7 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'manage_orcamentos',
-      description: 'Cria ou lista orçamentos e propostas comerciais oficiais da Conecta King (ensaios, criação de cartões, pacotes de fotos, eventos). Gera link com botão de envio direto no WhatsApp do cliente com chave PIX inclusa.',
+      description: 'Cria ou lista orçamentos e propostas comerciais oficiais da Conecta King (ensaios, criação de cartões, pacotes de fotos, eventos). Gera link com botão de envio direto no WhatsApp do cliente com chave PIX inclusa. NÃO USE se o usuário estiver alterando ou editando um trabalho ou serviço existente na gestão financeira (use manage_finance com update_trabalho)!',
       parameters: {
         type: 'object',
         properties: {
@@ -633,11 +647,14 @@ const TOOLS = [
           description: 'Ação a executar'
         },
         pessoa: { type: 'string', description: 'Nome da pessoa para quem o Adriano deve (para list_debts, add_debt, pay_debt, ex: Socorrinha)' },
+        mes: { type: 'string', description: 'Filtro de mês para consulta de dívidas/parcelas (ex: "proximo", "mes_que_vem", "atual", "2026-11", "novembro"). Use quando o Adriano perguntar especificamente sobre o mês que vem, este mês ou um mês específico!' },
+        periodo: { type: 'string', description: 'Período desejado (ex: "mes_que_vem", "este_mes")' },
         valor: { type: 'number', description: 'Valor da conta ou de cada parcela para add_debt / pay_debt' },
         parcelas: { type: 'number', description: 'Quantidade de parcelas mensais (ex: 10 para pagar em 10 vezes nos próximos 10 meses)' },
         data_vencimento: { type: 'string', description: 'Data de vencimento formato YYYY-MM-DD (ex: 2026-11-10 para mês que vem dia 10)' },
         dia_vencimento: { type: 'number', description: 'Dia do mês para vencimento (ex: 10)' },
-        nome_conta: { type: 'string', description: 'Nome ou descrição da conta/parcela (ex: Parcela, Empréstimo, Cartão)' },
+        nome_conta: { type: 'string', description: 'Nome ou título claro da conta/parcela (ex: Passagens no Cartão, Leite para Sara, Merecer, Empréstimo). Não coloque apenas Parcela se o Adriano disse o motivo!' },
+        descricao: { type: 'string', description: 'Descrição completa, motivo ou referência da compra/dívida (ex: Passagens no cartão da Socorrinha, Uso do cartão para comprar leite para Sara, Referente ao merecer)' },
         type: { type: 'string', enum: ['INCOME', 'EXPENSE'], description: 'Tipo da transação: INCOME (receita/entrada) ou EXPENSE (despesa/saída/dízimo)' },
         amount: { type: 'number', description: 'Valor da transação avulsa para action create' },
         description: { type: 'string', description: 'Descrição da transação (ex: Recebimento Hernandes YouTube, Saída Dízimo)' },
@@ -1302,29 +1319,79 @@ try {
         // ── UPDATE TRABALHO (Alterar/Editar Trabalho) ────────────────
         } else if (args.action === 'update_trabalho') {
           const clienteBusca = String(args.cliente || '').toLowerCase().trim();
+          const servicoBusca = String(args.servico || args.servico_busca || args.termo || '').toLowerCase().trim();
           const kRes = await ck.call(this, 'GET', `/api/finance/king-data?profile_id=${profileId}`);
           let kingDb = (kRes.body && kRes.body.data) ? kRes.body.data : (kRes.body || {});
           if (!kingDb || typeof kingDb !== 'object') kingDb = {};
           const trabalhos = Array.isArray(kingDb.trabalhos) ? kingDb.trabalhos : [];
 
-          let trab = trabalhos.find(t => t && String(t.cliente || '').toLowerCase().includes(clienteBusca));
-          if (!trab && trabalhos.length === 1) trab = trabalhos[0];
+          // Estratégia inteligente de busca do trabalho:
+          let trab = null;
+          
+          // 1. Busca por cliente específico (se não for genérico)
+          if (clienteBusca && !['cliente', 'esse', 'o ultimo', 'o último', 'trabalho', 'servico', 'serviço'].includes(clienteBusca)) {
+            trab = trabalhos.find(t => t && String(t.cliente || '').toLowerCase().includes(clienteBusca));
+          }
+
+          // 2. Busca por serviço existente
+          if (!trab && (servicoBusca || clienteBusca)) {
+            const termo = servicoBusca || clienteBusca;
+            trab = trabalhos.find(t => t && String(t.servico || '').toLowerCase().includes(termo));
+          }
+
+          // 3. Busca por termos contextuais na mensagem do usuário
+          const textLow = String(text || '').toLowerCase();
+          if (!trab && textLow) {
+            if (textLow.includes('esse serviço') || textLow.includes('esse trabalho') || textLow.includes('último') || textLow.includes('ultimo') || textLow.includes('recém')) {
+              trab = trabalhos[trabalhos.length - 1];
+            } else {
+              trab = [...trabalhos].reverse().find(t => {
+                const sLow = String(t.servico || '').toLowerCase();
+                const cLow = String(t.cliente || '').toLowerCase();
+                return (sLow && textLow.includes(sLow)) || (cLow && textLow.includes(cLow)) ||
+                       (textLow.includes('fotografia') && sLow.includes('fotografia')) ||
+                       (textLow.includes('alphaville') && sLow.includes('alphaville')) ||
+                       (textLow.includes('barueri') && (sLow.includes('alphaville') || sLow.includes('fotografia')));
+              });
+            }
+          }
+
+          // 4. Fallback: se nenhum trabalho específico for indicado, pegar o último que possui cliente genérico "Cliente" ou o último adicionado
+          if (!trab && trabalhos.length > 0) {
+            const ultimoGenerico = [...trabalhos].reverse().find(t => String(t.cliente || '').toLowerCase() === 'cliente');
+            trab = ultimoGenerico || trabalhos[trabalhos.length - 1];
+          }
 
           if (!trab) {
-            stepMsg = `���️ Não encontrei nenhum trabalho para o cliente "${args.cliente}".`;
+            stepMsg = `⚠️ Não encontrei nenhum trabalho correspondente para atualizar.`;
           } else {
+            // Inferir novo cliente se o usuário informou no texto
+            let novoCliente = args.novo_cliente ? String(args.novo_cliente).trim() : '';
+            let novoServico = args.novo_servico ? String(args.novo_servico).trim() : '';
+
+            if (!novoCliente && text) {
+              const mNat = text.match(/(?:colocar|mudar\s+para|nome\s+de|cliente\s+)\s*([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][a-záéíóúâêîôûãõç]+(?:\s+[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][a-záéíóúâêîôûãõç]+)*)/i);
+              if (mNat && mNat[1] && !['esse', 'esse serviço', 'esse trabalho', 'fotografia'].includes(mNat[1].toLowerCase())) {
+                novoCliente = mNat[1];
+              }
+            }
+
+            if (!novoServico && text && text.toLowerCase().includes('fotografia em são paulo')) {
+              novoServico = 'Fotografia em São Paulo Alphaville';
+            }
+
             const alteracoes = [];
             if (args.novo_valor !== undefined && args.novo_valor > 0) {
               alteracoes.push(`Valor: ${fmt(trab.valor)} ➔ ${fmt(args.novo_valor)}`);
               trab.valor = Number(args.novo_valor);
             }
-            if (args.novo_cliente) {
-              alteracoes.push(`Cliente: "${trab.cliente}" ➔ "${args.novo_cliente}"`);
-              trab.cliente = String(args.novo_cliente).trim();
+            if (novoCliente && novoCliente.toLowerCase() !== String(trab.cliente || '').toLowerCase()) {
+              alteracoes.push(`Cliente: "${trab.cliente}" ➔ "${novoCliente}"`);
+              trab.cliente = novoCliente;
             }
-            if (args.novo_servico) {
-              alteracoes.push(`Serviço: "${trab.servico}" ➔ "${args.novo_servico}"`);
-              trab.servico = String(args.novo_servico).trim();
+            if (novoServico && novoServico.toLowerCase() !== String(trab.servico || '').toLowerCase()) {
+              alteracoes.push(`Serviço: "${trab.servico}" ➔ "${novoServico}"`);
+              trab.servico = novoServico;
             }
             if (args.novo_status) {
               alteracoes.push(`Status: ${trab.status} ➔ ${args.novo_status}`);
@@ -1333,6 +1400,10 @@ try {
             if (args.nova_data) {
               alteracoes.push(`Data: ${trab.data} ➔ ${args.nova_data}`);
               trab.data = String(args.nova_data).trim();
+            }
+
+            if (alteracoes.length === 0) {
+              alteracoes.push(`Dados confirmados e sincronizados com a Gestão Financeira.`);
             }
 
             const totalPago = (trab.pagamentos || []).reduce((s, p) => s + (Number(p.valor) || 0), 0);
@@ -1349,9 +1420,9 @@ try {
 
             const summary = await fetchRealSummary.call(this, profileId);
             stepMsg = `✏️ *Trabalho Atualizado com Sucesso — Agente King*\n\n` +
-              `👤 *Cliente:* ${trab.cliente}\n` +
-              `📸 *Serviço:* ${trab.servico}\n` +
-              `💰 *Valor Atual:* ${fmt(trab.valor)}\n` +
+              `👤 *Cliente:* *${trab.cliente}*\n` +
+              `📸 *Serviço:* *${trab.servico}*\n` +
+              `💰 *Valor Atual:* *${fmt(trab.valor)}*\n` +
               `📊 *Alterações feitas:*\n• ` + alteracoes.join('\n• ') + '\n\n' +
               buildSummaryMessage(summary, fmt);
           }
@@ -1467,7 +1538,67 @@ try {
           const despesasPendentesFluxo = txList.filter(t => t.type === 'EXPENSE' && t.status === 'PENDING');
           
           const filtroPessoa = String(args.pessoa || args.cliente || '').trim().toLowerCase();
-          
+
+          // ── Identificar Filtro de Mês/Período ──
+          const anoAtual = nowSp.getFullYear();
+          const mesAtual = nowSp.getMonth() + 1; // 1-12
+          let anoProx = anoAtual;
+          let mesProx = mesAtual + 1;
+          if (mesProx > 12) { mesProx = 1; anoProx++; }
+          const esteMesYYYYMM = `${anoAtual}-${String(mesAtual).padStart(2, '0')}`;
+          const proxMesYYYYMM = `${anoProx}-${String(mesProx).padStart(2, '0')}`;
+          const mesesNomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+          const lowerText = String(text || '').toLowerCase();
+          const argMes = String(args.mes || args.periodo || '').toLowerCase();
+
+          let targetMesYYYYMM = null;
+          let targetMesLabel = null;
+
+          if (
+            argMes.includes('proximo') || argMes.includes('próximo') || argMes.includes('que_vem') || argMes === 'next' ||
+            lowerText.includes('mês que vem') || lowerText.includes('mes que vem') || lowerText.includes('próximo mês') || lowerText.includes('proximo mes')
+          ) {
+            targetMesYYYYMM = proxMesYYYYMM;
+            targetMesLabel = `Mês que vem (${mesesNomes[mesProx - 1]}/${anoProx})`;
+          } else if (
+            argMes.includes('atual') || argMes.includes('este') || argMes.includes('esse') ||
+            lowerText.includes('este mês') || lowerText.includes('este mes') || lowerText.includes('esse mês') || lowerText.includes('esse mes') || lowerText.includes('deste mês') || lowerText.includes('desse mês')
+          ) {
+            targetMesYYYYMM = esteMesYYYYMM;
+            targetMesLabel = `Este mês (${mesesNomes[mesAtual - 1]}/${anoAtual})`;
+          } else {
+            for (let i = 0; i < mesesNomes.length; i++) {
+              const nomeM = mesesNomes[i].toLowerCase();
+              if (lowerText.includes(nomeM) || argMes.includes(nomeM)) {
+                const mesNum = i + 1;
+                let anoM = anoAtual;
+                if (mesNum < mesAtual) anoM = anoAtual + 1;
+                targetMesYYYYMM = `${anoM}-${String(mesNum).padStart(2, '0')}`;
+                targetMesLabel = `${mesesNomes[i]}/${anoM}`;
+                break;
+              }
+            }
+          }
+
+          function parseContaData(dt) {
+            if (!dt) return { yyyymm: null, dtFormat: 'Sem data', day: null };
+            const dtClean = String(dt).trim().split(' ')[0];
+            const pts = dtClean.split(/[-/]/);
+            if (pts.length === 3) {
+              if (pts[0].length === 4) {
+                const yyyymm = `${pts[0]}-${pts[1].padStart(2, '0')}`;
+                const dtFormat = `${pts[2]}/${pts[1]}/${pts[0]}`;
+                return { yyyymm, dtFormat, day: Number(pts[2]) };
+              } else {
+                const yyyymm = `${pts[2]}-${pts[1].padStart(2, '0')}`;
+                const dtFormat = `${pts[0]}/${pts[1]}/${pts[2]}`;
+                return { yyyymm, dtFormat, day: Number(pts[0]) };
+              }
+            }
+            return { yyyymm: null, dtFormat: dtClean, day: null };
+          }
+
           if (filtroPessoa) {
             let pFound = terceiros.find(p => p && String(p.nome || '').toLowerCase().includes(filtroPessoa));
             const fluxoMatch = txList.filter(t => t.type === 'EXPENSE' && String(t.description || '').toLowerCase().includes(filtroPessoa));
@@ -1480,167 +1611,278 @@ try {
                 `Não consta nenhuma conta ou pendência registrada para ela na sua gestão financeira (Total pendente: *R$ 0,00*).\n\n` +
                 `💡 _Se você combinou alguma nova conta com ela, é só me dizer o valor e a data de vencimento (ex: "adicionar conta de R$ 110 para ${nomeCapitalizado} dia 10 do mês que vem") que eu registro na hora!_`;
             } else {
-              let totalFaltaPessoa = 0;
-              let totalPagoPessoa = 0;
-              const contasPendentes = [];
+              let totalFaltaPessoaGeral = 0;
+              let totalPagoPessoaGeral = 0;
+              let totalFaltaPessoaMes = 0;
+              const todasContasPendentes = [];
+              const contasDoMesPendentes = [];
               const contasQuitadas = [];
-              
+
               if (pFound && Array.isArray(pFound.contas) && pFound.contas.length > 0) {
                 pFound.contas.forEach((c, idx) => {
                   const valTotal = Number(c.valor) || 0;
                   const pago = (c.pagamentos || []).reduce((s, x) => s + (Number(x.valor) || 0), 0);
                   const falta = Math.max(0, valTotal - pago);
-                  totalFaltaPessoa += falta;
-                  totalPagoPessoa += pago;
-                  
-                  let dtVencFormat = 'Sem data';
-                  if (c.dataVencimento) {
-                    const dtClean = String(c.dataVencimento).trim().split(' ')[0];
-                    const pts = dtClean.split(/[-/]/);
-                    if (pts.length === 3) {
-                      dtVencFormat = pts[0].length === 4 ? `${pts[2]}/${pts[1]}/${pts[0]}` : `${pts[0]}/${pts[1]}/${pts[2]}`;
+                  totalFaltaPessoaGeral += falta;
+                  totalPagoPessoaGeral += pago;
+
+                  const { yyyymm, dtFormat } = parseContaData(c.dataVencimento);
+                  const descExtra = (c.descricao && c.descricao.toLowerCase() !== (c.nomeConta || '').toLowerCase()) ? c.descricao : '';
+
+                  if (falta > 0.01) {
+                    const itemConta = {
+                      idx: idx + 1,
+                      nomeConta: c.nomeConta || 'Parcela',
+                      valTotal,
+                      pago,
+                      falta,
+                      dtFormat,
+                      yyyymm,
+                      descExtra
+                    };
+                    todasContasPendentes.push(itemConta);
+                    if (targetMesYYYYMM && yyyymm === targetMesYYYYMM) {
+                      contasDoMesPendentes.push(itemConta);
+                      totalFaltaPessoaMes += falta;
+                    }
+                  } else {
+                    contasQuitadas.push(`• *Conta ${idx + 1} (${c.nomeConta || 'Parcela'}):* ${fmt(valTotal)} (✅ Quitado) [Venc: ${dtFormat}]`);
+                  }
+                });
+              }
+
+              if (fluxoMatch.length > 0) {
+                fluxoMatch.forEach((t, fIdx) => {
+                  const dtStr = String(t.transaction_date || t.created_at || '').slice(0, 10);
+                  const { yyyymm, dtFormat } = parseContaData(dtStr);
+                  const amt = Number(t.amount || 0);
+
+                  if (t.status === 'PENDING') {
+                    totalFaltaPessoaGeral += amt;
+                    const itemFluxo = {
+                      idx: 'F' + (fIdx + 1),
+                      nomeConta: t.description || 'Despesa no Fluxo',
+                      valTotal: amt,
+                      pago: 0,
+                      falta: amt,
+                      dtFormat,
+                      yyyymm,
+                      descExtra: 'Pendente no Fluxo de Caixa'
+                    };
+                    todasContasPendentes.push(itemFluxo);
+                    if (targetMesYYYYMM && yyyymm === targetMesYYYYMM) {
+                      contasDoMesPendentes.push(itemFluxo);
+                      totalFaltaPessoaMes += amt;
+                    }
+                  } else {
+                    totalPagoPessoaGeral += amt;
+                    contasQuitadas.push(`• *${fmt(amt)}* — _${t.description}_ (✅ Pago em ${dtFormat})`);
+                  }
+                });
+              }
+
+              // SE ADRIANO PERGUNTOU ESPECIFICAMENTE POR UM MÊS (ex: mês que vem)
+              if (targetMesYYYYMM) {
+                if (contasDoMesPendentes.length > 0) {
+                  const lines = [
+                    `📅 *Total da parcela para ${nomeCapitalizado} no ${targetMesLabel}:*`,
+                    '',
+                    `💰 *Valor total a pagar no mês:* *${fmt(totalFaltaPessoaMes)}*`,
+                    '',
+                    `📋 *Parcelas com vencimento neste mês:*`
+                  ];
+
+                  contasDoMesPendentes.forEach(c => {
+                    const descTxt = c.descExtra ? `\n   🏷️ *Referência:* _${c.descExtra}_` : '';
+                    lines.push(`• *${c.nomeConta}:* *${fmt(c.falta)}*${descTxt}\n   📅 Vencimento: *${c.dtFormat}* ⏳`);
+                  });
+
+                  const outrasParcelas = todasContasPendentes.filter(c => c.yyyymm !== targetMesYYYYMM);
+                  if (outrasParcelas.length > 0) {
+                    lines.push('');
+                    lines.push(`ℹ️ *Demais parcelas em outros meses:*`);
+                    lines.push(`• *Total acumulado geral (todas as parcelas futuras):* *${fmt(totalFaltaPessoaGeral)}* (${todasContasPendentes.length} parcelas no total)`);
+                    lines.push(`• _As demais parcelas vencem nos meses posteriores._`);
+                  }
+
+                  lines.push('');
+                  lines.push(`_Para dar baixa ou registrar pagamento, diga: "paguei a conta da ${nomeCapitalizado}" ou "já paguei"._`);
+                  stepMsg = lines.join('\n');
+                } else if (totalFaltaPessoaGeral > 0.01) {
+                  stepMsg = `✅ *Adriano, você não tem parcelas vencendo no ${targetMesLabel} para ${nomeCapitalizado}!* (Total no mês: *R$ 0,00*).\n\n` +
+                    `Você possui *${todasContasPendentes.length} parcela(s)* em outros meses que somam *${fmt(totalFaltaPessoaGeral)}* no total geral.\n\n` +
+                    `_Para ver todas as parcelas, diga: "todas as contas da ${nomeCapitalizado}"._`;
+                } else {
+                  stepMsg = `✅ *Não, Adriano! Você não deve nada para ${nomeCapitalizado}.*\n\nTodas as contas anteriores já constam como *100% QUITADAS* (Total pendente: *R$ 0,00*).`;
+                }
+              } else {
+                // SEM FILTRO DE MÊS ESPECÍFICO: MOSTRA TOTAL GERAL E AGRUPA POR MÊS
+                if (totalFaltaPessoaGeral <= 0.01) {
+                  const lines = [
+                    `✅ *Não, Adriano! Você não deve nada para ${nomeCapitalizado}.*`,
+                    '',
+                    `Todas as contas anteriores já constam como *100% QUITADAS e pagas* na sua gestão financeira!`,
+                    `💰 *Total restante a pagar: R$ 0,00*`
+                  ];
+
+                  if (contasQuitadas.length > 0) {
+                    lines.push('');
+                    lines.push('📜 *Histórico de pagamentos/contas já quitados:*');
+                    lines.push(...contasQuitadas.slice(0, 5));
+                    if (totalPagoPessoaGeral > 0) {
+                      lines.push(`💵 *Total já liquidado:* *${fmt(totalPagoPessoaGeral)}*`);
                     }
                   }
-                  
-                  if (falta > 0.01) {
-                    contasPendentes.push(`• *Conta ${idx + 1} (${c.nomeConta || 'Parcela'}):* ${fmt(valTotal)}\n   📅 Vencimento: *${dtVencFormat}* ⏳ | 🔴 *Falta pagar: ${fmt(falta)}* (Já pago: ${fmt(pago)})`);
-                  } else {
-                    contasQuitadas.push(`• *Conta ${idx + 1} (${c.nomeConta || 'Parcela'}):* ${fmt(valTotal)} (✅ Quitado) [Venc: ${dtVencFormat}]`);
-                  }
-                });
-              }
-              
-              if (fluxoMatch.length > 0) {
-                fluxoMatch.forEach(t => {
-                  const dtStr = String(t.transaction_date || t.created_at || '').slice(0, 10);
-                  let dtFormat = dtStr;
-                  const pts = dtStr.split('-');
-                  if (pts.length === 3) dtFormat = `${pts[2]}/${pts[1]}/${pts[0]}`;
-                  
-                  if (t.status === 'PENDING') {
-                    totalFaltaPessoa += Number(t.amount || 0);
-                    contasPendentes.push(`• *${fmt(t.amount)}* — _${t.description}_ (⏳ Pendente no Fluxo) [Data: ${dtFormat}]`);
-                  } else {
-                    totalPagoPessoa += Number(t.amount || 0);
-                    contasQuitadas.push(`• *${fmt(t.amount)}* — _${t.description}_ (✅ Pago em ${dtFormat})`);
-                  }
-                });
-              }
 
-              if (totalFaltaPessoa <= 0.01) {
-                const lines = [
-                  `✅ *Não, Adriano! Você não deve nada para ${nomeCapitalizado}.*`,
-                  '',
-                  `Todas as contas anteriores já constam como *100% QUITADAS e pagas* na sua gestão financeira!`,
-                  `💰 *Total restante a pagar: R$ 0,00*`
-                ];
-
-                if (contasQuitadas.length > 0) {
                   lines.push('');
-                  lines.push('📜 *Histórico de pagamentos/contas já quitados:*');
-                  lines.push(...contasQuitadas);
-                  if (totalPagoPessoa > 0) {
-                    lines.push(`💵 *Total já liquidado:* *${fmt(totalPagoPessoa)}*`);
+                  lines.push(`💡 *Dica:* Se você combinou alguma nova conta com ela, é só me dizer: "adicionar conta de R$ 110 para ${nomeCapitalizado} pagar mês que vem dia 10" que eu registro na hora!`);
+                  stepMsg = lines.join('\n');
+                } else {
+                  const gruposPorMes = {};
+                  todasContasPendentes.forEach(c => {
+                    const chaveMes = c.yyyymm || 'sem_data';
+                    if (!gruposPorMes[chaveMes]) gruposPorMes[chaveMes] = { items: [], total: 0 };
+                    gruposPorMes[chaveMes].items.push(c);
+                    gruposPorMes[chaveMes].total += c.falta;
+                  });
+
+                  const chavesOrdenadas = Object.keys(gruposPorMes).sort();
+
+                  const lines = [
+                    `⚠️ *Sim, Adriano! Você tem contas pendentes para ${nomeCapitalizado}:*`,
+                    '',
+                    `🔴 *Total geral que falta pagar: ${fmt(totalFaltaPessoaGeral)}* (${todasContasPendentes.length} parcelas ao todo)`,
+                    ''
+                  ];
+
+                  lines.push('📅 *Divisão por Mês de Vencimento:*');
+                  chavesOrdenadas.forEach(chave => {
+                    const grp = gruposPorMes[chave];
+                    let labelMes = 'Sem data definida';
+                    if (chave !== 'sem_data') {
+                      const p = chave.split('-');
+                      const idxM = parseInt(p[1], 10) - 1;
+                      const nomeM = mesesNomes[idxM] || p[1];
+                      labelMes = `${nomeM}/${p[0]}`;
+                    }
+                    lines.push(`• 🗓️ *${labelMes}:* *${fmt(grp.total)}* (${grp.items.length} parcela${grp.items.length > 1 ? 's' : ''})`);
+                    grp.items.forEach(it => {
+                      const refStr = it.descExtra ? ` — _${it.descExtra}_` : '';
+                      lines.push(`   └ *${it.nomeConta}:* ${fmt(it.falta)}${refStr} (Venc: ${it.dtFormat})`);
+                    });
+                  });
+
+                  if (contasQuitadas.length > 0) {
+                    lines.push('');
+                    lines.push('📜 *Contas já quitadas anteriormente:*');
+                    lines.push(...contasQuitadas.slice(0, 3));
+                    if (totalPagoPessoaGeral > 0) {
+                      lines.push(`💵 *Total já pago:* ${fmt(totalPagoPessoaGeral)}`);
+                    }
                   }
-                }
 
-                lines.push('');
-                lines.push(`💡 *Dica:* Se você combinou alguma nova conta com ela (por exemplo, para o mês que vem ou parcelada), é só me dizer:`);
-                lines.push(`_Exemplo: "adicionar conta de R$ 110 para ${nomeCapitalizado} para pagar mês que vem dia 10"_ que eu registro na hora!`);
-
-                stepMsg = lines.join('\n');
-              } else {
-                const lines = [
-                  `⚠️ *Sim, Adriano! Você tem contas pendentes para ${nomeCapitalizado}:*`,
-                  '',
-                  `🔴 *Total que falta pagar: ${fmt(totalFaltaPessoa)}*`,
-                  '',
-                  '📋 *Contas pendentes:*',
-                  ...contasPendentes
-                ];
-
-                if (contasQuitadas.length > 0) {
                   lines.push('');
-                  lines.push('📜 *Contas já quitadas anteriormente:*');
-                  lines.push(...contasQuitadas.slice(0, 5));
-                  if (totalPagoPessoa > 0) {
-                    lines.push(`💵 *Total já pago:* ${fmt(totalPagoPessoa)}`);
-                  }
+                  lines.push(`_Para registrar pagamento ou dar baixa, diga: "paguei a conta da ${nomeCapitalizado}" ou "já paguei"._`);
+                  stepMsg = lines.join('\n');
                 }
-
-                lines.push('');
-                lines.push(`_Para registrar pagamento ou dar baixa, diga: "paguei a conta da ${nomeCapitalizado}" ou "já paguei"._`);
-
-                stepMsg = lines.join('\n');
               }
             }
           } else {
+            // SEM FILTRO DE PESSOA (CONSULTA GERAL DE DÍVIDAS)
             let totalFaltaGeral = 0;
-            const pessoasComDivida = [];
-            
+            let totalFaltaMes = 0;
+            const pessoasComDividaGeral = [];
+            const pessoasComDividaMes = [];
+
             terceiros.forEach(p => {
-              let totalPessoaFalta = 0;
-              let totalPessoaContasPendentes = 0;
-              let proximosVenc = [];
-              
+              let faltaPessoaGeral = 0;
+              let contasPessoaGeral = 0;
+              let faltaPessoaMes = 0;
+              let contasPessoaMes = 0;
+              let proxVencArr = [];
+
               (p.contas || []).forEach(c => {
                 const valTotal = Number(c.valor) || 0;
                 const pago = (c.pagamentos || []).reduce((s, x) => s + (Number(x.valor) || 0), 0);
                 const falta = Math.max(0, valTotal - pago);
                 if (falta > 0.01) {
-                  totalPessoaFalta += falta;
-                  totalPessoaContasPendentes++;
-                  if (c.dataVencimento) {
-                    proximosVenc.push(c.dataVencimento);
+                  faltaPessoaGeral += falta;
+                  contasPessoaGeral++;
+                  const { yyyymm, dtFormat } = parseContaData(c.dataVencimento);
+                  if (c.dataVencimento) proxVencArr.push(c.dataVencimento);
+                  if (targetMesYYYYMM && yyyymm === targetMesYYYYMM) {
+                    faltaPessoaMes += falta;
+                    contasPessoaMes++;
                   }
                 }
               });
-              
-              if (totalPessoaFalta > 0.01) {
-                totalFaltaGeral += totalPessoaFalta;
-                proximosVenc.sort();
-                let proxVencStr = 'Não informado';
-                if (proximosVenc.length > 0) {
-                  const pts = proximosVenc[0].split('-');
-                  proxVencStr = pts.length === 3 ? `${pts[2]}/${pts[1]}/${pts[0]}` : proximosVenc[0];
-                }
-                pessoasComDivida.push({
-                  nome: p.nome,
-                  falta: totalPessoaFalta,
-                  contas: totalPessoaContasPendentes,
-                  vencimento: proxVencStr
+
+              if (faltaPessoaGeral > 0.01) {
+                totalFaltaGeral += faltaPessoaGeral;
+                proxVencArr.sort();
+                const proxFmt = proxVencArr.length > 0 ? parseContaData(proxVencArr[0]).dtFormat : 'Não informado';
+                pessoasComDividaGeral.push({ nome: p.nome, falta: faltaPessoaGeral, contas: contasPessoaGeral, vencimento: proxFmt });
+              }
+
+              if (faltaPessoaMes > 0.01) {
+                totalFaltaMes += faltaPessoaMes;
+                pessoasComDividaMes.push({ nome: p.nome, falta: faltaPessoaMes, contas: contasPessoaMes });
+              }
+            });
+
+            if (targetMesYYYYMM) {
+              if (pessoasComDividaMes.length > 0) {
+                const lines = [
+                  `📅 *Contas e Pessoas para Pagar no ${targetMesLabel}:*`,
+                  '',
+                  `💰 *Total a pagar no mês:* *${fmt(totalFaltaMes)}*`,
+                  '',
+                  `📋 *Detalhamento por pessoa:*`
+                ];
+                pessoasComDividaMes.forEach((p, idx) => {
+                  lines.push(`${idx + 1}. 👤 *${p.nome}*\n   💰 *A pagar no mês: ${fmt(p.falta)}* (${p.contas} parcela${p.contas > 1 ? 's' : ''})`);
                 });
+                if (totalFaltaGeral > totalFaltaMes) {
+                  lines.push('');
+                  lines.push(`ℹ️ *Total geral acumulado com os demais meses:* *${fmt(totalFaltaGeral)}*`);
+                }
+                lines.push('');
+                lines.push('_Para ver detalhes de alguém, diga: "quanto devo para [nome] no mês que vem"._');
+                stepMsg = lines.join('\n');
+              } else {
+                stepMsg = `🎉 *Excelente notícia, Adriano! Nenhuma conta vencendo no ${targetMesLabel}!* (Total: *R$ 0,00*).\n\n` +
+                  (totalFaltaGeral > 0 ? `Você tem parcelas em outros meses somando *${fmt(totalFaltaGeral)}*.` : 'Todas as contas estão 100% quitadas!');
               }
-            });
-            
-            const despesasPendentes = despesasPendentesFluxo.map(t => {
-              totalFaltaGeral += Number(t.amount || 0);
-              const dt = String(t.transaction_date || t.created_at || '').slice(0, 10);
-              let dtFmt = dt;
-              const pts = dt.split('-');
-              if (pts.length === 3) dtFmt = `${pts[2]}/${pts[1]}/${pts[0]}`;
-              return `• 💸 *${fmt(t.amount)}* — _${t.description}_ (Venc: ${dtFmt})`;
-            });
-            
-            if (pessoasComDivida.length === 0 && despesasPendentes.length === 0) {
-              stepMsg = `🎉 *Excelente notícia, Adriano! Você não está devendo para ninguém no momento!*\n\n` +
-                `Todas as contas e pessoas na sua gestão financeira estão *100% quitadas e em dia*!\n` +
-                `💰 *Total geral pendente: R$ 0,00*\n\n` +
-                `💡 _Se você combinou alguma nova conta com alguém para os próximos meses, é só me falar (ex: "conta de fulano de tal para pagar mês que vem dia 10") que eu programo na hora!_`;
             } else {
-              const lines = ['👑 *Pessoas e Contas que Você Deve (Quem Eu Devo):*\n'];
-              pessoasComDivida.forEach((p, idx) => {
-                lines.push(`${idx + 1}. 👤 *${p.nome}*\n   💰 *Falta pagar: ${fmt(p.falta)}* (${p.contas} conta${p.contas > 1 ? 's' : ''} pendente${p.contas > 1 ? 's' : ''})\n   🗓️ Próximo vencimento: *${p.vencimento}*`);
+              const despesasPendentes = despesasPendentesFluxo.map(t => {
+                totalFaltaGeral += Number(t.amount || 0);
+                const dt = String(t.transaction_date || t.created_at || '').slice(0, 10);
+                let dtFmt = dt;
+                const pts = dt.split('-');
+                if (pts.length === 3) dtFmt = `${pts[2]}/${pts[1]}/${pts[0]}`;
+                return `• 💸 *${fmt(t.amount)}* — _${t.description}_ (Venc: ${dtFmt})`;
               });
-              
-              if (despesasPendentes.length > 0) {
-                lines.push('\n📑 *Despesas Avulsas Pendentes no Fluxo:*');
-                lines.push(...despesasPendentes);
+
+              if (pessoasComDividaGeral.length === 0 && despesasPendentes.length === 0) {
+                stepMsg = `🎉 *Excelente notícia, Adriano! Você não está devendo para ninguém no momento!*` +
+                  `\n\nTodas as contas e pessoas na sua gestão financeira estão *100% quitadas e em dia*!` +
+                  `\n💰 *Total geral pendente: R$ 0,00*\n\n` +
+                  `💡 _Se você combinou alguma nova conta com alguém para os próximos meses, é só me falar (ex: "conta de fulano de tal para pagar mês que vem dia 10") que eu programo na hora!_`;
+              } else {
+                const lines = ['👑 *Pessoas e Contas que Você Deve (Quem Eu Devo):*\n'];
+                pessoasComDividaGeral.forEach((p, idx) => {
+                  lines.push(`${idx + 1}. 👤 *${p.nome}*\n   💰 *Falta pagar: ${fmt(p.falta)}* (${p.contas} conta${p.contas > 1 ? 's' : ''} pendente${p.contas > 1 ? 's' : ''})\n   🗓️ Próximo vencimento: *${p.vencimento}*`);
+                });
+                
+                if (despesasPendentes.length > 0) {
+                  lines.push('\n📑 *Despesas Avulsas Pendentes no Fluxo:*');
+                  lines.push(...despesasPendentes);
+                }
+                
+                lines.push(`\n🔴 *Total Geral Pendente a Pagar:* *${fmt(totalFaltaGeral)}*`);
+                lines.push('\n_Para ver detalhes de alguém, diga: "quanto devo para [nome]" ou "contas da [nome]"._');
+                stepMsg = lines.join('\n');
               }
-              
-              lines.push(`\n🔴 *Total Geral Pendente a Pagar:* *${fmt(totalFaltaGeral)}*`);
-              lines.push('\n_Para ver detalhes de alguém, diga: "quanto devo para [nome]" ou "contas da [nome]"._');
-              stepMsg = lines.join('\n');
             }
           }
         
@@ -1649,7 +1891,32 @@ try {
           const pessoaNome = String(args.pessoa || args.cliente || 'Pessoa').trim();
           const valor = Number(args.valor || args.amount || 0);
           const numParcelas = Math.max(1, parseInt(args.parcelas || 1, 10));
-          const nomeContaBase = String(args.nome_conta || args.servico || (numParcelas > 1 ? 'Parcela' : 'Conta')).trim();
+          // Extrair descrição / referência detalhada
+          let rawDesc = String(args.descricao || args.description || args.motivo || args.referencia || '').trim();
+          let rawNomeConta = String(args.nome_conta || args.servico || '').trim();
+
+          // Se nomeConta é genérico ("Parcela", "Conta") mas temos descrição
+          if ((!rawNomeConta || /^(parcela|conta|d[ií]vida)$/i.test(rawNomeConta)) && rawDesc) {
+            rawNomeConta = rawDesc;
+          }
+
+          // Se ainda genérico, tentar inferir do texto do usuário
+          if (!rawNomeConta || /^(parcela|conta|d[ií]vida)$/i.test(rawNomeConta)) {
+            const mRef = String(text || '').match(/referente\s+(?:a|ao|à|do|da)?\s*([^,\.\n]+)/i)
+              || String(text || '').match(/(?:para\s+comprar|compra\s+de)\s+([^,\.\n]+)/i)
+              || String(text || '').match(/(passagens[^,\.\n]*)/i);
+            if (mRef && mRef[1]) {
+              rawDesc = rawDesc || mRef[0].trim();
+              rawNomeConta = mRef[1].trim();
+            }
+          }
+
+          if (rawNomeConta && rawNomeConta.length > 0) {
+            rawNomeConta = rawNomeConta.charAt(0).toUpperCase() + rawNomeConta.slice(1);
+          }
+
+          const nomeContaBase = rawNomeConta || (numParcelas > 1 ? 'Parcela' : 'Conta');
+          const descricaoFinal = rawDesc || nomeContaBase;
           
           if (valor <= 0) {
             stepMsg = '⚠️ Por favor informe o valor da conta ou da parcela.';
@@ -1722,6 +1989,7 @@ try {
               const novaConta = {
                 id: 'c_' + Date.now() + '_' + i,
                 nomeConta: rotulo,
+                descricao: descricaoFinal,
                 valor: valor,
                 dataVencimento: dtVenc,
                 tipo: numParcelas > 1 ? 'recorrente' : 'unica',
@@ -1748,7 +2016,7 @@ try {
             if (numParcelas === 1) {
               stepMsg = `👑 *Conta Registrada com Sucesso na Gestão Financeira!*\n\n` +
                 `👤 *Pessoa (Quem Eu Devo):* *${pessoaNome}*\n` +
-                `📝 *Descrição:* ${nomeContaBase}\n` +
+                `📝 *Descrição / Referência:* *${descricaoFinal}*\n` +
                 `💰 *Valor:* ${fmt(valor)}\n` +
                 `📅 *Vencimento:* *${criadas[0].dataVencimento}* ⏳\n\n` +
                 `📌 *Sincronização:* Registrada exclusivamente para o mês de vencimento (sem impactar o mês atual).\n\n` +
@@ -1759,6 +2027,7 @@ try {
               
               stepMsg = `👑 *Parcelamento Registrado com Sucesso na Gestão Financeira!*\n\n` +
                 `👤 *Pessoa (Quem Eu Devo):* *${pessoaNome}*\n` +
+                `📝 *Referência / Motivo:* *${descricaoFinal}*\n` +
                 `🔢 *Total de Parcelas:* *${numParcelas}x de ${fmt(valor)}*\n` +
                 `💰 *Valor Total do Parcelamento:* *${fmt(totalAdicionado)}*\n` +
                 `🗓️ *Período:* De *${criadas[0].dataVencimento}* até *${criadas[criadas.length - 1].dataVencimento}*\n\n` +

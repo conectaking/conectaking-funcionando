@@ -577,9 +577,7 @@ body {
         width: 18px;
     }
     
-    .profile-link-logo {
-        /* margin-right é definido dinamicamente via EJS no profile.ejs */
-    }
+    /* .profile-link-logo margin-right é definido dinamicamente via EJS no profile.ejs */
     
     /* Logo PNG - completo sem corte por padrão em mobile, respeitando o logo_size definido inline */
     /* O object-fit será definido dinamicamente via EJS baseado em logo_fit_mode */
@@ -590,10 +588,7 @@ body {
     
     /* Logo circular (JPEG) - respeitar tamanho definido inline via EJS */
     /* Removido width/height fixos para permitir que logo_size seja aplicado */
-    
-    .branding-logo img {
-        /* altura: inline style (company_logo_size) no template */
-    }
+    /* .branding-logo img altura: inline style (company_logo_size) no template */
     
     .pix-modal-content {
         max-width: 95%;
