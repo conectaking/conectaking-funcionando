@@ -11,7 +11,7 @@
     $textColor = $d['text_color'] ?? '#ECECEC';
     $font = $d['font_family'] ?? 'Inter';
     $bgColor = $d['background_color'] ?? '#0D0D0F';
-    $hasBgImage = (($d['background_type'] ?? '') === 'image') && !empty($d['background_image_url']);
+    $hasBgImage = (!empty($d['background_image_url']) && ($d['background_type'] ?? '') !== 'color');
     $bgOpacity = $d['background_image_opacity'] ?? 1;
     $showVcard = !empty($d['show_vcard_button']);
     $mapUrl = trim((string)($d['map_url'] ?? $d['location_url'] ?? $d['google_maps_url'] ?? ''));
@@ -63,6 +63,7 @@
             --btn-align: {{ $alignValue ?? 'center' }};
             --btn-text-align: {{ ($alignValue ?? 'center') === 'flex-end' ? 'right' : (($alignValue ?? 'center') === 'center' ? 'center' : 'left') }};
             --logo-max: {{ max(24, min($logoSize, 90)) }}px;
+        }
         html.ck-page-bg { background-color: var(--page-bg); }
         html {
             overflow-x: hidden !important;
@@ -126,7 +127,7 @@
         .profile-link-logo--square { object-fit: contain; border-radius: 6px; }
         .carousel-wrapper-public { display: flex; width: calc(var(--ck-carousel-n, 1) * 100%); }
         .carousel-slide-public { width: calc(100% / var(--ck-carousel-n, 1)); flex-shrink: 0; }
-        .profile-link, .profile-button-pix, .profile-button-pix-qrcode {
+        .profile-link, .profile-button-pix, .profile-button-pix-qrcode, .wifi-profile-button {
             position: relative !important;
             display: flex !important;
             align-items: center !important;
@@ -140,31 +141,33 @@
         @if(($logoAlign ?? 'center') === 'left' && ($buttonAlign ?? 'center') === 'center')
         .profile-link > i, .profile-link > .profile-link-logo,
         .profile-button-pix > i, .profile-button-pix > .profile-link-logo,
-        .profile-button-pix-qrcode > i, .profile-button-pix-qrcode > .profile-link-logo {
+        .profile-button-pix-qrcode > i, .profile-button-pix-qrcode > .profile-link-logo,
+        .wifi-profile-button > i, .wifi-profile-button > .profile-link-logo {
             position: absolute !important;
             left: 16px !important;
             right: auto !important;
             margin: 0 !important;
         }
-        .profile-link > span, .profile-button-pix > span, .profile-button-pix-qrcode > span {
+        .profile-link > span, .profile-button-pix > span, .profile-button-pix-qrcode > span, .wifi-profile-button > span {
             width: 100% !important;
             text-align: center !important;
             margin: 0 !important;
         }
         @elseif(($logoAlign ?? 'center') === 'right')
-        .profile-link, .profile-button-pix, .profile-button-pix-qrcode {
+        .profile-link, .profile-button-pix, .profile-button-pix-qrcode, .wifi-profile-button {
             flex-direction: row-reverse !important;
         }
         @if(($buttonAlign ?? 'center') === 'center')
         .profile-link > i, .profile-link > .profile-link-logo,
         .profile-button-pix > i, .profile-button-pix > .profile-link-logo,
-        .profile-button-pix-qrcode > i, .profile-button-pix-qrcode > .profile-link-logo {
+        .profile-button-pix-qrcode > i, .profile-button-pix-qrcode > .profile-link-logo,
+        .wifi-profile-button > i, .wifi-profile-button > .profile-link-logo {
             position: absolute !important;
             right: 16px !important;
             left: auto !important;
             margin: 0 !important;
         }
-        .profile-link > span, .profile-button-pix > span, .profile-button-pix-qrcode > span {
+        .profile-link > span, .profile-button-pix > span, .profile-button-pix-qrcode > span, .wifi-profile-button > span {
             width: 100% !important;
             text-align: center !important;
             margin: 0 !important;
@@ -172,11 +175,12 @@
         @else
         .profile-link > i, .profile-link > .profile-link-logo,
         .profile-button-pix > i, .profile-button-pix > .profile-link-logo,
-        .profile-button-pix-qrcode > i, .profile-button-pix-qrcode > .profile-link-logo {
+        .profile-button-pix-qrcode > i, .profile-button-pix-qrcode > .profile-link-logo,
+        .wifi-profile-button > i, .wifi-profile-button > .profile-link-logo {
             position: static !important;
             margin: 0 !important;
         }
-        .profile-link > span, .profile-button-pix > span, .profile-button-pix-qrcode > span {
+        .profile-link > span, .profile-button-pix > span, .profile-button-pix-qrcode > span, .wifi-profile-button > span {
             text-align: var(--btn-text-align, {{ $buttonAlign ?? 'left' }}) !important;
             margin: 0 !important;
         }
@@ -184,12 +188,13 @@
         @else
         .profile-link > i, .profile-link > .profile-link-logo,
         .profile-button-pix > i, .profile-button-pix > .profile-link-logo,
-        .profile-button-pix-qrcode > i, .profile-button-pix-qrcode > .profile-link-logo {
+        .profile-button-pix-qrcode > i, .profile-button-pix-qrcode > .profile-link-logo,
+        .wifi-profile-button > i, .wifi-profile-button > .profile-link-logo {
             position: static !important;
             margin: 0 !important;
         }
-        .profile-link > span, .profile-button-pix > span, .profile-button-pix-qrcode > span {
-            text-align: var(--btn-text-align, center) !important;
+        .profile-link > span, .profile-button-pix > span, .profile-button-pix-qrcode > span, .wifi-profile-button > span {
+            text-align: var(--btn-text-align, {{ $buttonAlign ?? 'center' }}) !important;
             margin: 0 !important;
         }
         @endif

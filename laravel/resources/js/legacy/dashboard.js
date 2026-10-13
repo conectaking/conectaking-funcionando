@@ -3553,6 +3553,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             SELECTORS.backgroundImagePreview.src = finalUrl;
             SELECTORS.backgroundImageUrlInput.value = finalUrl;
 
+            const bgImageRadio = document.querySelector('input[name="bg-type"][value="image"]');
+            if (bgImageRadio) {
+                bgImageRadio.checked = true;
+            }
+            if (SELECTORS.backgroundColorContainer) SELECTORS.backgroundColorContainer.style.display = 'none';
+            if (SELECTORS.backgroundImageContainer) SELECTORS.backgroundImageContainer.style.display = 'block';
+
             updateLivePreviewFromForm();
 
         } catch (error) {

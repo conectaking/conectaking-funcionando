@@ -2873,6 +2873,22 @@ function _setupEventListenersBody() {
             });
         });
     }
+
+    // Event listeners para alinhamento de conteúdo dos botões
+    const buttonAlignInputs = document.querySelectorAll('input[name="button-align"]');
+    if (buttonAlignInputs && buttonAlignInputs.length) {
+        buttonAlignInputs.forEach(radio => {
+            radio.addEventListener('change', function () {
+                env.updateLivePreviewFromForm();
+            });
+        });
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target && (e.target.name === 'button-align' || e.target.name === 'logo-align')) {
+            env.updateLivePreviewFromForm();
+        }
+    });
     if (SELECTORS.sidebarNavLinks) {
         SELECTORS.sidebarNavLinks.forEach(link => {
             const targetId = link.dataset.target;

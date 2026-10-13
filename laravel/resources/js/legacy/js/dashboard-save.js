@@ -151,7 +151,12 @@ async function saveAllChanges(event) {
 
         const cardOpacityVal = SELECTORS.cardOpacityPicker ? parseFloat(SELECTORS.cardOpacityPicker.value) : 1;
         const bgImageOpacityVal = SELECTORS.backgroundImageOpacityPicker ? parseFloat(SELECTORS.backgroundImageOpacityPicker.value) : 1;
-        saveData.details = {
+            const currentBgTypeChecked = (document.querySelector('input[name="bg-type"]:checked') || {}).value;
+            const computedBgType = currentBgTypeChecked || ((SELECTORS.backgroundImageUrlInput?.value && SELECTORS.backgroundImageUrlInput.value.length > 5) ? 'image' : 'color');
+            const currentBtnAlign = (document.querySelector('input[name="button-align"]:checked') || {}).value || 'center';
+            const currentLogoSpacing = SELECTORS.logoAlignLeft?.checked ? 'left' : (SELECTORS.logoAlignRight?.checked ? 'right' : 'center');
+
+            saveData.details = {
             displayName: displayNameValue,
             display_name: displayNameValue,
             whatsapp: whatsappValue,
@@ -164,8 +169,10 @@ async function saveAllChanges(event) {
             buttonTextColor: SELECTORS.buttonTextColorPicker?.value || '#FFFFFF',
             buttonOpacity: SELECTORS.buttonOpacityPicker ? parseFloat(SELECTORS.buttonOpacityPicker.value) : 1,
             buttonBorderRadius: `${SELECTORS.radiusTL?.value || 12}px ${SELECTORS.radiusTR?.value || 12}px ${SELECTORS.radiusBR?.value || 12}px ${SELECTORS.radiusBL?.value || 12}px`,
-            buttonContentAlign: (document.querySelector('input[name="button-align"]:checked') || {}).value || 'center',
-            backgroundType: (document.querySelector('input[name="bg-type"]:checked') || {}).value || 'color',
+            buttonContentAlign: currentBtnAlign,
+            button_content_align: currentBtnAlign,
+            backgroundType: computedBgType,
+            background_type: computedBgType,
             backgroundImageUrl: SELECTORS.backgroundImageUrlInput?.value ?? '',
             cardBackgroundColor: SELECTORS.cardBackgroundColorPicker?.value || '#141417',
             profileImageUrl: (SELECTORS.dashboardPhotoPreview && SELECTORS.dashboardPhotoPreview.src && !SELECTORS.dashboardPhotoPreview.src.startsWith('data:'))
@@ -183,10 +190,9 @@ async function saveAllChanges(event) {
             show_vcard_button: showVcardValue,
             avatar_format: currentAvatarFormat,
             avatarFormat: currentAvatarFormat,
-            logo_spacing: SELECTORS.logoAlignLeft?.checked ? 'left' : (SELECTORS.logoAlignRight?.checked ? 'right' : 'center'),
-            logoSpacing: SELECTORS.logoAlignLeft?.checked ? 'left' : (SELECTORS.logoAlignRight?.checked ? 'right' : 'center'),
+            logo_spacing: currentLogoSpacing,
+            logoSpacing: currentLogoSpacing,
             share_image_url: window.currentProfileData?.details?.share_image_url || null,
-            background_type: (document.querySelector('input[name="bg-type"]:checked') || {}).value || 'color',
             background_color: SELECTORS.backgroundColorPicker?.value || '#0D0D0F',
             background_image_url: SELECTORS.backgroundImageUrlInput?.value ?? '',
             card_background_color: SELECTORS.cardBackgroundColorPicker?.value || '#141417'
@@ -1520,12 +1526,14 @@ async function saveAllChanges(event) {
 
         // Preservar fundo do cartão e fundo de tela antes de recarregar (evita "salva mas some")
         const preservedFundo = {
-            background_type: (document.querySelector('input[name="bg-type"]:checked') || {}).value || 'color',
+            background_type: (document.querySelector('input[name="bg-type"]:checked') || {}).value || ((SELECTORS.backgroundImageUrlInput?.value && SELECTORS.backgroundImageUrlInput.value.length > 5) ? 'image' : 'color'),
             background_color: SELECTORS.backgroundColorPicker?.value || '#0D0D0F',
             background_image_url: SELECTORS.backgroundImageUrlInput?.value ?? '',
             background_image_opacity: SELECTORS.backgroundImageOpacityPicker ? parseFloat(SELECTORS.backgroundImageOpacityPicker.value) : 1,
             card_background_color: SELECTORS.cardBackgroundColorPicker?.value || '#141417',
-            card_opacity: SELECTORS.cardOpacityPicker ? parseFloat(SELECTORS.cardOpacityPicker.value) : 1
+            card_opacity: SELECTORS.cardOpacityPicker ? parseFloat(SELECTORS.cardOpacityPicker.value) : 1,
+            button_content_align: (document.querySelector('input[name="button-align"]:checked') || {}).value || 'center',
+            logo_spacing: SELECTORS.logoAlignLeft?.checked ? 'left' : (SELECTORS.logoAlignRight?.checked ? 'right' : 'center')
         };
         __ckDashLog('YZ [SAVE-ALL] Preservando fundo antes de recarregar:', preservedFundo);
 
@@ -1570,6 +1578,14 @@ async function saveAllChanges(event) {
                     if (SELECTORS.backgroundColorContainer) SELECTORS.backgroundColorContainer.style.display = 'block';
                     if (SELECTORS.backgroundImageContainer) SELECTORS.backgroundImageContainer.style.display = 'none';
                 }
+                if (preservedFundo.button_content_align) {
+                    const btnAlignRadio = document.querySelector(`input[name="button-align"][value="${preservedFundo.button_content_align}"]`);
+                    if (btnAlignRadio) btnAlignRadio.checked = true;
+                }
+                if (preservedFundo.logo_spacing) {
+                    const lAlignRadio = document.querySelector(`input[name="logo-align"][value="${preservedFundo.logo_spacing}"]`);
+                    if (lAlignRadio) lAlignRadio.checked = true;
+                }
                 if (d) {
                     d.card_background_color = preservedFundo.card_background_color;
                     d.card_opacity = preservedFundo.card_opacity;
@@ -1577,6 +1593,8 @@ async function saveAllChanges(event) {
                     d.background_color = preservedFundo.background_color;
                     d.background_image_url = preservedFundo.background_image_url;
                     d.background_image_opacity = preservedFundo.background_image_opacity;
+                    d.button_content_align = preservedFundo.button_content_align;
+                    d.logo_spacing = preservedFundo.logo_spacing;
                 }
                 if (typeof updateLivePreviewFromForm === 'function') env.updateLivePreviewFromForm();
             }

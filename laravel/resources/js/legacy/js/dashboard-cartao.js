@@ -665,50 +665,43 @@ function updateLivePreviewFromForm() {
         Object.assign(btn.style, buttonStyles);
     });
 
-    const bgType = document.querySelector('input[name="bg-type"]:checked').value;
-    if (bgType === 'image') {
-        const imageUrl = SELECTORS.backgroundImageUrlInput.value;
-        SELECTORS.previewScreen.style.backgroundImage = `url('${imageUrl}')`;
-        SELECTORS.previewScreen.style.backgroundSize = 'cover';
-        SELECTORS.previewScreen.style.backgroundPosition = 'center';
-        SELECTORS.previewScreen.style.backgroundColor = '#000';
-    } else {
-        SELECTORS.previewScreen.style.backgroundImage = 'none';
-        SELECTORS.previewScreen.style.backgroundColor = SELECTORS.backgroundColorPicker.value;
-    }
+    const bgType = (document.querySelector('input[name="bg-type"]:checked') || {}).value || 'color';
+
+    // O previewScreen mantém a cor de fundo escolhida
+    SELECTORS.previewScreen.style.backgroundImage = 'none';
+    SELECTORS.previewScreen.style.backgroundColor = (SELECTORS.backgroundColorPicker && SELECTORS.backgroundColorPicker.value) || '#0D0D0F';
 
     let bgLayer = document.getElementById('preview-background-layer');
     if (!bgLayer) {
         bgLayer = document.createElement('div');
         bgLayer.id = 'preview-background-layer';
         bgLayer.style.position = 'absolute';
-        bgLayer.style.top = 0;
-        bgLayer.style.left = 0;
+        bgLayer.style.top = '0';
+        bgLayer.style.left = '0';
         bgLayer.style.width = '100%';
         bgLayer.style.height = '100%';
-        bgLayer.style.zIndex = '-1';
+        bgLayer.style.zIndex = '0';
         bgLayer.style.borderRadius = 'inherit';
         bgLayer.style.backgroundSize = 'cover';
         bgLayer.style.backgroundPosition = 'center';
-        bgLayer.style.transition = 'opacity 0.3s ease';
+        bgLayer.style.pointerEvents = 'none';
+        bgLayer.style.transition = 'opacity 0.2s ease';
         SELECTORS.previewScreen.style.position = 'relative';
         SELECTORS.previewScreen.prepend(bgLayer);
     }
 
     if (bgType === 'image') {
-        const imageUrl = SELECTORS.backgroundImageUrlInput.value;
-        const imageOpacity = SELECTORS.backgroundImageOpacityPicker.value;
+        const imageUrl = SELECTORS.backgroundImageUrlInput ? SELECTORS.backgroundImageUrlInput.value : '';
+        const imageOpacity = SELECTORS.backgroundImageOpacityPicker ? parseFloat(SELECTORS.backgroundImageOpacityPicker.value) : 1;
 
-        SELECTORS.previewScreen.style.backgroundColor = SELECTORS.backgroundColorPicker.value;
-
-        bgLayer.style.backgroundImage = `url('${imageUrl}')`;
+        bgLayer.style.backgroundImage = imageUrl ? `url('${imageUrl}')` : 'none';
         bgLayer.style.opacity = imageOpacity;
-        SELECTORS.backgroundImageOpacityValue.textContent = `${Math.round(imageOpacity * 100)}%`;
-
+        if (SELECTORS.backgroundImageOpacityValue) {
+            SELECTORS.backgroundImageOpacityValue.textContent = `${Math.round(imageOpacity * 100)}%`;
+        }
     } else {
         bgLayer.style.backgroundImage = 'none';
         bgLayer.style.opacity = '1';
-        SELECTORS.previewScreen.style.backgroundColor = SELECTORS.backgroundColorPicker.value;
     }
 
     const cardColor = SELECTORS.cardBackgroundColorPicker.value;
@@ -1103,13 +1096,13 @@ function updateLivePreviewFromForm() {
                 // Placeholder se não houver URL válida
                 previewEl = document.createElement('div');
                 previewEl.className = 'preview-embed-placeholder';
-                const iconClass = itemEl.querySelector('.item-icon-picker')?.className.replace(' item-icon-picker', '').trim();
+                const iconClass = (itemEl.querySelector('.item-icon-picker')?.className || '').replace(' item-icon-picker', '').trim() || 'fab fa-youtube';
                 previewEl.innerHTML = `<i class="${iconClass}"></i><span>${title || 'YouTube Incorporado'}</span>`;
             }
         } else if (itemType === 'instagram_embed' || itemType === 'tiktok_embed' || itemType === 'spotify_embed' || itemType === 'linkedin_embed' || itemType === 'pinterest_embed' || itemType === 'pdf_embed') {
             previewEl = document.createElement('div');
             previewEl.className = 'preview-embed-placeholder';
-            const iconClass = itemEl.querySelector('.item-icon-picker')?.className.replace(' item-icon-picker', '').trim();
+            const iconClass = (itemEl.querySelector('.item-icon-picker')?.className || '').replace(' item-icon-picker', '').trim() || 'fas fa-link';
             previewEl.innerHTML = `<i class="${iconClass}"></i><span>${title || 'Conteúdo Incorporado'}</span>`;
         }
 

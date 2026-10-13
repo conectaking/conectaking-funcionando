@@ -174,7 +174,9 @@ function renderEditor(profileData) {
         if (SELECTORS.buttonTextColorPicker) SELECTORS.buttonTextColorPicker.value = details.button_text_color || '#FFFFFF';
         if (SELECTORS.backgroundImagePreview) SELECTORS.backgroundImagePreview.src = details.background_image_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIiBmaWxsPSIjMzMzMzMzIi8+Cjx0ZXh0IHg9Ijc1IiB5PSI3NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OTk5OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIj5JbWFnZW08L3RleHQ+Cjwvc3ZnPgo=';
 
-        if (SELECTORS.buttonOpacityPicker) SELECTORS.buttonOpacityPicker.value = details.button_opacity !== undefined ? details.button_opacity : 1;
+        const btnOp = details.button_opacity !== undefined ? parseFloat(details.button_opacity) : 1;
+        if (SELECTORS.buttonOpacityPicker) SELECTORS.buttonOpacityPicker.value = btnOp;
+        if (SELECTORS.buttonOpacityValue) SELECTORS.buttonOpacityValue.textContent = `${Math.round(btnOp * 100)}%`;
 
         const borderRadiusPx = details.button_border_radius || '12px';
         const parts = (borderRadiusPx + '').split(' ');
@@ -216,9 +218,16 @@ function renderEditor(profileData) {
             }
         }
 
-        const bgType = details.background_type || 'color';
+        let bgType = details.background_type || 'color';
+        if (bgType === 'solid') bgType = 'color';
+        if (!details.background_type && details.background_image_url) bgType = 'image';
         const bgTypeInput = document.querySelector(`input[name="bg-type"][value="${bgType}"]`);
-        if (bgTypeInput) bgTypeInput.checked = true;
+        if (bgTypeInput) {
+            bgTypeInput.checked = true;
+        } else {
+            const fallbackInput = document.querySelector('input[name="bg-type"][value="color"]');
+            if (fallbackInput) fallbackInput.checked = true;
+        }
 
         const showVcard = details.show_vcard_button === false ? 'false' : 'true';
         const vcardToggle = document.querySelector(`input[name="vcard-toggle"][value="${showVcard}"]`);
@@ -264,8 +273,14 @@ function renderEditor(profileData) {
         if (SELECTORS.backgroundColorPicker) SELECTORS.backgroundColorPicker.value = details.background_color || '#0D0D0F';
         if (SELECTORS.backgroundImageUrlInput) SELECTORS.backgroundImageUrlInput.value = details.background_image_url || '';
 
+        const bgImgOp = details.background_image_opacity !== undefined && details.background_image_opacity !== null ? parseFloat(details.background_image_opacity) : 1.0;
+        if (SELECTORS.backgroundImageOpacityPicker) SELECTORS.backgroundImageOpacityPicker.value = bgImgOp;
+        if (SELECTORS.backgroundImageOpacityValue) SELECTORS.backgroundImageOpacityValue.textContent = `${Math.round(bgImgOp * 100)}%`;
+
         if (SELECTORS.cardBackgroundColorPicker) SELECTORS.cardBackgroundColorPicker.value = details.card_background_color || '#141417';
-        if (SELECTORS.cardOpacityPicker) SELECTORS.cardOpacityPicker.value = details.card_opacity !== undefined ? details.card_opacity : 1.0;
+        const cardOp = details.card_opacity !== undefined && details.card_opacity !== null ? parseFloat(details.card_opacity) : 1.0;
+        if (SELECTORS.cardOpacityPicker) SELECTORS.cardOpacityPicker.value = cardOp;
+        if (SELECTORS.cardOpacityValue) SELECTORS.cardOpacityValue.textContent = `${Math.round(cardOp * 100)}%`;
 
         if (bgType === 'image') {
             if (SELECTORS.backgroundColorContainer) SELECTORS.backgroundColorContainer.style.display = 'none';
