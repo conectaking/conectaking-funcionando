@@ -283,11 +283,23 @@ function renderEditor(profileData) {
         if (SELECTORS.cardOpacityValue) SELECTORS.cardOpacityValue.textContent = `${Math.round(cardOp * 100)}%`;
 
         if (bgType === 'image') {
-            if (SELECTORS.backgroundColorContainer) SELECTORS.backgroundColorContainer.style.display = 'none';
-            if (SELECTORS.backgroundImageContainer) SELECTORS.backgroundImageContainer.style.display = 'block';
+            if (SELECTORS.backgroundColorContainer) {
+                SELECTORS.backgroundColorContainer.style.display = 'none';
+                SELECTORS.backgroundColorContainer.classList.add('ck-hidden');
+            }
+            if (SELECTORS.backgroundImageContainer) {
+                SELECTORS.backgroundImageContainer.style.display = 'block';
+                SELECTORS.backgroundImageContainer.classList.remove('ck-hidden');
+            }
         } else {
-            if (SELECTORS.backgroundColorContainer) SELECTORS.backgroundColorContainer.style.display = 'block';
-            if (SELECTORS.backgroundImageContainer) SELECTORS.backgroundImageContainer.style.display = 'none';
+            if (SELECTORS.backgroundColorContainer) {
+                SELECTORS.backgroundColorContainer.style.display = 'block';
+                SELECTORS.backgroundColorContainer.classList.remove('ck-hidden');
+            }
+            if (SELECTORS.backgroundImageContainer) {
+                SELECTORS.backgroundImageContainer.style.display = 'none';
+                SELECTORS.backgroundImageContainer.classList.add('ck-hidden');
+            }
         }
 
         const alignValue = details.button_content_align || 'center';

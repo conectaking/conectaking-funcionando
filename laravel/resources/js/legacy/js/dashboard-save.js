@@ -1572,11 +1572,23 @@ async function saveAllChanges(event) {
                 const bgRadio = document.querySelector(`input[name="bg-type"][value="${preservedFundo.background_type}"]`);
                 if (bgRadio) bgRadio.checked = true;
                 if (preservedFundo.background_type === 'image') {
-                    if (SELECTORS.backgroundColorContainer) SELECTORS.backgroundColorContainer.style.display = 'none';
-                    if (SELECTORS.backgroundImageContainer) SELECTORS.backgroundImageContainer.style.display = 'block';
+                    if (SELECTORS.backgroundColorContainer) {
+                        SELECTORS.backgroundColorContainer.style.display = 'none';
+                        SELECTORS.backgroundColorContainer.classList.add('ck-hidden');
+                    }
+                    if (SELECTORS.backgroundImageContainer) {
+                        SELECTORS.backgroundImageContainer.style.display = 'block';
+                        SELECTORS.backgroundImageContainer.classList.remove('ck-hidden');
+                    }
                 } else {
-                    if (SELECTORS.backgroundColorContainer) SELECTORS.backgroundColorContainer.style.display = 'block';
-                    if (SELECTORS.backgroundImageContainer) SELECTORS.backgroundImageContainer.style.display = 'none';
+                    if (SELECTORS.backgroundColorContainer) {
+                        SELECTORS.backgroundColorContainer.style.display = 'block';
+                        SELECTORS.backgroundColorContainer.classList.remove('ck-hidden');
+                    }
+                    if (SELECTORS.backgroundImageContainer) {
+                        SELECTORS.backgroundImageContainer.style.display = 'none';
+                        SELECTORS.backgroundImageContainer.classList.add('ck-hidden');
+                    }
                 }
                 if (preservedFundo.button_content_align) {
                     const btnAlignRadio = document.querySelector(`input[name="button-align"][value="${preservedFundo.button_content_align}"]`);

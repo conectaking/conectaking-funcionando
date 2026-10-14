@@ -443,11 +443,23 @@ function _setupEventListenersBody() {
         radio.addEventListener('change', (e) => {
             const bgType = e.target.value;
             if (bgType === 'image') {
-                SELECTORS.backgroundColorContainer.style.display = 'none';
-                SELECTORS.backgroundImageContainer.style.display = 'block';
+                if (SELECTORS.backgroundColorContainer) {
+                    SELECTORS.backgroundColorContainer.style.display = 'none';
+                    SELECTORS.backgroundColorContainer.classList.add('ck-hidden');
+                }
+                if (SELECTORS.backgroundImageContainer) {
+                    SELECTORS.backgroundImageContainer.style.display = 'block';
+                    SELECTORS.backgroundImageContainer.classList.remove('ck-hidden');
+                }
             } else {
-                SELECTORS.backgroundColorContainer.style.display = 'block';
-                SELECTORS.backgroundImageContainer.style.display = 'none';
+                if (SELECTORS.backgroundColorContainer) {
+                    SELECTORS.backgroundColorContainer.style.display = 'block';
+                    SELECTORS.backgroundColorContainer.classList.remove('ck-hidden');
+                }
+                if (SELECTORS.backgroundImageContainer) {
+                    SELECTORS.backgroundImageContainer.style.display = 'none';
+                    SELECTORS.backgroundImageContainer.classList.add('ck-hidden');
+                }
             }
             env.updateLivePreviewFromForm();
         });
@@ -545,6 +557,7 @@ function _setupEventListenersBody() {
     }
     if (SELECTORS.backgroundImageOpacityPicker) {
         SELECTORS.backgroundImageOpacityPicker.addEventListener('input', function () { env.updateLivePreviewFromForm(); });
+        SELECTORS.backgroundImageOpacityPicker.addEventListener('change', function () { env.updateLivePreviewFromForm(); });
     }
     if (SELECTORS.itemsContainer) {
     SELECTORS.itemsContainer.addEventListener('click', e => {
@@ -2928,8 +2941,14 @@ function _setupEventListenersBody() {
             if (typeof window.loadReportsData === 'function') window.loadReportsData();
         });
     }
-    if (SELECTORS.cardBackgroundColorPicker) SELECTORS.cardBackgroundColorPicker.addEventListener('input', function () { env.updateLivePreviewFromForm(); });
-    if (SELECTORS.cardOpacityPicker) SELECTORS.cardOpacityPicker.addEventListener('input', function () { env.updateLivePreviewFromForm(); });
+    if (SELECTORS.cardBackgroundColorPicker) {
+        SELECTORS.cardBackgroundColorPicker.addEventListener('input', function () { env.updateLivePreviewFromForm(); });
+        SELECTORS.cardBackgroundColorPicker.addEventListener('change', function () { env.updateLivePreviewFromForm(); });
+    }
+    if (SELECTORS.cardOpacityPicker) {
+        SELECTORS.cardOpacityPicker.addEventListener('input', function () { env.updateLivePreviewFromForm(); });
+        SELECTORS.cardOpacityPicker.addEventListener('change', function () { env.updateLivePreviewFromForm(); });
+    }
     // Presets de curvatura da borda
     const radiusPresetRadios = document.querySelectorAll('input[name="radius-preset"]');
     if (radiusPresetRadios && radiusPresetRadios.length) {

@@ -3557,8 +3557,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (bgImageRadio) {
                 bgImageRadio.checked = true;
             }
-            if (SELECTORS.backgroundColorContainer) SELECTORS.backgroundColorContainer.style.display = 'none';
-            if (SELECTORS.backgroundImageContainer) SELECTORS.backgroundImageContainer.style.display = 'block';
+            if (SELECTORS.backgroundColorContainer) {
+                SELECTORS.backgroundColorContainer.style.display = 'none';
+                SELECTORS.backgroundColorContainer.classList.add('ck-hidden');
+            }
+            if (SELECTORS.backgroundImageContainer) {
+                SELECTORS.backgroundImageContainer.style.display = 'block';
+                SELECTORS.backgroundImageContainer.classList.remove('ck-hidden');
+            }
 
             updateLivePreviewFromForm();
 
