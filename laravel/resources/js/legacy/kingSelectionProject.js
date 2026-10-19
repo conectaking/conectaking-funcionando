@@ -1762,12 +1762,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pick = (id) => (id > 0 && sorted.some((p) => (parseInt(p.id, 10) || 0) === id) ? id : 0);
     if (pref > 0) return pick(pref);
     if (strict) return 0;
-    return pick(getCurrentCoverPhotoId()) || 0;
+    return pick(getCurrentCoverPhotoId()) || (sorted.length ? (parseInt(sorted[0].id, 10) || 0) : 0);
   }
 
   function refreshLinkCoverPreviewImage(preferredId, opts) {
     if (!linkCoverPreview) return;
     if (linkCoverPendingExternalFile && linkCoverPendingExternalPreviewUrl) {
+      linkCoverPreview.style.display = 'block';
       linkCoverPreview.setAttribute('data-photo-id', '0');
       linkCoverPreview.setAttribute('data-external-pending', '1');
       linkCoverPreview.src = linkCoverPendingExternalPreviewUrl;
@@ -1775,6 +1776,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (linkCoverPreview) linkCoverPreview.removeAttribute('data-external-pending');
     if (hasExternalLinkCover()) {
+      linkCoverPreview.style.display = 'block';
       linkCoverPreview.setAttribute('data-photo-id', '0');
       setImgPreview(
         linkCoverPreview,
@@ -1784,10 +1786,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     const pid = resolveLinkCoverPreviewPhotoId(preferredId, opts);
     if (!pid) {
+      linkCoverPreview.style.display = 'none';
       linkCoverPreview.removeAttribute('src');
       linkCoverPreview.removeAttribute('data-photo-id');
       return;
     }
+    linkCoverPreview.style.display = 'block';
     linkCoverPreview.setAttribute('data-photo-id', String(pid));
     setImgPreview(
       linkCoverPreview,
@@ -1971,11 +1975,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const savedCoverId = getCurrentCoverPhotoId();
     const draftId = parseInt(linkCoverDraftPhotoId || 0, 10) || 0;
     const pinId = parseInt(opts?.pinPhotoId || linkCoverRefreshPinId || 0, 10) || 0;
-    const inList = (id) => id > 0 && sorted.some((p) => (parseInt(p.id, 10) || 0) === id);
+    const defaultFirstId = sorted.length ? (parseInt(sorted[0].id, 10) || 0) : 0;
     const preferredId =
       (inList(draftId) ? draftId : 0)
       || (inList(pinId) ? pinId : 0)
-      || (inList(savedCoverId) ? savedCoverId : 0);
+      || (inList(savedCoverId) ? savedCoverId : 0)
+      || defaultFirstId;
 
     linkCoverPhotoSel.innerHTML = sorted.map((p) => {
       const pid = parseInt(p.id, 10) || 0;
@@ -1988,14 +1993,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     else linkCoverPhotoSel.value = '';
     if (linkCoverOpenGalleryBtn) linkCoverOpenGalleryBtn.disabled = false;
 
-    refreshLinkCoverPreviewImage(preferredId, { strict: true });
+    refreshLinkCoverPreviewImage(preferredId, { strict: false });
     if (linkCoverCurrentSource) {
       if (hasExternalLinkCover()) {
-        linkCoverCurrentSource.textContent = 'Origem atual: imagem externa';
+        linkCoverCurrentSource.textContent = 'Origem atual: imagem externa personalizada';
       } else if (savedCoverId > 0) {
-        linkCoverCurrentSource.textContent = 'Origem atual: foto da galeria atual';
-      } else if (preferredId > 0) {
-        linkCoverCurrentSource.textContent = 'Pré-visualização — clique em «Salvar capa do link» para confirmar';
+        linkCoverCurrentSource.textContent = 'Capa definida: foto da galeria atual';
+      } else if (draftId > 0) {
+        linkCoverCurrentSource.textContent = 'Pré-visualização selecionada — clique em «Salvar capa do link» para confirmar';
+      } else if (defaultFirstId > 0) {
+        linkCoverCurrentSource.textContent = 'Capa padrão: 1ª foto da galeria (clique em «Escolher foto» para alterar)';
       } else {
         linkCoverCurrentSource.textContent = 'Nenhuma capa salva — escolha uma foto e salve';
       }
