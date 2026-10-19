@@ -148,8 +148,8 @@ class KingSelectionMediaService
         if ($out === null) {
             return ['status' => 502, 'message' => 'Falha ao processar imagem'];
         }
-        if ($wmKey !== '') {
-            $wm = $this->applyDiagonalWatermark($out, (float) ($watermark['opacity'] ?? 0.22));
+        if ($wmKey !== '' && $watermark) {
+            $wm = $this->applyWatermark($out, $watermark);
             if ($wm !== null) {
                 $out = $wm;
             }
@@ -237,7 +237,7 @@ class KingSelectionMediaService
 
     private function previewCachePath(string $path, int $maxSide, string $wmKey): ?string
     {
-        $hash = hash('sha256', $path.'|'.$maxSide.$wmKey.'|orient2');
+        $hash = hash('sha256', $path.'|'.$maxSide.$wmKey.'|orient3');
         $sub = substr($hash, 0, 2);
         $uploads = rtrim((string) (env('KS_UPLOADS_PATH') ?: ''), '/');
         if ($uploads !== '' && is_dir($uploads)) {
@@ -272,7 +272,165 @@ class KingSelectionMediaService
     }
 
     /**
-     * Marca d'água diagonal simples (paridade mínima com modo "x" do Node).
+     * Aplica marca d'água na imagem JPEG (marca oficial Conecta King / Adriano King ou personalizada).
+     */
+    private function applyWatermark(string $jpegBinary, array $watermark): ?string
+    {
+        $mode = strtolower(trim((string) ($watermark['mode'] ?? 'tile_dense')));
+        if ($mode === 'none' || $mode === 'off' || empty($watermark['enabled'])) {
+            return $jpegBinary;
+        }
+
+        $img = @imagecreatefromstring($jpegBinary);
+        if ($img === false) {
+            return null;
+        }
+
+        $w = imagesx($img);
+        $h = imagesy($img);
+        $isLandscape = $w >= $h;
+        $opacity = (float) ($watermark['opacity'] ?? 0.22);
+        $opacity = max(0.01, min(1.0, $opacity));
+        $pct = (int) round($opacity * 100);
+
+        // Obter buffer da marca d'água (personalizada ou oficial Conecta King)
+        $wmBuf = null;
+        $isCustom = false;
+
+        if ($mode === 'logo') {
+            $customPath = $isLandscape
+                ? (trim((string) ($watermark['path_landscape'] ?? '')) ?: trim((string) ($watermark['path'] ?? '')))
+                : (trim((string) ($watermark['path_portrait'] ?? '')) ?: trim((string) ($watermark['path'] ?? '')));
+            if ($customPath !== '') {
+                $wmBuf = $this->bufferFromPath($customPath);
+                if ($wmBuf !== null) {
+                    $isCustom = true;
+                }
+            }
+        }
+
+        // Se não for personalizada ou falhou, usa a oficial Conecta King (Adriano King)
+        if ($wmBuf === null) {
+            $wmBuf = $this->defaultWatermarkAssetBuffer($isLandscape);
+        }
+
+        if ($wmBuf === null) {
+            imagedestroy($img);
+            return $this->applyDiagonalWatermark($jpegBinary, $opacity);
+        }
+
+        $wmImg = @imagecreatefromstring($wmBuf);
+        if ($wmImg === false) {
+            imagedestroy($img);
+            return $this->applyDiagonalWatermark($jpegBinary, $opacity);
+        }
+
+        $wmW = imagesx($wmImg);
+        $wmH = imagesy($wmImg);
+
+        // Marca d'água oficial Conecta King (Adriano King):
+        // É um canvas predefinido (horizontal 7008x4672 / vertical 4672x7008) com o padrão de coroas.
+        // Cobrimos a imagem inteira preservando proporção ou ajustando ao tamanho da foto.
+        if (! $isCustom || $mode === 'tile_dense') {
+            $wmCanvas = imagecreatetruecolor($w, $h);
+            imagealphablending($wmCanvas, false);
+            imagesavealpha($wmCanvas, true);
+            $trans = imagecolorallocatealpha($wmCanvas, 0, 0, 0, 127);
+            imagefilledrectangle($wmCanvas, 0, 0, $w, $h, $trans);
+            imagealphablending($wmCanvas, true);
+
+            imagecopyresampled($wmCanvas, $wmImg, 0, 0, 0, 0, $w, $h, $wmW, $wmH);
+            imagedestroy($wmImg);
+
+            $this->imagecopymergeAlpha($img, $wmCanvas, 0, 0, 0, 0, $w, $h, $pct);
+            imagedestroy($wmCanvas);
+        } else {
+            // Marca personalizada (logo)
+            $scale = (float) ($watermark['scale'] ?? 1.0);
+            $scale = max(0.1, min(5.0, $scale));
+
+            $targetW = max(32, min($w, (int) round($w * 0.45 * $scale)));
+            $targetH = max(32, (int) round($wmH * ($targetW / max(1, $wmW))));
+            if ($targetH > $h) {
+                $targetH = $h;
+                $targetW = max(32, (int) round($wmW * ($targetH / max(1, $wmH))));
+            }
+
+            $wmCanvas = imagecreatetruecolor($targetW, $targetH);
+            imagealphablending($wmCanvas, false);
+            imagesavealpha($wmCanvas, true);
+            $trans = imagecolorallocatealpha($wmCanvas, 0, 0, 0, 127);
+            imagefilledrectangle($wmCanvas, 0, 0, $targetW, $targetH, $trans);
+            imagealphablending($wmCanvas, true);
+            imagecopyresampled($wmCanvas, $wmImg, 0, 0, 0, 0, $targetW, $targetH, $wmW, $wmH);
+            imagedestroy($wmImg);
+
+            $offXPct = (float) ($watermark['offset_x'] ?? 0);
+            $offYPct = (float) ($watermark['offset_y'] ?? 0);
+            $posX = (int) round(($w - $targetW) / 2 + ($w * $offXPct / 100));
+            $posY = (int) round(($h - $targetH) / 2 + ($h * $offYPct / 100));
+
+            $this->imagecopymergeAlpha($img, $wmCanvas, $posX, $posY, 0, 0, $targetW, $targetH, $pct);
+            imagedestroy($wmCanvas);
+        }
+
+        ob_start();
+        imagejpeg($img, null, 88);
+        $out = (string) ob_get_clean();
+        imagedestroy($img);
+
+        return $out !== '' ? $out : null;
+    }
+
+    /**
+     * Aplica PNG com canal alfa sobre o destino com opacidade controlada (0-100%).
+     */
+    private function imagecopymergeAlpha($dst, $src, int $dstX, int $dstY, int $srcX, int $srcY, int $w, int $h, int $pct): void
+    {
+        $pct = max(0, min(100, $pct));
+        if ($pct <= 0) {
+            return;
+        }
+
+        $dstW = imagesx($dst);
+        $dstH = imagesy($dst);
+
+        if ($dstX < 0) {
+            $w += $dstX;
+            $srcX -= $dstX;
+            $dstX = 0;
+        }
+        if ($dstY < 0) {
+            $h += $dstY;
+            $srcY -= $dstY;
+            $dstY = 0;
+        }
+        if ($dstX + $w > $dstW) {
+            $w = $dstW - $dstX;
+        }
+        if ($dstY + $h > $dstH) {
+            $h = $dstH - $dstY;
+        }
+        if ($w <= 0 || $h <= 0) {
+            return;
+        }
+
+        if ($pct >= 100) {
+            imagealphablending($dst, true);
+            imagecopy($dst, $src, $dstX, $dstY, $srcX, $srcY, $w, $h);
+            return;
+        }
+
+        $cut = imagecreatetruecolor($w, $h);
+        imagecopy($cut, $dst, 0, 0, $dstX, $dstY, $w, $h);
+        imagealphablending($cut, true);
+        imagecopy($cut, $src, 0, 0, $srcX, $srcY, $w, $h);
+        imagecopymerge($dst, $cut, $dstX, $dstY, 0, 0, $w, $h, $pct);
+        imagedestroy($cut);
+    }
+
+    /**
+     * Marca d'água diagonal simples (fallback se arquivo de imagem não carregar).
      */
     private function applyDiagonalWatermark(string $jpegBinary, float $opacity): ?string
     {
@@ -400,6 +558,25 @@ class KingSelectionMediaService
         $out = $this->resizeJpeg($buf, $max);
         if ($out === null) {
             return ['status' => 502, 'message' => 'Falha ao processar imagem'];
+        }
+
+        if (! $thumb && SchemaMeta::hasColumn('king_galleries', 'watermark_mode')) {
+            $wmRow = DB::selectOne(
+                'SELECT watermark_mode, watermark_opacity FROM king_galleries WHERE id = ? LIMIT 1',
+                [(int) $g->id]
+            );
+            $mode = strtolower(trim((string) ($wmRow->watermark_mode ?? 'tile_dense')));
+            if ($mode !== '' && $mode !== 'none' && $mode !== 'off') {
+                $wm = [
+                    'enabled' => true,
+                    'mode'    => $mode,
+                    'opacity' => min(1.0, max(0.01, (float) ($wmRow->watermark_opacity ?? 0.22))),
+                ];
+                $wmed = $this->applyWatermark($out, $wm);
+                if ($wmed !== null) {
+                    $out = $wmed;
+                }
+            }
         }
 
         return ['status' => 200, 'binary' => $out, 'contentType' => 'image/jpeg'];
@@ -713,10 +890,14 @@ class KingSelectionMediaService
             ? 'marca_dagua_kingselection_horizontal.png'
             : 'marca_dagua_kingselection_vertical.png';
         foreach ([
-            base_path('../public/'.$fileName),
-            base_path('../public/'.$alt),
             public_path($fileName),
             public_path($alt),
+            base_path('public/'.$fileName),
+            base_path('public/'.$alt),
+            base_path('../public/'.$fileName),
+            base_path('../public/'.$alt),
+            '/app/public/'.$fileName,
+            '/app/public/'.$alt,
             '/opt/conectaking/public/'.$fileName,
             '/opt/conectaking/public/'.$alt,
             base_path('../'.$fileName),

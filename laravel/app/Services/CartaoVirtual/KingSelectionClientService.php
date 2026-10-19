@@ -641,8 +641,13 @@ class KingSelectionClientService
     private function watermarkOpts(array $payload, int $galleryId): ?array
     {
         try {
+            $cols = ['watermark_mode', 'watermark_opacity'];
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_path')) $cols[] = 'watermark_path';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_path_portrait')) $cols[] = 'watermark_path_portrait';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_path_landscape')) $cols[] = 'watermark_path_landscape';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_scale')) $cols[] = 'watermark_scale';
             $g = DB::selectOne(
-                'SELECT watermark_mode, watermark_opacity FROM king_galleries WHERE id = ? LIMIT 1',
+                'SELECT '.implode(', ', $cols).' FROM king_galleries WHERE id = ? LIMIT 1',
                 [$galleryId]
             );
         } catch (\Throwable) {
@@ -651,15 +656,22 @@ class KingSelectionClientService
         if (! $g) {
             return null;
         }
-        $mode = strtolower(trim((string) ($g->watermark_mode ?? '')));
+        $mode = strtolower(trim((string) ($g->watermark_mode ?? 'tile_dense')));
         if ($mode === '' || $mode === 'off' || $mode === 'none' || $mode === '0') {
             return null;
+        }
+        if (! in_array($mode, ['tile_dense', 'logo', 'none'], true)) {
+            $mode = 'tile_dense';
         }
 
         return [
             'enabled' => true,
-            'mode' => $mode ?: 'x',
+            'mode' => $mode,
             'opacity' => min(1, max(0.05, (float) ($g->watermark_opacity ?? 0.22))),
+            'path' => $g->watermark_path ?? null,
+            'path_portrait' => $g->watermark_path_portrait ?? null,
+            'path_landscape' => $g->watermark_path_landscape ?? null,
+            'scale' => (float) ($g->watermark_scale ?? 1.0),
         ];
     }
 

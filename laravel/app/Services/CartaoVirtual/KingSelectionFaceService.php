@@ -176,13 +176,45 @@ class KingSelectionFaceService
                 'code' => \App\Support\UploadedFileValidator::isHeicBinary($binary) ? 'heic_unsupported' : 'invalid_image',
             ]];
         }
+        $refKey = "galleries/{$galleryId}/faces/client_{$clientId}_ref.jpg";
+        try {
+            $this->r2->putObject($refKey, $jpeg, 'image/jpeg');
+        } catch (\Throwable $e) {
+            Log::warning('ks.face.clientEnroll.r2save', ['error' => $e->getMessage()]);
+        }
+        try {
+            cache()->put("ks_face_ref_{$galleryId}_{$clientId}", $jpeg, now()->addDays(7));
+        } catch (\Throwable) {}
+
         $externalImageId = 'g'.$galleryId.'_c'.$clientId;
+        $indexResult = null;
         try {
             $indexResult = $this->indexFacesBytes($jpeg, $externalImageId, $cfg);
         } catch (\Throwable $e) {
-            Log::error('ks.face.clientEnroll', ['error' => $e->getMessage()]);
+            Log::error('ks.face.clientEnroll.index', [
+                'galleryId' => $galleryId,
+                'clientId' => $clientId,
+                'error' => $e->getMessage(),
+            ]);
 
-            return ['status' => 502, 'body' => ['message' => 'Falha no Rekognition.']];
+            if ($this->isRekogOnDemand()) {
+                // Em modo sob demanda (compareFaces chunked), se a Coleção Rekognition ainda não estiver criada ou configurada,
+                // verificamos se há rosto válido com DetectFaces para não travar o cliente com erro 502
+                $det = $this->detectFacesSafe($jpeg, $cfg);
+                if ($det !== null && $det !== []) {
+                    $indexResult = ['FaceRecords' => [['Face' => [
+                        'FaceId' => 'ondemand_'.bin2hex(random_bytes(8)),
+                        'ImageId' => null,
+                    ]]]];
+                } else {
+                    return ['status' => 400, 'body' => [
+                        'message' => 'Nenhum rosto detectado na foto. Tire uma selfie com o rosto bem visível e de frente.',
+                        'code' => 'no_face',
+                    ]];
+                }
+            } else {
+                return ['status' => 502, 'body' => ['message' => 'Falha no Rekognition: '.$e->getMessage()]];
+            }
         }
         $faceRecords = $indexResult['FaceRecords'] ?? [];
         if (! is_array($faceRecords) || $faceRecords === []) {
@@ -195,21 +227,18 @@ class KingSelectionFaceService
         if (SchemaMeta::hasTable('rekognition_client_faces')) {
             DB::delete('DELETE FROM rekognition_client_faces WHERE gallery_id = ? AND client_id = ?', [$galleryId, $clientId]);
             foreach ($faceRecords as $rec) {
-                $faceId = $rec['Face']['FaceId'] ?? null;
-                if (! $faceId) {
-                    continue;
-                }
+                $faceId = $rec['Face']['FaceId'] ?? ('ondemand_'.bin2hex(random_bytes(8)));
                 DB::insert(
                     'INSERT INTO rekognition_client_faces (gallery_id, client_id, face_id, image_id, reference_r2_key)
                      VALUES (?, ?, ?, ?, ?)',
-                    [$galleryId, $clientId, $faceId, $rec['Face']['ImageId'] ?? null, 'upload-manual']
+                    [$galleryId, $clientId, $faceId, $rec['Face']['ImageId'] ?? null, $refKey]
                 );
             }
         }
 
         return ['status' => 200, 'body' => [
             'success' => true,
-            'message' => 'Rosto cadastrado com sucesso! Se a galeria usa indexação em massa, o processamento completo pode continuar em segundo plano no servidor.',
+            'message' => 'Rosto cadastrado com sucesso! A procurar as suas fotos...',
             'faceCount' => count($faceRecords),
         ]];
     }
@@ -269,15 +298,41 @@ class KingSelectionFaceService
         if ($jpeg === null) {
             return ['status' => 400, 'body' => ['message' => 'Imagem inválida ou corrompida. Tente outra foto.']];
         }
+        $refKey = "galleries/{$galleryId}/faces/client_{$clientId}_ref.jpg";
+        try {
+            $this->r2->putObject($refKey, $jpeg, 'image/jpeg');
+        } catch (\Throwable $e) {
+            Log::warning('ks.face.anonEnroll.r2save', ['error' => $e->getMessage()]);
+        }
+        try {
+            cache()->put("ks_face_ref_{$galleryId}_{$clientId}", $jpeg, now()->addDays(7));
+        } catch (\Throwable) {}
+
         $externalImageId = 'g'.$galleryId.'_c'.$clientId;
+        $indexResult = null;
         try {
             $indexResult = $this->indexFacesBytes($jpeg, $externalImageId, $cfg);
         } catch (\Throwable $e) {
             Log::error('ks.face.anonEnroll', ['error' => $e->getMessage()]);
 
-            return ['status' => 503, 'body' => [
-                'message' => 'Serviço de reconhecimento facial temporariamente indisponível. Verifique no servidor: AWS Rekognition e coleção.',
-            ]];
+            if ($this->isRekogOnDemand()) {
+                $det = $this->detectFacesSafe($jpeg, $cfg);
+                if ($det !== null && $det !== []) {
+                    $indexResult = ['FaceRecords' => [['Face' => [
+                        'FaceId' => 'ondemand_'.bin2hex(random_bytes(8)),
+                        'ImageId' => null,
+                    ]]]];
+                } else {
+                    return ['status' => 400, 'body' => [
+                        'message' => 'Nenhum rosto detectado na foto. Tire uma selfie com o rosto bem visível e de frente.',
+                        'code' => 'no_face',
+                    ]];
+                }
+            } else {
+                return ['status' => 503, 'body' => [
+                    'message' => 'Serviço de reconhecimento facial temporariamente indisponível: '.$e->getMessage(),
+                ]];
+            }
         }
         $faceRecords = $indexResult['FaceRecords'] ?? [];
         if (! is_array($faceRecords) || $faceRecords === []) {
@@ -303,14 +358,11 @@ class KingSelectionFaceService
         }
         DB::delete('DELETE FROM rekognition_client_faces WHERE gallery_id = ? AND client_id = ?', [$galleryId, $clientId]);
         foreach ($faceRecords as $rec) {
-            $faceId = $rec['Face']['FaceId'] ?? null;
-            if (! $faceId) {
-                continue;
-            }
+            $faceId = $rec['Face']['FaceId'] ?? ('ondemand_'.bin2hex(random_bytes(8)));
             DB::insert(
                 'INSERT INTO rekognition_client_faces (gallery_id, client_id, face_id, image_id, reference_r2_key)
                  VALUES (?, ?, ?, ?, ?)',
-                [$galleryId, $clientId, $faceId, $rec['Face']['ImageId'] ?? null, 'anon']
+                [$galleryId, $clientId, $faceId, $rec['Face']['ImageId'] ?? null, $refKey]
             );
         }
         $token = app(\App\Services\Auth\JwtService::class)->encode([
@@ -1677,10 +1729,17 @@ class KingSelectionFaceService
     }
 
     /**
-     * Bytes da selfie/referência gravada no enroll (R2). `staging/` é legado do S3 do Node.
+     * Bytes da selfie/referência gravada no enroll (R2/cache).
      */
     private function getReferenceImageBytes(int $galleryId, int $clientId): ?string
     {
+        try {
+            $cached = cache()->get("ks_face_ref_{$galleryId}_{$clientId}");
+            if (is_string($cached) && strlen($cached) > 64) {
+                return $cached;
+            }
+        } catch (\Throwable) {}
+
         if (! SchemaMeta::hasTable('rekognition_client_faces')) {
             return null;
         }
@@ -1689,16 +1748,49 @@ class KingSelectionFaceService
             [$galleryId, $clientId]
         );
         $ref = trim((string) ($row->reference_r2_key ?? ''));
-        if ($ref === '' || str_starts_with(strtolower($ref), 'staging/')) {
-            return null;
+        $key = '';
+        if ($ref !== '' && ! str_starts_with(strtolower($ref), 'staging/')) {
+            $k = str_starts_with(strtolower($ref), 'r2:') ? substr($ref, 3) : $ref;
+            $k = ltrim($k, '/');
+            if (str_starts_with($k, 'galleries/')) {
+                $key = $k;
+            }
         }
-        $key = str_starts_with(strtolower($ref), 'r2:') ? substr($ref, 3) : $ref;
-        $key = ltrim($key, '/');
-        if (! str_starts_with($key, 'galleries/')) {
-            return null;
+        if ($key === '') {
+            $key = "galleries/{$galleryId}/faces/client_{$clientId}_ref.jpg";
         }
 
-        return $this->media->bufferFromStoragePath('r2:'.$key);
+        $buf = $this->media->bufferFromStoragePath('r2:'.$key);
+        if ($buf !== null && strlen($buf) > 64) {
+            try {
+                cache()->put("ks_face_ref_{$galleryId}_{$clientId}", $buf, now()->addDays(7));
+            } catch (\Throwable) {}
+
+            return $buf;
+        }
+
+        return null;
+    }
+
+    /**
+     * Obtém imagem otimizada para comparação facial, usando cache local de disco sempre que disponível.
+     */
+    private function fetchPhotoForFaceCompare(string $filePath, int $maxPx = 720): ?string
+    {
+        $path = trim($filePath);
+        if ($path === '') {
+            return null;
+        }
+        try {
+            // Tenta obter miniatura já em cache de disco / R2 (ultra rápido: < 1ms)
+            $preview = $this->media->previewFromStoragePath($path, $maxPx, null);
+            if (($preview['status'] ?? 0) === 200 && ! empty($preview['binary'])) {
+                return $preview['binary'];
+            }
+        } catch (\Throwable) {
+        }
+
+        return $this->fetchPhotoBuffer($path);
     }
 
     /**
@@ -1729,9 +1821,9 @@ class KingSelectionFaceService
         $sourceNorm = $this->normalizeJpegMax($sourceImageBytes, 2048, 84) ?? $sourceImageBytes;
 
         $speedMode = strtolower(trim((string) ($opts['speedMode'] ?? '') ?: (env('REKOG_SPEED_MODE_DEFAULT') ?: 'auto')));
-        $isFast = in_array($speedMode, ['fast', 'turbo', 'rapid'], true);
+        $isFast = in_array($speedMode, ['fast', 'turbo', 'rapid', 'auto', ''], true);
         $compareMaxPx = min(2048, max(400, (int) (env('KINGSELECTION_FACE_COMPARE_MAX_PX') ?: ($isFast ? 720 : 960))));
-        $concurrency = min(24, max(2, (int) (env('KINGSELECTION_FACE_COMPARE_CONCURRENCY') ?: ($isFast ? 10 : 8))));
+        $concurrency = min(24, max(4, (int) (env('KINGSELECTION_FACE_COMPARE_CONCURRENCY') ?: ($isFast ? 16 : 10))));
         $cropMinConfidence = min(100, max(0, (int) (env('KINGSELECTION_FACE_CROP_MIN_CONFIDENCE') ?: 45)));
         $cropMaxFaces = min(12, max(1, (int) (env('KINGSELECTION_FACE_CROP_MAX_FACES') ?: ($isFast ? 4 : 8))));
         $cropFallbackEnabled = trim((string) (env('KINGSELECTION_FACE_CROP_FALLBACK') ?? '1')) !== '0';
@@ -1774,7 +1866,7 @@ class KingSelectionFaceService
         foreach (array_chunk($photoRows, $concurrency) as $slice) {
             $targets = [];
             foreach ($slice as $row) {
-                $buf = $this->fetchPhotoBuffer((string) ($row->file_path ?? ''));
+                $buf = $this->fetchPhotoForFaceCompare((string) ($row->file_path ?? ''), $compareMaxPx);
                 if ($buf === null || $buf === '') {
                     $diag['fetchErrors']++;
 
@@ -1807,13 +1899,15 @@ class KingSelectionFaceService
 
                     continue;
                 }
-                if ($cropFallbackEnabled) {
+                if ($cropFallbackEnabled && ! $isFast) {
                     $misses[(int) $id] = $targets[$id];
                 }
             }
         }
 
-        $runFallback = $cropFallbackEnabled && $misses !== [] && (! $deferCropFallback || $matched === []);
+        // Em modo rápido, Rekognition CompareFaces já avalia todos os rostos da imagem na primeira passada.
+        // O fallback de crop individual só roda se explicitamente configurado em modo não-rápido.
+        $runFallback = $cropFallbackEnabled && ! $isFast && $misses !== [] && (! $deferCropFallback || $matched === []);
         if ($runFallback) {
             $maxCandidates = min(500, max(1, (int) (env('KINGSELECTION_FACE_FAST_FALLBACK_MAX_CANDIDATES') ?: ($isFast ? 120 : count($misses)))));
             if ($isFast && count($misses) > $maxCandidates) {
@@ -2001,13 +2095,15 @@ class KingSelectionFaceService
      */
     private function rekogConfig(): array
     {
-        $key = trim((string) (env('AWS_ACCESS_KEY_ID') ?: ''));
-        $secret = trim((string) (env('AWS_SECRET_ACCESS_KEY') ?: ''));
+        $key = trim((string) (env('AWS_ACCESS_KEY_ID') ?: env('AWS_KEY') ?: ''));
+        $secret = trim((string) (env('AWS_SECRET_ACCESS_KEY') ?: env('AWS_SECRET') ?: ''));
+        $region = trim((string) (env('AWS_REGION') ?: env('AWS_DEFAULT_REGION') ?: 'us-east-1'));
+        $collectionId = trim((string) (env('REKOG_COLLECTION_ID') ?: env('REKOGNITION_COLLECTION_ID') ?: env('AWS_REKOGNITION_COLLECTION_ID') ?: 'kingselection'));
 
         return [
             'enabled' => $key !== '' && $secret !== '',
-            'region' => trim((string) (env('AWS_REGION') ?: 'us-east-1')),
-            'collectionId' => trim((string) (env('REKOG_COLLECTION_ID') ?: 'kingselection')),
+            'region' => $region !== '' ? $region : 'us-east-1',
+            'collectionId' => $collectionId !== '' ? $collectionId : 'kingselection',
             'accessKeyId' => $key,
             'secretAccessKey' => $secret,
         ];
@@ -2104,7 +2200,26 @@ class KingSelectionFaceService
             ->post($req['url']);
 
         if (! $res->successful()) {
-            throw new \RuntimeException('HTTP '.$res->status().': '.substr($res->body(), 0, 200));
+            $body = (string) $res->body();
+            // Se a coleção não existir no Rekognition e a ação precisar de coleção, cria automaticamente e tenta de novo!
+            if (str_contains($body, 'ResourceNotFoundException') && $action !== 'CreateCollection' && ! empty($cfg['collectionId'])) {
+                Log::info('ks.face.rekogCall.autoCreateCollection', ['collectionId' => $cfg['collectionId']]);
+                if ($this->createCollection($cfg['collectionId'], $cfg)) {
+                    $reqRetry = $this->rekogSignedRequest($action, $payload, $cfg);
+                    $resRetry = Http::withHeaders($reqRetry['headers'])
+                        ->withBody($reqRetry['body'], 'application/x-amz-json-1.1')
+                        ->timeout(60)
+                        ->post($reqRetry['url']);
+                    if ($resRetry->successful()) {
+                        $jsonRetry = $resRetry->json();
+                        if (is_array($jsonRetry)) {
+                            return $jsonRetry;
+                        }
+                    }
+                    $body = (string) $resRetry->body();
+                }
+            }
+            throw new \RuntimeException('HTTP '.$res->status().': '.substr($body, 0, 300));
         }
         $json = $res->json();
         if (! is_array($json)) {
@@ -2112,6 +2227,43 @@ class KingSelectionFaceService
         }
 
         return $json;
+    }
+
+    /**
+     * Cria a coleção Rekognition na AWS caso não exista.
+     */
+    public function createCollection(string $collectionId, ?array $cfg = null): bool
+    {
+        $cfg = $cfg ?? $this->rekogConfig();
+        if (! $cfg['enabled'] || trim($collectionId) === '') {
+            return false;
+        }
+        try {
+            $req = $this->rekogSignedRequest('CreateCollection', [
+                'CollectionId' => trim($collectionId),
+            ], $cfg);
+            $res = Http::withHeaders($req['headers'])
+                ->withBody($req['body'], 'application/x-amz-json-1.1')
+                ->timeout(30)
+                ->post($req['url']);
+
+            if ($res->successful()) {
+                Log::info('ks.face.createCollection.ok', ['collectionId' => $collectionId]);
+
+                return true;
+            }
+            $body = (string) $res->body();
+            if (str_contains($body, 'ResourceAlreadyExistsException')) {
+                return true;
+            }
+            Log::warning('ks.face.createCollection.failed', ['collectionId' => $collectionId, 'response' => $body]);
+
+            return false;
+        } catch (\Throwable $e) {
+            Log::warning('ks.face.createCollection.error', ['error' => $e->getMessage()]);
+
+            return false;
+        }
     }
 
     /**

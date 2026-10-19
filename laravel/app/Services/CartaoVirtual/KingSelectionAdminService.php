@@ -2665,7 +2665,12 @@ class KingSelectionAdminService
         $skipWm = strtolower((string) ($query['wm_mode'] ?? '')) === 'none';
         $wm = null;
         if (! $skipWm && SchemaMeta::hasColumn('king_galleries', 'watermark_mode')) {
-            $g = DB::selectOne('SELECT watermark_mode, watermark_opacity FROM king_galleries WHERE id = ? LIMIT 1', [(int) $own->gallery_id]);
+            $cols = ['watermark_mode', 'watermark_opacity'];
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_path')) $cols[] = 'watermark_path';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_path_portrait')) $cols[] = 'watermark_path_portrait';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_path_landscape')) $cols[] = 'watermark_path_landscape';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_scale')) $cols[] = 'watermark_scale';
+            $g = DB::selectOne('SELECT '.implode(', ', $cols).' FROM king_galleries WHERE id = ? LIMIT 1', [(int) $own->gallery_id]);
             $mode = strtolower((string) ($query['wm_mode'] ?? $g->watermark_mode ?? 'none'));
             if ($mode !== '' && $mode !== 'none') {
                 $opacity = isset($query['wm_opacity']) && is_numeric($query['wm_opacity'])
@@ -2675,6 +2680,12 @@ class KingSelectionAdminService
                     'enabled' => true,
                     'mode'    => $mode,
                     'opacity' => min(1.0, max(0.01, $opacity)),
+                    'path'    => $g->watermark_path ?? null,
+                    'path_portrait' => $g->watermark_path_portrait ?? null,
+                    'path_landscape' => $g->watermark_path_landscape ?? null,
+                    'scale'   => isset($query['wm_scale']) ? (float) $query['wm_scale'] : (float) ($g->watermark_scale ?? 1.0),
+                    'offset_x' => (float) ($query['wm_ox_p'] ?? $query['wm_ox_l'] ?? 0),
+                    'offset_y' => (float) ($query['wm_oy_p'] ?? $query['wm_oy_l'] ?? 0),
                 ];
             }
         }
@@ -2702,13 +2713,22 @@ class KingSelectionAdminService
         }
         $wm = null;
         if (SchemaMeta::hasColumn('king_galleries', 'watermark_mode')) {
-            $g = DB::selectOne('SELECT watermark_mode, watermark_opacity FROM king_galleries WHERE id = ? LIMIT 1', [(int) $own->gallery_id]);
+            $cols = ['watermark_mode', 'watermark_opacity'];
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_path')) $cols[] = 'watermark_path';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_path_portrait')) $cols[] = 'watermark_path_portrait';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_path_landscape')) $cols[] = 'watermark_path_landscape';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_scale')) $cols[] = 'watermark_scale';
+            $g = DB::selectOne('SELECT '.implode(', ', $cols).' FROM king_galleries WHERE id = ? LIMIT 1', [(int) $own->gallery_id]);
             $mode = strtolower((string) ($g->watermark_mode ?? 'none'));
             if ($mode !== '' && $mode !== 'none') {
                 $wm = [
                     'enabled' => true,
                     'mode' => $mode,
                     'opacity' => (float) ($g->watermark_opacity ?? 0.22),
+                    'path' => $g->watermark_path ?? null,
+                    'path_portrait' => $g->watermark_path_portrait ?? null,
+                    'path_landscape' => $g->watermark_path_landscape ?? null,
+                    'scale' => (float) ($g->watermark_scale ?? 1.0),
                 ];
             }
         }

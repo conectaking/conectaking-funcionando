@@ -5842,11 +5842,9 @@
         throw new Error(d0.message || 'Erro ao filtrar por rosto');
       }
 
-      // Modo rápido: lotes pequenos e paralelismo moderado.
-      const FACE_BATCH = 18;
-      const FACE_PARALLEL = speedMode === 'fast' ? 2 : 1;
-      const FACE_EARLY_STOP_MIN_MATCHES = 6;
-      const FACE_EARLY_STOP_EMPTY_WAVES = 2;
+      // Modo rápido otimizado: lotes maiores e paralelismo ampliado.
+      const FACE_BATCH = 36;
+      const FACE_PARALLEL = 3;
       let skip = 0;
       const mergedSet = new Set();
       let partialFailure = false;
@@ -5952,14 +5950,6 @@
         }
 
         if (galleryTotal != null && nextSkip >= galleryTotal) break;
-        if (
-          speedMode === 'fast' &&
-          mergedSet.size >= FACE_EARLY_STOP_MIN_MATCHES &&
-          emptyWavesSinceLastHit >= FACE_EARLY_STOP_EMPTY_WAVES
-        ) {
-          // Em modo rápido, encerra cedo quando já há resultados e as últimas ondas não trouxeram novos hits.
-          break;
-        }
         if (!anyHasMore) break;
         skip = nextSkip;
       }
