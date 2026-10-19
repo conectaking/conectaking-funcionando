@@ -165,7 +165,7 @@
             <option value="private">Privado (e-mail e senha do cliente)</option>
             <option value="signup">Visitante pode se cadastrar</option>
             <option value="paid_event_photos">Fotos e vendas (cadastro + pagamento)</option>
-            <option value="public">Publico (sem login)</option>
+            <option value="public">Público (sem login)</option>
           </select>
           </div>
         </div>

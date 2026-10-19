@@ -41,7 +41,7 @@
                 <i class="fas fa-user-plus"></i> <span class="tab-label">Inscritos</span> <span class="tab-count" id="tab-count-registered">(0)</span>
             </button>
             <button class="tab-button" data-tab="confirmation" onclick="switchTab('confirmation')">
-                <i class="fas fa-user-check"></i> <span class="tab-label">Para Confirmao</span> <span class="tab-count" id="tab-count-confirmation">(0)</span>
+                <i class="fas fa-user-check"></i> <span class="tab-label">Para Confirmação</span> <span class="tab-count" id="tab-count-confirmation">(0)</span>
             </button>
             <button class="tab-button" data-tab="confirmed" onclick="switchTab('confirmed')">
                 <i class="fas fa-check-circle"></i> <span class="tab-label">Confirmados</span> <span class="tab-count" id="tab-count-confirmed">(0)</span>
@@ -57,7 +57,7 @@
             <div class="link-section ck-gl-1e6637">
                 <div class="ck-gl-294406">
                     <h3 class="ck-gl-ecce22">
-                        <i class="fas fa-sliders-h"></i> Personalização do Formulrio
+                        <i class="fas fa-sliders-h"></i> Personalização do Formulário
                     </h3>
                     <label class="ck-flex-gap-8">
                         <input class="ck-gl-5ef9a4" type="checkbox" id="use-custom-form" onchange="toggleCustomForm()">
@@ -66,22 +66,22 @@
                 </div>
                 <div class="ck-gl-9474b6" id="custom-form-builder">
                     <p class="ck-gl-39446f">
-                        Personalize o formulrio de inscrio com campos customizados. Se desativado, será usado o formulrio padr</p>
+                        Personalize o formulário de inscrição com campos customizados. Se desativado, será usado o formulário padrão.</p>
                     <button onclick="openCustomFieldsEditor()" class="btn btn-secondary ck-gl-55a442">
                         <i class="fas fa-edit"></i> Editar Campos Customizados
                     </button>
                     <div class="ck-gl-88c597" id="custom-fields-preview">
-                        <i class="fas fa-info-circle"></i> Nenhum campo customizado definido. Clique em "Editar Campos Customizados" para comear.
+                        <i class="fas fa-info-circle"></i> Nenhum campo customizado definido. Clique em "Editar Campos Customizados" para começar.
                     </div>
                 </div>
             </div>
             
             <div class="link-section ck-gl-f0a650">
                 <h3 class="ck-gl-e4c9a0">
-                    <i class="fas fa-link"></i> Link Pblico de Inscrio
+                    <i class="fas fa-link"></i> Link Público de Inscrição
                 </h3>
                 <p class="ck-gl-b5a0a4">
-                    <strong>Compartilhe este link</strong> para que as pessoas possam se inscrever no evento. Quando algum preencher o formulrio atravdeste link, os dados seráo salvos <strong>diretamente nesta lista</strong> e aparecero na aba "Convidados Cadastrados".
+                    <strong>Compartilhe este link</strong> para que as pessoas possam se inscrever no evento. Quando alguém preencher o formulário através deste link, os dados serão salvos <strong>diretamente nesta lista</strong> e aparecerão na aba "Convidados Cadastrados".
                 </p>
                 <div class="link-box ck-gl-bc6560">
                     <input type="text" class="link-input ck-gl-efba8d" id="registration-link" readonly>
@@ -90,7 +90,7 @@
                     </button>
                 </div>
                 <p class="ck-gl-dad417">
-                    <i class="fas fa-info-circle"></i> Envie este link por WhatsApp, email ou qualquer outro meio. As pessoas que preencherem aparecero aqui automaticamente.
+                    <i class="fas fa-info-circle"></i> Envie este link por WhatsApp, email ou qualquer outro meio. As pessoas que preencherem aparecerão aqui automaticamente.
                 </p>
             </div>
             
@@ -118,7 +118,7 @@
                     <div>Telefone</div>
                     <div>Status</div>
                     <div>Inscrito em</div>
-                    <div>Aes</div>
+                    <div>Ações</div>
                 </div>
                 <div id="registered-guests-list">
                     <!-- Lista será preenchida via JavaScript -->
@@ -126,12 +126,12 @@
             </div>
         </div>
         
-        <!-- Aba: Convidados para Confirmao -->
+        <!-- Aba: Convidados para Confirmação -->
         <div id="tab-confirmation" class="tab-content">
             <div class="link-section">
-                <h3><i class="fas fa-link"></i> Link Pblico de Confirmao</h3>
+                <h3><i class="fas fa-link"></i> Link Público de Confirmação</h3>
                 <p class="ck-gl-8de580">
-                    Compartilhe este link para que as pessoas possam confirmar a presena dos convidados. Quem tiver o link pode acessar esta aba e confirmar convidados.
+                    Compartilhe este link para que as pessoas possam confirmar a presença dos convidados. Quem tiver o link pode acessar esta aba e confirmar convidados.
                 </p>
                 <div class="link-box">
                     <input type="text" class="link-input" id="confirmation-link" readonly>
@@ -142,14 +142,14 @@
             </div>
             
             <div class="stats-cards" id="confirmation-stats">
-                <!-- Stats seráo preenchidos via JavaScript -->
+                <!-- Stats serão preenchidos via JavaScript -->
             </div>
             
             <!-- Busca -->
             <div class="ck-gl-7cfd4d">
                 <div class="ck-gl-5346d9">
                     <i class="fas fa-search ck-gl-fd556e"></i>
-                    <input class="ck-gl-fa30b4" type="text" id="search-confirmation" placeholder="Buscar convidados para confirma.." 
+                    <input class="ck-gl-fa30b4" type="text" id="search-confirmation" placeholder="Buscar convidados para confirmação..." 
                            oninput="filterGuests('confirmation', this.value)"
                           >
                 </div>
@@ -165,7 +165,7 @@
                     <div>Telefone</div>
                     <div>Status</div>
                     <div>Inscrito em</div>
-                    <div>Aes</div>
+                    <div>Ações</div>
                 </div>
                 <div id="confirmation-guests-list">
                     <!-- Lista será preenchida via JavaScript -->
@@ -176,9 +176,9 @@
         <!-- Aba: Convidados Confirmados -->
         <div id="tab-confirmed" class="tab-content">
             <div class="link-section ck-gl-4777d3">
-                <h3 class="ck-gl-ee6781"><i class="fas fa-eye"></i> Link Pblico de Visualizao Completa (Portaria)</h3>
+                <h3 class="ck-gl-ee6781"><i class="fas fa-eye"></i> Link Público de Visualização Completa (Portaria)</h3>
                 <p class="ck-gl-b5a0a4">
-                    <strong>Compartilhe este link com a pessoa da portaria</strong> para que ela possa ver todas as abas (Cadastrados, para Confirmao e Confirmados) em uma nica página pblica.
+                    <strong>Compartilhe este link com a pessoa da portaria</strong> para que ela possa ver todas as abas (Cadastrados, para Confirmação e Confirmados) em uma única página pública.
                 </p>
                 <div class="link-box">
                     <input type="text" class="link-input ck-gl-efba8d" id="public-view-link" readonly>
@@ -187,12 +187,12 @@
                     </button>
                 </div>
                 <p class="ck-gl-dad417">
-                    <i class="fas fa-info-circle"></i> A pessoa da portaria poder ver todas as informaes dos convidados em uma página nica e completa.
+                    <i class="fas fa-info-circle"></i> A pessoa da portaria poderá ver todas as informações dos convidados em uma página única e completa.
                 </p>
             </div>
             
             <div class="link-section">
-                <h3><i class="fas fa-link"></i> Link Pblico para Ver Confirmados</h3>
+                <h3><i class="fas fa-link"></i> Link Público para Ver Confirmados</h3>
                 <p class="ck-gl-8de580">
                     Compartilhe este link para que as pessoas possam ver a lista de convidados confirmados. Quem tiver o link pode acessar esta aba.
                 </p>
@@ -228,7 +228,7 @@
                     <div>Telefone</div>
                     <div>Status</div>
                     <div>Confirmado em</div>
-                    <div>Aes</div>
+                    <div>Ações</div>
                 </div>
                 <div id="confirmed-guests-list">
                     <!-- Lista será preenchida via JavaScript -->
@@ -250,13 +250,13 @@
                         Links de Cadastro Personalizados
                     </h4>
                     <p class="ck-gl-6eeacc">
-                        Crie e gerencie links personalizados para cadastro. Crie links personalizados para as pessoas se inscreverem. Cada link pode ter sua prpria descrição, validade e limite de usos.
+                        Crie e gerencie links personalizados para cadastro. Crie links personalizados para as pessoas se inscreverem. Cada link pode ter sua própria descrição, validade e limite de usos.
                     </p>
                     <button onclick="openCreateLinkModal()" class="btn-create-link ck-gl-628329">
                         <i class="fas fa-plus"></i> Criar Novo Link Personalizado
                     </button>
                     <div id="personalized-links-list">
-                        <!-- Links personalizados seráo preenchidos via JavaScript -->
+                        <!-- Links personalizados serão preenchidos via JavaScript -->
                     </div>
                 </div>
                 
@@ -266,7 +266,7 @@
                         <i class="fas fa-building"></i> Link da Portaria
                     </h4>
                     <p class="ck-gl-6eeacc">
-                        Para confirmar chegada dos convidados. Envie este link para o porteiro/recepcionista. Ele poder ver a lista completa, buscar convidados e confirmar presenas.
+                        Para confirmar chegada dos convidados. Envie este link para o porteiro/recepcionista. Ele poderá ver a lista completa, buscar convidados e confirmar presenças.
                     </p>
                     <div class="link-box ck-gl-00f0d1">
                         <input type="text" class="link-input ck-gl-eaf047" id="portaria-link" readonly>
@@ -287,7 +287,7 @@
                             </button>
                         </div>
                         <p class="ck-gl-0986f3">
-                            Crie um link curto e fcil de compartilhar. Ex: seusite.com/portaria/kingsuces
+                            Crie um link curto e fácil de compartilhar. Ex: seusite.com/portaria/kingsuces
                         </p>
                     </div>
                 </div>
@@ -295,7 +295,7 @@
         </div>
     </div>
     
-    <!-- Modal de Visualizao Completa -->
+    <!-- Modal de Visualização Completa -->
     <div id="guest-detail-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -321,8 +321,8 @@
             </div>
             <div class="ck-gl-f037ae">
                 <p class="ck-gl-bf1659">
-                    <strong class="ck-gl-03ce61">Integrao com KingForms</strong><br>
-                    Você pode criar um formulrio personalizado para a inscriOs campos padrão (Nome, WhatsApp, CPF) seráo sempre includos automaticamente.
+                    <strong class="ck-gl-03ce61">Integração com KingForms</strong><br>
+                    Você pode criar um formulário personalizado para a inscrição. Os campos padrão (Nome, WhatsApp, CPF) serão sempre incluídos automaticamente.
                 </p>
             </div>
             <div id="custom-fields-editor">

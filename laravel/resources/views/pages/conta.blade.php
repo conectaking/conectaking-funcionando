@@ -46,15 +46,15 @@
             <div class="account-wrapper">
                 <aside class="account-sidebar">
                     <nav>
-                        <a href="#perfil" class="sidebar-link active" data-target="perfil-section"><i class="fas fa-user-circle"></i> Perfil Pblico</a>
-                        <a href="#seguranca" class="sidebar-link" data-target="seguranca-section"><i class="fas fa-shield-alt"></i> Segurana</a>
+                        <a href="#perfil" class="sidebar-link active" data-target="perfil-section"><i class="fas fa-user-circle"></i> Perfil Público</a>
+                        <a href="#seguranca" class="sidebar-link" data-target="seguranca-section"><i class="fas fa-shield-alt"></i> Segurança</a>
                         <a href="#assinatura" class="sidebar-link" data-target="assinatura-section"><i class="fas fa-crown"></i> Minha Assinatura</a>
                     </nav>
                 </aside>
                 
                 <section class="account-content">
                     <div id="perfil-section" class="content-pane active">
-                        <h2>Perfil Publico</h2>
+                        <h2>Perfil Público</h2>
                         <p>Gerencie sua foto e nome de exibição que aparecem na sua Tag.</p>
                          <form id="profile-form" class="account-form">
                             <div class="input-group readonly">
@@ -77,18 +77,18 @@
                             </div>
 
                             <div class="input-group">
-                                <label for="displayName">Nome de Exibio (pblico)</label>
-                                <input type="text" id="displayName" placeholder="Como seu nome aparecer na sua Tag">
+                                <label for="displayName">Nome de Exibição (público)</label>
+                                <input type="text" id="displayName" placeholder="Como seu nome aparecerá na sua Tag">
                             </div>
 
-                            <button type="submit" class="btn btn-primary">Salvar Alteraes do Perfil</button>
+                            <button type="submit" class="btn btn-primary">Salvar Alterações do Perfil</button>
                             <div id="profile-message" class="message"></div>
                         </form>
                     </div>
 
                     <div id="seguranca-section" class="content-pane">
-                        <h2>Segurana</h2>
-                        <p>Altere sua senha de acesso  plataforma.</p>
+                        <h2>Segurança</h2>
+                        <p>Altere sua senha de acesso à plataforma.</p>
                         <form id="password-form" class="account-form">
                             <div class="input-group">
                                 <label for="currentPassword">Senha Atual</label>
