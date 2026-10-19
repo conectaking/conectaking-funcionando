@@ -1339,6 +1339,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const paneTabs = panes.map((p) => String(p.getAttribute('data-pane') || '').trim()).filter(Boolean);
     const sideTabs = sideLinks.map((a) => String(a.getAttribute('data-tab') || '').trim()).filter(Boolean);
     const validTabs = new Set([...paneTabs, ...sideTabs]);
+    if (tab === 'link-cover') {
+      setActiveTab('links');
+      setTimeout(() => {
+        const el = document.getElementById('ks-link-cover-card-wrap');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+      return;
+    }
     const nextTab = validTabs.has(String(tab || '')) ? String(tab) : 'activity';
     if (prevTab === 'link-cover' && nextTab !== 'link-cover') {
       commitLinkCoverDraftIfNeeded({ silent: true }).catch(() => { });

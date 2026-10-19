@@ -110,6 +110,7 @@
           <a href="#" data-tab="sales"><i class="fas fa-receipt"></i> Fotos vendidas</a>
           <a href="#" data-tab="promo"><i class="fas fa-ticket"></i> Cupom e redes</a>
           <a href="#" data-tab="links"><i class="fas fa-link"></i> Link e compartilhamento</a>
+          <a href="#" data-tab="link-cover"><i class="fas fa-image text-amber-400"></i> Capa do link</a>
           <a href="#" data-tab="support"><i class="fab fa-whatsapp"></i> Suporte WhatsApp</a>
           <a href="#" data-tab="download"><i class="fas fa-download"></i> Download</a>
           <a href="#" data-tab="watermark"><i class="fas fa-droplet"></i> Marca d'água</a>
@@ -709,42 +710,48 @@
           </div>
 
           <!-- Capa do link e do evento -->
-          <div class="mt-5 rounded-xl border border-white/10 bg-black/25 p-4">
-            <div class="font-extrabold text-slate-900 flex items-center gap-2">
-              <i class="fas fa-image text-amber-400"></i> Capa do link e do evento
+          <div id="ks-link-cover-card-wrap" class="mt-6 rounded-2xl border-2 border-amber-500/60 bg-gradient-to-br from-amber-500/10 via-slate-900/90 to-black p-5 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+              <div class="font-extrabold text-white text-base flex items-center gap-2">
+                <i class="fas fa-image text-amber-400 text-lg"></i> Capa do link e do evento
+                <span class="bg-amber-400 text-black text-[11px] font-black px-2 py-0.5 rounded tracking-wide uppercase">Capa</span>
+              </div>
             </div>
-            <p class="text-sm ks-muted mt-1 max-w-3xl">Você pode escolher uma foto da galeria ou enviar uma imagem externa só para a capa do evento e da prévia do link (WhatsApp, redes sociais e tela de abertura do cliente).</p>
+            <p class="text-sm text-slate-200 mt-1 max-w-3xl leading-relaxed">Você pode escolher uma foto da galeria ou enviar uma imagem externa (JPG/PNG) do seu dispositivo para a <b>capa principal do evento</b> (aparece em destaque ao abrir o link e na prévia do WhatsApp).</p>
 
             <div class="flex flex-wrap gap-2 items-center mt-4">
               <input type="file" id="ks-link-cover-upload-file" class="hidden" accept="image/*" />
               <button type="button" class="ks-btn" id="ks-link-cover-upload-btn"><i class="fas fa-upload"></i> Selecionar foto no dispositivo</button>
-              <button type="button" class="ks-btn ks-btn-primary" id="ks-link-cover-open-gallery-btn"><i class="fas fa-image"></i> Selecionar da galeria atual</button>
+              <button type="button" class="ks-btn ks-btn-primary" id="ks-link-cover-open-gallery-btn"><i class="fas fa-image"></i> Escolher foto da galeria atual</button>
+              <button type="button" class="ks-btn" id="ks-link-cover-save-btn"><i class="fas fa-save"></i> Salvar capa do link</button>
             </div>
 
             <div class="mt-4">
               <div class="ks-field">
-                <label>Pré-visualização da capa</label>
-                <div class="rounded-lg overflow-hidden border border-slate-200 bg-black/70 mt-2 max-w-md">
-                  <img id="ks-link-cover-preview" alt="Prévia da capa do link" style="width:100%;height:220px;object-fit:contain;background:#0b0b0b;display:block" />
+                <label class="text-slate-100 font-bold text-xs uppercase tracking-wider">Pré-visualização da capa atual</label>
+                <div class="rounded-xl overflow-hidden border-2 border-amber-500/40 bg-black/80 mt-2 max-w-md shadow-inner">
+                  <img id="ks-link-cover-preview" alt="Prévia da capa do link" style="width:100%;height:230px;object-fit:contain;background:#0b0b0b;display:block" />
                 </div>
-                <div id="ks-link-cover-current-source" class="text-xs ks-muted mt-2">Origem atual: foto da galeria</div>
+                <div id="ks-link-cover-current-source" class="text-xs text-amber-300 font-medium mt-2">Origem atual: foto da galeria</div>
               </div>
             </div>
 
             <select id="ks-link-cover-photo" class="ks-input mt-2 hidden"></select>
-            <div id="ks-link-cover-picker" class="hidden mt-4 rounded-lg border border-slate-200 bg-black/35 p-3">
+            <div id="ks-link-cover-picker" class="hidden mt-4 rounded-xl border border-amber-500/40 bg-slate-900/95 p-4 shadow-2xl">
               <div class="ks-link-cover-picker-card">
-                <div class="ks-link-cover-picker-head flex items-center justify-between gap-2 mb-2">
-                  <div class="text-sm font-extrabold text-slate-900">Escolher foto da galeria atual</div>
-                  <button type="button" class="ks-btn" id="ks-link-cover-picker-close"><i class="fas fa-times"></i> Fechar</button>
+                <div class="ks-link-cover-picker-head flex items-center justify-between gap-2 mb-3">
+                  <div class="text-sm font-extrabold text-white flex items-center gap-2">
+                    <i class="fas fa-images text-amber-400"></i> Escolher foto da galeria atual
+                  </div>
+                  <button type="button" class="ks-btn ks-btn-sm" id="ks-link-cover-picker-close"><i class="fas fa-times"></i> Fechar</button>
                 </div>
-                <div class="mb-2">
+                <div class="mb-3">
                   <input type="text" id="ks-link-cover-search" class="ks-input" placeholder="Buscar foto pelo nome..." />
                 </div>
-                <div id="ks-link-cover-grid" class="ks-link-cover-picker-grid grid grid-cols-2 md:grid-cols-3 gap-2"></div>
-                <div class="mt-3 flex flex-wrap gap-2 items-center">
+                <div id="ks-link-cover-grid" class="ks-link-cover-picker-grid grid grid-cols-2 md:grid-cols-3 gap-2 max-h-[360px] overflow-y-auto p-1"></div>
+                <div class="mt-4 flex flex-wrap gap-2 items-center border-t border-white/10 pt-3">
                   <button type="button" class="ks-btn ks-btn-primary" id="ks-link-cover-picker-apply"><i class="fas fa-check"></i> Usar foto selecionada</button>
-                  <span class="text-xs ks-muted">Essa capa será usada na tela cheia ao abrir o link e na miniatura do WhatsApp.</span>
+                  <span class="text-xs text-slate-300">Essa capa será usada na tela cheia ao abrir o link e na miniatura do WhatsApp.</span>
                 </div>
               </div>
             </div>
