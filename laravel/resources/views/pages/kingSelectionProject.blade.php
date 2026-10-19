@@ -110,6 +110,7 @@
           <a href="#" data-tab="sales"><i class="fas fa-receipt"></i> Fotos vendidas</a>
           <a href="#" data-tab="promo"><i class="fas fa-ticket"></i> Cupom e redes</a>
           <a href="#" data-tab="links"><i class="fas fa-link"></i> Link e compartilhamento</a>
+          <a href="#" data-tab="link-cover"><i class="fas fa-image"></i> Capa do link</a>
           <a href="#" data-tab="support"><i class="fab fa-whatsapp"></i> Suporte WhatsApp</a>
           <a href="#" data-tab="download"><i class="fas fa-download"></i> Download</a>
           <a href="#" data-tab="watermark"><i class="fas fa-droplet"></i> Marca d'água</a>
