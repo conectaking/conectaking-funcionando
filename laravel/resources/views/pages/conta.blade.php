@@ -54,7 +54,7 @@
                 
                 <section class="account-content">
                     <div id="perfil-section" class="content-pane active">
-                        <h2>Perfil Pblico</h2>
+                        <h2>Perfil Publico</h2>
                         <p>Gerencie sua foto e nome de exibição que aparecem na sua Tag.</p>
                          <form id="profile-form" class="account-form">
                             <div class="input-group readonly">
