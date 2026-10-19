@@ -52,6 +52,9 @@
 <body class="bg-black text-white">
   <!-- Capa do evento (modo público, configurvel no painel) -->
   <div id="ks-entry-splash" class="ks-hidden" style="position:fixed;inset:0;z-index:360;background:radial-gradient(120% 80% at 50% 0%,#1a1a1a 0%,#000 55%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0;overflow:auto" aria-hidden="true">
+    <button type="button" id="ks-entry-splash-close" class="ks-btn" style="position:absolute;top:max(16px,env(safe-area-inset-top));right:16px;background:rgba(0,0,0,0.65);border:1px solid rgba(255,255,255,0.25);color:#fff;border-radius:999px;padding:8px 16px;z-index:20;font-size:13px;cursor:pointer" title="Fechar capa">
+      <i class="fas fa-times"></i> Fechar
+    </button>
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;padding:max(24px,env(safe-area-inset-top)) 16px 20px;min-height:42vh">
       <div style="width:min(440px,92vw);aspect-ratio:3/4;border-radius:20px;overflow:hidden;border:1px solid rgba(250,204,21,.35);box-shadow:0 24px 80px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.06) inset;background:#111">
         <img id="ks-entry-splash-img" src="" alt="Capa do evento" style="width:100%;height:100%;object-fit:cover;display:block" loading="eager" decoding="async" />
@@ -215,6 +218,9 @@
           </div>
           <div class="ks-top-row-actions">
             <div class="ks-toolbar">
+              <button type="button" class="ks-btn ks-btn-outline" id="ks-btn-view-cover" title="Ver capa do evento">
+                <i class="fas fa-image"></i> Capa
+              </button>
               <button type="button" class="ks-btn ks-btn-outline" id="ks-filter-selected-only" title="Mostrar apenas as fotos que você selecionou">
                 <i class="fas fa-filter"></i> <span id="ks-filter-selected-text">Ver selecionadas</span>
               </button>

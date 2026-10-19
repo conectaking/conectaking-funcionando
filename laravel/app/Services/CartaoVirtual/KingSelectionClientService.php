@@ -503,7 +503,7 @@ class KingSelectionClientService
             && trim((string) (env('AWS_ACCESS_KEY_ID') ?: '')) !== ''
             && trim((string) (env('AWS_SECRET_ACCESS_KEY') ?: '')) !== '';
 
-        $hasCover = !empty($g->gallery_link_cover_photo_id ?? null) || !empty($g->gallery_link_cover_file_path ?? null);
+        $hasCover = !empty($g->gallery_link_cover_photo_id ?? null) || !empty($g->gallery_link_cover_file_path ?? null) || count($photos) > 0;
         $splash = $hasCover || !empty($g->client_entry_splash_enabled ?? false);
 
         $gallery = [

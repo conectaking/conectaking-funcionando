@@ -3409,6 +3409,7 @@
       : `<span class="ks-header-sel-pill" title="Fotos selecionadas nesta rodada"><span class="ks-header-sel-pill__label">Selecionadas</span><span class="ks-header-sel-pill__num">${estaRodada}</span></span>`;
 
     let statsRight = '';
+    statsRight += `<button type="button" class="ks-btn ks-btn-sm ks-btn-outline" id="ks-sticky-btn-cover" style="padding:2px 10px;font-size:11px;font-weight:800;border-radius:999px;display:inline-flex;align-items:center;gap:5px;border-color:rgba(250,204,21,0.6);background:rgba(234,179,8,0.15);color:#fef08a;cursor:pointer;margin-right:6px;vertical-align:middle" title="Ver capa do evento"><i class="fas fa-image"></i> Capa</button>`;
     if (isPublicFreeDownloadGallery()) {
       statsRight += `<span class="ks-summary-livre" style="color:#86efac">download liberado</span>`;
     }
@@ -3432,6 +3433,10 @@
           <div class="ks-summary-stats-right">${statsRight}</div>
         </div>
       </div>`;
+    $('ks-sticky-btn-cover')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      presentEntrySplash();
+    });
     updateGalleryToolbarButtons();
   }
 
@@ -3653,7 +3658,12 @@
   }
 
   function entrySplashUrlAvailable() {
-    return String(state.gallery?.entry_splash_url || galleryMeta?.entry_splash_url || '').trim();
+    const raw = String(state.gallery?.entry_splash_url || galleryMeta?.entry_splash_url || '').trim();
+    if (raw) return raw;
+    if (slug && ((state.photos && state.photos.length > 0) || (galleryMeta && ((galleryMeta.total_photos || 0) > 0 || galleryMeta.cover_photo_id)))) {
+      return `/api/king-selection/public/entry-splash?slug=${encodeURIComponent(slug)}&o=2`;
+    }
+    return '';
   }
 
   /** Capa de início: todos os modos quando a API envia a URL da capa do link. */
@@ -3697,6 +3707,7 @@
     const im = $('ks-entry-splash-img');
     const ti = $('ks-entry-splash-title');
     const btn = $('ks-entry-splash-btn');
+    const closeBtn = $('ks-entry-splash-close');
     if (!ov || !im || !btn) return false;
     if (ti) ti.textContent = state.gallery?.nome_projeto || galleryMeta?.nome_projeto || '';
     im.src = url;
@@ -3705,12 +3716,13 @@
     const close = () => {
       ov.classList.add('ks-hidden');
       ov.setAttribute('aria-hidden', 'true');
-      im.removeAttribute('src');
       btn.onclick = null;
+      if (closeBtn) closeBtn.onclick = null;
       ov.onclick = null;
       if (typeof onClose === 'function') onClose();
     };
     btn.onclick = () => close();
+    if (closeBtn) closeBtn.onclick = () => close();
     ov.onclick = (e) => {
       if (e.target && e.target.id === 'ks-entry-splash') close();
     };
@@ -5499,6 +5511,9 @@
     } catch (_) {
       toast('Não foi possível copiar o código PIX automaticamente.', 'err');
     }
+  });
+  $('ks-btn-view-cover')?.addEventListener('click', () => {
+    presentEntrySplash();
   });
   $('ks-filter-selected-only')?.addEventListener('click', () => {
     state.filterSelectedOnly = !state.filterSelectedOnly;

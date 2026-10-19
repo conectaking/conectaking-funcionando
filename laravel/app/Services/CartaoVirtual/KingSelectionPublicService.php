@@ -215,7 +215,8 @@ class KingSelectionPublicService
         }
 
         $hasLinkCover = !empty($g->gallery_link_cover_photo_id ?? null) || !empty($g->gallery_link_cover_file_path ?? null);
-        $splashBoot = $hasLinkCover || !empty($g->client_entry_splash_enabled ?? false);
+        $hasPhotos = ($totalPhotos ?? 0) > 0 || !empty($coverPhotoId);
+        $splashBoot = $hasLinkCover || $hasPhotos || !empty($g->client_entry_splash_enabled ?? false);
         $folderLayout = strtolower(trim((string) ($g->client_folder_layout ?? 'folders'))) === 'flat' ? 'flat' : 'folders';
 
         return [
@@ -240,7 +241,7 @@ class KingSelectionPublicService
                     'client_folder_layout' => $folderLayout,
                     'client_entry_splash_enabled' => $splashBoot,
                     'entry_splash_url' => $splashBoot
-                        ? '/api/king-selection/public/cover?slug='.rawurlencode((string) $g->slug).'&o=2'
+                        ? '/api/king-selection/public/entry-splash?slug='.rawurlencode((string) $g->slug).'&o=2'
                         : null,
                     'tutorial_video_url' => !empty($g->tutorial_video_url ?? null) ? trim((string) $g->tutorial_video_url) : null,
                     'allow_client_edit_request' => $accessMode === 'public' && !empty($g->allow_client_edit_request ?? false),
