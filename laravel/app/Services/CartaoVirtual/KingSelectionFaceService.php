@@ -153,7 +153,9 @@ class KingSelectionFaceService
             return ['status' => 400, 'body' => ['message' => 'Nenhuma imagem enviada.']];
         }
         $cfg = $this->rekogConfig();
-        if (! $cfg['enabled']) {
+        $localAiUrl = $this->getLocalAiUrl();
+        $hasLocalAi = $this->pingLocalAi($localAiUrl);
+        if (! $hasLocalAi && ! $cfg['enabled']) {
             return ['status' => 503, 'body' => ['message' => 'Reconhecimento facial não configurado no servidor.']];
         }
         $galleryId = (int) ($payload['galleryId'] ?? 0);
@@ -186,6 +188,10 @@ class KingSelectionFaceService
         try {
             cache()->put("ks_face_ref_{$galleryId}_{$clientId}", $jpeg, now()->addDays(7));
         } catch (\Throwable) {}
+
+        if ($hasLocalAi) {
+            return $this->enrollClientLocalAi($galleryId, $clientId, $jpeg, $refKey, $localAiUrl);
+        }
 
         $externalImageId = 'g'.$galleryId.'_c'.$clientId;
         $indexResult = null;
@@ -265,7 +271,9 @@ class KingSelectionFaceService
             return ['status' => 400, 'body' => ['message' => 'Nenhuma imagem enviada.']];
         }
         $cfg = $this->rekogConfig();
-        if (! $cfg['enabled']) {
+        $localAiUrl = $this->getLocalAiUrl();
+        $hasLocalAi = $this->pingLocalAi($localAiUrl);
+        if (! $hasLocalAi && ! $cfg['enabled']) {
             return ['status' => 503, 'body' => ['message' => 'Reconhecimento facial não configurado no servidor.']];
         }
         if (! SchemaMeta::hasTable('rekognition_client_faces')) {
@@ -314,6 +322,25 @@ class KingSelectionFaceService
         try {
             cache()->put("ks_face_ref_{$galleryId}_{$clientId}", $jpeg, now()->addDays(7));
         } catch (\Throwable) {}
+
+        if ($hasLocalAi) {
+            $enrollRes = $this->enrollClientLocalAi($galleryId, $clientId, $jpeg, $refKey, $localAiUrl);
+            if ($enrollRes['status'] !== 200) {
+                return $enrollRes;
+            }
+            $token = app(\App\Services\Auth\JwtService::class)->issueClientToken([
+                'galleryId' => $galleryId,
+                'clientId' => $clientId,
+                'type' => 'kingselection_client',
+            ]);
+            return ['status' => 200, 'body' => [
+                'success' => true,
+                'token' => $token,
+                'clientId' => $clientId,
+                'visitorId' => $visitorId,
+                'message' => 'Rosto cadastrado com sucesso! A procurar as suas fotos...',
+            ]];
+        }
 
         $externalImageId = 'g'.$galleryId.'_c'.$clientId;
         $indexResult = null;
@@ -399,10 +426,6 @@ class KingSelectionFaceService
         if ($binary === '') {
             return ['status' => 400, 'body' => ['message' => 'Envie uma foto.']];
         }
-        $cfg = $this->rekogConfig();
-        if (! $cfg['enabled']) {
-            return ['status' => 503, 'body' => ['message' => 'Reconhecimento facial não configurado.']];
-        }
         $galleryId = (int) ($payload['galleryId'] ?? 0);
         $ctx = \App\Support\KingSelection\KsAccess::parseClientContext($payload);
         $clientId = (int) ($ctx['cid'] ?? 0);
@@ -416,6 +439,27 @@ class KingSelectionFaceService
             if ($ge && empty($ge->face_recognition_enabled)) {
                 return ['status' => 403, 'body' => ['message' => 'Reconhecimento facial está desativado nesta galeria.']];
             }
+        }
+
+        $localAiUrl = $this->getLocalAiUrl();
+        $hasLocalAi = $this->pingLocalAi($localAiUrl);
+        if ($hasLocalAi) {
+            $jpeg = $this->normalizeJpeg($binary);
+            if ($jpeg === null) {
+                return ['status' => 400, 'body' => ['message' => 'Imagem inválida. Tente outra foto.']];
+            }
+            $emb = $this->extractEmbeddingLocalAi($jpeg, $localAiUrl);
+            if (! $emb || empty($emb['embedding'])) {
+                return ['status' => 400, 'body' => ['message' => 'Rosto não detectado na imagem. Tente uma foto mais clara com boa iluminação.']];
+            }
+            $this->runLocalMatchForClient($galleryId, $clientId, $emb['embedding'], $localAiUrl);
+
+            return $this->clientFaceResults($payload, []);
+        }
+
+        $cfg = $this->rekogConfig();
+        if (! $cfg['enabled']) {
+            return ['status' => 503, 'body' => ['message' => 'Reconhecimento facial não configurado.']];
         }
         if ($this->isRekogOnDemand()) {
             return ['status' => 200, 'body' => [
@@ -1172,6 +1216,59 @@ class KingSelectionFaceService
         $page = max(1, (int) ($query['page'] ?? 1));
         $limit = min(8000, max(1, (int) ($query['limit'] ?? 500)));
         $offset = ($page - 1) * $limit;
+
+        $localAiUrl = $this->getLocalAiUrl();
+        $hasLocalAi = $this->pingLocalAi($localAiUrl);
+        $minSim = max(50.0, min(100.0, (float) (env('REKOG_FACE_RESULT_MIN_SIMILARITY') ?: 65)));
+
+        if ($hasLocalAi) {
+            $totalMatches = (int) (DB::selectOne(
+                'SELECT COUNT(DISTINCT kp.id)::int AS cnt
+                 FROM king_photos kp
+                 JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+                 JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+                 WHERE kp.gallery_id = ? AND rfm.client_id = ? AND rfm.similarity >= ?',
+                [$galleryId, $clientId, $minSim]
+            )->cnt ?? 0);
+
+            if ($totalMatches === 0) {
+                $cFace = DB::selectOne(
+                    'SELECT embedding FROM rekognition_client_faces WHERE gallery_id = ? AND client_id = ? LIMIT 1',
+                    [$galleryId, $clientId]
+                );
+                if ($cFace && ! empty($cFace->embedding)) {
+                    $cEmb = json_decode((string) $cFace->embedding, true);
+                    if (is_array($cEmb)) {
+                        $this->runLocalMatchForClient($galleryId, $clientId, $cEmb, $localAiUrl);
+                        $totalMatches = (int) (DB::selectOne(
+                            'SELECT COUNT(DISTINCT kp.id)::int AS cnt
+                             FROM king_photos kp
+                             JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+                             JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+                             WHERE kp.gallery_id = ? AND rfm.client_id = ? AND rfm.similarity >= ?',
+                            [$galleryId, $clientId, $minSim]
+                        )->cnt ?? 0);
+                    }
+                }
+            }
+
+            $rows = DB::select(
+                'SELECT DISTINCT kp.id AS photo_id
+                 FROM king_photos kp
+                 JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+                 JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+                 WHERE kp.gallery_id = ? AND rfm.client_id = ? AND rfm.similarity >= ?
+                 ORDER BY kp.id
+                 LIMIT ? OFFSET ?',
+                [$galleryId, $clientId, $minSim, $limit, $offset]
+            );
+
+            return ['status' => 200, 'body' => [
+                'success' => true,
+                'total' => $totalMatches,
+                'photoIds' => array_column($rows, 'photo_id'),
+            ]];
+        }
 
         if ($this->isRekogOnDemand()) {
             if ($this->useFaceSearchCache()) {
@@ -2571,6 +2668,27 @@ class KingSelectionFaceService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão.']];
         }
+
+        $localAiUrl = $this->getLocalAiUrl();
+        $hasLocalAi = $this->pingLocalAi($localAiUrl);
+        if ($hasLocalAi) {
+            $totalPhotos = (int) (DB::selectOne('SELECT COUNT(*)::int AS n FROM king_photos WHERE gallery_id = ?', [$galleryId])->n ?? 0);
+            $indexedPhotos = (int) (DB::selectOne(
+                'SELECT COUNT(DISTINCT photo_id)::int AS n FROM rekognition_photo_faces WHERE gallery_id = ?',
+                [$galleryId]
+            )->n ?? 0);
+            $pending = max(0, $totalPhotos - $indexedPhotos);
+
+            $artisan = base_path('artisan');
+            exec("php {$artisan} ks:face-index {$galleryId} > /dev/null 2>&1 &");
+
+            return ['status' => 200, 'body' => [
+                'success' => true,
+                'queued' => $pending,
+                'message' => "Processamento com IA Local ultrarrápida iniciado para {$totalPhotos} foto(s).",
+            ]];
+        }
+
         $cfg = $this->rekogConfig();
         if (! $cfg['enabled']) {
             return ['status' => 503, 'body' => [
@@ -2647,6 +2765,15 @@ class KingSelectionFaceService
                 }
             }
         }
+
+        // Se usar IA Local ou sem jobs AWS, ler diretamente das faces indexadas
+        if ($done === 0 && SchemaMeta::hasTable('rekognition_photo_faces')) {
+            $done = (int) (DB::selectOne(
+                'SELECT COUNT(DISTINCT photo_id)::int AS cnt FROM rekognition_photo_faces WHERE gallery_id = ?',
+                [$galleryId]
+            )->cnt ?? 0);
+        }
+
         $isRunning = $processing > 0 || $pending > 0;
 
         return ['status' => 200, 'body' => [
@@ -2816,5 +2943,115 @@ class KingSelectionFaceService
             'k' => (int) ($num * 1024),
             default => (int) $num,
         };
+    }
+
+    public function getLocalAiUrl(): string
+    {
+        return rtrim((string) (env('FACE_AI_URL') ?: 'http://conectaking-face-ai:5005'), '/');
+    }
+
+    public function pingLocalAi(?string $url = null): bool
+    {
+        $u = $url ?: $this->getLocalAiUrl();
+        try {
+            $res = \Illuminate\Support\Facades\Http::timeout(2)->get("{$u}/health");
+            return $res->successful();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    public function enrollClientLocalAi(int $galleryId, int $clientId, string $jpeg, string $refKey, string $localAiUrl): array
+    {
+        try {
+            $res = \Illuminate\Support\Facades\Http::timeout(15)
+                ->withBody($jpeg, 'image/jpeg')
+                ->post("{$localAiUrl}/extract");
+            if (! $res->successful()) {
+                return ['status' => 500, 'body' => ['message' => 'Erro ao processar rosto na IA local.']];
+            }
+            $faces = $res->json('faces') ?? [];
+            if (empty($faces)) {
+                return ['status' => 400, 'body' => [
+                    'message' => 'Nenhum rosto detectado na foto. Tire uma selfie com o rosto bem visível e de frente.',
+                    'code' => 'no_face',
+                ]];
+            }
+
+            $bestFace = $faces[0];
+            $emb = $bestFace['embedding'] ?? [];
+            $faceId = 'local_' . bin2hex(random_bytes(8));
+
+            if (SchemaMeta::hasTable('rekognition_client_faces')) {
+                DB::delete('DELETE FROM rekognition_client_faces WHERE gallery_id = ? AND client_id = ?', [$galleryId, $clientId]);
+                DB::insert(
+                    'INSERT INTO rekognition_client_faces (gallery_id, client_id, face_id, reference_r2_key, embedding, created_at)
+                     VALUES (?, ?, ?, ?, ?, NOW())',
+                    [$galleryId, $clientId, $faceId, $refKey, json_encode($emb)]
+                );
+            }
+
+            // Realiza match imediato contra fotos já indexadas da galeria
+            $this->runLocalMatchForClient($galleryId, $clientId, $emb, $localAiUrl);
+
+            return ['status' => 200, 'body' => [
+                'success' => true,
+                'message' => 'Rosto cadastrado com sucesso! A procurar as suas fotos...',
+                'faceCount' => count($faces),
+            ]];
+        } catch (\Throwable $e) {
+            Log::error('ks.face.enrollClientLocalAi', ['error' => $e->getMessage()]);
+            return ['status' => 500, 'body' => ['message' => 'Erro interno ao processar rosto.']];
+        }
+    }
+
+    public function runLocalMatchForClient(int $galleryId, int $clientId, array $clientEmbedding, string $localAiUrl): int
+    {
+        if (empty($clientEmbedding)) {
+            return 0;
+        }
+        $rows = DB::select(
+            'SELECT rpf.id, rpf.photo_id, rpf.embedding
+             FROM rekognition_photo_faces rpf
+             JOIN king_photos kp ON kp.id = rpf.photo_id
+             WHERE kp.gallery_id = ? AND rpf.embedding IS NOT NULL',
+            [$galleryId]
+        );
+        if (empty($rows)) {
+            return 0;
+        }
+        $targets = [];
+        foreach ($rows as $r) {
+            $arr = json_decode((string) $r->embedding, true);
+            if (is_array($arr) && count($arr) === 128) {
+                $targets[] = ['id' => (int) $r->id, 'photo_id' => (int) $r->photo_id, 'embedding' => $arr];
+            }
+        }
+        if (empty($targets)) {
+            return 0;
+        }
+
+        try {
+            $res = \Illuminate\Support\Facades\Http::timeout(15)->post("{$localAiUrl}/match", [
+                'query_embedding' => $clientEmbedding,
+                'targets' => $targets,
+                'threshold' => 0.363,
+            ]);
+            if ($res->successful()) {
+                $matches = $res->json('matches') ?? [];
+                DB::delete('DELETE FROM rekognition_face_matches WHERE client_id = ?', [$clientId]);
+                foreach ($matches as $m) {
+                    DB::insert(
+                        'INSERT INTO rekognition_face_matches (photo_face_id, client_id, similarity, rekognition_face_id, created_at)
+                         VALUES (?, ?, ?, ?, NOW())',
+                        [(int) $m['id'], $clientId, (float) $m['similarity'], 'local_' . (int) $m['photo_id']]
+                    );
+                }
+                return count($matches);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('ks.face.runLocalMatchForClient', ['error' => $e->getMessage()]);
+        }
+        return 0;
     }
 }
