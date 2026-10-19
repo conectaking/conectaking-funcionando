@@ -110,7 +110,6 @@
           <a href="#" data-tab="sales"><i class="fas fa-receipt"></i> Fotos vendidas</a>
           <a href="#" data-tab="promo"><i class="fas fa-ticket"></i> Cupom e redes</a>
           <a href="#" data-tab="links"><i class="fas fa-link"></i> Link e compartilhamento</a>
-          <a href="#" data-tab="link-cover"><i class="fas fa-image"></i> Capa do link</a>
           <a href="#" data-tab="support"><i class="fab fa-whatsapp"></i> Suporte WhatsApp</a>
           <a href="#" data-tab="download"><i class="fas fa-download"></i> Download</a>
           <a href="#" data-tab="watermark"><i class="fas fa-droplet"></i> Marca d'água</a>
@@ -709,6 +708,48 @@
             </div>
           </div>
 
+          <!-- Capa do link e do evento -->
+          <div class="mt-5 rounded-xl border border-white/10 bg-black/25 p-4">
+            <div class="font-extrabold text-slate-900 flex items-center gap-2">
+              <i class="fas fa-image text-amber-400"></i> Capa do link e do evento
+            </div>
+            <p class="text-sm ks-muted mt-1 max-w-3xl">Você pode escolher uma foto da galeria ou enviar uma imagem externa só para a capa do evento e da prévia do link (WhatsApp, redes sociais e tela de abertura do cliente).</p>
+
+            <div class="flex flex-wrap gap-2 items-center mt-4">
+              <input type="file" id="ks-link-cover-upload-file" class="hidden" accept="image/*" />
+              <button type="button" class="ks-btn" id="ks-link-cover-upload-btn"><i class="fas fa-upload"></i> Selecionar foto no dispositivo</button>
+              <button type="button" class="ks-btn ks-btn-primary" id="ks-link-cover-open-gallery-btn"><i class="fas fa-image"></i> Selecionar da galeria atual</button>
+            </div>
+
+            <div class="mt-4">
+              <div class="ks-field">
+                <label>Pré-visualização da capa</label>
+                <div class="rounded-lg overflow-hidden border border-slate-200 bg-black/70 mt-2 max-w-md">
+                  <img id="ks-link-cover-preview" alt="Prévia da capa do link" style="width:100%;height:220px;object-fit:contain;background:#0b0b0b;display:block" />
+                </div>
+                <div id="ks-link-cover-current-source" class="text-xs ks-muted mt-2">Origem atual: foto da galeria</div>
+              </div>
+            </div>
+
+            <select id="ks-link-cover-photo" class="ks-input mt-2 hidden"></select>
+            <div id="ks-link-cover-picker" class="hidden mt-4 rounded-lg border border-slate-200 bg-black/35 p-3">
+              <div class="ks-link-cover-picker-card">
+                <div class="ks-link-cover-picker-head flex items-center justify-between gap-2 mb-2">
+                  <div class="text-sm font-extrabold text-slate-900">Escolher foto da galeria atual</div>
+                  <button type="button" class="ks-btn" id="ks-link-cover-picker-close"><i class="fas fa-times"></i> Fechar</button>
+                </div>
+                <div class="mb-2">
+                  <input type="text" id="ks-link-cover-search" class="ks-input" placeholder="Buscar foto pelo nome..." />
+                </div>
+                <div id="ks-link-cover-grid" class="ks-link-cover-picker-grid grid grid-cols-2 md:grid-cols-3 gap-2"></div>
+                <div class="mt-3 flex flex-wrap gap-2 items-center">
+                  <button type="button" class="ks-btn ks-btn-primary" id="ks-link-cover-picker-apply"><i class="fas fa-check"></i> Usar foto selecionada</button>
+                  <span class="text-xs ks-muted">Essa capa será usada na tela cheia ao abrir o link e na miniatura do WhatsApp.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="mt-5 rounded-xl border border-white/10 bg-black/25 p-4">
             <div class="text-xs font-extrabold ks-muted tracking-widest uppercase mb-3">Mensagem personalizada para compartilhar (opcional)</div>
             <textarea id="ks-links-custom-message" class="ks-input mt-2" rows="4"
@@ -729,48 +770,6 @@
               <button type="button" class="ks-btn" id="ks-links-full-reset" title="Substituir pelo modelo automático (nome do projeto + link + opcional)"><i class="fas fa-rotate-left"></i> Restaurar modelo</button>
               <button type="button" class="ks-btn ks-btn-primary" id="ks-links-copy-full"><i class="fas fa-copy"></i> Copiar mensagem completa</button>
               <button type="button" class="ks-btn" id="ks-links-whats"><i class="fab fa-whatsapp"></i> Abrir WhatsApp Web</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Capa do link -->
-        <div class="ks-card p-5 hidden" data-pane="link-cover">
-          <div class="font-extrabold text-slate-900">Capa do link</div>
-          <p class="text-sm ks-muted mt-2 max-w-3xl">Você pode escolher uma foto da galeria ou enviar uma imagem externa só para a capa do link.</p>
-
-          <div class="mt-5 rounded-xl border border-white/10 bg-black/25 p-4">
-            <div class="flex flex-wrap gap-2 items-center">
-              <input type="file" id="ks-link-cover-upload-file" class="hidden" accept="image/*" />
-              <button type="button" class="ks-btn" id="ks-link-cover-upload-btn"><i class="fas fa-upload"></i> Selecionar foto no dispositivo</button>
-              <button type="button" class="ks-btn ks-btn-primary" id="ks-link-cover-open-gallery-btn"><i class="fas fa-image"></i> Selecionar da galeria atual</button>
-            </div>
-
-            <div class="mt-4">
-              <div class="ks-field">
-                <label>Pré-visualização</label>
-                <div class="rounded-lg overflow-hidden border border-slate-200 bg-black/70 mt-2">
-                  <img id="ks-link-cover-preview" alt="Prévia da capa do link" style="width:100%;height:220px;object-fit:contain;background:#0b0b0b;display:block" />
-                </div>
-                <div id="ks-link-cover-current-source" class="text-xs ks-muted mt-2">Origem atual: foto da galeria</div>
-              </div>
-            </div>
-
-            <select id="ks-link-cover-photo" class="ks-input mt-2 hidden"></select>
-            <div id="ks-link-cover-picker" class="hidden mt-4 rounded-lg border border-slate-200 bg-black/35 p-3">
-              <div class="ks-link-cover-picker-card">
-                <div class="ks-link-cover-picker-head flex items-center justify-between gap-2 mb-2">
-                  <div class="text-sm font-extrabold text-slate-900">Escolher foto da galeria atual</div>
-                  <button type="button" class="ks-btn" id="ks-link-cover-picker-close"><i class="fas fa-times"></i> Fechar</button>
-                </div>
-                <div class="mb-2">
-                  <input type="text" id="ks-link-cover-search" class="ks-input" placeholder="Buscar foto pelo nome..." />
-                </div>
-                <div id="ks-link-cover-grid" class="ks-link-cover-picker-grid grid grid-cols-2 md:grid-cols-3 gap-2"></div>
-                <div class="mt-3 flex flex-wrap gap-2 items-center">
-                  <button type="button" class="ks-btn ks-btn-primary" id="ks-link-cover-picker-apply"><i class="fas fa-check"></i> Usar foto selecionada</button>
-                  <span class="text-xs ks-muted">Essa capa será usada na prévia do link da galeria (WhatsApp, etc.). Se não houver capa ou o arquivo não carregar, o sistema usa uma imagem padrão para a miniatura.</span>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -807,6 +806,9 @@
             <p class="text-xs ks-muted mt-2 max-w-3xl"><b>Por caixa:</b> apague o texto, salve e aquele campo volta ao padrão. <b>Tudo de uma vez:</b> use o botão &quot;Usar padrões do sistema&quot;.</p>
           </div>
         </div>
+
+        <!-- Capa do link (alias) -->
+        <div class="hidden" data-pane="link-cover"></div>
 
         <!-- Suporte WhatsApp -->
         <div class="ks-card p-5 hidden" data-pane="support">

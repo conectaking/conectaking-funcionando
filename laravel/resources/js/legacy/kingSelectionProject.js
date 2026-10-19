@@ -2027,7 +2027,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (linksSupportLabel) linksSupportLabel.value = String(gallery?.support_whatsapp_label || '').trim();
     if (linksSupportMsg) linksSupportMsg.value = String(gallery?.support_whatsapp_message || '').trim();
     syncSupportFieldsFromGallery();
-    refreshLinkCoverPane();
+    const pickerOpen = linkCoverPicker && !linkCoverPicker.classList.contains('hidden');
+    refreshLinkCoverPane({ keepPickerOpen: pickerOpen });
   }
 
   function applySalesWaPlaceholders(tpl, { nome, link, galeria }) {
