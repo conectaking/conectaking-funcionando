@@ -148,6 +148,7 @@ class KingSelectionFaceService
      */
     public function enrollClientFaceImage(array $payload, string $binary): array
     {
+        $this->bumpImageMemory();
         if ($binary === '') {
             return ['status' => 400, 'body' => ['message' => 'Nenhuma imagem enviada.']];
         }
@@ -197,23 +198,29 @@ class KingSelectionFaceService
                 'error' => $e->getMessage(),
             ]);
 
-            if ($this->isRekogOnDemand()) {
-                // Em modo sob demanda (compareFaces chunked), se a Coleção Rekognition ainda não estiver criada ou configurada,
-                // verificamos se há rosto válido com DetectFaces para não travar o cliente com erro 502
-                $det = $this->detectFacesSafe($jpeg, $cfg);
-                if ($det !== null && $det !== []) {
-                    $indexResult = ['FaceRecords' => [['Face' => [
-                        'FaceId' => 'ondemand_'.bin2hex(random_bytes(8)),
-                        'ImageId' => null,
-                    ]]]];
-                } else {
-                    return ['status' => 400, 'body' => [
-                        'message' => 'Nenhum rosto detectado na foto. Tire uma selfie com o rosto bem visível e de frente.',
-                        'code' => 'no_face',
-                    ]];
-                }
+            // Validação ou fallback sob demanda: se IndexFaces falhar (ex: coleção inexistente),
+            // tentamos DetectFaces. Se detectar rosto ou se a AWS falhar, usamos o modo ondemand com a selfie salva
+            $det = $this->detectFacesSafe($jpeg, $cfg);
+            if ($det !== null && $det !== []) {
+                $indexResult = ['FaceRecords' => [['Face' => [
+                    'FaceId' => 'ondemand_'.bin2hex(random_bytes(8)),
+                    'ImageId' => null,
+                ]]]];
+            } elseif ($det === []) {
+                return ['status' => 400, 'body' => [
+                    'message' => 'Nenhum rosto detectado na foto. Tire uma selfie com o rosto bem visível e de frente.',
+                    'code' => 'no_face',
+                ]];
             } else {
-                return ['status' => 502, 'body' => ['message' => 'Falha no Rekognition: '.$e->getMessage()]];
+                Log::warning('ks.face.clientEnroll.fallbackOnDemand', [
+                    'galleryId' => $galleryId,
+                    'clientId' => $clientId,
+                    'error' => $e->getMessage(),
+                ]);
+                $indexResult = ['FaceRecords' => [['Face' => [
+                    'FaceId' => 'ondemand_'.bin2hex(random_bytes(8)),
+                    'ImageId' => null,
+                ]]]];
             }
         }
         $faceRecords = $indexResult['FaceRecords'] ?? [];
@@ -315,23 +322,23 @@ class KingSelectionFaceService
         } catch (\Throwable $e) {
             Log::error('ks.face.anonEnroll', ['error' => $e->getMessage()]);
 
-            if ($this->isRekogOnDemand()) {
-                $det = $this->detectFacesSafe($jpeg, $cfg);
-                if ($det !== null && $det !== []) {
-                    $indexResult = ['FaceRecords' => [['Face' => [
-                        'FaceId' => 'ondemand_'.bin2hex(random_bytes(8)),
-                        'ImageId' => null,
-                    ]]]];
-                } else {
-                    return ['status' => 400, 'body' => [
-                        'message' => 'Nenhum rosto detectado na foto. Tire uma selfie com o rosto bem visível e de frente.',
-                        'code' => 'no_face',
-                    ]];
-                }
-            } else {
-                return ['status' => 503, 'body' => [
-                    'message' => 'Serviço de reconhecimento facial temporariamente indisponível: '.$e->getMessage(),
+            $det = $this->detectFacesSafe($jpeg, $cfg);
+            if ($det !== null && $det !== []) {
+                $indexResult = ['FaceRecords' => [['Face' => [
+                    'FaceId' => 'ondemand_'.bin2hex(random_bytes(8)),
+                    'ImageId' => null,
+                ]]]];
+            } elseif ($det === []) {
+                return ['status' => 400, 'body' => [
+                    'message' => 'Nenhum rosto detectado na foto. Tire uma selfie com o rosto bem visível e de frente.',
+                    'code' => 'no_face',
                 ]];
+            } else {
+                Log::warning('ks.face.anonEnroll.fallbackOnDemand', ['galleryId' => $galleryId, 'clientId' => $clientId, 'error' => $e->getMessage()]);
+                $indexResult = ['FaceRecords' => [['Face' => [
+                    'FaceId' => 'ondemand_'.bin2hex(random_bytes(8)),
+                    'ImageId' => null,
+                ]]]];
             }
         }
         $faceRecords = $indexResult['FaceRecords'] ?? [];
@@ -2784,5 +2791,30 @@ class KingSelectionFaceService
              WHERE g.id = ? AND pi.user_id = ? LIMIT 1',
             [$galleryId, $userId]
         );
+    }
+
+    private function bumpImageMemory(): void
+    {
+        $cur = (string) ini_get('memory_limit');
+        $bytes = $this->memoryLimitToBytes($cur);
+        if ($bytes > 0 && $bytes < 512 * 1024 * 1024) {
+            @ini_set('memory_limit', '512M');
+        }
+    }
+
+    private function memoryLimitToBytes(string $limit): int
+    {
+        $limit = trim($limit);
+        if ($limit === '' || $limit === '-1') {
+            return -1;
+        }
+        $unit = strtolower(substr($limit, -1));
+        $num = (float) $limit;
+        return (int) match ($unit) {
+            'g' => (int) ($num * 1024 * 1024 * 1024),
+            'm' => (int) ($num * 1024 * 1024),
+            'k' => (int) ($num * 1024),
+            default => (int) $num,
+        };
     }
 }
