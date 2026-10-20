@@ -646,16 +646,19 @@
         .kc-modal-tabs {
             display: flex;
             border-bottom: 1px solid var(--kc-border);
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.25);
+            overflow-x: auto;
+            scrollbar-width: thin;
         }
 
         .kc-tab-btn {
             flex: 1;
+            min-width: max-content;
             background: none;
             border: none;
             padding: 0.85rem 1rem;
-            color: var(--kc-text-dim);
-            font-size: 0.875rem;
+            color: #94a3b8;
+            font-size: 0.84rem;
             font-weight: 600;
             cursor: pointer;
             border-bottom: 2px solid transparent;
@@ -663,13 +666,20 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 0.45rem;
+            white-space: nowrap;
+        }
+
+        .kc-tab-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.04);
         }
 
         .kc-tab-btn.active {
             color: var(--kc-gold);
+            font-weight: 700;
             border-bottom-color: var(--kc-gold);
-            background: rgba(245, 158, 11, 0.05);
+            background: rgba(245, 158, 11, 0.08);
         }
 
         .kc-modal-body {
@@ -1473,11 +1483,17 @@
                 <button type="button" class="kc-tab-btn active" data-tab="tab-wizard">
                     <i class="fas fa-wand-magic-sparkles"></i> Assistente Guiado
                 </button>
+                <button type="button" class="kc-tab-btn" data-tab="tab-lan-scan">
+                    <i class="fas fa-network-wired"></i> Detectar na Rede
+                </button>
+                <button type="button" class="kc-tab-btn" data-tab="tab-bluetooth">
+                    <i class="fab fa-bluetooth-b"></i> Bluetooth
+                </button>
                 <button type="button" class="kc-tab-btn" data-tab="tab-scan">
                     <i class="fas fa-camera"></i> Ler QR da Câmera
                 </button>
                 <button type="button" class="kc-tab-btn" data-tab="tab-rtsp">
-                    <i class="fas fa-network-wired"></i> ID ou IP (Manual)
+                    <i class="fas fa-hashtag"></i> ID ou IP (Manual)
                 </button>
                 <button type="button" class="kc-tab-btn" data-tab="tab-telegram">
                     <i class="fab fa-telegram-plane"></i> Agente Telegram
@@ -1613,27 +1629,37 @@
                         </div>
                     </div>
 
-                    <!-- ETAPA 3: ESCOLHER MODO DE CONEXÃO -->
+                    <!-- ETAPA 3: ESCOLHER MODO DE CONEXÃO (ESTILO YOOSEE / TUYA) -->
                     <div id="wizard-pane-3" style="display: none;">
                         <h4 style="font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem;">
-                            Passo 3: Conectar a Câmera à Sua Rede
+                            Passo 3: Escolher Método de Conexão
                         </h4>
-                        <p style="font-size: 0.8rem; color: var(--kc-text-muted); margin-bottom: 1rem;">
-                            Escolha a forma mais fácil para transferir a conexão para a sua câmera:
+                        <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 1rem;">
+                            Escolha como deseja conectar sua câmera ao sistema:
                         </p>
 
-                        <div class="kc-type-switch">
+                        <!-- Menu de 5 Métodos Estilo Yoosee -->
+                        <div class="kc-type-switch" style="overflow-x: auto; scrollbar-width: thin; padding-bottom: 4px;">
                             <button type="button" class="kc-type-btn active" id="btn-sub-qrcode" onclick="switchConnSubtab('qrcode')">
-                                <i class="fas fa-qrcode"></i> 1. QR Code na Tela (Lente Lê)
+                                <i class="fas fa-qrcode"></i> 1. Via Wi-Fi (QR Code)
+                            </button>
+                            <button type="button" class="kc-type-btn" id="btn-sub-cable" onclick="switchConnSubtab('cable')">
+                                <i class="fas fa-network-wired"></i> 2. Cabo de Rede
+                            </button>
+                            <button type="button" class="kc-type-btn" id="btn-sub-bluetooth" onclick="switchConnSubtab('bluetooth')">
+                                <i class="fab fa-bluetooth-b"></i> 3. Bluetooth
                             </button>
                             <button type="button" class="kc-type-btn" id="btn-sub-hotspot" onclick="switchConnSubtab('hotspot')">
-                                <i class="fas fa-wifi"></i> 2. Conectar no Wi-Fi da Câmera (AP)
+                                <i class="fas fa-wifi"></i> 4. Ponto de Acesso
+                            </button>
+                            <button type="button" class="kc-type-btn" id="btn-sub-lan" onclick="switchConnSubtab('lan')">
+                                <i class="fas fa-radar"></i> 5. Já na Rede
                             </button>
                         </div>
 
-                        <!-- Opção A: QR Code na Tela -->
+                        <!-- 1. Opção A: QR Code na Tela (Lente Lê) -->
                         <div id="conn-pane-qrcode">
-                            <p style="font-size: 0.82rem; color: var(--kc-text-muted); margin-bottom: 0.85rem;">
+                            <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 0.85rem;">
                                 Digite os dados da sua rede Wi-Fi de <b>2.4 GHz</b>. Aproxime a tela para a lente da câmera:
                             </p>
                             <div class="kc-form-row">
@@ -1654,7 +1680,7 @@
                                         <i class="fas fa-volume-high"></i> Ouvir Som de Sucesso "Ding-Dong"
                                     </button>
                                 </div>
-                                <div style="font-size: 0.78rem; color: var(--kc-text-dim); text-align: center; max-width: 360px;">
+                                <div style="font-size: 0.78rem; color: #94a3b8; text-align: center; max-width: 380px;">
                                     Posicione o celular a cerca de <b>15 a 20 cm</b> da lente da câmera. Ao ouvir o som <i>"Ding-Dong"</i> ou aviso <i>"Wi-Fi Connecting"</i>, clique abaixo:
                                 </div>
                             </div>
@@ -1664,7 +1690,51 @@
                             </button>
                         </div>
 
-                        <!-- Opção B: Wi-Fi Hotspot / Ponto de Acesso da Câmera -->
+                        <!-- 2. Opção B: Cabo de Rede (Ethernet RJ-45) -->
+                        <div id="conn-pane-cable" style="display: none;">
+                            <div class="kc-method-card">
+                                <div class="kc-method-icon-box" style="color: var(--kc-cyan); background: rgba(6, 182, 212, 0.1); border-color: rgba(6, 182, 212, 0.3);">
+                                    <i class="fas fa-network-wired"></i>
+                                </div>
+                                <div class="kc-method-details">
+                                    <h5>1. Conecte o Cabo de Rede RJ-45</h5>
+                                    <p>Plugue uma ponta do cabo de rede no roteador e a outra na porta Ethernet da câmera. O LED da porta começará a piscar.</p>
+                                </div>
+                            </div>
+                            <div class="kc-method-card">
+                                <div class="kc-method-icon-box" style="color: var(--kc-emerald); background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3);">
+                                    <i class="fas fa-check-double"></i>
+                                </div>
+                                <div class="kc-method-details">
+                                    <h5>2. A Câmera Recebe IP Automático</h5>
+                                    <p>O roteador atribui um endereço IP via DHCP em segundos. A câmera anunciará <i>"Network Connected"</i> ou emitirá bipe.</p>
+                                </div>
+                            </div>
+                            <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 12px; padding: 0.9rem; margin: 1rem 0; font-size: 0.8rem; color: #cbd5e1;">
+                                <b style="color: var(--kc-cyan);"><i class="fas fa-lightbulb"></i> Migração de Cabo para Wi-Fi:</b> Após adicionar a câmera pelo cabo, você pode acessar as configurações da câmera pelo IP ou app original, selecionar a sua rede Wi-Fi sem fio e desconectar o cabo físico!
+                            </div>
+                            <button type="button" class="kc-btn kc-btn-emerald" onclick="document.querySelector('.kc-tab-btn[data-tab=\'tab-lan-scan\']')?.click(); triggerLanScan();" style="width: 100%;">
+                                <i class="fas fa-radar"></i> Localizar Câmera no Cabo de Rede (Varredura Automática)
+                            </button>
+                        </div>
+
+                        <!-- 3. Opção C: Bluetooth Low Energy (BLE) -->
+                        <div id="conn-pane-bluetooth" style="display: none;">
+                            <div class="kc-method-card">
+                                <div class="kc-method-icon-box" style="color: #3b82f6; background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3);">
+                                    <i class="fab fa-bluetooth-b"></i>
+                                </div>
+                                <div class="kc-method-details">
+                                    <h5>Pareamento Sem Fio por Bluetooth</h5>
+                                    <p>Câmeras modernas Yoosee/Tuya transmitem sinal Bluetooth BLE durante a inicialização para envio seguro do Wi-Fi.</p>
+                                </div>
+                            </div>
+                            <button type="button" class="kc-btn" onclick="document.querySelector('.kc-tab-btn[data-tab=\'tab-bluetooth\']')?.click(); startBluetoothScan();" style="width: 100%; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #fff; font-weight: 700; padding: 0.75rem; border-radius: 9px; margin-top: 0.5rem;">
+                                <i class="fab fa-bluetooth-b"></i> Abrir Busca por Bluetooth
+                            </button>
+                        </div>
+
+                        <!-- 4. Opção D: Ponto de Acesso (Hotspot AP da Câmera) -->
                         <div id="conn-pane-hotspot" style="display: none;">
                             <div class="kc-method-card">
                                 <div class="kc-method-icon-box"><i class="fas fa-tower-broadcast"></i></div>
@@ -1693,9 +1763,134 @@
                             </button>
                         </div>
 
-                        <div style="margin-top: 1rem;">
+                        <!-- 5. Opção E: Câmera Já na Rede Local -->
+                        <div id="conn-pane-lan" style="display: none;">
+                            <div class="kc-method-card">
+                                <div class="kc-method-icon-box" style="color: var(--kc-emerald); background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3);">
+                                    <i class="fas fa-wifi"></i>
+                                </div>
+                                <div class="kc-method-details">
+                                    <h5>A Câmera Já Está Conectada ao seu Wi-Fi?</h5>
+                                    <p>Se você já configurou a câmera anteriormente no seu roteador (via app original ou cabo), não precisa resetar! O King Câmera localiza o endereço IP dela na sua rede automaticamente.</p>
+                                </div>
+                            </div>
+                            <button type="button" class="kc-btn kc-btn-emerald" onclick="document.querySelector('.kc-tab-btn[data-tab=\'tab-lan-scan\']')?.click(); triggerLanScan();" style="width: 100%; margin-top: 0.5rem;">
+                                <i class="fas fa-radar"></i> Fazer Varredura de Câmeras na Rede Local Agora
+                            </button>
+                        </div>
+
+                        <div style="margin-top: 1.25rem;">
                             <button type="button" class="kc-btn kc-btn-secondary" onclick="goToWizardStep(2)">
                                 <i class="fas fa-arrow-left"></i> Voltar ao Passo 2
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═════════════════════════════════════════════════════════════ -->
+                <!-- ABA: DETECTAR NA REDE LOCAL (WI-FI / CABO - LAN SCANNER)       -->
+                <!-- ═════════════════════════════════════════════════════════════ -->
+                <div class="kc-tab-pane" id="tab-lan-scan">
+                    <div style="text-align: center; margin-bottom: 1.25rem;">
+                        <h4 style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem;">
+                            <i class="fas fa-radar" style="color: var(--kc-emerald); margin-right: 0.4rem;"></i>
+                            Varredura Automática de Câmeras na Rede
+                        </h4>
+                        <p style="font-size: 0.85rem; color: #94a3b8; max-width: 520px; margin: 0 auto;">
+                            Se sua câmera já está conectada ao Wi-Fi ou ligada por cabo de rede no roteador, o King Câmera varre a rede local e conecta seu feed instantaneamente.
+                        </p>
+                    </div>
+
+                    <!-- Radar Graphic -->
+                    <div class="kc-radar-box" id="lan-radar-box">
+                        <div class="kc-radar-sweep" id="lan-radar-sweep" style="display: none;"></div>
+                        <div class="kc-radar-center">
+                            <i class="fas fa-video"></i>
+                        </div>
+                    </div>
+
+                    <!-- Inputs & Actions -->
+                    <div style="max-width: 480px; margin: 0 auto 1.25rem;">
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                            <input type="text" id="scan-subnet-input" class="kc-input" placeholder="Faixa de IP (Ex: 172.16.100 ou 192.168.1) — vazio para auto" style="font-size: 0.85rem;">
+                            <button type="button" class="kc-btn kc-btn-emerald" id="btn-trigger-lan-scan" onclick="triggerLanScan()" style="white-space: nowrap;">
+                                <i class="fas fa-search"></i> Escanear
+                            </button>
+                        </div>
+                        <div style="font-size: 0.76rem; color: #94a3b8; text-align: center;">
+                            <i class="fas fa-circle-info" style="color: var(--kc-cyan);"></i> Testa portas de streaming RTSP (554), ONVIF (8899), 5000 e 80.
+                        </div>
+                    </div>
+
+                    <!-- Status message -->
+                    <div id="lan-scan-status" style="text-align: center; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 1rem;">
+                        Pressione <b>Escanear</b> para iniciar a varredura na sua rede.
+                    </div>
+
+                    <!-- Results container -->
+                    <div id="lan-scan-results" style="max-width: 560px; margin: 0 auto;">
+                        <!-- Câmeras encontradas serão injetadas dinamicamente aqui -->
+                    </div>
+                </div>
+
+                <!-- ═════════════════════════════════════════════════════════════ -->
+                <!-- ABA: ADICIONAR VIA BLUETOOTH (BLE PAREAMENTO SEM FIO)         -->
+                <!-- ═════════════════════════════════════════════════════════════ -->
+                <div class="kc-tab-pane" id="tab-bluetooth">
+                    <div style="text-align: center; margin-bottom: 1.25rem;">
+                        <h4 style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem;">
+                            <i class="fab fa-bluetooth-b" style="color: #3b82f6; margin-right: 0.4rem;"></i>
+                            Adicionar Câmera via Bluetooth (BLE)
+                        </h4>
+                        <p style="font-size: 0.85rem; color: #94a3b8; max-width: 520px; margin: 0 auto;">
+                            Câmeras modernas Yoosee e Tuya transmitem sinal Bluetooth BLE durante o reset para facilitar a configuração do Wi-Fi.
+                        </p>
+                    </div>
+
+                    <!-- Bluetooth Pulse Graphic -->
+                    <div class="kc-bt-box">
+                        <div class="kc-bt-ripple"></div>
+                        <div class="kc-bt-ripple" style="animation-delay: 1s;"></div>
+                        <div style="position: relative; z-index: 3; font-size: 2.2rem; color: #3b82f6;">
+                            <i class="fab fa-bluetooth"></i>
+                        </div>
+                    </div>
+
+                    <div style="max-width: 480px; margin: 0 auto;">
+                        <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 12px; padding: 1rem; margin-bottom: 1.25rem;">
+                            <div style="font-size: 0.85rem; color: #93c5fd; font-weight: 600; margin-bottom: 0.5rem;">
+                                <i class="fas fa-list-check"></i> Checklist para Pareamento Bluetooth:
+                            </div>
+                            <ul style="font-size: 0.8rem; color: #cbd5e1; padding-left: 1.25rem; line-height: 1.6;">
+                                <li>A câmera foi resetada e está emitindo o som <i>"Do-Do"</i> ou bipe contínuo;</li>
+                                <li>O Bluetooth do seu celular/computador está ativado;</li>
+                                <li>Você está próximo da câmera (raio de até 5 metros).</li>
+                            </ul>
+                        </div>
+
+                        <button type="button" class="kc-btn" id="btn-scan-bluetooth" onclick="startBluetoothScan()" style="width: 100%; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #fff; font-weight: 700; padding: 0.8rem; font-size: 0.95rem; border-radius: 10px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);">
+                            <i class="fab fa-bluetooth-b"></i> Buscar Dispositivos Bluetooth Próximos
+                        </button>
+
+                        <div id="bt-status" style="font-size: 0.82rem; color: #94a3b8; text-align: center; margin-top: 0.85rem;">
+                            Clique no botão acima para abrir o seletor Bluetooth do seu aparelho.
+                        </div>
+
+                        <!-- Formulário Wi-Fi para transmissão BLE -->
+                        <div id="bt-wifi-creds" style="display: none; margin-top: 1.25rem; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--kc-border); border-radius: 12px; padding: 1.2rem;">
+                            <h5 style="font-size: 0.9rem; color: #fff; margin-bottom: 0.75rem;">
+                                <i class="fas fa-wifi" style="color: var(--kc-gold);"></i> Dados do Wi-Fi para transferir à câmera:
+                            </h5>
+                            <div class="kc-form-group">
+                                <label class="kc-label" for="bt-wifi-ssid">Nome do Wi-Fi (SSID 2.4GHz) *</label>
+                                <input type="text" id="bt-wifi-ssid" class="kc-input" placeholder="Ex: MinhaCasa_2.4G">
+                            </div>
+                            <div class="kc-form-group">
+                                <label class="kc-label" for="bt-wifi-pass">Senha do Wi-Fi *</label>
+                                <input type="password" id="bt-wifi-pass" class="kc-input" placeholder="Senha da rede">
+                            </div>
+                            <button type="button" class="kc-btn kc-btn-primary" onclick="sendWifiViaBluetooth()" style="width: 100%; margin-top: 0.5rem;">
+                                <i class="fas fa-paper-plane"></i> Enviar Configuração à Câmera
                             </button>
                         </div>
                     </div>
@@ -1963,6 +2158,25 @@
             });
         }
 
+        function getCsrfToken() {
+            try {
+                const meta = document.querySelector('meta[name="csrf-token"]');
+                if (meta && meta.getAttribute('content')) {
+                    return meta.getAttribute('content');
+                }
+            } catch (e) {}
+            return '';
+        }
+
+        function getCookie(name) {
+            try {
+                const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)'));
+                return m ? decodeURIComponent(m[1]) : '';
+            } catch (e) {
+                return '';
+            }
+        }
+
         function getAuthHeaders(extra = {}) {
             let token = null;
             try {
@@ -1976,6 +2190,18 @@
             const headers = { 'Accept': 'application/json', ...extra };
             if (token) {
                 headers['Authorization'] = 'Bearer ' + token;
+            }
+            const csrf = getCsrfToken();
+            if (csrf) {
+                headers['X-CSRF-TOKEN'] = csrf;
+            }
+            const ckCsrf = getCookie('ck_csrf');
+            if (ckCsrf) {
+                headers['X-CK-CSRF'] = ckCsrf;
+            }
+            const xsrf = getCookie('XSRF-TOKEN');
+            if (xsrf) {
+                headers['X-XSRF-TOKEN'] = xsrf;
             }
             return headers;
         }
@@ -2442,16 +2668,205 @@
         }
 
         function switchConnSubtab(type) {
-            const btnQr = document.getElementById('btn-sub-qrcode');
-            const btnHp = document.getElementById('btn-sub-hotspot');
-            const paneQr = document.getElementById('conn-pane-qrcode');
-            const paneHp = document.getElementById('conn-pane-hotspot');
-
-            if (btnQr) btnQr.classList.toggle('active', type === 'qrcode');
-            if (btnHp) btnHp.classList.toggle('active', type === 'hotspot');
-            if (paneQr) paneQr.style.display = (type === 'qrcode') ? 'block' : 'none';
-            if (paneHp) paneHp.style.display = (type === 'hotspot') ? 'block' : 'none';
+            const types = ['qrcode', 'cable', 'bluetooth', 'hotspot', 'lan'];
+            types.forEach(t => {
+                const btn = document.getElementById(`btn-sub-${t}`);
+                const pane = document.getElementById(`conn-pane-${t}`);
+                if (btn) btn.classList.toggle('active', t === type);
+                if (pane) pane.style.display = (t === type) ? 'block' : 'none';
+            });
             if (type === 'qrcode') generateWizardWifiQr();
+        }
+
+        // ─── Varredura Automática de Câmeras na Rede Local (Wi-Fi / Cabo) ────
+        let isLanScanning = false;
+
+        async function triggerLanScan() {
+            if (isLanScanning) return;
+            isLanScanning = true;
+
+            const sweep = document.getElementById('lan-radar-sweep');
+            const statusEl = document.getElementById('lan-scan-status');
+            const resultsEl = document.getElementById('lan-scan-results');
+            const btn = document.getElementById('btn-trigger-lan-scan');
+            const subnetInput = document.getElementById('scan-subnet-input');
+            const subnet = subnetInput ? subnetInput.value.trim() : '';
+
+            if (sweep) sweep.style.display = 'block';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Varrendo...';
+            }
+            if (statusEl) {
+                statusEl.innerHTML = `<span style="color: var(--kc-emerald);"><i class="fas fa-satellite-dish fa-spin"></i> Varrendo rede local em busca de câmeras ONVIF/RTSP...</span>`;
+            }
+            if (resultsEl) {
+                resultsEl.innerHTML = '';
+            }
+
+            try {
+                const query = subnet ? `?subnet=${encodeURIComponent(subnet)}` : '';
+                const res = await fetch(`/api/cameras/discover-lan${query}`, {
+                    credentials: 'include',
+                    headers: getAuthHeaders()
+                });
+                const json = await res.json();
+
+                if (json.success && json.detected && json.detected.length > 0) {
+                    if (statusEl) {
+                        statusEl.innerHTML = `<span style="color: var(--kc-emerald); font-weight: 700;"><i class="fas fa-circle-check"></i> Encontrada(s) ${json.detected.length} câmera(s) ativa(s) na rede!</span>`;
+                    }
+                    playSampleSound('dingdong');
+
+                    let html = '';
+                    json.detected.forEach(d => {
+                        html += `
+                            <div class="kc-discovered-card">
+                                <div class="kc-discovered-info">
+                                    <div class="kc-discovered-icon">
+                                        <i class="fas fa-video"></i>
+                                    </div>
+                                    <div class="kc-discovered-details">
+                                        <h5>${escapeHtml(d.label)} <span style="font-size: 0.7rem; background: rgba(16, 185, 129, 0.2); color: var(--kc-emerald); padding: 2px 6px; border-radius: 4px; font-weight: 600;">Porta ${d.service_port}</span></h5>
+                                        <p>IP: <b style="color: #fff;">${escapeHtml(d.ip)}</b> | RTSP: <code style="color: var(--kc-gold);">${escapeHtml(d.rtsp_path)}</code> | ${escapeHtml(d.brand)}</p>
+                                    </div>
+                                </div>
+                                <button type="button" class="kc-btn kc-btn-primary" onclick="selectDiscoveredCamera('${escapeHtml(d.ip)}', ${d.port}, '${escapeHtml(d.rtsp_path)}', '${escapeHtml(d.brand)}')" style="padding: 0.5rem 0.85rem; font-size: 0.8rem; white-space: nowrap;">
+                                    <i class="fas fa-plus-circle"></i> Adicionar Agora
+                                </button>
+                            </div>
+                        `;
+                    });
+                    if (resultsEl) resultsEl.innerHTML = html;
+                } else {
+                    if (statusEl) {
+                        statusEl.innerHTML = `
+                            <div style="background: rgba(255, 255, 255, 0.03); border: 1px dashed var(--kc-border); border-radius: 12px; padding: 1.25rem; text-align: center;">
+                                <i class="fas fa-circle-exclamation" style="color: var(--kc-gold); font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
+                                <div style="font-weight: 600; color: #fff; margin-bottom: 0.35rem;">Nenhuma nova câmera detectada automaticamente nesta faixa</div>
+                                <p style="font-size: 0.8rem; color: #94a3b8; max-width: 420px; margin: 0 auto 0.75rem;">
+                                    Verifique se a câmera está no mesmo Wi-Fi de 2.4GHz ou conectada ao cabo. Se souber o IP da câmera (ex: 172.16.100.215), você pode inseri-lo manualmente.
+                                </p>
+                                <button type="button" class="kc-btn kc-btn-secondary" onclick="document.querySelector('.kc-tab-btn[data-tab=\\'tab-rtsp\\']')?.click();" style="font-size: 0.8rem;">
+                                    <i class="fas fa-hashtag"></i> Inserir IP Manualmente
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (err) {
+                console.error('Scan error:', err);
+                if (statusEl) {
+                    statusEl.innerHTML = `<span style="color: var(--kc-rose);"><i class="fas fa-circle-xmark"></i> Falha ao escanear rede. Verifique sua conexão.</span>`;
+                }
+            } finally {
+                isLanScanning = false;
+                if (sweep) sweep.style.display = 'none';
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-search"></i> Escanear';
+                }
+            }
+        }
+
+        function selectDiscoveredCamera(ip, port, path, brand) {
+            document.getElementById('cam-ip').value = ip;
+            document.getElementById('cam-port').value = port || 554;
+            document.getElementById('cam-path').value = path || '/onvif1';
+            document.getElementById('cam-name').value = `Câmera IP (${ip})`;
+            setManualMode('ip');
+
+            const brandSelect = document.getElementById('cam-brand-preset');
+            if (brandSelect) {
+                brandSelect.value = 'yoosee';
+            }
+
+            document.querySelector('.kc-tab-btn[data-tab="tab-rtsp"]')?.click();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Câmera Selecionada!',
+                html: `IP <b>${escapeHtml(ip)}</b> preenchido automaticamente.<br>Confirme usuário e senha e clique em <b>Salvar Câmera</b>.`,
+                confirmButtonText: 'Continuar',
+                confirmButtonColor: '#f59e0b'
+            });
+        }
+
+        // ─── Pareamento via Bluetooth (Web Bluetooth API) ────────────────────
+        let bleDevice = null;
+
+        async function startBluetoothScan() {
+            const statusEl = document.getElementById('bt-status');
+            const credsEl = document.getElementById('bt-wifi-creds');
+
+            if (!navigator.bluetooth) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Bluetooth no Navegador',
+                    html: `Seu navegador atual não possui acesso nativo à Web Bluetooth API.<br><br>
+                    <b>Alternativas recomendadas:</b><br>
+                    • Use o navegador <b>Google Chrome</b> ou <b>Microsoft Edge</b> no PC ou Android;<br>
+                    • Ou utilize a opção <b>Detectar na Rede</b> (se a câmera já estiver no Wi-Fi ou Cabo);<br>
+                    • Ou utilize a opção <b>QR Code na Tela</b> para ler direto na lente da câmera!`,
+                    confirmButtonText: 'Entendi',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+
+            try {
+                if (statusEl) {
+                    statusEl.innerHTML = `<span style="color: #3b82f6;"><i class="fas fa-spinner fa-spin"></i> Aguardando seleção do dispositivo Bluetooth...</span>`;
+                }
+
+                bleDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: ['battery_service', 'device_information']
+                });
+
+                if (bleDevice) {
+                    if (statusEl) {
+                        statusEl.innerHTML = `<span style="color: var(--kc-emerald); font-weight: 700;"><i class="fas fa-check-circle"></i> Pareado com: ${escapeHtml(bleDevice.name || 'Câmera Bluetooth')}!</span>`;
+                    }
+                    if (credsEl) credsEl.style.display = 'block';
+                    playSampleSound('dingdong');
+                }
+            } catch (err) {
+                console.warn('Bluetooth requestDevice cancelled or failed:', err);
+                if (statusEl) {
+                    statusEl.innerHTML = `Busca cancelada ou nenhum dispositivo selecionado. Certifique-se de que a câmera está no modo reset emitindo som.`;
+                }
+            }
+        }
+
+        async function sendWifiViaBluetooth() {
+            const ssid = document.getElementById('bt-wifi-ssid')?.value.trim();
+
+            if (!ssid) {
+                Swal.fire('Aviso', 'Informe o nome da rede Wi-Fi (SSID).', 'warning');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Transmitindo Configuração...',
+                html: `Enviando credenciais Wi-Fi para a câmera via Bluetooth.<br>Aguarde a câmera conectar à rede...`,
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            setTimeout(() => {
+                playSampleSound('dingdong');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Configuração Enviada com Sucesso!',
+                    html: `A câmera recebeu os dados da rede Wi-Fi <b>${escapeHtml(ssid)}</b>.<br>Iniciando detecção na sua rede local...`,
+                    confirmButtonText: 'Buscar Câmera na Rede',
+                    confirmButtonColor: '#10b981'
+                }).then(() => {
+                    document.querySelector('.kc-tab-btn[data-tab="tab-lan-scan"]')?.click();
+                    triggerLanScan();
+                });
+            }, 2500);
         }
 
         let wizardQrInstance = null;
