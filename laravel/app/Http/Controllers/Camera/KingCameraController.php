@@ -504,4 +504,69 @@ class KingCameraController extends Controller
         return response($answerSdp, 200)
             ->header('Content-Type', 'application/sdp');
     }
+
+    /**
+     * Descobre câmeras IP / RTSP / ONVIF conectadas na rede local.
+     */
+    public function discoverNetworkCameras(Request $request): JsonResponse
+    {
+        $targetIp = trim((string) $request->input('target_ip', ''));
+        $subnet = trim((string) $request->input('subnet', ''));
+
+        $discovered = [];
+        $candidates = [];
+
+        if ($targetIp !== '') {
+            $candidates[] = $targetIp;
+        } else {
+            // Se informada uma sub-rede (ex: 172.16.100 ou 192.168.1), verifica os IPs mais comuns
+            $prefix = $subnet !== '' ? rtrim($subnet, '.') : '172.16.100';
+            // Câmera piloto atual e hosts comuns de roteador/câmeras DHCP
+            $suffixes = [215, 1, 10, 50, 100, 101, 102, 105, 120, 150, 200, 254];
+            foreach ($suffixes as $suf) {
+                $candidates[] = "{$prefix}.{$suf}";
+            }
+            // Adiciona sub-rede alternativa 192.168.1.x se for genérico
+            if ($subnet === '') {
+                foreach ([1, 50, 100, 101, 108, 120, 128] as $suf) {
+                    $candidates[] = "192.168.1.{$suf}";
+                }
+            }
+        }
+
+        $commonPorts = [
+            554 => ['proto' => 'RTSP', 'path' => '/onvif1', 'brand' => 'Yoosee / ONVIF Universal'],
+            8554 => ['proto' => 'RTSP', 'path' => '/live/ch0', 'brand' => 'IP Camera Stream'],
+            8899 => ['proto' => 'ONVIF', 'path' => '/onvif1', 'brand' => 'ONVIF Device Manager'],
+            8000 => ['proto' => 'Hikvision', 'path' => '/Streaming/Channels/101', 'brand' => 'Hikvision / Ezviz'],
+            37777 => ['proto' => 'Dahua', 'path' => '/cam/realmonitor?channel=1&subtype=0', 'brand' => 'Intelbras / Dahua'],
+            80 => ['proto' => 'HTTP Web', 'path' => '/onvif1', 'brand' => 'IP Camera Web Interface'],
+        ];
+
+        foreach (array_unique($candidates) as $ip) {
+            foreach ([554, 8899, 8000, 37777, 8554] as $port) {
+                $fp = @fsockopen($ip, $port, $errno, $errstr, 0.25);
+                if ($fp) {
+                    fclose($fp);
+                    $meta = $commonPorts[$port] ?? ['proto' => 'RTSP', 'path' => '/onvif1', 'brand' => 'Câmera IP'];
+                    $discovered[] = [
+                        'ip' => $ip,
+                        'port' => $port,
+                        'protocol' => $meta['proto'],
+                        'default_path' => $meta['path'],
+                        'brand' => $meta['brand'],
+                        'name' => "Câmera Detectada ({$ip})",
+                        'status' => 'online',
+                    ];
+                    break;
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => count($discovered) > 0 ? count($discovered) . ' dispositivo(s) encontrado(s).' : 'Nenhuma câmera respondeu no momento.',
+            'data' => $discovered,
+        ]);
+    }
 }

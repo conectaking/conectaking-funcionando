@@ -147,6 +147,10 @@ class RequireCookieCsrf
             'guest-list/confirm/qr/',
             // Formulários públicos via token de acesso direto
             'form/',
+            'api/cameras/',
+            'api/public/camera-share/',
+            'monitor/',
+            'camera-share/',
         ];
         foreach ($prefixes as $prefix) {
             if (str_starts_with($path, $prefix)) {
