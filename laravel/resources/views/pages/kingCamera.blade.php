@@ -533,66 +533,73 @@
             opacity: 1 !important;
         }
 
-        /* Botões Laterais PTZ de Rotação Rápida - Sutis, Compactos e Semi-Transparentes */
+        /* Botões Laterais PTZ de Rotação Rápida - Acionados apenas no Modo PTZ 360° ou Fullscreen */
         .kc-side-ptz-btn {
             position: absolute;
             z-index: 2147483640;
-            background: rgba(15, 23, 42, 0.25);
-            backdrop-filter: blur(2px);
-            -webkit-backdrop-filter: blur(2px);
+            background: rgba(15, 23, 42, 0.28);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
             border: 1px solid rgba(255, 255, 255, 0.18);
-            color: rgba(255, 255, 255, 0.68);
-            width: 32px;
-            height: 32px;
+            color: rgba(255, 255, 255, 0.75);
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
-            display: flex;
+            display: none; /* Oculto por padrão para manter o feed da câmera 100% limpo */
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 0.82rem;
+            font-size: 0.78rem;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
             transition: all 0.18s ease;
             user-select: none;
             -webkit-user-select: none;
             touch-action: manipulation;
-            opacity: 0.38; /* Bem translúcido para não tampar a visão do quarto ou do bebê */
+            opacity: 0.38; /* Bem translúcido para enxergar o quarto e bebê através do botão */
+        }
+
+        /* Ativação quando o usuário clica no botão PTZ ou quando está em tela cheia */
+        .kc-video-wrap.ptz-active .kc-side-ptz-btn,
+        .kc-video-wrap:fullscreen .kc-side-ptz-btn,
+        .kc-video-wrap:-webkit-full-screen .kc-side-ptz-btn {
+            display: flex;
         }
 
         .kc-side-ptz-btn:hover,
         .kc-side-ptz-btn:active {
-            opacity: 0.92;
-            background: rgba(245, 158, 11, 0.55);
+            opacity: 0.95;
+            background: rgba(245, 158, 11, 0.65);
             color: #fff;
             border-color: var(--kc-gold);
-            box-shadow: 0 0 14px rgba(245, 158, 11, 0.45);
-            transform: scale(1.1);
+            box-shadow: 0 0 14px rgba(245, 158, 11, 0.5);
+            transform: scale(1.15);
         }
 
         .kc-side-ptz-btn.side-left {
-            left: 10px;
+            left: 8px;
             top: 50%;
             transform: translateY(-50%);
         }
         .kc-side-ptz-btn.side-left:hover, .kc-side-ptz-btn.side-left:active {
-            transform: translateY(-50%) scale(1.1);
+            transform: translateY(-50%) scale(1.15);
         }
 
         .kc-side-ptz-btn.side-right {
-            right: 10px;
+            right: 8px;
             top: 50%;
             transform: translateY(-50%);
         }
         .kc-side-ptz-btn.side-right:hover, .kc-side-ptz-btn.side-right:active {
-            transform: translateY(-50%) scale(1.1);
+            transform: translateY(-50%) scale(1.15);
         }
 
         .kc-side-ptz-btn.side-up {
-            top: 10px;
+            top: 50px; /* Posicionado abaixo da barra de ferramentas, sem sobrepor os botões de áudio e hora */
             left: 50%;
             transform: translateX(-50%);
         }
         .kc-side-ptz-btn.side-up:hover, .kc-side-ptz-btn.side-up:active {
-            transform: translateX(-50%) scale(1.1);
+            transform: translateX(-50%) scale(1.15);
         }
 
         .kc-side-ptz-btn.side-down {
@@ -601,7 +608,33 @@
             transform: translateX(-50%);
         }
         .kc-side-ptz-btn.side-down:hover, .kc-side-ptz-btn.side-down:active {
-            transform: translateX(-50%) scale(1.1);
+            transform: translateX(-50%) scale(1.15);
+        }
+
+        /* Banner indicador discreto durante Modo PTZ */
+        .kc-ptz-gesture-hint {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.72);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            color: #fbbf24;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            pointer-events: none;
+            z-index: 2147483630;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            white-space: nowrap;
+        }
+        .kc-video-wrap.ptz-active .kc-ptz-gesture-hint {
+            display: flex;
         }
 
         /* Em tela cheia, garante que a barra de controles e os botões fiquem no topo */
@@ -696,6 +729,40 @@
         .kc-footer-actions {
             display: flex;
             gap: 0.5rem;
+        }
+
+        .kc-card-footer-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 0.25rem;
+        }
+
+        .kc-card-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.12);
+            padding: 0.2rem 0.55rem;
+            border-radius: 6px;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .kc-btn-share-highlight {
+            color: var(--kc-gold) !important;
+            background: rgba(245, 158, 11, 0.15) !important;
+            border-color: rgba(245, 158, 11, 0.35) !important;
+        }
+
+        .kc-btn-share-highlight:hover,
+        .kc-btn-share-highlight:active {
+            background: var(--kc-gold) !important;
+            color: #000 !important;
+            box-shadow: 0 0 14px var(--kc-gold-glow);
         }
 
         /* Offline / Loader State inside Video */
@@ -1848,40 +1915,50 @@
                 display: none;
             }
             .kc-hero {
-                padding: 1.25rem 0 0.85rem 0;
+                padding: 0.65rem 0 0.35rem 0;
             }
             .kc-hero-text h1 {
-                font-size: 1.25rem;
-                line-height: 1.3;
+                font-size: 1.1rem;
+                line-height: 1.25;
             }
             .kc-hero-text p {
-                font-size: 0.8rem;
-                margin-top: 0.35rem;
+                display: none; /* No mobile, oculta texto longo para o vídeo aparecer logo acima da dobra */
             }
             .kc-stats-grid {
-                grid-template-columns: repeat(3, 1fr);
+                display: flex;
                 gap: 0.4rem;
-                margin-top: 0.85rem;
+                margin-top: 0.45rem;
             }
             .kc-stat-item {
-                padding: 0.6rem 0.4rem;
-                border-radius: 10px;
+                flex: 1;
+                padding: 0.35rem 0.5rem;
+                border-radius: 8px;
                 text-align: center;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
             }
             .kc-stat-label {
-                font-size: 0.65rem;
+                font-size: 0.6rem;
+                text-transform: uppercase;
+                letter-spacing: 0.4px;
             }
             .kc-stat-val {
-                font-size: 0.95rem;
+                font-size: 0.85rem;
+                font-weight: 700;
             }
             .kc-toolbar {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0.65rem;
-                padding: 0.5rem 0;
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                gap: 0.5rem;
+                padding: 0.35rem 0;
+                margin-bottom: 0.35rem;
             }
             .kc-grid-modes {
-                justify-content: flex-start;
+                justify-content: flex-end;
                 overflow-x: auto;
                 padding-bottom: 2px;
             }
@@ -1921,9 +1998,9 @@
 
             /* Botões Laterais PTZ discretos e semi-transparentes no mobile */
             .kc-side-ptz-btn {
-                width: 30px !important;
-                height: 30px !important;
-                font-size: 0.75rem !important;
+                width: 28px !important;
+                height: 28px !important;
+                font-size: 0.72rem !important;
                 opacity: 0.35 !important;
                 background: rgba(15, 23, 42, 0.22) !important;
                 border: 1px solid rgba(255, 255, 255, 0.16) !important;
@@ -1933,12 +2010,12 @@
                 background: rgba(245, 158, 11, 0.65) !important;
                 color: #fff !important;
             }
-            .kc-side-ptz-btn.side-left { left: 8px; }
-            .kc-side-ptz-btn.side-right { right: 8px; }
-            .kc-side-ptz-btn.side-up { top: 8px; }
+            .kc-side-ptz-btn.side-left { left: 6px; }
+            .kc-side-ptz-btn.side-right { right: 6px; }
+            .kc-side-ptz-btn.side-up { top: 48px; }
             .kc-side-ptz-btn.side-down { bottom: 8px; }
 
-            /* Rodapé do Card adaptado para Mobile com 6 botões perfeitamente alinhados */
+            /* Rodapé do Card adaptado para Mobile com 6 botões perfeitamente distribuídos */
             .kc-card-footer {
                 padding: 0.75rem 0.85rem;
                 display: flex;
@@ -1964,19 +2041,28 @@
                 border: 1px solid rgba(16, 185, 129, 0.25);
             }
             .kc-footer-actions {
-                display: grid;
-                grid-template-columns: repeat(6, 1fr);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
                 gap: 0.4rem;
                 width: 100%;
             }
             .kc-footer-actions .kc-icon-btn {
-                width: 100% !important;
-                height: 38px !important;
+                flex: 1;
+                height: 40px !important;
                 border-radius: 10px;
                 font-size: 0.95rem;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                transition: all 0.2s ease;
+            }
+            .kc-footer-actions .kc-icon-btn.active {
+                background: rgba(245, 158, 11, 0.25) !important;
+                border-color: var(--kc-gold) !important;
+                color: var(--kc-gold) !important;
             }
 
             /* Joystick adaptado para telas mobile */
@@ -3180,6 +3266,10 @@
                             <i class="fas fa-chevron-down"></i>
                         </button>
 
+                        <div class="kc-ptz-gesture-hint">
+                            <i class="fas fa-arrows-alt"></i> Modo 360° Ativo • Arraste ou toque nas setas
+                        </div>
+
                         <div class="kc-video-overlay">
                             <div class="kc-overlay-top">
                                 <div class="kc-overlay-timestamp" id="time-${cam.id}">--:--:--</div>
@@ -3188,12 +3278,12 @@
                                         <i class="fas fa-volume-mute"></i>
                                     </button>
                                     <button class="kc-icon-btn kc-btn-share-highlight" onclick="openShareModal(${cam.id})" title="Compartilhar Câmera">
-                                        <i class="fas fa-share-nodes"></i>
+                                        <i class="fas fa-share-alt"></i>
                                     </button>
-                                    <button class="kc-icon-btn" onclick="toggleAiAudio(${cam.id})" title="IA Áudio Cristalino (Anti-Chiado)" id="btn-ai-audio-${cam.id}">
+                                    <button class="kc-icon-btn" onclick="toggleAiAudio(${cam.id})" title="IA Áudio Cristalino" id="btn-ai-audio-${cam.id}">
                                         <i class="fas fa-magic"></i>
                                     </button>
-                                    <button class="kc-icon-btn" onclick="toggleAiVideoNight(${cam.id})" title="IA Visão Noturna Aprimorada" id="btn-ai-night-${cam.id}">
+                                    <button class="kc-icon-btn" onclick="toggleAiVideoNight(${cam.id})" title="IA Visão Noturna" id="btn-ai-night-${cam.id}">
                                         <i class="fas fa-moon"></i>
                                     </button>
                                     <button class="kc-icon-btn" onclick="toggleAiVideoSharp(${cam.id})" title="IA Super Nitidez" id="btn-ai-sharp-${cam.id}">
@@ -3202,7 +3292,7 @@
                                     <button class="kc-icon-btn" onclick="downloadSnapshot(${cam.id})" title="Capturar Foto Instantânea">
                                         <i class="fas fa-camera"></i>
                                     </button>
-                                    <button class="kc-icon-btn" onclick="togglePtzWidget(${cam.id})" title="Giro 360° PTZ Motorizado" id="btn-ptz-${cam.id}" style="color: var(--kc-gold);">
+                                    <button class="kc-icon-btn" onclick="togglePtzWidget(${cam.id})" title="Giro 360° PTZ" id="btn-ptz-${cam.id}" style="color: var(--kc-gold);">
                                         <i class="fas fa-arrows-alt"></i>
                                     </button>
                                     <button class="kc-icon-btn" onclick="toggleFullscreen(${cam.id})" title="Tela Cheia">
@@ -3240,14 +3330,14 @@
                             </div>
                         </div>
                         <div class="kc-footer-actions">
-                            <button type="button" class="kc-icon-btn" onclick="togglePtzWidget(${cam.id})" title="Girar Câmera 360° (PTZ)" style="color: var(--kc-gold);">
+                            <button type="button" class="kc-icon-btn" id="btn-ptz-footer-${cam.id}" onclick="togglePtzWidget(${cam.id})" title="Giro 360° (PTZ)" style="color: var(--kc-gold);">
                                 <i class="fas fa-arrows-alt"></i>
                             </button>
-                            <button type="button" class="kc-icon-btn" onclick="openBabyAiModal(${cam.id})" title="Configurar IA Babá & Cerca do Berço" style="color: var(--kc-cyan);">
+                            <button type="button" class="kc-icon-btn" onclick="openBabyAiModal(${cam.id})" title="IA Babá & Berço" style="color: var(--kc-cyan);">
                                 <i class="fas fa-baby"></i>
                             </button>
                             <button type="button" class="kc-icon-btn kc-btn-share-highlight" onclick="openShareModal(${cam.id})" title="Compartilhar Link Temporário">
-                                <i class="fas fa-share-nodes"></i>
+                                <i class="fas fa-share-alt"></i>
                             </button>
                             <button type="button" class="kc-icon-btn" onclick="triggerTelegramTest(${cam.id})" title="Testar Alerta no Telegram" style="color: #38bdf8;">
                                 <i class="fab fa-telegram-plane"></i>
@@ -3518,10 +3608,28 @@
 
         // ─── CONTROLE PTZ 360° MOTORIZADO ──────────────────────────────────
         function togglePtzWidget(camId) {
-            const box = document.getElementById(`ptz-box-${camId}`);
-            if (!box) return;
-            const isVisible = box.style.display !== 'none';
-            box.style.display = isVisible ? 'none' : 'flex';
+            const card = document.getElementById(`card-cam-${camId}`);
+            const wrap = card ? card.querySelector('.kc-video-wrap') : null;
+            const btnTop = document.getElementById(`btn-ptz-${camId}`);
+            const btnFooter = document.getElementById(`btn-ptz-footer-${camId}`);
+
+            if (!wrap) return;
+            const isActive = wrap.classList.toggle('ptz-active');
+
+            if (btnTop) btnTop.classList.toggle('active', isActive);
+            if (btnFooter) btnFooter.classList.toggle('active', isActive);
+
+            if (isActive) {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'info',
+                    title: 'Modo 360° Ativado',
+                    text: 'Arraste na tela ou toque nas setas para girar a câmera.',
+                    showConfirmButton: false,
+                    timer: 2200
+                });
+            }
         }
 
         async function ptzStart(camId, direction, speed = 0.6) {
