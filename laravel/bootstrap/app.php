@@ -58,6 +58,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/admin/*',
             'api/finance/*',
             'api/subscription/*',
+            'api/cameras/*',
+            'api/public/camera-share/*',
             // Stubs 410
             'api/payment/create-preference',
             'api/payment/webhook-notification',

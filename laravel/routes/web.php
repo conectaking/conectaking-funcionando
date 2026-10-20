@@ -1006,6 +1006,12 @@ foreach (['/cameras', '/cameras.html', '/king-camera', '/king-camera.html'] as $
     Route::get($camAlias, fn () => redirect('/kingCamera', 301));
 }
 
+// King Câmera Public Share / Monitor com Expiração
+Route::get('/monitor/{token}', [\App\Http\Controllers\Camera\KingCameraController::class, 'publicShareView'])->where('token', '[a-zA-Z0-9_\-]+');
+Route::get('/camera-share/{token}', fn (string $token) => redirect('/monitor/' . $token, 301));
+Route::get('/api/public/camera-share/{token}/info', [\App\Http\Controllers\Camera\KingCameraController::class, 'publicShareInfo'])->where('token', '[a-zA-Z0-9_\-]+');
+Route::post('/api/public/camera-share/{token}/webrtc', [\App\Http\Controllers\Camera\KingCameraController::class, 'publicShareWebRtcHandshake'])->where('token', '[a-zA-Z0-9_\-]+');
+
 // King Câmera API & Webhooks
 Route::post('/api/cameras/telegram-webhook', [\App\Http\Controllers\Camera\KingCameraController::class, 'telegramWebhook']);
 Route::middleware(['jwt', 'module:king_camera'])->group(function () {
@@ -1016,6 +1022,11 @@ Route::middleware(['jwt', 'module:king_camera'])->group(function () {
     Route::post('/api/cameras/{id}/webrtc', [\App\Http\Controllers\Camera\KingCameraController::class, 'webrtcHandshake'])->where('id', '[0-9]+');
     Route::get('/api/cameras/{id}/snapshot', [\App\Http\Controllers\Camera\KingCameraController::class, 'snapshot'])->where('id', '[0-9]+');
     Route::post('/api/cameras/{id}/test-telegram', [\App\Http\Controllers\Camera\KingCameraController::class, 'testTelegramAlert'])->where('id', '[0-9]+');
+
+    // Compartilhamento com expiração programada
+    Route::get('/api/cameras/{id}/shares', [\App\Http\Controllers\Camera\KingCameraController::class, 'listShares'])->where('id', '[0-9]+');
+    Route::post('/api/cameras/{id}/shares', [\App\Http\Controllers\Camera\KingCameraController::class, 'createShare'])->where('id', '[0-9]+');
+    Route::delete('/api/cameras/shares/{shareId}', [\App\Http\Controllers\Camera\KingCameraController::class, 'revokeShare'])->where('shareId', '[0-9]+');
 });
 
 // checkoutConfig / PagBank / Mercado Pago — fora de escopo

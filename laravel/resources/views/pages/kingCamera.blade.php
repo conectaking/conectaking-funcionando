@@ -417,6 +417,52 @@
             height: 100%;
             object-fit: cover;
             display: block;
+            transition: filter 0.3s ease;
+        }
+
+        .kc-video-wrap video.ai-night-vision {
+            filter: brightness(1.55) contrast(1.2) saturate(1.1);
+        }
+
+        .kc-video-wrap video.ai-sharpness {
+            filter: contrast(1.3) saturate(1.15);
+        }
+
+        .kc-duration-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            margin-top: 0.4rem;
+        }
+
+        .kc-chip {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--kc-border);
+            color: var(--kc-text-muted);
+            padding: 0.35rem 0.65rem;
+            border-radius: 8px;
+            font-size: 0.76rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .kc-chip:hover {
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .kc-chip.active {
+            background: rgba(245, 158, 11, 0.18);
+            border-color: var(--kc-gold);
+            color: #fbbf24;
+        }
+
+        .kc-icon-btn.active {
+            background: rgba(245, 158, 11, 0.25);
+            border-color: var(--kc-gold);
+            color: var(--kc-gold);
         }
 
         .kc-video-overlay {
@@ -790,11 +836,17 @@
                 <button type="button" class="kc-grid-btn active" data-cols="auto" title="Grade Adaptável">
                     <i class="fas fa-th-large"></i>
                 </button>
-                <button type="button" class="kc-grid-btn" data-cols="1" title="1 Coluna (Foco)">
+                <button type="button" class="kc-grid-btn" data-cols="1" title="1 Coluna (Foco Individual)">
                     <i class="fas fa-square"></i>
                 </button>
-                <button type="button" class="kc-grid-btn" data-cols="2" title="2 Colunas">
+                <button type="button" class="kc-grid-btn" data-cols="2" title="2 Câmeras Lado a Lado">
                     <i class="fas fa-th"></i>
+                </button>
+                <button type="button" class="kc-grid-btn" data-cols="3" title="Mosaico 3 Colunas">
+                    <i class="fas fa-grip"></i>
+                </button>
+                <button type="button" class="kc-grid-btn" id="btn-patrol-mode" onclick="togglePatrolMode()" title="Modo Patrulha (Alterna as câmeras a cada 10s)">
+                    <i class="fas fa-rotate"></i> <span style="font-size: 0.72rem; margin-left: 0.25rem;">Patrulha</span>
                 </button>
             </div>
         </div>
@@ -848,6 +900,20 @@
                                 <label class="kc-label" for="cam-room">Cômodo / Localização</label>
                                 <input type="text" id="cam-room" class="kc-input" placeholder="Ex: Quarto, Sala, Portão" value="Quarto">
                             </div>
+                        </div>
+
+                        <div class="kc-form-group">
+                            <label class="kc-label" for="cam-brand-preset">Marca / Modelo da Câmera</label>
+                            <select id="cam-brand-preset" class="kc-input" onchange="applyBrandPreset(this.value)">
+                                <option value="generic">Genérica / ONVIF Universal (Porta 554, /onvif1)</option>
+                                <option value="yoosee">Yoosee / CamHi / Tuya / Smart Life (Porta 554, /onvif1)</option>
+                                <option value="intelbras">Intelbras Mibo / VIP / CFTV (Porta 554, /cam/realmonitor?channel=1&subtype=0)</option>
+                                <option value="hikvision">Hikvision / Ezviz (Porta 554, /Streaming/Channels/101)</option>
+                                <option value="tapo">TP-Link Tapo C200 / C310 / TC70 (Porta 554, /stream1)</option>
+                                <option value="dahua">Dahua / IMOU (Porta 554, /cam/realmonitor?channel=1&subtype=1)</option>
+                                <option value="v380">V380 / V380 Pro (Porta 554, /live/ch0)</option>
+                            </select>
+                            <div class="kc-form-help" id="brand-hint" style="color: var(--kc-gold);">Selecione a marca para configurar portas e caminhos automaticamente.</div>
                         </div>
 
                         <div class="kc-form-row">
@@ -943,6 +1009,65 @@
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Compartilhar Câmera com Expiração -->
+    <div class="kc-modal-backdrop" id="modal-share" aria-hidden="true">
+        <div class="kc-modal" style="max-width: 560px;">
+            <div class="kc-modal-header">
+                <div class="kc-modal-title">
+                    <i class="fas fa-share-nodes" style="color: var(--kc-gold); margin-right: 0.4rem;"></i>
+                    Compartilhar Câmera Temporariamente
+                </div>
+                <button type="button" class="kc-modal-close" onclick="closeShareModal()" aria-label="Fechar">&times;</button>
+            </div>
+            <div class="kc-modal-body">
+                <p style="font-size: 0.85rem; color: var(--kc-text-muted); margin-bottom: 1.25rem;">
+                    Gere um link direto para visualização ao vivo via WebRTC. A pessoa não precisa ter conta no Conecta King e o acesso será cancelado automaticamente após o tempo escolhido.
+                </p>
+                <form id="form-share-create" onsubmit="createShareLink(event)">
+                    <input type="hidden" id="share-cam-id" value="">
+                    
+                    <div class="kc-form-group">
+                        <label class="kc-label" for="share-label">Identificação / Convidado</label>
+                        <input type="text" id="share-label" class="kc-input" placeholder="Ex: Babá, Familiar, Segurança, Cliente" value="Convidado">
+                    </div>
+
+                    <div class="kc-form-group">
+                        <label class="kc-label">Tempo de Validade do Link</label>
+                        <div class="kc-duration-chips">
+                            <button type="button" class="kc-chip" data-sec="60">1 Min</button>
+                            <button type="button" class="kc-chip" data-sec="600">10 Min</button>
+                            <button type="button" class="kc-chip" data-sec="900">15 Min</button>
+                            <button type="button" class="kc-chip" data-sec="1800">30 Min</button>
+                            <button type="button" class="kc-chip active" data-sec="3600">1 Hora</button>
+                            <button type="button" class="kc-chip" data-sec="7200">2 Horas</button>
+                            <button type="button" class="kc-chip" data-sec="43200">12 Horas</button>
+                            <button type="button" class="kc-chip" data-sec="86400">1 Dia</button>
+                            <button type="button" class="kc-chip" data-sec="172800">2 Dias</button>
+                            <button type="button" class="kc-chip" data-sec="604800">7 Dias</button>
+                        </div>
+                        <input type="hidden" id="share-duration-sec" value="3600">
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem;">
+                        <button type="button" class="kc-btn kc-btn-secondary" onclick="closeShareModal()">Cancelar</button>
+                        <button type="submit" class="kc-btn kc-btn-primary" id="btn-create-share">
+                            <i class="fas fa-link"></i> Gerar Link de Acesso
+                        </button>
+                    </div>
+                </form>
+
+                <hr style="border: 0; border-top: 1px solid var(--kc-border); margin: 1.5rem 0;">
+
+                <h4 style="font-size: 0.88rem; font-weight: 600; margin-bottom: 0.75rem; color: #fff;">
+                    <i class="fas fa-clock-rotate-left" style="color: var(--kc-gold); margin-right: 0.35rem;"></i> Links Ativos Desta Câmera
+                </h4>
+                <div id="shares-list-container" style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 200px; overflow-y: auto;">
+                    <div style="font-size: 0.8rem; color: var(--kc-text-dim);">Nenhum link ativo no momento.</div>
                 </div>
             </div>
         </div>

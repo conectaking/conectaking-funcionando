@@ -112,4 +112,9 @@ class KingCamera extends Model
     {
         return $this->hasMany(KingCameraEvent::class, 'camera_id')->orderByDesc('id');
     }
+
+    public function shares(): HasMany
+    {
+        return $this->hasMany(KingCameraShare::class, 'camera_id')->orderByDesc('id');
+    }
 }

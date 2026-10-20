@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Camera;
 
 use App\Http\Controllers\Controller;
 use App\Models\KingCamera;
+use App\Models\KingCameraShare;
 use App\Services\Account\ModulesService;
 use App\Services\Camera\KingCameraService;
 use App\Services\Camera\KingCameraTelegramAgentService;
@@ -307,5 +308,200 @@ class KingCameraController extends Controller
         }
 
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Lista todos os links de compartilhamento ativos de uma câmera.
+     */
+    public function listShares(Request $request, int $id): JsonResponse
+    {
+        $userId = (string) $request->attributes->get('auth_user_id', '');
+        $camera = KingCamera::where('id', $id)->where('user_id', $userId)->first();
+        if (! $camera) {
+            return response()->json(['success' => false, 'message' => 'Câmera não encontrada.'], 404);
+        }
+
+        $shares = KingCameraShare::where('camera_id', $id)
+            ->where('is_active', true)
+            ->orderByDesc('id')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $shares->map(fn (KingCameraShare $s) => [
+                'id' => $s->id,
+                'token' => $s->share_token,
+                'label' => $s->label,
+                'share_url' => url('/monitor/' . $s->share_token),
+                'expires_at' => $s->expires_at->toIso8601String(),
+                'duration_seconds' => $s->duration_seconds,
+                'is_expired' => $s->isExpired(),
+                'seconds_remaining' => max(0, $s->expires_at->diffInSeconds(now(), false) * -1),
+                'view_count' => $s->view_count,
+                'created_at' => $s->created_at?->toIso8601String(),
+            ]),
+        ]);
+    }
+
+    /**
+     * Cria um novo link de compartilhamento com tempo de expiração customizado.
+     */
+    public function createShare(Request $request, int $id): JsonResponse
+    {
+        $userId = (string) $request->attributes->get('auth_user_id', '');
+        $camera = KingCamera::where('id', $id)->where('user_id', $userId)->first();
+        if (! $camera) {
+            return response()->json(['success' => false, 'message' => 'Câmera não encontrada.'], 404);
+        }
+
+        $validated = $request->validate([
+            'duration_seconds' => 'required|integer|min:30|max:2592000', // 30s até 30 dias
+            'label' => 'nullable|string|max:100',
+            'can_audio' => 'nullable|boolean',
+            'can_ptz' => 'nullable|boolean',
+        ]);
+
+        $duration = (int) $validated['duration_seconds'];
+        $expiresAt = now()->addSeconds($duration);
+        $token = 'kc_' . substr(bin2hex(random_bytes(16)), 0, 24);
+
+        $share = KingCameraShare::create([
+            'camera_id' => $camera->id,
+            'user_id' => $userId,
+            'share_token' => $token,
+            'label' => $validated['label'] ?: 'Monitor Convidado',
+            'expires_at' => $expiresAt,
+            'duration_seconds' => $duration,
+            'can_audio' => (bool) ($validated['can_audio'] ?? true),
+            'can_ptz' => (bool) ($validated['can_ptz'] ?? false),
+            'is_active' => true,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Link de monitoramento criado com sucesso!',
+            'data' => [
+                'id' => $share->id,
+                'token' => $share->share_token,
+                'label' => $share->label,
+                'share_url' => url('/monitor/' . $share->share_token),
+                'expires_at' => $share->expires_at->toIso8601String(),
+                'duration_seconds' => $share->duration_seconds,
+                'seconds_remaining' => $duration,
+            ],
+        ], 201);
+    }
+
+    /**
+     * Revoga um link de compartilhamento na hora.
+     */
+    public function revokeShare(Request $request, int $shareId): JsonResponse
+    {
+        $userId = (string) $request->attributes->get('auth_user_id', '');
+        $share = KingCameraShare::where('id', $shareId)->where('user_id', $userId)->first();
+        if (! $share) {
+            return response()->json(['success' => false, 'message' => 'Link não encontrado.'], 404);
+        }
+
+        $share->update(['is_active' => false]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Acesso ao link revogado com sucesso!',
+        ]);
+    }
+
+    /**
+     * Página de visualização pública com contador regressivo e WebRTC ultra-rápido.
+     */
+    public function publicShareView(Request $request, string $token)
+    {
+        $share = KingCameraShare::with('camera')
+            ->where('share_token', $token)
+            ->first();
+
+        if (! $share || ! $share->is_active || $share->isExpired()) {
+            return response()->view('pages.kingCameraMonitorExpired', [
+                'reason' => ! $share ? 'Link inexistente' : 'Este link de monitoramento temporário já expirou.',
+            ], 403);
+        }
+
+        $share->increment('view_count');
+
+        $camera = $share->camera;
+        if (! $camera) {
+            return response()->view('pages.kingCameraMonitorExpired', [
+                'reason' => 'A câmera associada a este link foi removida.',
+            ], 404);
+        }
+
+        return view('pages.kingCameraMonitor', [
+            'share' => $share,
+            'camera' => $camera,
+            'token' => $token,
+            'secondsRemaining' => max(0, $share->expires_at->diffInSeconds(now(), false) * -1),
+        ]);
+    }
+
+    /**
+     * Informações da câmera do link público (para o frontend guest).
+     */
+    public function publicShareInfo(Request $request, string $token): JsonResponse
+    {
+        $share = KingCameraShare::with('camera')->where('share_token', $token)->first();
+        if (! $share || ! $share->is_active || $share->isExpired()) {
+            return response()->json([
+                'success' => false,
+                'is_expired' => true,
+                'message' => 'Link de monitoramento expirado ou revogado.',
+            ], 403);
+        }
+
+        $camera = $share->camera;
+        $secondsRemaining = max(0, $share->expires_at->diffInSeconds(now(), false) * -1);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'camera_name' => $camera->name,
+                'room' => $camera->room,
+                'label' => $share->label,
+                'can_audio' => $share->can_audio,
+                'expires_at' => $share->expires_at->toIso8601String(),
+                'seconds_remaining' => $secondsRemaining,
+            ],
+        ]);
+    }
+
+    /**
+     * Handshake WebRTC para o visualizador convidado (Guest).
+     */
+    public function publicShareWebRtcHandshake(Request $request, string $token): Response
+    {
+        $share = KingCameraShare::with('camera')->where('share_token', $token)->first();
+        if (! $share || ! $share->is_active || $share->isExpired()) {
+            return response('Link expired or invalid', 403);
+        }
+
+        $camera = $share->camera;
+        if (! $camera) {
+            return response('Camera not found', 404);
+        }
+
+        $offerSdp = $request->getContent();
+        if (empty($offerSdp)) {
+            return response('SDP Offer is required', 400);
+        }
+
+        // Garante que o stream está registrado no go2rtc
+        $this->cameraService->syncStreamToGo2Rtc($camera);
+
+        $answerSdp = $this->cameraService->exchangeWebRtcSdp($camera->stream_id, $offerSdp);
+        if (! $answerSdp) {
+            return response('Failed to negotiate WebRTC with streaming engine', 502);
+        }
+
+        return response($answerSdp, 200)
+            ->header('Content-Type', 'application/sdp');
     }
 }
