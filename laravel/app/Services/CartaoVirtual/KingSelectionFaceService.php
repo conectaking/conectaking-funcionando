@@ -1219,7 +1219,7 @@ class KingSelectionFaceService
 
         $localAiUrl = $this->getLocalAiUrl();
         $hasLocalAi = $this->pingLocalAi($localAiUrl);
-        $minSim = max(50.0, min(100.0, (float) (env('REKOG_FACE_RESULT_MIN_SIMILARITY') ?: 65)));
+        $minSim = $hasLocalAi ? (float) (env('FACE_AI_MIN_SIMILARITY') ?: 50.0) : max(50.0, min(100.0, (float) (env('REKOG_FACE_RESULT_MIN_SIMILARITY') ?: 65)));
 
         if ($hasLocalAi) {
             $totalMatches = (int) (DB::selectOne(
@@ -3002,6 +3002,13 @@ class KingSelectionFaceService
                     'INSERT INTO rekognition_client_faces (gallery_id, client_id, face_id, reference_r2_key, embedding, created_at)
                      VALUES (?, ?, ?, ?, ?, NOW())',
                     [$galleryId, $clientId, $faceId, $refKey, json_encode($emb)]
+                );
+            }
+
+            if (SchemaMeta::hasTable('rekognition_processing_cache')) {
+                DB::delete(
+                    'DELETE FROM rekognition_processing_cache WHERE cache_key LIKE ?',
+                    ['search:'.$galleryId.':'.$clientId.':%']
                 );
             }
 
