@@ -595,6 +595,156 @@
             to { transform: rotate(360deg); }
         }
 
+        /* PTZ Floating 360° Joystick Widget */
+        .kc-ptz-floating-box {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: rgba(10, 15, 29, 0.92);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7), 0 0 16px rgba(245, 158, 11, 0.2);
+            border-radius: 16px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 25;
+            user-select: none;
+            touch-action: none;
+            width: 140px;
+            animation: kc-fade-in 0.2s ease-out;
+        }
+
+        .kc-ptz-floating-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            color: var(--kc-gold);
+            letter-spacing: 0.3px;
+        }
+
+        .kc-ptz-floating-close {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.15rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0 4px;
+            transition: color 0.15s;
+        }
+
+        .kc-ptz-floating-close:hover {
+            color: #fff;
+        }
+
+        .kc-dpad-circle {
+            position: relative;
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.98) 100%);
+            border: 1.5px solid rgba(255, 255, 255, 0.15);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        .kc-dpad-arrow {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #f1f5f9;
+            border-radius: 8px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.12s ease;
+        }
+
+        .kc-dpad-arrow:hover {
+            background: rgba(245, 158, 11, 0.35);
+            border-color: var(--kc-gold);
+            color: var(--kc-gold);
+            transform: scale(1.06);
+        }
+
+        .kc-dpad-arrow:active {
+            background: var(--kc-gold);
+            border-color: var(--kc-gold);
+            color: #000;
+            transform: scale(0.95);
+        }
+
+        .dpad-up { top: 4px; left: 39px; }
+        .dpad-down { bottom: 4px; left: 39px; }
+        .dpad-left { top: 39px; left: 4px; }
+        .dpad-right { top: 39px; right: 4px; }
+
+        .dpad-center {
+            top: 39px;
+            left: 39px;
+            border-radius: 50%;
+            background: var(--kc-gold);
+            color: #000;
+            border: none;
+            font-size: 0.8rem;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+        }
+
+        .dpad-center:hover {
+            background: #fbbf24;
+            color: #000;
+            transform: scale(1.08) rotate(180deg);
+        }
+
+        .dpad-center:active {
+            transform: scale(0.92);
+        }
+
+        .kc-ptz-footer-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            width: 100%;
+        }
+
+        .kc-ptz-mini-btn {
+            flex: 1;
+            padding: 4px 6px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #cbd5e1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: all 0.12s;
+        }
+
+        .kc-ptz-mini-btn:hover {
+            background: rgba(245, 158, 11, 0.25);
+            border-color: var(--kc-gold);
+            color: var(--kc-gold);
+        }
+
+        .kc-ptz-mini-btn:active {
+            background: var(--kc-gold);
+            color: #000;
+            transform: scale(0.95);
+        }
+
         /* Modal Styles */
         .kc-modal-backdrop {
             position: fixed;
@@ -1530,6 +1680,222 @@
             background: var(--kc-gold);
             color: #000;
         }
+
+        /* ══════════════════════════════════════════════════════════════════════ */
+        /* RESPONSIVIDADE ULTRA MODERNA PARA MOBILE (SMARTPHONES E TABLETS)       */
+        /* ══════════════════════════════════════════════════════════════════════ */
+        @media (max-width: 768px) {
+            .kc-topbar-inner {
+                padding: 0.6rem 0.85rem;
+                gap: 0.5rem;
+            }
+            .kc-brand-title {
+                font-size: 1.05rem;
+            }
+            .kc-brand-badge {
+                padding: 1px 5px;
+                font-size: 0.6rem;
+            }
+            .kc-back-btn span {
+                display: none;
+            }
+            .kc-back-btn {
+                padding: 0.45rem 0.65rem;
+            }
+            .kc-topbar-actions {
+                gap: 0.4rem;
+            }
+            .kc-btn {
+                padding: 0.45rem 0.75rem;
+                font-size: 0.78rem;
+            }
+            .kc-btn span {
+                font-size: 0.76rem;
+            }
+            .kc-btn-telegram span {
+                display: none;
+            }
+            .kc-hero {
+                padding: 1.25rem 0 0.85rem 0;
+            }
+            .kc-hero-text h1 {
+                font-size: 1.25rem;
+                line-height: 1.3;
+            }
+            .kc-hero-text p {
+                font-size: 0.8rem;
+                margin-top: 0.35rem;
+            }
+            .kc-stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.4rem;
+                margin-top: 0.85rem;
+            }
+            .kc-stat-item {
+                padding: 0.6rem 0.4rem;
+                border-radius: 10px;
+                text-align: center;
+            }
+            .kc-stat-label {
+                font-size: 0.65rem;
+            }
+            .kc-stat-val {
+                font-size: 0.95rem;
+            }
+            .kc-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.65rem;
+                padding: 0.5rem 0;
+            }
+            .kc-grid-modes {
+                justify-content: flex-start;
+                overflow-x: auto;
+                padding-bottom: 2px;
+            }
+            .kc-grid-btn[data-cols="3"] {
+                display: none;
+            }
+            .kc-grid {
+                grid-template-columns: 1fr !important;
+                gap: 1rem;
+            }
+            .kc-overlay-top {
+                padding: 0.4rem 0.5rem;
+            }
+            .kc-overlay-controls {
+                gap: 0.25rem;
+            }
+            .kc-icon-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 0.75rem;
+                border-radius: 6px;
+            }
+            .kc-card-footer {
+                padding: 0.65rem 0.85rem;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            .kc-footer-actions {
+                gap: 0.35rem;
+            }
+            .kc-footer-actions .kc-icon-btn {
+                width: 28px;
+                height: 28px;
+            }
+            /* Joystick adaptado para telas mobile */
+            .kc-ptz-floating-box {
+                width: 116px;
+                padding: 6px;
+                bottom: 8px;
+                right: 8px;
+                border-radius: 14px;
+            }
+            .kc-dpad-circle {
+                width: 86px;
+                height: 86px;
+            }
+            .kc-dpad-arrow {
+                width: 26px;
+                height: 26px;
+                font-size: 0.72rem;
+            }
+            .dpad-up { top: 2px; left: 30px; }
+            .dpad-down { bottom: 2px; left: 30px; }
+            .dpad-left { top: 30px; left: 2px; }
+            .dpad-right { top: 30px; right: 2px; }
+            .dpad-center { top: 30px; left: 30px; font-size: 0.68rem; }
+            .kc-ptz-mini-btn {
+                font-size: 0.65rem;
+                padding: 3px 4px;
+            }
+            /* Modal mobile */
+            .kc-modal {
+                width: 95vw !important;
+                max-width: 95vw !important;
+                margin: 0.5rem auto;
+                max-height: 94vh;
+                border-radius: 14px;
+            }
+            .kc-modal-header {
+                padding: 0.85rem 1rem;
+            }
+            .kc-modal-title {
+                font-size: 1rem;
+            }
+            .kc-modal-tabs {
+                display: flex;
+                overflow-x: auto;
+                white-space: nowrap;
+                -webkit-overflow-scrolling: touch;
+                padding: 0.4rem 0.65rem;
+                gap: 0.4rem;
+                border-bottom: 1px solid var(--kc-border);
+            }
+            .kc-tab-btn {
+                padding: 0.45rem 0.75rem;
+                font-size: 0.74rem;
+                flex-shrink: 0;
+            }
+            .kc-modal-body {
+                padding: 0.85rem;
+                max-height: calc(94vh - 120px);
+                overflow-y: auto;
+            }
+            .kc-form-row {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            .kc-type-switch {
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+            .kc-type-btn {
+                font-size: 0.74rem;
+                padding: 0.45rem 0.6rem;
+            }
+            .kc-method-card {
+                padding: 0.75rem;
+                gap: 0.75rem;
+                border-radius: 10px;
+            }
+            .kc-method-icon-box {
+                width: 40px;
+                height: 40px;
+                font-size: 1.15rem;
+                border-radius: 8px;
+            }
+            .kc-method-details h5 {
+                font-size: 0.82rem;
+            }
+            .kc-method-details p {
+                font-size: 0.74rem;
+            }
+            .kc-stepper {
+                padding: 0.5rem 0 1rem;
+            }
+            .kc-step-bubble {
+                width: 30px;
+                height: 30px;
+                font-size: 0.75rem;
+            }
+            .kc-step-title {
+                font-size: 0.65rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .kc-topbar-actions #btn-add-camera span {
+                display: none;
+            }
+            .kc-topbar-actions #btn-add-camera {
+                padding: 0.45rem 0.65rem;
+            }
+            .kc-hero-text h1 {
+                font-size: 1.1rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1653,6 +2019,9 @@
                 </button>
                 <button type="button" class="kc-tab-btn" data-tab="tab-telegram">
                     <i class="fab fa-telegram-plane"></i> Agente Telegram
+                </button>
+                <button type="button" class="kc-tab-btn" data-tab="tab-ai-baby">
+                    <i class="fas fa-baby"></i> IA Babá &amp; Berço
                 </button>
             </div>
             <div class="kc-modal-body">
@@ -1914,6 +2283,21 @@
                                 </div>
                             </div>
 
+                            <!-- DICA CELULAR / DADOS MÓVEIS -->
+                            <div style="background: rgba(245, 158, 11, 0.1); border: 1.5px solid var(--kc-gold); border-radius: 12px; padding: 0.9rem; margin-top: 0.65rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--kc-gold); font-weight: 700; font-size: 0.85rem; margin-bottom: 0.35rem;">
+                                    <i class="fas fa-mobile-screen-button"></i> Dica de Ouro para Celular (4G/5G):
+                                </div>
+                                <div style="font-size: 0.78rem; color: #cbd5e1; line-height: 1.45;">
+                                    A rede Wi-Fi da câmera <b>não tem internet</b>. Para o Conecta King não fechar nem perder a conexão ao se conectar na rede da câmera:
+                                    <ul style="margin-left: 1.1rem; margin-top: 0.3rem;">
+                                        <li>Mantenha seus <b>Dados Móveis (4G/5G) LIGADOS</b> no celular.</li>
+                                        <li>Quando o celular avisar <i>"Rede sem internet, deseja trocar?"</i>, clique em <b>Manter Conectado</b>.</li>
+                                        <li>Assim o navegador fala com o Conecta King pelos dados móveis e com a câmera pelo Wi-Fi simultaneamente!</li>
+                                    </ul>
+                                </div>
+                            </div>
+
                             <button type="button" class="kc-btn kc-btn-primary" onclick="useHotspotIp('192.168.1.1')" style="width: 100%; margin-top: 0.85rem;">
                                 <i class="fas fa-link"></i> Usar IP Padrão do Ponto de Acesso (192.168.1.1)
                             </button>
@@ -2073,13 +2457,17 @@
                         </div>
                     </div>
 
-                    <div style="display: flex; justify-content: center; gap: 0.75rem; margin-top: 1rem;">
+                    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin-top: 1rem;">
                         <button type="button" class="kc-btn kc-btn-primary" id="btn-start-scanner" onclick="startCameraQrScanner()">
                             <i class="fas fa-camera"></i> Iniciar Câmera Traseira
                         </button>
                         <button type="button" class="kc-btn kc-btn-secondary" id="btn-stop-scanner" onclick="stopCameraQrScanner()" style="display: none;">
                             <i class="fas fa-stop"></i> Parar Scanner
                         </button>
+                        <label class="kc-btn kc-btn-secondary" style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem;" title="Tirar foto nítida com o celular ou escolher da galeria">
+                            <i class="fas fa-image" style="color: var(--kc-gold);"></i> Foto / Galeria
+                            <input type="file" id="qr-file-input" accept="image/*" capture="environment" style="display: none;" onchange="handleQrFileInput(this)">
+                        </label>
                     </div>
 
                     <div id="scanner-status" style="font-size: 0.78rem; color: var(--kc-text-muted); text-align: center; margin-top: 0.75rem;">
@@ -2159,10 +2547,27 @@
                             </div>
                         </div>
 
-                        <div class="kc-form-group" style="margin-top: 1.25rem; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); padding: 0.85rem; border-radius: 9px; border: 1px solid var(--kc-border);">
+                        <div class="kc-form-row">
+                            <div class="kc-form-group">
+                                <label class="kc-label" for="cam-telegram-chat-id">
+                                    <i class="fab fa-telegram-plane" style="color: #0088cc;"></i> Chat ID ou @Usuário do Telegram
+                                </label>
+                                <input type="text" id="cam-telegram-chat-id" class="kc-input" placeholder="Ex: 681928472 ou @seunome">
+                                <div class="kc-form-help">ID para onde o Agente King Câmera enviará fotos e notificações.</div>
+                            </div>
+                            <div class="kc-form-group">
+                                <label class="kc-label" for="cam-telegram-phone">
+                                    <i class="fas fa-phone" style="color: var(--kc-emerald);"></i> Telefone / Celular (WhatsApp / SMS)
+                                </label>
+                                <input type="text" id="cam-telegram-phone" class="kc-input" placeholder="Ex: (11) 98765-4321">
+                                <div class="kc-form-help">Número de telefone do responsável para avisos urgentes.</div>
+                            </div>
+                        </div>
+
+                        <div class="kc-form-group" style="margin-top: 1rem; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); padding: 0.85rem; border-radius: 9px; border: 1px solid var(--kc-border);">
                             <div>
-                                <div style="font-weight: 600; font-size: 0.85rem;">Alertas no Telegram</div>
-                                <div class="kc-form-help">Receber foto instantânea quando houver aviso do Agente</div>
+                                <div style="font-weight: 600; font-size: 0.85rem;">Alertas Automáticos no Telegram</div>
+                                <div class="kc-form-help">Receber foto instantânea quando houver aviso do Agente ou detecção</div>
                             </div>
                             <input type="checkbox" id="cam-telegram-alerts" checked style="width: 18px; height: 18px; accent-color: var(--kc-gold); cursor: pointer;">
                         </div>
@@ -2196,6 +2601,110 @@
                             </button>
                         </div>
                     </div>
+                </div>
+
+                <!-- ═════════════════════════════════════════════════════════════ -->
+                <!-- ABA 5: IA BABÁ & MONITORAMENTO DE SEGURANÇA (BERÇO & CHORO)   -->
+                <!-- ═════════════════════════════════════════════════════════════ -->
+                <div class="kc-tab-pane" id="tab-ai-baby">
+                    <div style="text-align: center; margin-bottom: 1.25rem;">
+                        <h4 style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem;">
+                            <i class="fas fa-baby" style="color: var(--kc-gold); margin-right: 0.4rem;"></i>
+                            Inteligência Artificial — Babá &amp; Segurança Infantil
+                        </h4>
+                        <p style="font-size: 0.82rem; color: var(--kc-text-muted); max-width: 520px; margin: 0 auto;">
+                            Configure cercas virtuais ao redor do berço, detecção de postura (levantar/acordar), alertas de choro e rastreio motorizado 360°.
+                        </p>
+                    </div>
+
+                    <!-- 1. Cerca Virtual do Berço -->
+                    <div class="kc-method-card" style="align-items: flex-start;">
+                        <div class="kc-method-icon-box" style="color: var(--kc-gold); background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.3);">
+                            <i class="fas fa-vector-square"></i>
+                        </div>
+                        <div class="kc-method-details" style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                                <h5>1. Cerca Virtual do Berço (Virtual Crib Fence)</h5>
+                                <label style="cursor: pointer;">
+                                    <input type="checkbox" id="cam-crib-fence-enabled" style="width: 18px; height: 18px; accent-color: var(--kc-gold);">
+                                </label>
+                            </div>
+                            <p>Define uma zona segura retangular onde o bebê dorme. Se a criança sair ou passar os braços/pernas para fora da grade do berço, o Agente tira uma foto e envia no seu Telegram.</p>
+                            <div style="margin-top: 0.65rem; background: rgba(0,0,0,0.3); padding: 0.6rem; border-radius: 8px; border: 1px solid var(--kc-border); font-size: 0.78rem;">
+                                <div style="color: var(--kc-gold); font-weight: 600; margin-bottom: 0.35rem;"><i class="fas fa-crosshairs"></i> Posição da Zona do Berço na Imagem:</div>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">
+                                    <div>
+                                        <span style="color: var(--kc-text-dim);">Margem Esquerda (%):</span>
+                                        <input type="number" id="cam-crib-x" class="kc-input" style="padding: 0.35rem; font-size: 0.8rem; margin-top: 2px;" value="20" min="0" max="100">
+                                    </div>
+                                    <div>
+                                        <span style="color: var(--kc-text-dim);">Margem Superior (%):</span>
+                                        <input type="number" id="cam-crib-y" class="kc-input" style="padding: 0.35rem; font-size: 0.8rem; margin-top: 2px;" value="25" min="0" max="100">
+                                    </div>
+                                    <div>
+                                        <span style="color: var(--kc-text-dim);">Largura do Berço (%):</span>
+                                        <input type="number" id="cam-crib-w" class="kc-input" style="padding: 0.35rem; font-size: 0.8rem; margin-top: 2px;" value="60" min="10" max="100">
+                                    </div>
+                                    <div>
+                                        <span style="color: var(--kc-text-dim);">Altura do Berço (%):</span>
+                                        <input type="number" id="cam-crib-h" class="kc-input" style="padding: 0.35rem; font-size: 0.8rem; margin-top: 2px;" value="50" min="10" max="100">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Detecção de Levantar / Acordar -->
+                    <div class="kc-method-card">
+                        <div class="kc-method-icon-box" style="color: var(--kc-cyan); background: rgba(6, 182, 212, 0.12); border-color: rgba(6, 182, 212, 0.3);">
+                            <i class="fas fa-person-walking-arrow-right"></i>
+                        </div>
+                        <div class="kc-method-details" style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                                <h5>2. Alerta: Bebê Acordou / Ficou de Pé</h5>
+                                <label style="cursor: pointer;">
+                                    <input type="checkbox" id="cam-baby-stand-enabled" style="width: 18px; height: 18px; accent-color: var(--kc-cyan);">
+                                </label>
+                            </div>
+                            <p>Identifica a transição de postura da criança (deitada para sentada ou em pé). Avisa imediatamente os pais assim que o bebê acorda para visualização ao vivo.</p>
+                        </div>
+                    </div>
+
+                    <!-- 3. Detector de Choro / Áudio IA -->
+                    <div class="kc-method-card">
+                        <div class="kc-method-icon-box" style="color: #ec4899; background: rgba(236, 72, 153, 0.12); border-color: rgba(236, 72, 153, 0.3);">
+                            <i class="fas fa-microphone-lines"></i>
+                        </div>
+                        <div class="kc-method-details" style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                                <h5>3. Monitor Inteligente de Choro (Baby Cry Detection)</h5>
+                                <label style="cursor: pointer;">
+                                    <input type="checkbox" id="cam-baby-cry-enabled" style="width: 18px; height: 18px; accent-color: #ec4899;">
+                                </label>
+                            </div>
+                            <p>Filtra ruídos comuns de fundo e detecta frequências sonoras de choro ou desconforto do bebê, disparando alarme no Telegram e no navegador.</p>
+                        </div>
+                    </div>
+
+                    <!-- 4. Rastreio Motorizado 360° (Auto-Tracking) -->
+                    <div class="kc-method-card">
+                        <div class="kc-method-icon-box" style="color: var(--kc-emerald); background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.3);">
+                            <i class="fas fa-arrows-spin"></i>
+                        </div>
+                        <div class="kc-method-details" style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                                <h5>4. Rastreamento Motorizado Automático (Auto-Tracking 360°)</h5>
+                                <label style="cursor: pointer;">
+                                    <input type="checkbox" id="cam-auto-tracking-enabled" style="width: 18px; height: 18px; accent-color: var(--kc-emerald);">
+                                </label>
+                            </div>
+                            <p>Comanda os motores PTZ da câmera para girar automaticamente e manter a criança ou pessoa sempre centralizada no campo de visão.</p>
+                        </div>
+                    </div>
+
+                    <button type="button" class="kc-btn kc-btn-primary" onclick="saveBabyAiSettings()" style="width: 100%; margin-top: 1rem; padding: 0.75rem;">
+                        <i class="fas fa-shield-heart"></i> Salvar Configurações de IA Babá
+                    </button>
                 </div>
             </div>
         </div>
@@ -2267,6 +2776,7 @@
         let currentEditingId = null;
         let qrCodeInstance = null;
         let telegramDeepLink = '';
+        let authUserId = '{{ auth()->id() ?? "" }}';
 
         document.addEventListener('DOMContentLoaded', () => {
             loadCameras();
@@ -2496,6 +3006,9 @@
                         <div class="kc-footer-actions">
                             <button class="kc-icon-btn" onclick="togglePtzWidget(${cam.id})" title="Girar Câmera 360° (PTZ)" style="width: 28px; height: 28px; color: var(--kc-gold);">
                                 <i class="fas fa-arrows-alt"></i>
+                            </button>
+                            <button class="kc-icon-btn" onclick="openBabyAiModal(${cam.id})" title="Configurar IA Babá & Cerca do Berço" style="width: 28px; height: 28px; color: var(--kc-cyan);">
+                                <i class="fas fa-baby"></i>
                             </button>
                             <button class="kc-icon-btn" onclick="openShareModal(${cam.id})" title="Compartilhar Link Temporário com Expiração" style="width: 28px; height: 28px; color: var(--kc-gold);">
                                 <i class="fas fa-share-nodes"></i>
@@ -2913,7 +3426,33 @@
             document.getElementById('cam-path').value = cam ? (cam.rtsp_path || '/onvif1') : '/onvif1';
             document.getElementById('cam-user').value = cam ? (cam.username || 'admin') : 'admin';
             document.getElementById('cam-pass').value = '';
-            document.getElementById('cam-telegram-alerts').checked = cam ? cam.telegram_alerts_enabled : true;
+            document.getElementById('cam-telegram-alerts').checked = cam ? Boolean(cam.telegram_alerts_enabled) : true;
+            document.getElementById('cam-telegram-chat-id').value = cam ? (cam.telegram_chat_id || '') : '';
+            document.getElementById('cam-telegram-phone').value = cam ? (cam.telegram_phone || '') : '';
+
+            // Baby AI Settings
+            document.getElementById('cam-crib-fence-enabled').checked = cam ? Boolean(cam.crib_fence_enabled) : false;
+            document.getElementById('cam-baby-stand-enabled').checked = cam ? Boolean(cam.baby_stand_enabled) : false;
+            document.getElementById('cam-baby-cry-enabled').checked = cam ? Boolean(cam.baby_cry_enabled) : false;
+            document.getElementById('cam-auto-tracking-enabled').checked = cam ? Boolean(cam.auto_tracking_enabled) : false;
+
+            if (cam && cam.crib_roi_json) {
+                document.getElementById('cam-crib-x').value = cam.crib_roi_json.x ?? 20;
+                document.getElementById('cam-crib-y').value = cam.crib_roi_json.y ?? 25;
+                document.getElementById('cam-crib-w').value = cam.crib_roi_json.w ?? 60;
+                document.getElementById('cam-crib-h').value = cam.crib_roi_json.h ?? 50;
+            } else {
+                document.getElementById('cam-crib-x').value = 20;
+                document.getElementById('cam-crib-y').value = 25;
+                document.getElementById('cam-crib-w').value = 60;
+                document.getElementById('cam-crib-h').value = 50;
+            }
+
+            const tgLinkBtn = document.getElementById('btn-open-telegram-link');
+            if (tgLinkBtn) {
+                const param = cam ? `cam_${cam.id}` : `user_${authUserId || 'guest'}`;
+                tgLinkBtn.href = `https://t.me/kingcamera_oficial_bot?start=${param}`;
+            }
 
             if (cam) {
                 setManualMode('ip');
@@ -3314,41 +3853,98 @@
 
             const qrConfig = {
                 fps: 15,
-                qrbox: { width: 250, height: 250 },
+                qrbox: (viewWidth, viewHeight) => {
+                    const minEdge = Math.min(viewWidth, viewHeight);
+                    return {
+                        width: Math.floor(minEdge * 0.75),
+                        height: Math.floor(minEdge * 0.75)
+                    };
+                },
                 aspectRatio: 1.0
             };
 
+            const onScanSuccess = (decodedText) => {
+                console.log('QR Code escaneado com sucesso:', decodedText);
+                playSampleSound('dingdong');
+                stopCameraQrScanner();
+                handleScannedCameraQr(decodedText);
+            };
+
+            // Tenta primeiro a câmera traseira; se falhar tenta sem restrição de ambiente
             html5QrScanner.start(
                 { facingMode: "environment" },
                 qrConfig,
-                (decodedText, decodedResult) => {
-                    console.log('QR Code escaneado com sucesso:', decodedText);
-                    playSampleSound('dingdong');
-                    stopCameraQrScanner();
-                    handleScannedCameraQr(decodedText);
-                },
-                (errorMessage) => {
-                    // Frame scan contínuo
-                }
+                onScanSuccess,
+                () => {}
             ).then(() => {
+                onScannerStarted();
+            }).catch(firstErr => {
+                console.warn('Tentando câmera padrão sem facingMode...', firstErr);
+                html5QrScanner.start(
+                    { facingMode: "user" },
+                    qrConfig,
+                    onScanSuccess,
+                    () => {}
+                ).then(() => {
+                    onScannerStarted();
+                }).catch(secondErr => {
+                    console.warn('Falha em todas as câmeras:', secondErr);
+                    btnStart.disabled = false;
+                    btnStart.innerHTML = '<i class="fas fa-camera"></i> Tentar Novamente';
+                    if (placeholder) placeholder.style.display = 'block';
+                    if (statusEl) statusEl.innerHTML = 'Permita a câmera ou use o botão <b>Foto / Galeria</b> abaixo!';
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Dica do Leitor de QR',
+                        html: `Não foi possível abrir o vídeo contínuo da câmera.<br><br>
+                        Você pode usar o botão <b>Foto / Galeria</b> para tirar uma foto nítida da etiqueta com o aplicativo da sua câmera e decodificar na hora!`,
+                        confirmButtonColor: '#f59e0b'
+                    });
+                });
+            });
+
+            function onScannerStarted() {
                 btnStart.style.display = 'none';
                 btnStop.style.display = 'inline-flex';
                 btnStart.disabled = false;
                 btnStart.innerHTML = '<i class="fas fa-camera"></i> Iniciar Câmera Traseira';
                 if (statusEl) statusEl.innerHTML = '<span style="color: var(--kc-gold);">● Câmera ativa!</span> Aponte para o QR Code da câmera.';
-            }).catch(err => {
-                console.warn('Erro ao abrir câmera:', err);
-                btnStart.disabled = false;
-                btnStart.innerHTML = '<i class="fas fa-camera"></i> Tentar Novamente';
-                if (placeholder) placeholder.style.display = 'block';
-                if (statusEl) statusEl.textContent = 'Permita o acesso à câmera no navegador ou use a configuração manual.';
+            }
+        }
+
+        async function handleQrFileInput(input) {
+            const file = input.files && input.files[0];
+            if (!file) return;
+
+            const statusEl = document.getElementById('scanner-status');
+            if (statusEl) {
+                statusEl.innerHTML = `<span style="color: var(--kc-gold);"><i class="fas fa-spinner fa-spin"></i> Lendo código QR na imagem...</span>`;
+            }
+
+            try {
+                if (typeof Html5Qrcode === 'undefined') {
+                    throw new Error('Html5Qrcode não carregado');
+                }
+                const scanner = new Html5Qrcode("camera-qr-reader");
+                const decodedText = await scanner.scanFile(file, true);
+                playSampleSound('dingdong');
+                handleScannedCameraQr(decodedText);
+            } catch (err) {
+                console.warn('Falha ao decodificar imagem:', err);
                 Swal.fire({
                     icon: 'warning',
-                    title: 'Permissão da Câmera',
-                    text: 'Não foi possível acessar a câmera. Certifique-se de autorizar a permissão no navegador ou cadastre pelo ID/IP manualmente.',
+                    title: 'QR Code Não Encontrado na Foto',
+                    html: `Não foi possível identificar o QR Code na foto.<br><br>
+                    • Aproxime bem da etiqueta e garanta foco nítido;<br>
+                    • Ou selecione a aba <b>ID ou IP (Manual)</b> para digitar o número da câmera.`,
                     confirmButtonColor: '#f59e0b'
                 });
-            });
+                if (statusEl) {
+                    statusEl.textContent = 'Não foi possível ler o QR na imagem. Tente uma foto mais nítida ou digite o ID.';
+                }
+            } finally {
+                input.value = '';
+            }
         }
 
         function stopCameraQrScanner() {
@@ -3453,7 +4049,19 @@
                 port: parseInt(document.getElementById('cam-port').value || 554),
                 rtsp_path: document.getElementById('cam-path').value,
                 username: document.getElementById('cam-user').value,
+                telegram_chat_id: document.getElementById('cam-telegram-chat-id')?.value.trim() || null,
+                telegram_phone: document.getElementById('cam-telegram-phone')?.value.trim() || null,
                 telegram_alerts_enabled: document.getElementById('cam-telegram-alerts').checked,
+                crib_fence_enabled: document.getElementById('cam-crib-fence-enabled')?.checked || false,
+                crib_roi_json: {
+                    x: parseInt(document.getElementById('cam-crib-x')?.value || 20),
+                    y: parseInt(document.getElementById('cam-crib-y')?.value || 25),
+                    w: parseInt(document.getElementById('cam-crib-w')?.value || 60),
+                    h: parseInt(document.getElementById('cam-crib-h')?.value || 50),
+                },
+                baby_stand_enabled: document.getElementById('cam-baby-stand-enabled')?.checked || false,
+                baby_cry_enabled: document.getElementById('cam-baby-cry-enabled')?.checked || false,
+                auto_tracking_enabled: document.getElementById('cam-auto-tracking-enabled')?.checked || false,
             };
             const pass = document.getElementById('cam-pass').value;
             if (pass) payload.password = pass;
@@ -3492,9 +4100,68 @@
             }
         }
 
+        // Salvar Configurações da Aba IA Babá & Berço
+        async function saveBabyAiSettings() {
+            const camId = currentEditingId || document.getElementById('cam-id')?.value;
+            if (!camId) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Selecione uma Câmera',
+                    text: 'Salve ou selecione a câmera primeiro para aplicar os recursos de IA Babá.',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+
+            const payload = {
+                crib_fence_enabled: document.getElementById('cam-crib-fence-enabled')?.checked || false,
+                crib_roi_json: {
+                    x: parseInt(document.getElementById('cam-crib-x')?.value || 20),
+                    y: parseInt(document.getElementById('cam-crib-y')?.value || 25),
+                    w: parseInt(document.getElementById('cam-crib-w')?.value || 60),
+                    h: parseInt(document.getElementById('cam-crib-h')?.value || 50),
+                },
+                baby_stand_enabled: document.getElementById('cam-baby-stand-enabled')?.checked || false,
+                baby_cry_enabled: document.getElementById('cam-baby-cry-enabled')?.checked || false,
+                auto_tracking_enabled: document.getElementById('cam-auto-tracking-enabled')?.checked || false,
+            };
+
+            try {
+                const res = await fetch(`/api/cameras/${camId}`, {
+                    method: 'PUT',
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json();
+                if (json.success) {
+                    closeModal();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Módulos de IA Salvos!',
+                        text: 'Cerca do Berço, Alerta de Levantar, Choro e Auto-Tracking configurados com sucesso.',
+                        timer: 2200,
+                        showConfirmButton: false
+                    });
+                    loadCameras();
+                } else {
+                    Swal.fire('Erro', json.message || 'Falha ao salvar IA.', 'error');
+                }
+            } catch (err) {
+                Swal.fire('Erro', 'Falha ao conectar com o servidor.', 'error');
+            }
+        }
+
         function editCamera(id) {
             const cam = camerasData.find(c => c.id === id);
             if (cam) openModal('edit', cam);
+        }
+
+        function openBabyAiModal(id) {
+            editCamera(id);
+            setTimeout(() => {
+                document.querySelector('.kc-tab-btn[data-tab="tab-ai-baby"]')?.click();
+            }, 50);
         }
 
         // Deletar câmera

@@ -173,17 +173,29 @@ class KingCameraTelegramAgentService
             
             if (str_starts_with($tokenParam, 'user_')) {
                 $userId = substr($tokenParam, 5);
-                // Vincula este Telegram a todas as câmeras do usuário
                 KingCamera::where('user_id', $userId)->update(['telegram_chat_id' => $chatId]);
                 
                 $reply = "👋 <b>Olá! Agente King Câmera Conectado com Sucesso!</b>\n\n"
-                       . "A partir de agora você receberá alertas em tempo real aqui com fotos instantâneas sempre que houver movimento ou choro no quarto do bebê.\n\n"
+                       . "Seu Telegram (Chat ID: <code>{$chatId}</code>) foi vinculado a todas as suas câmeras.\n"
+                       . "Você receberá alertas em tempo real aqui com fotos instantâneas sempre que houver movimento, saída do berço ou choro do bebê.\n\n"
                        . "Comandos disponíveis:\n"
                        . "• /status - Ver estado das câmeras\n"
                        . "• /foto - Receber foto em tempo real\n"
-                       . "• /ajuda - Informações de uso";
+                       . "• /id - Ver seu Chat ID";
+            } elseif (str_starts_with($tokenParam, 'cam_')) {
+                $camId = (int) substr($tokenParam, 4);
+                $cam = KingCamera::find($camId);
+                if ($cam) {
+                    $cam->update(['telegram_chat_id' => $chatId]);
+                    $reply = "👋 <b>Câmera '{$cam->name}' Conectada!</b>\n\n"
+                           . "Seu Telegram (Chat ID: <code>{$chatId}</code>) agora está configurado para receber notificações desta câmera.";
+                } else {
+                    $reply = "Câmera não encontrada.";
+                }
             } else {
-                $reply = "👋 Olá! Sou o <b>Agente King Câmera</b>.\n\nPara vincular suas câmeras a este bot, acesse o painel Conecta King e clique no botão 'Conectar Telegram'.";
+                $reply = "👋 Olá! Sou o <b>Agente King Câmera</b>.\n\n"
+                       . "Seu Chat ID do Telegram é: <code>{$chatId}</code>\n\n"
+                       . "Você pode copiar esse número e colar no campo <b>ID / Usuário do Telegram</b> na edição da sua câmera no Conecta King!";
             }
 
             Http::timeout(5)->post("https://api.telegram.org/bot{$token}/sendMessage", [
@@ -244,4 +256,13 @@ class KingCameraTelegramAgentService
 
         return ['status' => 'ok'];
     }
+
+    /**
+     * Alias para compatibilidade com KingCameraController.
+     */
+    public function handleWebhookUpdate(array $update): array
+    {
+        return $this->handleWebhook($update);
+    }
 }
+

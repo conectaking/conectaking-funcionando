@@ -107,8 +107,15 @@ class KingCameraController extends Controller
             'username' => 'nullable|string|max:100',
             'password' => 'nullable|string|max:200',
             'telegram_chat_id' => 'nullable|string|max:50',
+            'telegram_phone' => 'nullable|string|max:64',
             'telegram_alerts_enabled' => 'nullable|boolean',
             'motion_detection_enabled' => 'nullable|boolean',
+            'audio_detection_enabled' => 'nullable|boolean',
+            'crib_fence_enabled' => 'nullable|boolean',
+            'crib_roi_json' => 'nullable',
+            'baby_stand_enabled' => 'nullable|boolean',
+            'baby_cry_enabled' => 'nullable|boolean',
+            'auto_tracking_enabled' => 'nullable|boolean',
         ]);
 
         $sanitizedId = preg_replace('/[^a-zA-Z0-9]/', '', $userId);
@@ -125,8 +132,15 @@ class KingCameraController extends Controller
             'username' => $validated['username'] ?? null,
             'password' => $validated['password'] ?? null,
             'telegram_chat_id' => $validated['telegram_chat_id'] ?? null,
+            'telegram_phone' => $validated['telegram_phone'] ?? null,
             'telegram_alerts_enabled' => (bool) ($validated['telegram_alerts_enabled'] ?? true),
             'motion_detection_enabled' => (bool) ($validated['motion_detection_enabled'] ?? false),
+            'audio_detection_enabled' => (bool) ($validated['audio_detection_enabled'] ?? false),
+            'crib_fence_enabled' => (bool) ($validated['crib_fence_enabled'] ?? false),
+            'crib_roi_json' => $validated['crib_roi_json'] ?? null,
+            'baby_stand_enabled' => (bool) ($validated['baby_stand_enabled'] ?? false),
+            'baby_cry_enabled' => (bool) ($validated['baby_cry_enabled'] ?? false),
+            'auto_tracking_enabled' => (bool) ($validated['auto_tracking_enabled'] ?? false),
             'status' => 'online',
         ]);
 
@@ -160,8 +174,15 @@ class KingCameraController extends Controller
             'username' => 'nullable|string|max:100',
             'password' => 'nullable|string|max:200',
             'telegram_chat_id' => 'nullable|string|max:50',
+            'telegram_phone' => 'nullable|string|max:64',
             'telegram_alerts_enabled' => 'nullable|boolean',
             'motion_detection_enabled' => 'nullable|boolean',
+            'audio_detection_enabled' => 'nullable|boolean',
+            'crib_fence_enabled' => 'nullable|boolean',
+            'crib_roi_json' => 'nullable',
+            'baby_stand_enabled' => 'nullable|boolean',
+            'baby_cry_enabled' => 'nullable|boolean',
+            'auto_tracking_enabled' => 'nullable|boolean',
         ]);
 
         if (isset($validated['rtsp_path'])) {
