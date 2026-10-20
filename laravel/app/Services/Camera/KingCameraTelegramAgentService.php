@@ -16,12 +16,12 @@ class KingCameraTelegramAgentService
 
     public function getBotToken(): string
     {
-        return trim((string) (env('TELEGRAM_CAMERA_BOT_TOKEN') ?: env('TELEGRAM_BOT_TOKEN') ?: ''));
+        return trim((string) (env('TELEGRAM_CAMERA_BOT_TOKEN') ?: env('TELEGRAM_BOT_TOKEN') ?: '8871691156:AAGir9vNUOeukdbtFctvLbi8u2BCe95FgJw'));
     }
 
     public function getBotUsername(): string
     {
-        return trim((string) (env('TELEGRAM_CAMERA_BOT_USERNAME') ?: 'ConectaKingCameraBot'));
+        return trim((string) (env('TELEGRAM_CAMERA_BOT_USERNAME') ?: 'conectaking_bot'));
     }
 
     /**

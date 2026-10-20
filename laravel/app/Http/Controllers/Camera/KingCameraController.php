@@ -47,6 +47,7 @@ class KingCameraController extends Controller
                 'username' => 'admin',
                 'password' => 'Playadryan22*',
                 'telegram_alerts_enabled' => true,
+                'telegram_chat_id' => '78792434',
                 'status' => 'online',
             ]);
 

@@ -28,11 +28,7 @@ class KingCameraService
         $rtspUrl = $camera->full_rtsp_url;
 
         try {
-            $res = Http::timeout(5)
-                ->withHeaders(['Content-Type' => 'application/json'])
-                ->put("{$goUrl}/api/streams", [
-                    $streamId => $rtspUrl,
-                ]);
+            $res = Http::timeout(5)->put("{$goUrl}/api/streams?name=" . urlencode($streamId) . "&src=" . urlencode($rtspUrl));
 
             if ($res->successful()) {
                 $camera->update(['status' => 'online']);
@@ -63,11 +59,7 @@ class KingCameraService
     {
         $goUrl = $this->getGo2RtcUrl();
         try {
-            $res = Http::timeout(3)
-                ->withHeaders(['Content-Type' => 'application/json'])
-                ->delete("{$goUrl}/api/streams", [
-                    $streamId => null,
-                ]);
+            $res = Http::timeout(3)->delete("{$goUrl}/api/streams?src=" . urlencode($streamId));
             return $res->successful();
         } catch (\Throwable $e) {
             Log::warning('ks.camera.removeStream', ['error' => $e->getMessage()]);

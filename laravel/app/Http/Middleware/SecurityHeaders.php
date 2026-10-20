@@ -52,7 +52,7 @@ class SecurityHeaders
                 "object-src 'none'",
                 "frame-ancestors 'self'",
                 "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.instagram.com https://tag.conectaking.com.br blob:",
-                "script-src 'self' 'unsafe-inline' 'nonce-{$nonce}'",
+                "script-src 'self' 'unsafe-inline' 'nonce-{$nonce}' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
                 "font-src 'self' data: https://fonts.gstatic.com",
                 "img-src 'self' data: blob: https:",
@@ -115,7 +115,7 @@ class SecurityHeaders
         if ($path === '' || str_starts_with($path, 'portaria')) {
             return true;
         }
-        if (str_starts_with($path, 'kingSelection') || str_starts_with($path, 'king-selection')) {
+        if (str_starts_with($path, 'kingSelection') || str_starts_with($path, 'king-selection') || str_starts_with($path, 'kingCamera') || str_starts_with($path, 'king-camera')) {
             return true;
         }
         if (str_contains($path, 'kingSelectionCliente') || str_contains($path, 'guest-list') || str_contains($path, 'guestList')) {
