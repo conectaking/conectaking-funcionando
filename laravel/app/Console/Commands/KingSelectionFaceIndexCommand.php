@@ -158,6 +158,17 @@ class KingSelectionFaceIndexCommand extends Command
                     }
                 }
 
+                if (\App\Support\SchemaMeta::hasTable('rekognition_photo_jobs')) {
+                    DB::table('rekognition_photo_jobs')->updateOrInsert(
+                        ['gallery_id' => $galleryId, 'photo_id' => $photo->id],
+                        [
+                            'r2_key' => (string) ($photo->file_path ?? ''),
+                            'process_status' => 'done',
+                            'processed_at' => now(),
+                        ]
+                    );
+                }
+
                 $processed++;
             } catch (\Throwable $e) {
                 Log::warning('ks.face.indexCommand.photoFailed', [
