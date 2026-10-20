@@ -71,7 +71,7 @@ class KingSelectionFaceIndexCommand extends Command
         $clientEmbeddings = [];
         foreach ($clients as $c) {
             $arr = json_decode($c->embedding, true);
-            if (is_array($arr) && count($arr) === 128) {
+            if (is_array($arr) && in_array(count($arr), [128, 512], true)) {
                 $clientEmbeddings[(int) $c->client_id] = $arr;
             }
         }
@@ -139,7 +139,7 @@ class KingSelectionFaceIndexCommand extends Command
                         $mRes = Http::timeout(5)->post("{$aiUrl}/match", [
                             'query_embedding' => $cEmb,
                             'targets' => $insertedFaceIds,
-                            'threshold' => 0.363,
+                            'threshold' => (float) (env('FACE_AI_THRESHOLD') ?: 0.55),
                         ]);
                         if ($mRes->successful()) {
                             $matches = $mRes->json('matches') ?? [];

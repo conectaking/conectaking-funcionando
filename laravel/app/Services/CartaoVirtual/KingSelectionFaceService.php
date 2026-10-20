@@ -1255,7 +1255,8 @@ class KingSelectionFaceService
             }
 
             $rows = DB::select(
-                'SELECT DISTINCT kp.id AS photo_id
+                'SELECT DISTINCT kp.id AS photo_id,
+                        (SELECT COUNT(*)::int FROM rekognition_photo_faces rpf2 WHERE rpf2.photo_id = kp.id) AS face_count
                  FROM king_photos kp
                  JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
                  JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
@@ -1265,10 +1266,23 @@ class KingSelectionFaceService
                 [$galleryId, $clientId, $minSim, $limit, $offset]
             );
 
+            $soloIds = [];
+            $groupIds = [];
+            foreach ($rows as $r) {
+                $pid = (int) $r->photo_id;
+                if ((int) ($r->face_count ?? 1) === 1) {
+                    $soloIds[] = $pid;
+                } else {
+                    $groupIds[] = $pid;
+                }
+            }
+
             return ['status' => 200, 'body' => [
                 'success' => true,
                 'total' => $totalMatches,
                 'photoIds' => array_column($rows, 'photo_id'),
+                'soloPhotoIds' => $soloIds,
+                'groupPhotoIds' => $groupIds,
             ]];
         }
 
@@ -3050,7 +3064,7 @@ class KingSelectionFaceService
         $targets = [];
         foreach ($rows as $r) {
             $arr = json_decode((string) $r->embedding, true);
-            if (is_array($arr) && count($arr) === 128) {
+            if (is_array($arr) && in_array(count($arr), [128, 512], true)) {
                 $targets[] = ['id' => (int) $r->id, 'photo_id' => (int) $r->photo_id, 'embedding' => $arr];
             }
         }
@@ -3059,10 +3073,11 @@ class KingSelectionFaceService
         }
 
         try {
+            $defaultThresh = (count($clientEmbedding) === 512) ? 0.48 : 0.55;
             $res = \Illuminate\Support\Facades\Http::timeout(15)->post("{$localAiUrl}/match", [
                 'query_embedding' => $clientEmbedding,
                 'targets' => $targets,
-                'threshold' => (float) (env('FACE_AI_THRESHOLD') ?: 0.55),
+                'threshold' => (float) (env('FACE_AI_THRESHOLD') ?: $defaultThresh),
             ]);
             if ($res->successful()) {
                 $matches = $res->json('matches') ?? [];

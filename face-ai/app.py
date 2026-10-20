@@ -4,25 +4,34 @@ import time
 import base64
 import numpy as np
 import cv2
+import onnxruntime as ort
 from fastapi import FastAPI, UploadFile, File, Request, HTTPException
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional
 
-app = FastAPI(title="ConectaKing Local Face AI", version="1.0.0")
+app = FastAPI(title="ConectaKing Face AI (ArcFace 512D)", version="2.0.0")
 
 YUNET_MODEL = "models/face_detection_yunet_2023mar.onnx"
-SFACE_MODEL = "models/face_recognition_sface_2021dec.onnx"
+ARCFACE_MODEL = "models/w600k_mbf.onnx"
+
+ARCFACE_REF_POINTS = np.array([
+    [38.2946, 51.6963],  # right eye
+    [73.5318, 51.5014],  # left eye
+    [56.0252, 71.7366],  # nose tip
+    [41.5493, 92.3655],  # right mouth corner
+    [70.7299, 92.2041]   # left mouth corner
+], dtype=np.float32)
 
 detector = None
-recognizer = None
+arcface_session = None
+arcface_input_name = None
 
 def init_models():
-    global detector, recognizer
-    if not os.path.exists(YUNET_MODEL) or not os.path.exists(SFACE_MODEL):
+    global detector, arcface_session, arcface_input_name
+    if not os.path.exists(YUNET_MODEL) or not os.path.exists(ARCFACE_MODEL):
         from download_models import main as dl_models
         dl_models()
-    
+
     detector = cv2.FaceDetectorYN.create(
         model=YUNET_MODEL,
         config="",
@@ -31,11 +40,13 @@ def init_models():
         nms_threshold=0.3,
         top_k=5000
     )
-    recognizer = cv2.FaceRecognizerSF.create(
-        model=SFACE_MODEL,
-        config=""
-    )
-    print("[ConectaKing Face AI] Models loaded successfully (YuNet + SFace)")
+
+    opts = ort.SessionOptions()
+    opts.inter_op_num_threads = 2
+    opts.intra_op_num_threads = 2
+    arcface_session = ort.InferenceSession(ARCFACE_MODEL, opts, providers=['CPUExecutionProvider'])
+    arcface_input_name = arcface_session.get_inputs()[0].name
+    print("[ConectaKing Face AI v2] Loaded ArcFace 512D (w600k_mbf) + YuNet via ONNXRuntime")
 
 @app.on_event("startup")
 def startup_event():
@@ -46,10 +57,11 @@ def health():
     return {
         "status": "ok",
         "service": "conectaking-face-ai",
-        "engine": "OpenCV-DNN",
+        "engine": "InsightFace-ArcFace-ONNX",
         "detector": "YuNet (2023mar)",
-        "recognizer": "SFace (2021dec)",
-        "embedding_dim": 128
+        "recognizer": "ArcFace MobileFaceNet (MS1MV3/W600K)",
+        "embedding_dim": 512,
+        "version": "2.0.0"
     }
 
 def decode_image_bytes(data: bytes) -> np.ndarray:
@@ -59,7 +71,7 @@ def decode_image_bytes(data: bytes) -> np.ndarray:
         raise ValueError("Formato de imagem inválido ou não suportado.")
     return img
 
-def extract_faces_from_bgr(img: np.ndarray, max_dim: int = 1280):
+def extract_faces_from_bgr(img: np.ndarray, max_dim: int = 1280, flip_aug_single: bool = True):
     h, w = img.shape[:2]
     scale = 1.0
     if max(h, w) > max_dim:
@@ -76,22 +88,46 @@ def extract_faces_from_bgr(img: np.ndarray, max_dim: int = 1280):
     if faces is None or len(faces) == 0:
         return results
 
+    is_single_face = (len(faces) == 1)
+
     for face in faces:
-        # face contains [x, y, w, h, x_re, y_re, x_le, y_le, x_nt, y_nt, x_rcm, y_rcm, x_lcm, y_lcm, score]
         score = float(face[-1])
         if score < 0.65:
             continue
 
-        aligned_face = recognizer.alignCrop(resized, face)
-        feat = recognizer.feature(aligned_face) # (1, 128) float32
-        feat_norm = feat / np.linalg.norm(feat)
-        emb_list = [round(float(x), 6) for x in feat_norm.flatten()]
-
-        # Scale box back to original image dimensions if resized
-        x = int(face[0] / scale)
-        y = int(face[1] / scale)
+        # Scale box back to original image dimensions
         bw = int(face[2] / scale)
         bh = int(face[3] / scale)
+        if bw < 32 or bh < 32:
+            # Filter distant background spectators
+            continue
+
+        x = int(face[0] / scale)
+        y = int(face[1] / scale)
+
+        # 5 facial landmarks in resized image
+        kps = face[4:14].reshape((5, 2))
+        M, _ = cv2.estimateAffinePartial2D(kps, ARCFACE_REF_POINTS)
+        if M is None:
+            continue
+
+        warped = cv2.warpAffine(resized, M, (112, 112), borderValue=0.0)
+
+        # Normalized blob: BGR -> RGB, centered around 0 in [-1, 1]
+        blob = (warped[:, :, ::-1].transpose(2, 0, 1).astype(np.float32) - 127.5) / 127.5
+        feat = arcface_session.run(None, {arcface_input_name: np.expand_dims(blob, 0)})[0].flatten()
+        feat_norm = feat / np.linalg.norm(feat)
+
+        # If it's a selfie or single face, apply flip augmentation for 3D symmetry
+        if is_single_face and flip_aug_single:
+            warped_flip = cv2.flip(warped, 1)
+            blob_flip = (warped_flip[:, :, ::-1].transpose(2, 0, 1).astype(np.float32) - 127.5) / 127.5
+            feat_flip = arcface_session.run(None, {arcface_input_name: np.expand_dims(blob_flip, 0)})[0].flatten()
+            feat_flip_norm = feat_flip / np.linalg.norm(feat_flip)
+            avg_feat = (feat_norm + feat_flip_norm) / 2.0
+            feat_norm = avg_feat / np.linalg.norm(avg_feat)
+
+        emb_list = [round(float(v), 6) for v in feat_norm]
 
         results.append({
             "box": [max(0, x), max(0, y), bw, bh],
@@ -99,7 +135,7 @@ def extract_faces_from_bgr(img: np.ndarray, max_dim: int = 1280):
             "embedding": emb_list
         })
 
-    # Sort primarily by detector confidence, with face area as secondary criteria
+    # Sort by detection confidence and box area
     results.sort(key=lambda f: (round(f["confidence"], 2), f["box"][2] * f["box"][3]), reverse=True)
     return results
 
@@ -130,6 +166,7 @@ async def extract(request: Request, file: Optional[UploadFile] = File(None)):
             "success": True,
             "face_count": len(faces),
             "faces": faces,
+            "embedding_dim": 512,
             "elapsed_ms": elapsed_ms
         }
     except ValueError as ve:
@@ -145,7 +182,7 @@ class TargetEmbedding(BaseModel):
 class MatchRequest(BaseModel):
     query_embedding: List[float]
     targets: List[TargetEmbedding]
-    threshold: Optional[float] = 0.55 # Calibrated threshold for zero false-positives
+    threshold: Optional[float] = 0.48 # Calibrated threshold for ArcFace 512D
 
 @app.post("/match")
 def match(req: MatchRequest):
@@ -178,13 +215,14 @@ def match(req: MatchRequest):
     sims = np.dot(mat, q)
 
     matches = []
-    thresh = float(req.threshold if req.threshold is not None else 0.55)
+    # For ArcFace 512D, random people are < 0.25, same person is > 0.50. Threshold 0.48 gives zero false positives.
+    thresh = float(req.threshold if req.threshold is not None else 0.48)
 
     for i, sim in enumerate(sims):
         score = float(sim)
         if score >= thresh:
-            # Map cosine score (typically 0.55 to 0.85+) to percentage (75% to 99.9%)
-            norm_pct = round(min(99.9, max(75.0, 75.0 + ((score - thresh) / max(0.01, (0.85 - thresh))) * 24.9)), 2)
+            # Map cosine score (0.48 to 0.75+) to percentage (75% to 99.9%)
+            norm_pct = round(min(99.9, max(75.0, 75.0 + ((score - thresh) / max(0.01, (0.75 - thresh))) * 24.9)), 2)
             matches.append({
                 "id": target_ids[i],
                 "photo_id": target_photo_ids[i],

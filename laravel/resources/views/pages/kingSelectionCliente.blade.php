@@ -348,15 +348,26 @@
             <button type="button" class="ks-btn ks-btn-yellow" id="ks-face-open-btn"><i class="fas fa-face-smile"></i> Reconhecimento facial</button>
             <button type="button" class="ks-btn ks-face-clear-btn ks-hidden" id="ks-face-clear-btn" style="display:none;"><i class="fas fa-times"></i> Ver todas as fotos</button>
           </div>
+          <div class="ks-face-subfilters ks-hidden" id="ks-face-subfilters" style="display:none; margin-top:10px; gap:8px; flex-wrap:wrap; align-items:center;">
+            <span style="font-size:12px; color:#cbd5e1; font-weight:600;"><i class="fas fa-filter"></i> Filtrar:</span>
+            <button type="button" class="ks-btn ks-btn-yellow" id="ks-face-sub-all" style="padding:5px 12px; font-size:12px;"><i class="fas fa-user-check"></i> Todas (<span id="ks-face-cnt-all">0</span>)</button>
+            <button type="button" class="ks-btn ks-btn-outline" id="ks-face-sub-solo" style="padding:5px 12px; font-size:12px;"><i class="fas fa-user"></i> Apenas eu (<span id="ks-face-cnt-solo">0</span>)</button>
+            <button type="button" class="ks-btn ks-btn-outline" id="ks-face-sub-group" style="padding:5px 12px; font-size:12px;"><i class="fas fa-user-group"></i> Em grupo (<span id="ks-face-cnt-group">0</span>)</button>
+          </div>
           <div class="ks-face-msg" id="ks-face-msg" aria-live="polite"></div>
         </div>
         <div class="ks-face-modal" id="ks-face-modal" aria-hidden="true">
           <div class="ks-face-modal-card" role="dialog" aria-modal="true" aria-labelledby="ks-face-modal-title">
             <div class="ks-face-modal-head">
-              <h3 class="ks-face-modal-title" id="ks-face-modal-title">Reconhecimento facial</h3>
+              <h3 class="ks-face-modal-title" id="ks-face-modal-title">Reconhecimento facial com IA</h3>
               <button type="button" class="ks-btn" id="ks-face-modal-close"><i class="fas fa-times"></i> Fechar</button>
             </div>
-            <p class="ks-face-modal-lead">Escolha uma opção para reconhecer seu rosto:</p>
+            <div style="text-align:center; margin:16px 0 14px;">
+              <div style="display:inline-block; width:110px; height:140px; border:2px dashed #facc15; border-radius:50%; position:relative; background:rgba(250,204,21,0.06); box-shadow:0 0 15px rgba(250,204,21,0.15);">
+                <i class="fas fa-user" style="font-size:48px; color:rgba(250,204,21,0.45); position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);"></i>
+              </div>
+              <p style="font-size:12.5px; color:#cbd5e1; margin-top:10px; line-height:1.4;">Centralize bem o seu rosto de frente em um local iluminado.</p>
+            </div>
             <div class="ks-face-modal-actions">
               <label class="ks-btn ks-btn-yellow ks-face-modal-btn" id="ks-face-camera-btn" for="ks-face-camera-in" style="cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px;">
                 <i class="fas fa-camera"></i> Fazer selfie

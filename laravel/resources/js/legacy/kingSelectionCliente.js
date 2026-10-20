@@ -5855,6 +5855,8 @@
         }
         return {
           photoIds: merged,
+          soloPhotoIds: d0.soloPhotoIds || [],
+          groupPhotoIds: d0.groupPhotoIds || [],
           total: totalHi,
           message: String(d0.message || '').trim() || undefined
         };
@@ -6044,6 +6046,9 @@
 
   function clearFaceFilter() {
     state.faceFilterIds = null;
+    state.faceAllIds = null;
+    state.faceSoloIds = null;
+    state.faceGroupIds = null;
     const msg = $('ks-face-msg');
     if (msg) msg.textContent = '';
     const clearBtn = $('ks-face-clear-btn');
@@ -6051,9 +6056,41 @@
       clearBtn.classList.add('ks-hidden');
       clearBtn.style.display = 'none';
     }
+    const subFilters = $('ks-face-subfilters');
+    if (subFilters) {
+      subFilters.classList.add('ks-hidden');
+      subFilters.style.display = 'none';
+    }
     resetGridVirtualPaging();
     renderGrid();
     toast('Exibindo todas as fotos da galeria.', 'ok');
+  }
+
+  function setFaceSubActive(type) {
+    const btnAll = $('ks-face-sub-all');
+    const btnSolo = $('ks-face-sub-solo');
+    const btnGroup = $('ks-face-sub-group');
+    [btnAll, btnSolo, btnGroup].forEach((b) => {
+      if (b) {
+        b.classList.remove('ks-btn-yellow');
+        b.classList.add('ks-btn-outline');
+      }
+    });
+    if (type === 'solo' && btnSolo) {
+      btnSolo.classList.remove('ks-btn-outline');
+      btnSolo.classList.add('ks-btn-yellow');
+      state.faceFilterIds = state.faceSoloIds || state.faceAllIds;
+    } else if (type === 'group' && btnGroup) {
+      btnGroup.classList.remove('ks-btn-outline');
+      btnGroup.classList.add('ks-btn-yellow');
+      state.faceFilterIds = state.faceGroupIds || state.faceAllIds;
+    } else if (btnAll) {
+      btnAll.classList.remove('ks-btn-outline');
+      btnAll.classList.add('ks-btn-yellow');
+      state.faceFilterIds = state.faceAllIds;
+    }
+    resetGridVirtualPaging();
+    renderGrid();
   }
 
   let _faceImageProcessInFlight = false;
@@ -6125,9 +6162,37 @@
       }
       const scan = await runFaceScanAllPages(msg, { fromEnroll: true });
       const ids = scan.photoIds || [];
-      state.faceFilterIds = new Set(
+      const soloIds = scan.soloPhotoIds || [];
+      const groupIds = scan.groupPhotoIds || [];
+
+      state.faceAllIds = new Set(
         ids.map((x) => parseInt(x, 10)).filter((n) => Number.isFinite(n) && n > 0)
       );
+      state.faceSoloIds = new Set(
+        soloIds.map((x) => parseInt(x, 10)).filter((n) => Number.isFinite(n) && n > 0)
+      );
+      state.faceGroupIds = new Set(
+        groupIds.map((x) => parseInt(x, 10)).filter((n) => Number.isFinite(n) && n > 0)
+      );
+      state.faceFilterIds = state.faceAllIds;
+
+      const subFilters = $('ks-face-subfilters');
+      if (subFilters) {
+        if (ids.length > 0) {
+          subFilters.classList.remove('ks-hidden');
+          subFilters.style.display = 'flex';
+          const cntAll = $('ks-face-cnt-all');
+          if (cntAll) cntAll.textContent = state.faceAllIds.size;
+          const cntSolo = $('ks-face-cnt-solo');
+          if (cntSolo) cntSolo.textContent = state.faceSoloIds.size;
+          const cntGroup = $('ks-face-cnt-group');
+          if (cntGroup) cntGroup.textContent = state.faceGroupIds.size;
+          setFaceSubActive('all');
+        } else {
+          subFilters.classList.add('ks-hidden');
+          subFilters.style.display = 'none';
+        }
+      }
       // Limpa filtros conflitantes que poderiam esconder os resultados faciais
       if (state.filterSelectedOnly) {
         state.filterSelectedOnly = false;
@@ -6191,6 +6256,9 @@
 
   $('ks-face-open-btn')?.addEventListener('click', () => openFaceModal());
   $('ks-face-clear-btn')?.addEventListener('click', () => clearFaceFilter());
+  $('ks-face-sub-all')?.addEventListener('click', () => setFaceSubActive('all'));
+  $('ks-face-sub-solo')?.addEventListener('click', () => setFaceSubActive('solo'));
+  $('ks-face-sub-group')?.addEventListener('click', () => setFaceSubActive('group'));
   $('ks-face-modal-close')?.addEventListener('click', () => closeFaceModal());
   $('ks-face-modal')?.addEventListener('click', (ev) => {
     if (ev.target && ev.target.id === 'ks-face-modal') closeFaceModal();
