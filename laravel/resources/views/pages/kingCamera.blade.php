@@ -15,13 +15,12 @@
 
     <style>
         :root {
-            color-scheme: dark;
             --kc-bg: #07090e;
             --kc-surface: #0f1422;
             --kc-surface-card: rgba(18, 24, 38, 0.75);
             --kc-surface-hover: rgba(27, 36, 56, 0.85);
-            --kc-border: rgba(255, 255, 255, 0.12);
-            --kc-border-active: rgba(245, 158, 11, 0.5);
+            --kc-border: rgba(255, 255, 255, 0.08);
+            --kc-border-active: rgba(245, 158, 11, 0.4);
             --kc-gold: #f59e0b;
             --kc-gold-glow: rgba(245, 158, 11, 0.25);
             --kc-emerald: #10b981;
@@ -29,8 +28,8 @@
             --kc-rose: #ef4444;
             --kc-cyan: #06b6d4;
             --kc-text: #f8fafc;
-            --kc-text-muted: #cbd5e1;
-            --kc-text-dim: #94a3b8;
+            --kc-text-muted: #94a3b8;
+            --kc-text-dim: #64748b;
         }
 
         * {
@@ -605,29 +604,12 @@
             border: 1px solid var(--kc-border);
             border-radius: 20px;
             width: 100%;
-            max-width: 700px;
-            max-height: 92vh;
+            max-width: 620px;
+            max-height: 90vh;
             overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(245, 158, 11, 0.4) #090d16;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
             display: flex;
             flex-direction: column;
-        }
-
-        .kc-modal::-webkit-scrollbar {
-            width: 6px;
-        }
-        .kc-modal::-webkit-scrollbar-track {
-            background: #090d16;
-            border-radius: 10px;
-        }
-        .kc-modal::-webkit-scrollbar-thumb {
-            background: rgba(245, 158, 11, 0.4);
-            border-radius: 10px;
-        }
-        .kc-modal::-webkit-scrollbar-thumb:hover {
-            background: var(--kc-gold);
         }
 
         .kc-modal-header {
@@ -663,23 +645,16 @@
         .kc-modal-tabs {
             display: flex;
             border-bottom: 1px solid var(--kc-border);
-            background: rgba(0, 0, 0, 0.3);
-            overflow-x: auto;
-            scrollbar-width: none;
-        }
-
-        .kc-modal-tabs::-webkit-scrollbar {
-            display: none;
+            background: rgba(0, 0, 0, 0.2);
         }
 
         .kc-tab-btn {
             flex: 1;
-            white-space: nowrap;
             background: none;
             border: none;
-            padding: 0.85rem 0.8rem;
-            color: #94a3b8;
-            font-size: 0.82rem;
+            padding: 0.85rem 1rem;
+            color: var(--kc-text-dim);
+            font-size: 0.875rem;
             font-weight: 600;
             cursor: pointer;
             border-bottom: 2px solid transparent;
@@ -687,18 +662,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.45rem;
-        }
-
-        .kc-tab-btn:hover {
-            color: #f8fafc;
-            background: rgba(255, 255, 255, 0.03);
+            gap: 0.5rem;
         }
 
         .kc-tab-btn.active {
             color: var(--kc-gold);
             border-bottom-color: var(--kc-gold);
-            background: rgba(245, 158, 11, 0.08);
+            background: rgba(245, 158, 11, 0.05);
         }
 
         .kc-modal-body {
@@ -719,178 +689,27 @@
 
         .kc-label {
             display: block;
-            font-size: 0.82rem;
+            font-size: 0.8rem;
             font-weight: 600;
-            color: #f1f5f9 !important;
+            color: var(--kc-text-muted);
             margin-bottom: 0.4rem;
         }
 
         .kc-input {
             width: 100%;
-            background: #0f1422 !important;
-            border: 1px solid rgba(255, 255, 255, 0.18) !important;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--kc-border);
             border-radius: 9px;
             padding: 0.65rem 0.85rem;
-            color: #f8fafc !important;
+            color: #fff;
             font-size: 0.9rem;
-            transition: border-color 0.2s, background 0.2s;
-            color-scheme: dark !important;
+            transition: border-color 0.2s;
         }
 
         .kc-input:focus {
             outline: none;
-            border-color: var(--kc-gold) !important;
-            background: #151c2e !important;
-            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
-        }
-
-        /* Fix definitivo para options e selects brancos do Windows/Chrome */
-        select.kc-input,
-        select.kc-input option,
-        select.kc-input optgroup {
-            background-color: #0f1422 !important;
-            color: #f8fafc !important;
-            color-scheme: dark !important;
-        }
-
-        select.kc-input option:hover,
-        select.kc-input option:focus,
-        select.kc-input option:checked {
-            background-color: #f59e0b !important;
-            color: #000000 !important;
-        }
-
-        .kc-input:-webkit-autofill,
-        .kc-input:-webkit-autofill:hover, 
-        .kc-input:-webkit-autofill:focus {
-            -webkit-text-fill-color: #f8fafc !important;
-            -webkit-box-shadow: 0 0 0px 1000px #0f1422 inset !important;
-            box-shadow: 0 0 0px 1000px #0f1422 inset !important;
-            transition: background-color 5000s ease-in-out 0s;
-        }
-
-        /* Custom Dark Scrollbars em todos os elementos */
-        * {
-            scrollbar-width: thin;
-            scrollbar-color: rgba(245, 158, 11, 0.4) #090d16;
-        }
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #090d16;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(245, 158, 11, 0.35);
-            border-radius: 6px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--kc-gold);
-        }
-
-        /* Radar Scanner */
-        .kc-radar-box {
-            position: relative;
-            width: 130px;
-            height: 130px;
-            margin: 0 auto 1.25rem auto;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, rgba(15, 20, 34, 0.8) 70%);
-            border: 2px solid rgba(16, 185, 129, 0.4);
-            box-shadow: 0 0 25px rgba(16, 185, 129, 0.2);
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .kc-radar-ring {
-            position: absolute;
-            border-radius: 50%;
-            border: 1px dashed rgba(16, 185, 129, 0.35);
-        }
-        .kc-radar-ring.r1 { width: 42px; height: 42px; }
-        .kc-radar-ring.r2 { width: 84px; height: 84px; }
-
-        .kc-radar-sweep {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: conic-gradient(from 0deg, transparent 0deg, transparent 270deg, rgba(16, 185, 129, 0.45) 360deg);
-            border-radius: 50%;
-            animation: kc-radar-spin 2.2s linear infinite;
-        }
-
-        .kc-radar-center-icon {
-            position: relative;
-            z-index: 3;
-            font-size: 1.8rem;
-            color: var(--kc-emerald);
-            filter: drop-shadow(0 0 8px var(--kc-emerald));
-        }
-
-        /* Bluetooth BLE Beacon */
-        .kc-ble-beacon {
-            width: 100px;
-            height: 100px;
-            margin: 0 auto 1.25rem auto;
-            border-radius: 50%;
-            background: rgba(6, 182, 212, 0.12);
-            border: 2px solid var(--kc-cyan);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--kc-cyan);
-            font-size: 2.2rem;
-            animation: kc-ble-pulse 2s infinite ease-in-out;
-        }
-
-        /* Discovered Devices Cards */
-        .kc-device-card {
-            background: rgba(15, 20, 34, 0.85);
-            border: 1px solid rgba(16, 185, 129, 0.35);
-            border-radius: 12px;
-            padding: 0.9rem 1.1rem;
-            margin-bottom: 0.75rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
-            transition: all 0.2s;
-        }
-
-        .kc-device-card:hover {
             border-color: var(--kc-gold);
-            background: rgba(22, 30, 48, 0.95);
-            transform: translateY(-1px);
-        }
-
-        .kc-device-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            font-size: 0.72rem;
-            font-weight: 700;
-            padding: 0.15rem 0.5rem;
-            border-radius: 12px;
-            background: rgba(16, 185, 129, 0.18);
-            color: var(--kc-emerald);
-            border: 1px solid rgba(16, 185, 129, 0.4);
-        }
-
-        /* Animations */
-        @keyframes kc-radar-spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        @keyframes kc-ble-pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7); }
-            70% { transform: scale(1.05); box-shadow: 0 0 0 16px rgba(6, 182, 212, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+            background: rgba(255, 255, 255, 0.07);
         }
 
         .kc-form-row {

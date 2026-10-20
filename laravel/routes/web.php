@@ -1023,8 +1023,6 @@ Route::middleware(['jwt', 'module:king_camera'])->group(function () {
     Route::get('/api/cameras/{id}/snapshot', [\App\Http\Controllers\Camera\KingCameraController::class, 'snapshot'])->where('id', '[0-9]+');
     Route::post('/api/cameras/{id}/test-telegram', [\App\Http\Controllers\Camera\KingCameraController::class, 'testTelegramAlert'])->where('id', '[0-9]+');
 
-    Route::post('/api/cameras/discover', [\App\Http\Controllers\Camera\KingCameraController::class, 'discoverNetworkCameras']);
-
     // Compartilhamento com expiração programada
     Route::get('/api/cameras/{id}/shares', [\App\Http\Controllers\Camera\KingCameraController::class, 'listShares'])->where('id', '[0-9]+');
     Route::post('/api/cameras/{id}/shares', [\App\Http\Controllers\Camera\KingCameraController::class, 'createShare'])->where('id', '[0-9]+');
