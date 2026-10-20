@@ -132,6 +132,7 @@ class RequireCookieCsrf
             'api/bible/reset-progress',
             'guest-list/confirm/cpf',
             'api/inquiry/submit',
+            'api/cameras',
             'api/cameras/telegram-webhook',
         ];
         if (in_array($path, $exact, true)) {
@@ -149,6 +150,7 @@ class RequireCookieCsrf
             'form/',
             // King Câmera API (WebRTC SDP, shares, discovery)
             'api/cameras/',
+            'api/public/camera-share/',
         ];
         foreach ($prefixes as $prefix) {
             if (str_starts_with($path, $prefix)) {

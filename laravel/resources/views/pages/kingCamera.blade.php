@@ -2378,12 +2378,17 @@
                 }
 
                 const pc = new RTCPeerConnection({
-                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
                 });
                 peerConnections[cam.id] = pc;
 
                 pc.addTransceiver('video', { direction: 'recvonly' });
                 pc.addTransceiver('audio', { direction: 'recvonly' });
+
+                let hasReceivedVideo = false;
 
                 pc.ontrack = (event) => {
                     if (event.streams && event.streams[0]) {
@@ -2393,18 +2398,42 @@
                         inboundStream.addTrack(event.track);
                         videoEl.srcObject = inboundStream;
                     }
+                    videoEl.play().catch(e => console.warn('Autoplay prevented:', e));
                     if (loaderEl) loaderEl.style.display = 'none';
                 };
 
+                videoEl.addEventListener('playing', () => {
+                    hasReceivedVideo = true;
+                    // Se o fallback por snapshot estiver ativo, remove ele
+                    const img = document.getElementById(`fallback-img-${cam.id}`);
+                    if (img) img.style.display = 'none';
+                }, { once: true });
+
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
+
+                // Aguarda reunião de candidatos ICE antes de enviar SDP
+                await new Promise(resolve => {
+                    if (pc.iceGatheringState === 'complete') {
+                        resolve();
+                    } else {
+                        const checkState = () => {
+                            if (pc.iceGatheringState === 'complete') {
+                                pc.removeEventListener('icegatheringstatechange', checkState);
+                                resolve();
+                            }
+                        };
+                        pc.addEventListener('icegatheringstatechange', checkState);
+                        setTimeout(resolve, 800);
+                    }
+                });
 
                 // Envia oferta SDP para o endpoint do backend
                 const response = await fetch(`/api/cameras/${cam.id}/webrtc`, {
                     method: 'POST',
                     credentials: 'include',
                     headers: getAuthHeaders({ 'Content-Type': 'application/sdp' }),
-                    body: offer.sdp
+                    body: pc.localDescription ? pc.localDescription.sdp : offer.sdp
                 });
 
                 if (response.ok) {
@@ -2413,27 +2442,127 @@
                         type: 'answer',
                         sdp: answerSdp
                     }));
+
+                    // Fallback de segurança: se após 3.5 segundos o vídeo WebRTC não estiver renderizando quadros, ativa o Live Snapshot
+                    setTimeout(() => {
+                        if (!hasReceivedVideo || videoEl.videoWidth === 0) {
+                            activateLiveSnapshotFallback(cam.id);
+                        }
+                    }, 3500);
                 } else {
-                    showCameraStreamOffline(cam.id, 'Câmera em rede local (aguardando conexão direta ou túnel)');
+                    // Se WebRTC falhar por rede/túnel, tenta o Live Snapshot direto
+                    activateLiveSnapshotFallback(cam.id);
                 }
             } catch (err) {
                 console.warn(`WebRTC error for camera ${cam.id}:`, err);
-                showCameraStreamOffline(cam.id, 'Aguardando fluxo de vídeo...');
+                activateLiveSnapshotFallback(cam.id);
             }
         }
 
+        // Fallback de exibição contínua via Snapshot ao vivo (garante imagem em tempo real mesmo em navegadores sem H.265)
+        function activateLiveSnapshotFallback(camId) {
+            const wrap = document.querySelector(`#card-cam-${camId} .kc-video-wrap`);
+            if (!wrap) return;
+
+            let img = document.getElementById(`fallback-img-${camId}`);
+            if (!img) {
+                img = document.createElement('img');
+                img.id = `fallback-img-${camId}`;
+                img.style.position = 'absolute';
+                img.style.top = '0';
+                img.style.left = '0';
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+                img.style.zIndex = '3';
+                img.style.borderRadius = '0';
+                wrap.appendChild(img);
+            }
+            img.style.display = 'block';
+
+            const refreshFrame = async () => {
+                if (!document.getElementById(`card-cam-${camId}`)) {
+                    if (window[`snapInterval_${camId}`]) {
+                        clearInterval(window[`snapInterval_${camId}`]);
+                        delete window[`snapInterval_${camId}`];
+                    }
+                    return;
+                }
+                try {
+                    const res = await fetch(`/api/cameras/${camId}/snapshot?_t=${Date.now()}`, {
+                        credentials: 'include',
+                        headers: getAuthHeaders()
+                    });
+                    if (res.ok) {
+                        const blob = await res.blob();
+                        const newUrl = URL.createObjectURL(blob);
+                        if (img.src && img.src.startsWith('blob:')) {
+                            URL.revokeObjectURL(img.src);
+                        }
+                        img.src = newUrl;
+                        const loaderEl = document.getElementById(`loader-${camId}`);
+                        if (loaderEl) loaderEl.style.display = 'none';
+                    }
+                } catch (e) {
+                    console.warn('Snapshot refresh error:', e);
+                }
+            };
+
+            refreshFrame();
+            if (!window[`snapInterval_${camId}`]) {
+                window[`snapInterval_${camId}`] = setInterval(refreshFrame, 1500);
+            }
+        }
+
+        function isPrivateIp(ip) {
+            if (!ip) return false;
+            return ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.16.') || ip.startsWith('172.17.') || ip.startsWith('172.18.') || ip.startsWith('172.19.') || ip.startsWith('172.2') || ip.startsWith('172.30.') || ip.startsWith('172.31.') || ip === '127.0.0.1' || ip === 'localhost';
+        }
+
         function showCameraStreamOffline(camId, msg) {
+            const cam = camerasData.find(c => c.id === camId);
             const loaderEl = document.getElementById(`loader-${camId}`);
-            if (loaderEl) {
-                loaderEl.innerHTML = `
-                    <i class="fas fa-video-slash" style="font-size: 2rem; color: var(--kc-gold); margin-bottom: 0.5rem;"></i>
-                    <div style="font-size: 0.85rem; font-weight: 600;">Feed em Standby</div>
-                    <div style="font-size: 0.75rem; color: var(--kc-text-dim); max-width: 260px;">${msg}</div>
-                    <button class="kc-btn kc-btn-secondary" onclick="retryStream(${camId})" style="margin-top: 0.5rem; padding: 0.35rem 0.75rem; font-size: 0.75rem;">
+            if (!loaderEl) return;
+            const isPrivate = cam && isPrivateIp(cam.ip_address);
+            loaderEl.innerHTML = `
+                <i class="fas fa-video-slash" style="font-size: 1.8rem; color: var(--kc-gold); margin-bottom: 0.4rem;"></i>
+                <div style="font-size: 0.85rem; font-weight: 600;">Feed em Standby</div>
+                <div style="font-size: 0.72rem; color: var(--kc-text-dim); max-width: 270px; margin: 0 auto 0.5rem auto;">${msg}</div>
+                <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                    <button class="kc-btn kc-btn-secondary" onclick="retryStream(${camId})" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">
                         <i class="fas fa-redo"></i> Reconectar
                     </button>
-                `;
-            }
+                    ${isPrivate ? `
+                    <button class="kc-btn" onclick="showLocalIpHelp('${cam ? cam.ip_address : ''}')" style="padding: 0.3rem 0.65rem; font-size: 0.75rem; background: rgba(245, 158, 11, 0.15); border: 1px solid var(--kc-gold); color: #fbbf24; border-radius: 8px;">
+                        <i class="fas fa-network-wired"></i> Ajuda IP Local
+                    </button>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function showLocalIpHelp(ip) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Como Transmitir Câmera Local para a Nuvem',
+                html: `
+                    <div style="text-align: left; font-size: 0.86rem; line-height: 1.5; color: #cbd5e1;">
+                        <p>O IP <strong>${ip || '172.16.x.x'}</strong> é um endereço interno da sua rede Wi-Fi/cabo local.</p>
+                        <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #f59e0b; padding: 0.6rem; border-radius: 4px; margin: 0.7rem 0;">
+                            <strong style="color: #fbbf24;">Por que o vídeo fica em Standby?</strong><br>
+                            O King Câmera roda em nuvem com inteligência artificial para mandar alertas no seu celular mesmo quando você estiver na rua. Para a nuvem alcançar a câmera da sua casa:
+                        </div>
+                        <ul style="margin-left: 1.2rem; margin-top: 0.4rem;">
+                            <li style="margin-bottom: 0.4rem;"><strong>Opção 1 (Port Forwarding / DDNS):</strong> No roteador da sua casa, crie um redirecionamento da porta <code>554</code> para o IP <code>${ip}</code>. Em seguida, configure aqui seu IP público ou DDNS (ex: <code>meuddns.duckdns.org</code>).</li>
+                            <li><strong>Opção 2 (Túnel Local King):</strong> Um pequeno conector executado no seu PC/notebook na mesma rede envia o feed criptografado sem precisar mexer no roteador.</li>
+                        </ul>
+                    </div>
+                `,
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#f59e0b',
+                background: '#0f1422',
+                color: '#f8fafc'
+            });
         }
 
         function retryStream(camId) {

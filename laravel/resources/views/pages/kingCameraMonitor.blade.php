@@ -419,16 +419,32 @@
                         stream.addTrack(event.track);
                         videoEl.srcObject = stream;
                     }
+                    videoEl.play().catch(e => console.warn('Autoplay error:', e));
                     if (loaderEl) loaderEl.style.display = 'none';
                 };
 
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
 
+                await new Promise(resolve => {
+                    if (pc.iceGatheringState === 'complete') {
+                        resolve();
+                    } else {
+                        const checkState = () => {
+                            if (pc.iceGatheringState === 'complete') {
+                                pc.removeEventListener('icegatheringstatechange', checkState);
+                                resolve();
+                            }
+                        };
+                        pc.addEventListener('icegatheringstatechange', checkState);
+                        setTimeout(resolve, 800);
+                    }
+                });
+
                 const response = await fetch(`/api/public/camera-share/${SHARE_TOKEN}/webrtc`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/sdp' },
-                    body: offer.sdp
+                    body: pc.localDescription ? pc.localDescription.sdp : offer.sdp
                 });
 
                 if (response.ok) {

@@ -26,9 +26,16 @@ class KingCameraService
         $goUrl = $this->getGo2RtcUrl();
         $streamId = $camera->stream_id;
         $rtspUrl = $camera->full_rtsp_url;
+        if (! str_contains($rtspUrl, '#transport=')) {
+            $rtspUrl .= '#transport=tcp';
+        }
+        $transcodeProducer = "ffmpeg:{$streamId}#video=h264#audio=opus";
 
         try {
-            $res = Http::timeout(5)->put("{$goUrl}/api/streams?name=" . urlencode($streamId) . "&src=" . urlencode($rtspUrl));
+            $endpoint = "{$goUrl}/api/streams?name=" . urlencode($streamId)
+                . '&src=' . urlencode($rtspUrl)
+                . '&src=' . urlencode($transcodeProducer);
+            $res = Http::timeout(5)->put($endpoint);
 
             if ($res->successful()) {
                 $camera->update(['status' => 'online']);
