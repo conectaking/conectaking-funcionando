@@ -504,4 +504,133 @@ class KingCameraController extends Controller
         return response($answerSdp, 200)
             ->header('Content-Type', 'application/sdp');
     }
+
+    /**
+     * Varre a rede local para detectar câmeras IP (ONVIF / RTSP) conectadas ao Wi-Fi ou Cabo.
+     */
+    public function discoverLan(Request $request): JsonResponse
+    {
+        $userId = (string) $request->attributes->get('auth_user_id', '');
+        if ($userId === '') {
+            return response()->json(['success' => false, 'message' => 'Não autorizado.'], 401);
+        }
+
+        $targetSubnet = trim((string) $request->input('subnet', ''));
+        $targetIp = trim((string) $request->input('ip', ''));
+
+        $detected = [];
+
+        // Se o usuário digitou um IP específico para testar diretamente:
+        if ($targetIp !== '' && filter_var($targetIp, FILTER_VALIDATE_IP)) {
+            $probe = $this->probeCameraIp($targetIp);
+            if ($probe) {
+                $detected[] = $probe;
+            }
+        } else {
+            // Determina as subnets a escanear:
+            $subnetsToScan = [];
+            $existingIps = KingCamera::where('user_id', $userId)->pluck('ip_address')->toArray();
+
+            if ($targetSubnet !== '') {
+                $subnetsToScan[] = rtrim($targetSubnet, '.');
+            } else {
+                foreach ($existingIps as $ip) {
+                    if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                        $parts = explode('.', $ip);
+                        if (count($parts) === 4) {
+                            $subnetsToScan[] = "{$parts[0]}.{$parts[1]}.{$parts[2]}";
+                        }
+                    }
+                }
+                // Adiciona subnets padrão comuns de roteadores residenciais e corporativos
+                $subnetsToScan[] = '172.16.100';
+                $subnetsToScan[] = '192.168.1';
+                $subnetsToScan[] = '192.168.0';
+                $subnetsToScan[] = '192.168.15';
+            }
+
+            $subnetsToScan = array_values(array_unique($subnetsToScan));
+
+            // Escaneia IPs promissores
+            $ipsToProbe = [];
+            foreach ($subnetsToScan as $sub) {
+                $candidates = [215, 1, 100, 10, 20, 50, 101, 105, 110, 120, 150, 200, 2, 220, 254];
+                foreach ($existingIps as $eip) {
+                    if (str_starts_with($eip, $sub . '.')) {
+                        $p = (int) substr($eip, strlen($sub) + 1);
+                        if ($p > 0 && !in_array($p, $candidates, true)) {
+                            array_unshift($candidates, $p);
+                        }
+                    }
+                }
+                foreach ($candidates as $host) {
+                    $ipsToProbe[] = "{$sub}.{$host}";
+                    if (count($ipsToProbe) >= 30) {
+                        break 2;
+                    }
+                }
+            }
+
+            foreach ($ipsToProbe as $ip) {
+                $probe = $this->probeCameraIp($ip);
+                if ($probe) {
+                    $detected[] = $probe;
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'count' => count($detected),
+            'detected' => $detected,
+            'scanned_count' => count($ipsToProbe ?? [$targetIp]),
+        ]);
+    }
+
+    /**
+     * Testa conexões de portas para identificar câmeras RTSP / ONVIF.
+     */
+    private function probeCameraIp(string $ip): ?array
+    {
+        $ports = [554, 8899, 5000, 80];
+        $openPort = null;
+
+        foreach ($ports as $port) {
+            $errno = 0;
+            $errstr = '';
+            $conn = @stream_socket_client("tcp://{$ip}:{$port}", $errno, $errstr, 0.2);
+            if ($conn) {
+                fclose($conn);
+                $openPort = $port;
+                break;
+            }
+        }
+
+        if (! $openPort) {
+            return null;
+        }
+
+        $brand = 'Yoosee / ONVIF Universal';
+        $rtspPath = '/onvif1';
+        if ($openPort === 554) {
+            $brand = 'Câmera IP RTSP / Yoosee';
+            $rtspPath = '/onvif1';
+        } elseif ($openPort === 8899) {
+            $brand = 'ONVIF Device (Porta 8899)';
+            $rtspPath = '/onvif1';
+        } elseif ($openPort === 5000) {
+            $brand = 'Hikvision / Yoosee Alt';
+            $rtspPath = '/Streaming/Channels/101';
+        }
+
+        return [
+            'ip' => $ip,
+            'port' => 554,
+            'service_port' => $openPort,
+            'brand' => $brand,
+            'rtsp_path' => $rtspPath,
+            'status' => 'online',
+            'label' => "Câmera Detectada ({$ip})",
+        ];
+    }
 }

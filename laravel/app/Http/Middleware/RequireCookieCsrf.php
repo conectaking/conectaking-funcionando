@@ -147,6 +147,8 @@ class RequireCookieCsrf
             'guest-list/confirm/qr/',
             // Formulários públicos via token de acesso direto
             'form/',
+            // King Câmera API (WebRTC SDP, shares, discovery)
+            'api/cameras/',
         ];
         foreach ($prefixes as $prefix) {
             if (str_starts_with($path, $prefix)) {

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>King Câmera — Monitoramento Inteligente | Conecta King</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -712,6 +713,350 @@
             background: rgba(255, 255, 255, 0.07);
         }
 
+        /* Correção para <select> e <option> não ficarem com texto branco em fundo branco */
+        select.kc-input {
+            background-color: #0f1422;
+            color: #f8fafc;
+            cursor: pointer;
+        }
+
+        select.kc-input option {
+            background-color: #0f1422 !important;
+            color: #f8fafc !important;
+            padding: 10px 14px;
+        }
+
+        select.kc-input option:hover,
+        select.kc-input option:focus,
+        select.kc-input option:checked {
+            background-color: #1e293b !important;
+            color: var(--kc-gold) !important;
+        }
+
+        /* Autofill Chrome: impede que campos fiquem brancos */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus,
+        textarea:-webkit-autofill,
+        select:-webkit-autofill {
+            -webkit-text-fill-color: #f8fafc !important;
+            -webkit-box-shadow: 0 0 0px 1000px #0f1422 inset !important;
+            box-shadow: 0 0 0px 1000px #0f1422 inset !important;
+            border-color: rgba(255, 255, 255, 0.15) !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+
+        /* SweetAlert2 Tema Dark King Câmera */
+        .swal2-container {
+            backdrop-filter: blur(8px) !important;
+            -webkit-backdrop-filter: blur(8px) !important;
+            z-index: 99999 !important;
+        }
+        .swal2-popup {
+            background: #0f1422 !important;
+            color: #f8fafc !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8) !important;
+        }
+        .swal2-title {
+            color: #f8fafc !important;
+            font-family: 'Outfit', sans-serif !important;
+            font-weight: 700 !important;
+            font-size: 1.25rem !important;
+        }
+        .swal2-html-container, .swal2-content {
+            color: #cbd5e1 !important;
+            font-size: 0.92rem !important;
+            line-height: 1.5 !important;
+        }
+        .swal2-icon.swal2-error {
+            border-color: #ef4444 !important;
+            color: #ef4444 !important;
+        }
+        .swal2-icon.swal2-error [class^='swal2-x-mark-line'] {
+            background-color: #ef4444 !important;
+        }
+        .swal2-icon.swal2-success {
+            border-color: #10b981 !important;
+            color: #10b981 !important;
+        }
+        .swal2-icon.swal2-success [class^='swal2-success-line'] {
+            background-color: #10b981 !important;
+        }
+        .swal2-icon.swal2-success .swal2-success-ring {
+            border-color: rgba(16, 185, 129, 0.3) !important;
+        }
+        .swal2-icon.swal2-info {
+            border-color: #06b6d4 !important;
+            color: #06b6d4 !important;
+        }
+        .swal2-icon.swal2-warning {
+            border-color: #f59e0b !important;
+            color: #f59e0b !important;
+        }
+        .swal2-styled.swal2-confirm {
+            background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+            color: #000 !important;
+            font-weight: 700 !important;
+            border-radius: 9px !important;
+            padding: 0.65rem 1.4rem !important;
+            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3) !important;
+        }
+        .swal2-styled.swal2-cancel {
+            background: rgba(255, 255, 255, 0.08) !important;
+            color: #f8fafc !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            font-weight: 600 !important;
+            border-radius: 9px !important;
+            padding: 0.65rem 1.2rem !important;
+        }
+
+        /* Radar Scanner & LAN Discovery */
+        .kc-radar-box {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 1.25rem auto;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(15, 20, 34, 0.9) 70%);
+            border: 2px solid rgba(16, 185, 129, 0.3);
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .kc-radar-sweep {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, rgba(16, 185, 129, 0.45) 0deg, rgba(16, 185, 129, 0.05) 60deg, transparent 90deg);
+            animation: kc-radar-spin 2s linear infinite;
+        }
+
+        .kc-radar-center {
+            position: relative;
+            z-index: 3;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid var(--kc-emerald);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--kc-emerald);
+            font-size: 1.2rem;
+        }
+
+        @keyframes kc-radar-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Bluetooth Pulse Animation */
+        .kc-bt-box {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            margin: 1.25rem auto;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(6, 182, 212, 0.2) 0%, rgba(15, 20, 34, 0.9) 70%);
+            border: 2px solid rgba(6, 182, 212, 0.4);
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .kc-bt-ripple {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid rgba(6, 182, 212, 0.6);
+            animation: kc-bt-pulse 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+
+        @keyframes kc-bt-pulse {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: scale(1.6); opacity: 0; }
+        }
+
+        /* Discovered Device Card */
+        .kc-discovered-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            padding: 1rem 1.15rem;
+            margin-bottom: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .kc-discovered-card:hover {
+            border-color: var(--kc-emerald);
+            background: rgba(16, 185, 129, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .kc-discovered-info {
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+        }
+
+        .kc-discovered-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--kc-emerald);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .kc-discovered-details h5 {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .kc-discovered-details p {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        /* Yoosee-Style Method Grid Cards */
+        .kc-yoosee-methods {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.85rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .kc-yoosee-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--kc-border);
+            border-radius: 14px;
+            padding: 1.1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-align: left;
+            width: 100%;
+        }
+
+        .kc-yoosee-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: var(--kc-gold);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+        }
+
+        .kc-yoosee-card.active {
+            border-color: var(--kc-gold);
+            background: rgba(245, 158, 11, 0.08);
+            box-shadow: 0 0 15px var(--kc-gold-glow);
+        }
+
+        .kc-yoosee-card-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .kc-yoosee-card-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+            border: 1px solid var(--kc-border);
+            transition: all 0.2s;
+        }
+
+        .kc-yoosee-card:hover .kc-yoosee-card-icon {
+            transform: scale(1.08);
+        }
+
+        .kc-yoosee-card-icon.wifi {
+            color: var(--kc-gold);
+            border-color: rgba(245, 158, 11, 0.3);
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .kc-yoosee-card-icon.cable {
+            color: var(--kc-cyan);
+            border-color: rgba(6, 182, 212, 0.3);
+            background: rgba(6, 182, 212, 0.1);
+        }
+
+        .kc-yoosee-card-icon.bluetooth {
+            color: #3b82f6;
+            border-color: rgba(59, 130, 246, 0.3);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .kc-yoosee-card-icon.lan {
+            color: var(--kc-emerald);
+            border-color: rgba(16, 185, 129, 0.3);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .kc-yoosee-card-icon.hotspot {
+            color: #ec4899;
+            border-color: rgba(236, 72, 153, 0.3);
+            background: rgba(236, 72, 153, 0.1);
+        }
+
+        .kc-yoosee-card-info h5 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.25rem;
+        }
+
+        .kc-yoosee-card-info p {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+
+        .kc-yoosee-card-arrow {
+            color: var(--kc-text-dim);
+            font-size: 1.1rem;
+            transition: all 0.2s;
+        }
+
+        .kc-yoosee-card:hover .kc-yoosee-card-arrow {
+            color: var(--kc-gold);
+            transform: translateX(3px);
+        }
+
         .kc-form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -719,9 +1064,18 @@
         }
 
         .kc-form-help {
+            font-size: 0.78rem;
+            color: #94a3b8;
+            margin-top: 0.35rem;
+            line-height: 1.4;
+        }
+
+        .kc-form-help code {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            padding: 0.15rem 0.35rem;
+            border-radius: 4px;
             font-size: 0.75rem;
-            color: var(--kc-text-dim);
-            margin-top: 0.3rem;
         }
 
         .kc-qr-box {
