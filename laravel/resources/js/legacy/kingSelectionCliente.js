@@ -4071,10 +4071,20 @@
     if (!list.length) {
       disconnectGridPreviewIo();
       grid.innerHTML = '';
-      empty.textContent = state.filterSelectedOnly
-        ? 'Nenhuma foto selecionada ainda. Clique no círculo em cima das fotos para selecionar.'
-        : (faceOn ? 'Nenhuma foto com este rosto encontrada nesta galeria.' : (state.activeFolderId ? 'Esta pasta ainda não tem fotos.' : 'Nenhuma foto corresponde à busca.'));
-      empty.classList.toggle('ks-hidden', !(tokens.length || faceOn || state.activeFolderId || state.filterSelectedOnly));
+      if (faceOn && state.photosHasMore) {
+        empty.textContent = 'Carregando fotos da galeria...';
+        empty.classList.remove('ks-hidden');
+        if (!state.photosLoadingMore) {
+          fetchMoreGalleryPhotos().then((ok) => {
+            if (ok) renderGrid();
+          });
+        }
+      } else {
+        empty.textContent = state.filterSelectedOnly
+          ? 'Nenhuma foto selecionada ainda. Clique no círculo em cima das fotos para selecionar.'
+          : (faceOn ? 'Nenhuma foto com este rosto encontrada nesta galeria.' : (state.activeFolderId ? 'Esta pasta ainda não tem fotos.' : 'Nenhuma foto corresponde à busca.'));
+        empty.classList.toggle('ks-hidden', !(tokens.length || faceOn || state.activeFolderId || state.filterSelectedOnly));
+      }
       syncFolderSelectAllToolbar();
       syncEditRequestToolbar();
       refreshFacePanelVisibility();
@@ -6118,16 +6128,36 @@
       state.faceFilterIds = new Set(
         ids.map((x) => parseInt(x, 10)).filter((n) => Number.isFinite(n) && n > 0)
       );
-      state.folderView = 'photos';
-      state.activeFolderId = null;
-      persistFolderNav();
-      renderFolders();
-      if (scan.indexing) {
-        if (msg) msg.textContent = scan.message || 'Estamos a preparar o reconhecimento. Aguarde alguns segundos e tente novamente.';
-        toast('Foto recebida. Estamos a preparar o reconhecimento.', 'ok');
-        resetGridVirtualPaging();
-        renderGrid();
-        return;
+      // Limpa filtros conflitantes que poderiam esconder os resultados faciais
+      if (state.filterSelectedOnly) {
+        state.filterSelectedOnly = false;
+        const btn = $('ks-filter-selected-only');
+        const txt = $('ks-filter-selected-text');
+        if (btn) {
+          btn.classList.remove('ks-btn-yellow');
+          btn.classList.add('ks-btn-outline');
+        }
+        if (txt) txt.textContent = 'Ver selecionadas';
+      }
+      if (state.searchRaw) {
+        state.searchRaw = '';
+        const sin = $('ks-search-in');
+        if (sin) sin.value = '';
+        const scBtn = $('ks-search-clear-btn');
+        if (scBtn) scBtn.classList.add('ks-hidden');
+      }
+
+      // Se a galeria foi paginada no cliente e ainda tem fotos no servidor,
+      // busca as páginas restantes até que todas as fotos encontradas pela IA estejam em memória
+      if (ids.length && state.photosHasMore) {
+        if (msg) msg.textContent = 'Carregando fotos encontradas da galeria...';
+        while (state.photosHasMore) {
+          const existingIds = new Set((state.gallery?.photos || []).map((p) => parseInt(p.id, 10)));
+          const allFound = ids.every((id) => existingIds.has(id));
+          if (allFound) break;
+          const ok = await fetchMoreGalleryPhotos();
+          if (!ok) break;
+        }
       }
       const noResultMsg = String(scan.message || '').trim() || 'Nenhuma foto com este rosto encontrada nesta galeria.';
       if (msg) {
