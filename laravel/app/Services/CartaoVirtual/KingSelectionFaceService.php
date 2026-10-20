@@ -2998,6 +2998,10 @@ class KingSelectionFaceService
             $emb = $bestFace['embedding'] ?? [];
             $faceId = 'local_' . bin2hex(random_bytes(8));
 
+            if (SchemaMeta::hasTable('rekognition_face_matches')) {
+                DB::delete('DELETE FROM rekognition_face_matches WHERE client_id = ?', [$clientId]);
+            }
+
             if (SchemaMeta::hasTable('rekognition_client_faces')) {
                 DB::delete('DELETE FROM rekognition_client_faces WHERE gallery_id = ? AND client_id = ?', [$galleryId, $clientId]);
                 DB::insert(

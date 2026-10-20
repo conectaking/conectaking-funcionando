@@ -345,22 +345,27 @@
           <div class="ks-face-panel-title"><i class="fas fa-face-smile"></i> Reconhecimento facial</div>
           <p class="ks-face-panel-lead" id="ks-face-lead">Clique em <strong>Reconhecimento facial</strong>, faça uma selfie ou envie sua foto e mostramos apenas as fotos em que você aparece.</p>
           <div class="ks-face-actions">
-            <input type="file" id="ks-face-camera-in" accept="image/*" capture="user" class="ks-hidden-input" aria-hidden="true" />
-            <input type="file" id="ks-face-gallery-in" accept="image/*" class="ks-hidden-input" aria-hidden="true" />
-            <button type="button" class="ks-btn ks-btn-yellow" id="ks-face-open-btn" onclick="(function(){var m=document.getElementById('ks-face-modal'); if(m){m.classList.add('ks-open');m.setAttribute('aria-hidden','false');}})()"><i class="fas fa-face-smile"></i> Reconhecimento facial</button>
+            <button type="button" class="ks-btn ks-btn-yellow" id="ks-face-open-btn"><i class="fas fa-face-smile"></i> Reconhecimento facial</button>
+            <button type="button" class="ks-btn ks-face-clear-btn ks-hidden" id="ks-face-clear-btn" style="display:none;"><i class="fas fa-times"></i> Ver todas as fotos</button>
           </div>
           <div class="ks-face-msg" id="ks-face-msg" aria-live="polite"></div>
         </div>
-        <div class="ks-face-modal" id="ks-face-modal" aria-hidden="true" onclick="if(event.target&&event.target.id==='ks-face-modal'){this.classList.remove('ks-open');this.setAttribute('aria-hidden','true');}">
+        <div class="ks-face-modal" id="ks-face-modal" aria-hidden="true">
           <div class="ks-face-modal-card" role="dialog" aria-modal="true" aria-labelledby="ks-face-modal-title">
             <div class="ks-face-modal-head">
               <h3 class="ks-face-modal-title" id="ks-face-modal-title">Reconhecimento facial</h3>
-              <button type="button" class="ks-btn" id="ks-face-modal-close" onclick="(function(){var m=document.getElementById('ks-face-modal'); if(m){m.classList.remove('ks-open');m.setAttribute('aria-hidden','true');}})()"><i class="fas fa-times"></i> Fechar</button>
+              <button type="button" class="ks-btn" id="ks-face-modal-close"><i class="fas fa-times"></i> Fechar</button>
             </div>
             <p class="ks-face-modal-lead">Escolha uma opção para reconhecer seu rosto:</p>
             <div class="ks-face-modal-actions">
-              <button type="button" class="ks-btn ks-btn-yellow" id="ks-face-camera-btn" onclick="document.getElementById('ks-face-camera-in')?.click()"><i class="fas fa-camera"></i> Fazer selfie</button>
-              <button type="button" class="ks-btn" id="ks-face-gallery-btn" onclick="document.getElementById('ks-face-gallery-in')?.click()"><i class="fas fa-image"></i> Enviar foto sua</button>
+              <label class="ks-btn ks-btn-yellow ks-face-modal-btn" id="ks-face-camera-btn" for="ks-face-camera-in" style="cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px;">
+                <i class="fas fa-camera"></i> Fazer selfie
+                <input type="file" id="ks-face-camera-in" accept="image/*" capture="user" style="position:absolute; width:1px; height:1px; opacity:0; overflow:hidden;" />
+              </label>
+              <label class="ks-btn ks-face-modal-btn" id="ks-face-gallery-btn" for="ks-face-gallery-in" style="cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px;">
+                <i class="fas fa-image"></i> Enviar foto sua
+                <input type="file" id="ks-face-gallery-in" accept="image/*" style="position:absolute; width:1px; height:1px; opacity:0; overflow:hidden;" />
+              </label>
             </div>
           </div>
         </div>

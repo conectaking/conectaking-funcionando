@@ -3440,13 +3440,14 @@
     updateGalleryToolbarButtons();
   }
 
-  /** Reconhecimento facial só quando ainda dá para escolher fotos (não bloqueado e existe foto não selecionada). */
+  /** Reconhecimento facial só quando ainda dá para escolher fotos (não bloqueado e existe foto não selecionada) ou galeria pública. */
   function refreshFacePanelVisibility() {
     const fp = $('ks-face-panel');
     if (!fp) return;
     const totalPhotos = Number(state.photosTotal || (Array.isArray(state.gallery?.photos) ? state.gallery.photos.length : 0));
+    const isPublicMode = normKsAccessModeFromMeta() === 'public' || isPublicFreeDownloadGallery();
     const canSelectMore = !selectionLockedForUi() && totalPhotos > state.selected.size;
-    const show = !!state.faceRecognitionUsable && canSelectMore;
+    const show = !!state.faceRecognitionUsable && (isPublicMode || canSelectMore);
     fp.classList.toggle('ks-hidden', !show);
   }
 
@@ -3863,7 +3864,7 @@
       }
     }
     filtered = filterPhotosBySearch(filtered, state.searchRaw);
-    if (state.faceFilterIds && state.faceFilterIds.size) {
+    if (state.faceFilterIds instanceof Set) {
       filtered = filtered.filter((p) => state.faceFilterIds.has(parseInt(p.id, 10)));
     }
     if (state.filterSelectedOnly) {
@@ -4054,7 +4055,12 @@
     }
     const list = getOrderedPhotosForGrid();
     const tokens = parseSearchTokens(state.searchRaw);
-    const faceOn = !!(state.faceFilterIds && state.faceFilterIds.size);
+    const faceOn = state.faceFilterIds instanceof Set;
+    const clearBtn = $('ks-face-clear-btn');
+    if (clearBtn) {
+      clearBtn.classList.toggle('ks-hidden', !faceOn);
+      clearBtn.style.display = faceOn ? 'inline-flex' : 'none';
+    }
 
     if (tokens.length || faceOn) {
       const bits = [];
@@ -4075,7 +4081,7 @@
       grid.innerHTML = '';
       empty.textContent = state.filterSelectedOnly
         ? 'Nenhuma foto selecionada ainda. Clique no círculo em cima das fotos para selecionar.'
-        : (state.activeFolderId ? 'Esta pasta ainda não tem fotos.' : 'Nenhuma foto corresponde à busca.');
+        : (faceOn ? 'Nenhuma foto com este rosto encontrada nesta galeria.' : (state.activeFolderId ? 'Esta pasta ainda não tem fotos.' : 'Nenhuma foto corresponde à busca.'));
       empty.classList.toggle('ks-hidden', !(tokens.length || faceOn || state.activeFolderId || state.filterSelectedOnly));
       syncFolderSelectAllToolbar();
       syncEditRequestToolbar();
@@ -6001,9 +6007,20 @@
   }
 
   function setFaceActionsDisabled(disabled) {
-    ['ks-face-open-btn', 'ks-face-camera-btn', 'ks-face-gallery-btn', 'ks-face-modal-close'].forEach((id) => {
+    ['ks-face-open-btn', 'ks-face-clear-btn', 'ks-face-modal-close'].forEach((id) => {
       const el = $(id);
       if (el) el.disabled = !!disabled;
+    });
+    ['ks-face-camera-in', 'ks-face-gallery-in'].forEach((id) => {
+      const el = $(id);
+      if (el) el.disabled = !!disabled;
+    });
+    ['ks-face-camera-btn', 'ks-face-gallery-btn'].forEach((id) => {
+      const el = $(id);
+      if (el) {
+        el.style.pointerEvents = disabled ? 'none' : 'auto';
+        el.style.opacity = disabled ? '0.5' : '1';
+      }
     });
   }
 
@@ -6021,13 +6038,27 @@
     modal.setAttribute('aria-hidden', 'false');
   }
 
+  function clearFaceFilter() {
+    state.faceFilterIds = null;
+    const msg = $('ks-face-msg');
+    if (msg) msg.textContent = '';
+    const clearBtn = $('ks-face-clear-btn');
+    if (clearBtn) {
+      clearBtn.classList.add('ks-hidden');
+      clearBtn.style.display = 'none';
+    }
+    resetGridVirtualPaging();
+    renderGrid();
+    toast('Exibindo todas as fotos da galeria.', 'ok');
+  }
+
   let _faceImageProcessInFlight = false;
   let _lastFacePickSig = '';
   let _lastFacePickAt = 0;
 
   async function processFaceImageFile(file) {
     const msg = $('ks-face-msg');
-    if (!file || !jwt) return;
+    if (!file) return;
     const sig = `${file.name || 'noname'}:${file.size || 0}:${file.lastModified || 0}`;
     const now = Date.now();
     if (_faceImageProcessInFlight) return;
@@ -6037,29 +6068,56 @@
     _lastFacePickAt = now;
     _faceImageProcessInFlight = true;
     closeFaceModal();
-      state.folderView = 'photos';
-      state.activeFolderId = null;
-      persistFolderNav();
-      renderFolders();
-      state.faceFilterIds = null;
-      resetGridVirtualPaging();
-      renderGrid();
-    if (msg) msg.textContent = 'Enviando foto do rosto—';
+    state.folderView = 'photos';
+    state.activeFolderId = null;
+    persistFolderNav();
+    renderFolders();
+    state.faceFilterIds = null;
+    resetGridVirtualPaging();
+    renderGrid();
+    if (msg) msg.textContent = 'Enviando foto do rosto...';
     setFaceActionsDisabled(true);
     try {
       const fd = new FormData();
       fd.append('image', file);
-      const enrollRes = await fetch(`${API}/api/king-selection/client/enroll-face-image`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${jwt}` },
-        body: fd,
-        signal: ksOptionalTimeoutSignal(180000)
-      });
-      const enrollData = await enrollRes.json().catch(() => ({}));
-      if (!enrollRes.ok) throw new Error(enrollData.message || 'Erro ao registar o rosto');
+
+      if (!jwt) {
+        if (msg) msg.textContent = 'Processando rosto na IA...';
+        let visitorId = '';
+        try {
+          visitorId = localStorage.getItem('ks_face_visitor_' + slug) || '';
+          if (!visitorId) {
+            visitorId = 'v_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+            localStorage.setItem('ks_face_visitor_' + slug, visitorId);
+          }
+          fd.append('visitorId', visitorId);
+        } catch (_) {}
+
+        const anonRes = await fetch(`${API}/api/king-selection/public/enroll-face-anonymous?slug=${encodeURIComponent(slug)}`, {
+          method: 'POST',
+          body: fd,
+          signal: ksOptionalTimeoutSignal(180000)
+        });
+        const anonData = await anonRes.json().catch(() => ({}));
+        if (!anonRes.ok) throw new Error(anonData.message || 'Erro ao registrar o rosto');
+        if (anonData.token) {
+          setJwt(anonData.token);
+          jwt = anonData.token;
+        }
+      } else {
+        if (msg) msg.textContent = 'Atualizando o seu rosto na IA...';
+        const enrollRes = await fetch(`${API}/api/king-selection/client/enroll-face-image`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${jwt}` },
+          body: fd,
+          signal: ksOptionalTimeoutSignal(180000)
+        });
+        const enrollData = await enrollRes.json().catch(() => ({}));
+        if (!enrollRes.ok) throw new Error(enrollData.message || 'Erro ao registrar o rosto');
+      }
+
       if (msg) {
-        msg.textContent =
-          'A procurar as suas fotos— A análise corre em blocos no servidor (costuma ser bem mais rápida do que ?ofoto a foto—). Não feche.';
+        msg.textContent = 'Procurando as suas fotos... Não feche a página.';
       }
       const scan = await runFaceScanAllPages(msg, { fromEnroll: true });
       const ids = scan.photoIds || [];
@@ -6072,19 +6130,19 @@
       renderFolders();
       if (scan.indexing) {
         if (msg) msg.textContent = scan.message || 'Estamos a preparar o reconhecimento. Aguarde alguns segundos e tente novamente.';
-        toast('Selfie recebida. Estamos a preparar o reconhecimento.', 'ok');
+        toast('Foto recebida. Estamos a preparar o reconhecimento.', 'ok');
         resetGridVirtualPaging();
         renderGrid();
         return;
       }
-      const noResultMsg = String(scan.message || '').trim() || 'Nenhuma foto parecida encontrada nesta galeria.';
+      const noResultMsg = String(scan.message || '').trim() || 'Nenhuma foto com este rosto encontrada nesta galeria.';
       if (msg) {
         msg.textContent = ids.length
-          ? `${ids.length} foto(s) com seu rosto.`
+          ? `${ids.length} foto(s) com o seu rosto.`
           : noResultMsg;
       }
       toast(
-        ids.length ? `${ids.length} foto(s) encontradas pelo rosto.` : noResultMsg,
+        ids.length ? `${ids.length} foto(s) encontradas!` : noResultMsg,
         ids.length ? 'ok' : 'warn'
       );
       resetGridVirtualPaging();
@@ -6097,8 +6155,8 @@
       const aborted = e && (e.name === 'AbortError' || e.name === 'TimeoutError');
       toast(
         aborted
-          ? 'Tempo esgotado ou ligação interrompida. Tente de novo (em galerias muito grandes demore um pouco).'
-          : (e.message || 'Erro'),
+          ? 'Tempo esgotado ou ligação interrompida. Tente de novo.'
+          : (e.message || 'Erro ao processar reconhecimento facial.'),
         'err'
       );
     } finally {
@@ -6107,9 +6165,8 @@
     }
   }
 
-  // Botões de selfie/galeria usam fallback inline no HTML para evitar perda de clique por cache antigo.
-  // Não ligar listeners duplicados aqui, para não abrir seletor duas vezes.
   $('ks-face-open-btn')?.addEventListener('click', () => openFaceModal());
+  $('ks-face-clear-btn')?.addEventListener('click', () => clearFaceFilter());
   $('ks-face-modal-close')?.addEventListener('click', () => closeFaceModal());
   $('ks-face-modal')?.addEventListener('click', (ev) => {
     if (ev.target && ev.target.id === 'ks-face-modal') closeFaceModal();
@@ -6117,12 +6174,12 @@
   $('ks-face-camera-in')?.addEventListener('change', async (ev) => {
     const f = ev.target?.files?.[0];
     ev.target.value = '';
-    await processFaceImageFile(f);
+    if (f) await processFaceImageFile(f);
   });
   $('ks-face-gallery-in')?.addEventListener('change', async (ev) => {
     const f = ev.target?.files?.[0];
     ev.target.value = '';
-    await processFaceImageFile(f);
+    if (f) await processFaceImageFile(f);
   });
 
   document.addEventListener('keydown', (e) => {
