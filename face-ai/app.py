@@ -145,7 +145,7 @@ class TargetEmbedding(BaseModel):
 class MatchRequest(BaseModel):
     query_embedding: List[float]
     targets: List[TargetEmbedding]
-    threshold: Optional[float] = 0.48 # Calibrated threshold for zero false-positives
+    threshold: Optional[float] = 0.55 # Calibrated threshold for zero false-positives
 
 @app.post("/match")
 def match(req: MatchRequest):
@@ -178,13 +178,13 @@ def match(req: MatchRequest):
     sims = np.dot(mat, q)
 
     matches = []
-    thresh = float(req.threshold if req.threshold is not None else 0.48)
+    thresh = float(req.threshold if req.threshold is not None else 0.55)
 
     for i, sim in enumerate(sims):
         score = float(sim)
         if score >= thresh:
-            # Map cosine score (typically 0.48 to 0.70+) to percentage (70% to 99.9%)
-            norm_pct = round(min(99.9, max(70.0, 70.0 + ((score - 0.48) / (0.70 - 0.48)) * 29.9)), 2)
+            # Map cosine score (typically 0.55 to 0.85+) to percentage (75% to 99.9%)
+            norm_pct = round(min(99.9, max(75.0, 75.0 + ((score - thresh) / max(0.01, (0.85 - thresh))) * 24.9)), 2)
             matches.append({
                 "id": target_ids[i],
                 "photo_id": target_photo_ids[i],

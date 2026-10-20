@@ -3062,7 +3062,7 @@ class KingSelectionFaceService
             $res = \Illuminate\Support\Facades\Http::timeout(15)->post("{$localAiUrl}/match", [
                 'query_embedding' => $clientEmbedding,
                 'targets' => $targets,
-                'threshold' => (float) (env('FACE_AI_THRESHOLD') ?: 0.48),
+                'threshold' => (float) (env('FACE_AI_THRESHOLD') ?: 0.55),
             ]);
             if ($res->successful()) {
                 $matches = $res->json('matches') ?? [];
