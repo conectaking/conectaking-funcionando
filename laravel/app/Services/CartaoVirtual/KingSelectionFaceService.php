@@ -2500,6 +2500,18 @@ class KingSelectionFaceService
                 [$galleryId]
             )->n ?? 0);
         }
+        if ($processedPhotos === 0 && SchemaMeta::hasTable('rekognition_photo_faces')) {
+            $processedPhotos = (int) (DB::selectOne(
+                'SELECT COUNT(DISTINCT rpf.photo_id)::int AS n FROM rekognition_photo_faces rpf
+                 JOIN king_photos kp ON kp.id = rpf.photo_id WHERE kp.gallery_id = ?',
+                [$galleryId]
+            )->n ?? 0);
+            if ($totalPhotos > 0 && $processedPhotos >= $totalPhotos) {
+                $pendingPhotos = 0;
+            } else {
+                $pendingPhotos = max(0, $totalPhotos - $processedPhotos);
+            }
+        }
         if (SchemaMeta::hasTable('rekognition_photo_faces')) {
             $totalFaces = (int) (DB::selectOne(
                 'SELECT COUNT(*)::int AS n FROM rekognition_photo_faces rpf
@@ -2674,7 +2686,8 @@ class KingSelectionFaceService
         if ($hasLocalAi) {
             $totalPhotos = (int) (DB::selectOne('SELECT COUNT(*)::int AS n FROM king_photos WHERE gallery_id = ?', [$galleryId])->n ?? 0);
             $indexedPhotos = (int) (DB::selectOne(
-                'SELECT COUNT(DISTINCT photo_id)::int AS n FROM rekognition_photo_faces WHERE gallery_id = ?',
+                'SELECT COUNT(DISTINCT rpf.photo_id)::int AS n FROM rekognition_photo_faces rpf
+                 JOIN king_photos kp ON kp.id = rpf.photo_id WHERE kp.gallery_id = ?',
                 [$galleryId]
             )->n ?? 0);
             $pending = max(0, $totalPhotos - $indexedPhotos);
@@ -2769,12 +2782,13 @@ class KingSelectionFaceService
         // Se usar IA Local ou sem jobs AWS, ler diretamente das faces indexadas
         if ($done === 0 && SchemaMeta::hasTable('rekognition_photo_faces')) {
             $done = (int) (DB::selectOne(
-                'SELECT COUNT(DISTINCT photo_id)::int AS cnt FROM rekognition_photo_faces WHERE gallery_id = ?',
+                'SELECT COUNT(DISTINCT rpf.photo_id)::int AS cnt FROM rekognition_photo_faces rpf
+                 JOIN king_photos kp ON kp.id = rpf.photo_id WHERE kp.gallery_id = ?',
                 [$galleryId]
             )->cnt ?? 0);
         }
 
-        $isRunning = $processing > 0 || $pending > 0;
+        $isRunning = $processing > 0 || ($pending > 0 && $done < $total);
 
         return ['status' => 200, 'body' => [
             'success' => true,
