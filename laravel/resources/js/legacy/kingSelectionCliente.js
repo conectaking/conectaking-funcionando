@@ -209,35 +209,27 @@
   let jwt = null;
 
   function syncKsAuthCookie() {
-    // HttpOnly: o servidor define ks_client_token (login + rotas ks.client).
-    // No logout limpa via endpoint (JS não consegue apagar cookie HttpOnly).
-    if (!jwt) {
-      try {
-        fetch('/api/king-selection/client/clear-session-cookie', {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-          body: '{}',
-        }).catch(function () {});
-      } catch (_) { /* ignore */ }
-    }
+    try {
+      fetch('/api/king-selection/client/clear-session-cookie', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        body: '{}',
+      }).catch(function () {});
+    } catch (_) { /* ignore */ }
   }
 
   function setJwt(token) {
     jwt = token || null;
-    // Cookie HttpOnly (login/redeem) — não persistir JWT no localStorage (XSS / partilha de PC).
     try {
-      localStorage.removeItem(tokenKey(slug));
-      localStorage.removeItem(`ks_client_${slug}`);
-      // Limpa chaves legadas de outras galerias nesta aba
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const k = localStorage.key(i);
-        if (k && (k.startsWith('ks_client_jwt_') || k.startsWith('ks_client_'))) {
-          localStorage.removeItem(k);
-        }
+      if (jwt) {
+        localStorage.setItem(tokenKey(slug), jwt);
+        localStorage.setItem(`ks_client_${slug}`, jwt);
+      } else {
+        localStorage.removeItem(tokenKey(slug));
+        localStorage.removeItem(`ks_client_${slug}`);
       }
     } catch (_) { /* ignore */ }
-    syncKsAuthCookie();
   }
 
   /** Link pessoal (?k=código ou legado ?access=JWT): troca por cookie HttpOnly e limpa a URL. */
@@ -5419,13 +5411,15 @@
     }
   });
 
-  $('ks-logout').addEventListener('click', () => {
+  $('ks-logout')?.addEventListener('click', () => {
     setJwt(null);
+    syncKsAuthCookie();
     state.publicDownloadsPanelOpen = false;
     showLogin();
   });
-  $('ks-locked-logout').addEventListener('click', () => {
+  $('ks-locked-logout')?.addEventListener('click', () => {
     setJwt(null);
+    syncKsAuthCookie();
     state.publicDownloadsPanelOpen = false;
     showLogin();
   });
@@ -6673,7 +6667,14 @@
     try {
       await consumeAccessTokenFromUrl();
     } catch (_) { /* ignore */ }
-    try { setJwt(jwt); } catch (_) { /* limpa LS legado */ }
+    if (!jwt) {
+      try {
+        const saved = localStorage.getItem(tokenKey(slug)) || localStorage.getItem(`ks_client_${slug}`);
+        if (saved && typeof saved === 'string') {
+          jwt = saved.trim();
+        }
+      } catch (_) {}
+    }
     scheduleBootWatchdog();
     try {
       let r;
