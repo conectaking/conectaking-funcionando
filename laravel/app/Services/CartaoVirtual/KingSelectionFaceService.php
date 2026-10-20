@@ -1221,7 +1221,7 @@ class KingSelectionFaceService
 
         $localAiUrl = $this->getLocalAiUrl();
         $hasLocalAi = $this->pingLocalAi($localAiUrl);
-        $minSim = $hasLocalAi ? (float) (env('FACE_AI_MIN_SIMILARITY') ?: 50.0) : max(50.0, min(100.0, (float) (env('REKOG_FACE_RESULT_MIN_SIMILARITY') ?: 65)));
+        $minSim = $hasLocalAi ? (float) (env('FACE_AI_MIN_SIMILARITY') ?: 70.0) : max(50.0, min(100.0, (float) (env('REKOG_FACE_RESULT_MIN_SIMILARITY') ?: 65)));
 
         if ($hasLocalAi) {
             $totalMatches = (int) (DB::selectOne(
@@ -3062,7 +3062,7 @@ class KingSelectionFaceService
             $res = \Illuminate\Support\Facades\Http::timeout(15)->post("{$localAiUrl}/match", [
                 'query_embedding' => $clientEmbedding,
                 'targets' => $targets,
-                'threshold' => 0.363,
+                'threshold' => (float) (env('FACE_AI_THRESHOLD') ?: 0.48),
             ]);
             if ($res->successful()) {
                 $matches = $res->json('matches') ?? [];
