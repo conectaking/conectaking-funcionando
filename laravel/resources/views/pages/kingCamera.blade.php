@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     @vite(['resources/css/fontawesome.css'])
 
     <style>
@@ -764,11 +765,250 @@
             margin-bottom: 0.5rem;
         }
 
-        .kc-empty p {
+        /* Wizard Stepper & Method Cards */
+        .kc-stepper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .kc-stepper::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            right: 30px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 1;
+        }
+
+        .kc-step-item {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.35rem;
+            background: #0f1422;
+            padding: 0 0.5rem;
+        }
+
+        .kc-step-bubble {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid var(--kc-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--kc-text-dim);
+            transition: all 0.2s;
+        }
+
+        .kc-step-item.active .kc-step-bubble {
+            background: var(--kc-gold);
+            border-color: var(--kc-gold);
+            color: #000;
+            box-shadow: 0 0 14px var(--kc-gold-glow);
+        }
+
+        .kc-step-item.completed .kc-step-bubble {
+            background: var(--kc-emerald);
+            border-color: var(--kc-emerald);
+            color: #fff;
+        }
+
+        .kc-step-title {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--kc-text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kc-step-item.active .kc-step-title {
+            color: var(--kc-gold);
+        }
+
+        /* Sub-tabs for Power */
+        .kc-subtabs {
+            display: flex;
+            border-bottom: 1px solid var(--kc-border);
+            margin-bottom: 1.25rem;
+            gap: 1.5rem;
+        }
+
+        .kc-subtab-btn {
+            background: none;
+            border: none;
             color: var(--kc-text-muted);
-            max-width: 480px;
-            margin: 0 auto 1.5rem auto;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 0.5rem 0;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .kc-subtab-btn.active {
+            color: #fff;
+            border-bottom-color: var(--kc-gold);
+        }
+
+        /* Method Illustration Cards */
+        .kc-method-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--kc-border);
+            border-radius: 14px;
+            padding: 1rem 1.15rem;
+            margin-bottom: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 1.15rem;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .kc-method-card:hover {
+            border-color: rgba(245, 158, 11, 0.35);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .kc-method-icon-box {
+            width: 54px;
+            height: 54px;
+            border-radius: 12px;
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--kc-gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+
+        .kc-method-details h5 {
             font-size: 0.9rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.25rem;
+        }
+
+        .kc-method-details p {
+            font-size: 0.8rem;
+            color: var(--kc-text-muted);
+            line-height: 1.4;
+        }
+
+        .kc-sample-sound-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            background: rgba(6, 182, 212, 0.15);
+            border: 1px solid rgba(6, 182, 212, 0.35);
+            color: var(--kc-cyan);
+            border-radius: 9px;
+            padding: 0.55rem 1rem;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 0.75rem 0;
+        }
+
+        .kc-sample-sound-btn:hover {
+            background: rgba(6, 182, 212, 0.3);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .kc-checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--kc-border);
+            border-radius: 10px;
+            padding: 0.85rem 1rem;
+            margin-top: 1rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--kc-text);
+            user-select: none;
+            transition: border-color 0.2s;
+        }
+
+        .kc-checkbox-label:hover {
+            border-color: rgba(245, 158, 11, 0.4);
+        }
+
+        .kc-checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--kc-gold);
+            cursor: pointer;
+        }
+
+        /* QR Scanner Viewport */
+        #camera-qr-reader {
+            width: 100%;
+            max-width: 440px;
+            margin: 0 auto;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 2px dashed rgba(245, 158, 11, 0.4);
+            background: #000;
+            min-height: 240px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #camera-qr-reader video {
+            border-radius: 12px;
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        /* Type Switch Buttons (ID vs IP) */
+        .kc-type-switch {
+            display: flex;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--kc-border);
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 1.25rem;
+            gap: 4px;
+        }
+
+        .kc-type-btn {
+            flex: 1;
+            padding: 0.6rem 0.85rem;
+            border-radius: 8px;
+            border: none;
+            background: none;
+            color: var(--kc-text-muted);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
+        .kc-type-btn.active {
+            background: var(--kc-gold);
+            color: #000;
+            box-shadow: 0 2px 8px var(--kc-gold-glow);
         }
     </style>
 </head>
@@ -869,28 +1109,297 @@
 
     <!-- Modal Adicionar / Editar Câmera -->
     <div class="kc-modal-backdrop" id="camera-modal">
-        <div class="kc-modal">
+        <div class="kc-modal" style="max-width: 680px;">
             <div class="kc-modal-header">
-                <div class="kc-modal-title" id="modal-title">Adicionar Câmera</div>
+                <div class="kc-modal-title" id="modal-title">Conectar Nova Câmera</div>
                 <button type="button" class="kc-modal-close" onclick="closeModal()">&times;</button>
             </div>
             <!-- Tabs -->
             <div class="kc-modal-tabs">
-                <button type="button" class="kc-tab-btn active" data-tab="tab-rtsp">
-                    <i class="fas fa-network-wired"></i> Câmera na Rede (IP / RTSP)
+                <button type="button" class="kc-tab-btn active" data-tab="tab-wizard">
+                    <i class="fas fa-wand-magic-sparkles"></i> Assistente Guiado
                 </button>
-                <button type="button" class="kc-tab-btn" data-tab="tab-qrcode">
-                    <i class="fas fa-qrcode"></i> Nova Câmera (QR Code)
+                <button type="button" class="kc-tab-btn" data-tab="tab-scan">
+                    <i class="fas fa-camera"></i> Ler QR da Câmera
+                </button>
+                <button type="button" class="kc-tab-btn" data-tab="tab-rtsp">
+                    <i class="fas fa-network-wired"></i> ID ou IP (Manual)
                 </button>
                 <button type="button" class="kc-tab-btn" data-tab="tab-telegram">
                     <i class="fab fa-telegram-plane"></i> Agente Telegram
                 </button>
             </div>
             <div class="kc-modal-body">
-                <!-- Tab 1: Form RTSP -->
-                <div class="kc-tab-pane active" id="tab-rtsp">
+
+                <!-- ═════════════════════════════════════════════════════════════ -->
+                <!-- ABA 1: ASSISTENTE INTELIGENTE ESTILO YOOSEE / TUYA / MIBO     -->
+                <!-- ═════════════════════════════════════════════════════════════ -->
+                <div class="kc-tab-pane active" id="tab-wizard">
+                    <!-- Stepper -->
+                    <div class="kc-stepper">
+                        <div class="kc-step-item active" id="step-node-1">
+                            <div class="kc-step-bubble">1</div>
+                            <div class="kc-step-title">Ligar</div>
+                        </div>
+                        <div class="kc-step-item" id="step-node-2">
+                            <div class="kc-step-bubble">2</div>
+                            <div class="kc-step-title">Reset &amp; Som</div>
+                        </div>
+                        <div class="kc-step-item" id="step-node-3">
+                            <div class="kc-step-bubble">3</div>
+                            <div class="kc-step-title">Conectar</div>
+                        </div>
+                    </div>
+
+                    <!-- ETAPA 1: LIGAR DISPOSITIVO -->
+                    <div id="wizard-pane-1">
+                        <div class="kc-subtabs">
+                            <button type="button" class="kc-subtab-btn active" onclick="switchPowerSubtab('plug', this)">
+                                <i class="fas fa-plug"></i> Dispositivo Plugável (Tomada)
+                            </button>
+                            <button type="button" class="kc-subtab-btn" onclick="switchPowerSubtab('battery', this)">
+                                <i class="fas fa-battery-full"></i> Bateria / Solar
+                            </button>
+                        </div>
+
+                        <div id="power-content-plug">
+                            <div class="kc-method-card">
+                                <div class="kc-method-icon-box"><i class="fas fa-plug-circle-check"></i></div>
+                                <div class="kc-method-details">
+                                    <h5>Método A: Fonte de Alimentação</h5>
+                                    <p>Conecte o cabo micro-USB ou fonte 12V na tomada. Aguarde cerca de 30 segundos até a câmera girar ou emitir o primeiro sinal de inicialização.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="power-content-battery" style="display: none;">
+                            <div class="kc-method-card">
+                                <div class="kc-method-icon-box"><i class="fas fa-power-off"></i></div>
+                                <div class="kc-method-details">
+                                    <h5>Método A: Botão Power</h5>
+                                    <p>Pressione e segure o botão de ligar até acender o LED indicador ou ouvir o som de inicialização.</p>
+                                </div>
+                            </div>
+                            <div class="kc-method-card">
+                                <div class="kc-method-icon-box"><i class="fas fa-toggle-on"></i></div>
+                                <div class="kc-method-details">
+                                    <h5>Método B: Chave Alternadora (ON / OFF)</h5>
+                                    <p>Localize o interruptor sob a tampa de borracha e deslize-o para a posição <b>ON</b>.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <label class="kc-checkbox-label" for="chk-power-on">
+                            <input type="checkbox" id="chk-power-on" onchange="toggleWizardBtn(1)">
+                            <span>O dispositivo está ligado e com energia</span>
+                        </label>
+
+                        <button type="button" class="kc-btn kc-btn-primary" id="btn-step-1-next" onclick="goToWizardStep(2)" disabled style="width: 100%; margin-top: 1.25rem;">
+                            Próximo: Redefinir Câmera <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+
+                    <!-- ETAPA 2: REDEFINIR DISPOSITIVO (RESET & SOM) -->
+                    <div id="wizard-pane-2" style="display: none;">
+                        <h4 style="font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem;">
+                            Passo 2: Redefinir Dispositivo (Reset)
+                        </h4>
+                        <p style="font-size: 0.8rem; color: var(--kc-text-muted); margin-bottom: 1rem;">
+                            Pressione e segure o botão Reset da câmera até que o dispositivo emita um aviso sonoro contínuo ou diga <i>"Restoring factory settings"</i>.
+                        </p>
+
+                        <div class="kc-method-card">
+                            <div class="kc-method-icon-box"><i class="fas fa-compress-arrows-alt"></i></div>
+                            <div class="kc-method-details">
+                                <h5>Método A: Orifício Reset com Agulha</h5>
+                                <p>Insira a chavinha de reset ou clipe no orifício marcado como <b>RESET</b> e segure por 5 a 10 segundos.</p>
+                            </div>
+                        </div>
+
+                        <div class="kc-method-card">
+                            <div class="kc-method-icon-box"><i class="fas fa-sd-card"></i></div>
+                            <div class="kc-method-details">
+                                <h5>Método B: Botão Físico ao Lado do Cartão SD</h5>
+                                <p>Gire a lente da câmera para cima e pressione o botão Reset posicionado junto ao slot de memória.</p>
+                            </div>
+                        </div>
+
+                        <div class="kc-method-card">
+                            <div class="kc-method-icon-box"><i class="fas fa-code-fork"></i></div>
+                            <div class="kc-method-details">
+                                <h5>Método C: Botão no Chicote de Cabos</h5>
+                                <p>Em câmeras externas tipo Bullet ou PTZ, pressione o botão com tampa emborrachada no cabo de conexão.</p>
+                            </div>
+                        </div>
+
+                        <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 12px; padding: 1rem; margin-top: 0.85rem; text-align: center;">
+                            <div style="font-size: 0.82rem; color: var(--kc-cyan); font-weight: 600; margin-bottom: 0.4rem;">
+                                Teste o som que a câmera deve estar emitindo:
+                            </div>
+                            <button type="button" class="kc-sample-sound-btn" onclick="playSampleSound('dodo')">
+                                <i class="fas fa-volume-high"></i> Reproduzir Som Amostra "Do-Do"
+                            </button>
+                            <div style="font-size: 0.72rem; color: var(--kc-text-dim);">
+                                (Sinal sonoro intermitente indicando prontidão para conexão)
+                            </div>
+                        </div>
+
+                        <label class="kc-checkbox-label" for="chk-reset-done">
+                            <input type="checkbox" id="chk-reset-done" onchange="toggleWizardBtn(2)">
+                            <span>Eu ouvi o tom recorrente "Do-Do" ou bipe contínuo</span>
+                        </label>
+
+                        <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem;">
+                            <button type="button" class="kc-btn kc-btn-secondary" onclick="goToWizardStep(1)">
+                                <i class="fas fa-arrow-left"></i> Voltar
+                            </button>
+                            <button type="button" class="kc-btn kc-btn-primary" id="btn-step-2-next" onclick="goToWizardStep(3)" disabled style="flex: 1;">
+                                Próximo: Escolher Modo de Conexão <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ETAPA 3: ESCOLHER MODO DE CONEXÃO -->
+                    <div id="wizard-pane-3" style="display: none;">
+                        <h4 style="font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem;">
+                            Passo 3: Conectar a Câmera à Sua Rede
+                        </h4>
+                        <p style="font-size: 0.8rem; color: var(--kc-text-muted); margin-bottom: 1rem;">
+                            Escolha a forma mais fácil para transferir a conexão para a sua câmera:
+                        </p>
+
+                        <div class="kc-type-switch">
+                            <button type="button" class="kc-type-btn active" id="btn-sub-qrcode" onclick="switchConnSubtab('qrcode')">
+                                <i class="fas fa-qrcode"></i> 1. QR Code na Tela (Lente Lê)
+                            </button>
+                            <button type="button" class="kc-type-btn" id="btn-sub-hotspot" onclick="switchConnSubtab('hotspot')">
+                                <i class="fas fa-wifi"></i> 2. Conectar no Wi-Fi da Câmera (AP)
+                            </button>
+                        </div>
+
+                        <!-- Opção A: QR Code na Tela -->
+                        <div id="conn-pane-qrcode">
+                            <p style="font-size: 0.82rem; color: var(--kc-text-muted); margin-bottom: 0.85rem;">
+                                Digite os dados da sua rede Wi-Fi de <b>2.4 GHz</b>. Aproxime a tela para a lente da câmera:
+                            </p>
+                            <div class="kc-form-row">
+                                <div class="kc-form-group">
+                                    <label class="kc-label" for="wizard-wifi-ssid">Nome do Wi-Fi (SSID) *</label>
+                                    <input type="text" id="wizard-wifi-ssid" class="kc-input" placeholder="Ex: MinhaCasa_2.4G" oninput="generateWizardWifiQr()">
+                                </div>
+                                <div class="kc-form-group">
+                                    <label class="kc-label" for="wizard-wifi-pass">Senha do Wi-Fi *</label>
+                                    <input type="text" id="wizard-wifi-pass" class="kc-input" placeholder="Senha da rede" oninput="generateWizardWifiQr()">
+                                </div>
+                            </div>
+
+                            <div class="kc-qr-box">
+                                <div id="wizard-qrcode-container"></div>
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin: 0.5rem 0;">
+                                    <button type="button" class="kc-sample-sound-btn" onclick="playSampleSound('dingdong')">
+                                        <i class="fas fa-volume-high"></i> Ouvir Som de Sucesso "Ding-Dong"
+                                    </button>
+                                </div>
+                                <div style="font-size: 0.78rem; color: var(--kc-text-dim); text-align: center; max-width: 360px;">
+                                    Posicione o celular a cerca de <b>15 a 20 cm</b> da lente da câmera. Ao ouvir o som <i>"Ding-Dong"</i> ou aviso <i>"Wi-Fi Connecting"</i>, clique abaixo:
+                                </div>
+                            </div>
+
+                            <button type="button" class="kc-btn kc-btn-primary" onclick="proceedFromWizardToSave()" style="width: 100%; margin-top: 1rem;">
+                                <i class="fas fa-check-circle"></i> A Câmera Leu o QR Code (Salvar Câmera)
+                            </button>
+                        </div>
+
+                        <!-- Opção B: Wi-Fi Hotspot / Ponto de Acesso da Câmera -->
+                        <div id="conn-pane-hotspot" style="display: none;">
+                            <div class="kc-method-card">
+                                <div class="kc-method-icon-box"><i class="fas fa-tower-broadcast"></i></div>
+                                <div class="kc-method-details">
+                                    <h5>1. Abra as Configurações de Wi-Fi do Celular</h5>
+                                    <p>Procure por redes sem fio próximas. A câmera gera uma rede própria começando com: <code style="color: var(--kc-gold);">GW_IPC_...</code>, <code style="color: var(--kc-gold);">CAM_...</code>, <code style="color: var(--kc-gold);">Cloud_...</code> ou <code style="color: var(--kc-gold);">TP-Link_...</code></p>
+                                </div>
+                            </div>
+                            <div class="kc-method-card">
+                                <div class="kc-method-icon-box"><i class="fas fa-key"></i></div>
+                                <div class="kc-method-details">
+                                    <h5>2. Conecte-se na Rede da Câmera</h5>
+                                    <p>A senha de fábrica costuma ser <b>12345678</b> ou rede aberta sem senha. Se o celular avisar "Internet indisponível", confirme em <i>"Manter conexão Wi-Fi"</i>.</p>
+                                </div>
+                            </div>
+                            <div class="kc-method-card">
+                                <div class="kc-method-icon-box"><i class="fas fa-laptop-code"></i></div>
+                                <div class="kc-method-details">
+                                    <h5>3. Conecte pelo IP Local de Fábrica</h5>
+                                    <p>Nesse modo direto, a câmera responde no IP padrão <code style="color: var(--kc-cyan);">192.168.1.1</code> ou <code style="color: var(--kc-cyan);">192.168.0.1</code>.</p>
+                                </div>
+                            </div>
+
+                            <button type="button" class="kc-btn kc-btn-primary" onclick="useHotspotIp('192.168.1.1')" style="width: 100%; margin-top: 0.85rem;">
+                                <i class="fas fa-link"></i> Usar IP Padrão do Ponto de Acesso (192.168.1.1)
+                            </button>
+                        </div>
+
+                        <div style="margin-top: 1rem;">
+                            <button type="button" class="kc-btn kc-btn-secondary" onclick="goToWizardStep(2)">
+                                <i class="fas fa-arrow-left"></i> Voltar ao Passo 2
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═════════════════════════════════════════════════════════════ -->
+                <!-- ABA 2: LER QR CODE DA CÂMERA (COM A CÂMERA DO CELULAR/PC)     -->
+                <!-- ═════════════════════════════════════════════════════════════ -->
+                <div class="kc-tab-pane" id="tab-scan">
+                    <div style="text-align: center; margin-bottom: 1rem;">
+                        <h4 style="font-size: 1.05rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem;">
+                            <i class="fas fa-camera" style="color: var(--kc-gold); margin-right: 0.35rem;"></i>
+                            Escanear Etiqueta da Câmera
+                        </h4>
+                        <p style="font-size: 0.82rem; color: var(--kc-text-muted);">
+                            Aponte a câmera do seu celular para o QR Code localizado embaixo ou atrás da sua câmera IP.
+                        </p>
+                    </div>
+
+                    <div id="camera-qr-reader">
+                        <div id="scanner-placeholder" style="color: var(--kc-text-dim); font-size: 0.85rem; text-align: center; padding: 2rem;">
+                            <i class="fas fa-qrcode" style="font-size: 3rem; margin-bottom: 0.75rem; color: var(--kc-gold); opacity: 0.6;"></i>
+                            <div>Clique no botão abaixo para ligar a câmera do seu aparelho.</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: center; gap: 0.75rem; margin-top: 1rem;">
+                        <button type="button" class="kc-btn kc-btn-primary" id="btn-start-scanner" onclick="startCameraQrScanner()">
+                            <i class="fas fa-camera"></i> Iniciar Câmera Traseira
+                        </button>
+                        <button type="button" class="kc-btn kc-btn-secondary" id="btn-stop-scanner" onclick="stopCameraQrScanner()" style="display: none;">
+                            <i class="fas fa-stop"></i> Parar Scanner
+                        </button>
+                    </div>
+
+                    <div id="scanner-status" style="font-size: 0.78rem; color: var(--kc-text-muted); text-align: center; margin-top: 0.75rem;">
+                        Suporta etiquetas Yoosee, Intelbras, Tapo, V380 e URLs RTSP diretas.
+                    </div>
+                </div>
+
+                <!-- ═════════════════════════════════════════════════════════════ -->
+                <!-- ABA 3: CADASTRO MANUAL (POR ID DA CÂMERA OU POR IP / RTSP)    -->
+                <!-- ═════════════════════════════════════════════════════════════ -->
+                <div class="kc-tab-pane" id="tab-rtsp">
+                    <!-- Switch ID vs IP -->
+                    <div class="kc-type-switch">
+                        <button type="button" class="kc-type-btn active" id="btn-type-id" onclick="setManualMode('id')">
+                            <i class="fas fa-hashtag"></i> 1. Pelo ID da Câmera (Yoosee / Cloud ID)
+                        </button>
+                        <button type="button" class="kc-type-btn" id="btn-type-ip" onclick="setManualMode('ip')">
+                            <i class="fas fa-network-wired"></i> 2. Pelo Endereço IP / DDNS
+                        </button>
+                    </div>
+
                     <form id="form-camera" onsubmit="saveCamera(event)">
                         <input type="hidden" id="cam-id" value="">
+                        <input type="hidden" id="cam-device-id" value="">
+
                         <div class="kc-form-row">
                             <div class="kc-form-group">
                                 <label class="kc-label" for="cam-name">Nome da Câmera *</label>
@@ -905,21 +1414,22 @@
                         <div class="kc-form-group">
                             <label class="kc-label" for="cam-brand-preset">Marca / Modelo da Câmera</label>
                             <select id="cam-brand-preset" class="kc-input" onchange="applyBrandPreset(this.value)">
-                                <option value="generic">Genérica / ONVIF Universal (Porta 554, /onvif1)</option>
                                 <option value="yoosee">Yoosee / CamHi / Tuya / Smart Life (Porta 554, /onvif1)</option>
                                 <option value="intelbras">Intelbras Mibo / VIP / CFTV (Porta 554, /cam/realmonitor?channel=1&subtype=0)</option>
-                                <option value="hikvision">Hikvision / Ezviz (Porta 554, /Streaming/Channels/101)</option>
                                 <option value="tapo">TP-Link Tapo C200 / C310 / TC70 (Porta 554, /stream1)</option>
+                                <option value="hikvision">Hikvision / Ezviz (Porta 554, /Streaming/Channels/101)</option>
                                 <option value="dahua">Dahua / IMOU (Porta 554, /cam/realmonitor?channel=1&subtype=1)</option>
                                 <option value="v380">V380 / V380 Pro (Porta 554, /live/ch0)</option>
+                                <option value="generic">Genérica / ONVIF Universal (Porta 554, /onvif1)</option>
                             </select>
-                            <div class="kc-form-help" id="brand-hint" style="color: var(--kc-gold);">Selecione a marca para configurar portas e caminhos automaticamente.</div>
+                            <div class="kc-form-help" id="brand-hint" style="color: var(--kc-gold);">Yoosee / CamHi / Tuya - habilitar RTSP nas configurações do app.</div>
                         </div>
 
                         <div class="kc-form-row">
                             <div class="kc-form-group">
-                                <label class="kc-label" for="cam-ip">Endereço IP ou Host *</label>
-                                <input type="text" id="cam-ip" class="kc-input" placeholder="Ex: 172.16.100.215" required value="172.16.100.215">
+                                <label class="kc-label" for="cam-ip" id="lbl-cam-ip">ID da Câmera (3C ID / Yoosee) *</label>
+                                <input type="text" id="cam-ip" class="kc-input" placeholder="Ex: 10482910 ou 172.16.100.215" required value="172.16.100.215">
+                                <div class="kc-form-help" id="hint-cam-ip">Insira o ID numérico da câmera ou endereço IP local.</div>
                             </div>
                             <div class="kc-form-group">
                                 <label class="kc-label" for="cam-port">Porta RTSP</label>
@@ -930,7 +1440,7 @@
                         <div class="kc-form-group">
                             <label class="kc-label" for="cam-path">Caminho RTSP</label>
                             <input type="text" id="cam-path" class="kc-input" placeholder="/onvif1 ou /live/ch0" value="/onvif1">
-                            <div class="kc-form-help">Padrões comuns: <code>/onvif1</code>, <code>/live/ch0</code>, <code>/h264Preview_01_main</code></div>
+                            <div class="kc-form-help">Padrões comuns: <code>/onvif1</code>, <code>/live/ch0</code>, <code>/stream1</code></div>
                         </div>
 
                         <div class="kc-form-row">
@@ -961,37 +1471,9 @@
                     </form>
                 </div>
 
-                <!-- Tab 2: Wi-Fi QR Code Generator -->
-                <div class="kc-tab-pane" id="tab-qrcode">
-                    <p style="font-size: 0.85rem; color: var(--kc-text-muted); margin-bottom: 1rem;">
-                        Aponte a lente da sua câmera nova para o QR Code gerado abaixo. A câmera lerá as credenciais do seu Wi-Fi e se conectará automaticamente à sua rede.
-                    </p>
-                    <div class="kc-form-group">
-                        <label class="kc-label" for="wifi-ssid">Nome da Rede Wi-Fi (SSID) *</label>
-                        <input type="text" id="wifi-ssid" class="kc-input" placeholder="Ex: MinhaCasa_2.4G" oninput="generateWifiQr()">
-                    </div>
-                    <div class="kc-form-group">
-                        <label class="kc-label" for="wifi-pass">Senha do Wi-Fi *</label>
-                        <input type="text" id="wifi-pass" class="kc-input" placeholder="Senha da sua rede" oninput="generateWifiQr()">
-                    </div>
-                    <div class="kc-form-group">
-                        <label class="kc-label" for="wifi-type">Criptografia</label>
-                        <select id="wifi-type" class="kc-input" onchange="generateWifiQr()">
-                            <option value="WPA">WPA/WPA2 (Padrão)</option>
-                            <option value="WEP">WEP</option>
-                            <option value="nopass">Rede Aberta (Sem Senha)</option>
-                        </select>
-                    </div>
-
-                    <div class="kc-qr-box">
-                        <div id="kc-qrcode-container"></div>
-                        <div style="font-size: 0.8rem; color: var(--kc-text-muted); text-align: center;">
-                            Posicione o celular a cerca de 15 a 20 cm da lente da câmera até ouvir o bipe de confirmação.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tab 3: Telegram Agent Info -->
+                <!-- ═════════════════════════════════════════════════════════════ -->
+                <!-- ABA 4: AGENTE TELEGRAM                                        -->
+                <!-- ═════════════════════════════════════════════════════════════ -->
                 <div class="kc-tab-pane" id="tab-telegram">
                     <div style="text-align: center; padding: 1rem 0;">
                         <i class="fab fa-telegram-plane" style="font-size: 3.5rem; color: #0088cc; margin-bottom: 1rem;"></i>
@@ -1085,6 +1567,7 @@
             loadCameras();
             setupTabs();
             setupGridFilter();
+            setupDurationChips();
         });
 
         // Configuração das abas do Modal
@@ -1097,22 +1580,31 @@
                     const tabId = btn.getAttribute('data-tab');
                     const pane = document.getElementById(tabId);
                     if (pane) pane.classList.add('active');
-                    if (tabId === 'tab-qrcode') generateWifiQr();
+
+                    if (tabId === 'tab-wizard') {
+                        generateWizardWifiQr();
+                        stopCameraQrScanner();
+                    } else if (tabId === 'tab-scan') {
+                        // Não inicia câmera automaticamente para respeitar consentimento, mas prepara
+                    } else {
+                        stopCameraQrScanner();
+                    }
                 });
             });
         }
 
         // Seletor de colunas
         function setupGridFilter() {
-            document.querySelectorAll('.kc-grid-btn').forEach(btn => {
+            document.querySelectorAll('.kc-grid-btn[data-cols]').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    document.querySelectorAll('.kc-grid-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.kc-grid-btn[data-cols]').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     const cols = btn.getAttribute('data-cols');
                     const grid = document.getElementById('cameras-grid');
                     grid.classList.remove('cols-1', 'cols-2', 'cols-3');
                     if (cols === '1') grid.classList.add('cols-1');
                     else if (cols === '2') grid.classList.add('cols-2');
+                    else if (cols === '3') grid.classList.add('cols-3');
                 });
             });
         }
@@ -1213,8 +1705,17 @@
                             <div class="kc-overlay-top">
                                 <div class="kc-overlay-timestamp" id="time-${cam.id}">--:--:--</div>
                                 <div class="kc-overlay-controls">
-                                    <button class="kc-icon-btn" onclick="toggleAudio(${cam.id})" title="Ativar/Mudo Áudio" id="btn-audio-${cam.id}">
+                                    <button class="kc-icon-btn" onclick="toggleAudio(${cam.id})" title="Áudio On/Off" id="btn-audio-${cam.id}">
                                         <i class="fas fa-volume-mute"></i>
+                                    </button>
+                                    <button class="kc-icon-btn" onclick="toggleAiAudio(${cam.id})" title="IA Áudio Cristalino (Anti-Chiado)" id="btn-ai-audio-${cam.id}">
+                                        <i class="fas fa-magic"></i>
+                                    </button>
+                                    <button class="kc-icon-btn" onclick="toggleAiVideoNight(${cam.id})" title="IA Visão Noturna Aprimorada" id="btn-ai-night-${cam.id}">
+                                        <i class="fas fa-moon"></i>
+                                    </button>
+                                    <button class="kc-icon-btn" onclick="toggleAiVideoSharp(${cam.id})" title="IA Super Nitidez" id="btn-ai-sharp-${cam.id}">
+                                        <i class="fas fa-wand-magic-sparkles"></i>
                                     </button>
                                     <button class="kc-icon-btn" onclick="downloadSnapshot(${cam.id})" title="Capturar Foto Instantânea">
                                         <i class="fas fa-camera"></i>
@@ -1231,6 +1732,9 @@
                             <i class="fas fa-ethernet"></i> ${cam.ip_address}:${cam.port || 554}
                         </div>
                         <div class="kc-footer-actions">
+                            <button class="kc-icon-btn" onclick="openShareModal(${cam.id})" title="Compartilhar Link Temporário com Expiração" style="width: 28px; height: 28px; color: var(--kc-gold);">
+                                <i class="fas fa-share-nodes"></i>
+                            </button>
                             <button class="kc-icon-btn" onclick="triggerTelegramTest(${cam.id})" title="Testar Alerta no Telegram" style="width: 28px; height: 28px;">
                                 <i class="fab fa-telegram-plane"></i>
                             </button>
@@ -1453,7 +1957,7 @@
 
         function openModal(mode, cam = null) {
             currentEditingId = cam ? cam.id : null;
-            document.getElementById('modal-title').textContent = cam ? 'Editar Câmera' : 'Adicionar Câmera';
+            document.getElementById('modal-title').textContent = cam ? 'Editar Câmera' : 'Conectar Nova Câmera';
             document.getElementById('cam-id').value = cam ? cam.id : '';
             document.getElementById('cam-name').value = cam ? cam.name : 'Quarto Bebê';
             document.getElementById('cam-room').value = cam ? (cam.room || '') : 'Quarto';
@@ -1464,12 +1968,338 @@
             document.getElementById('cam-pass').value = '';
             document.getElementById('cam-telegram-alerts').checked = cam ? cam.telegram_alerts_enabled : true;
 
-            document.querySelector('.kc-tab-btn[data-tab="tab-rtsp"]')?.click();
+            if (cam) {
+                setManualMode('ip');
+                document.querySelector('.kc-tab-btn[data-tab="tab-rtsp"]')?.click();
+            } else {
+                goToWizardStep(1);
+                const chk1 = document.getElementById('chk-power-on');
+                const chk2 = document.getElementById('chk-reset-done');
+                if (chk1) chk1.checked = false;
+                if (chk2) chk2.checked = false;
+                toggleWizardBtn(1);
+                toggleWizardBtn(2);
+                document.querySelector('.kc-tab-btn[data-tab="tab-wizard"]')?.click();
+            }
             modalBackdrop.classList.add('active');
         }
 
         function closeModal() {
+            stopCameraQrScanner();
             modalBackdrop.classList.remove('active');
+        }
+
+        // ─── Sintetizador de Áudio Real (Web Audio API) ────────────────────
+        function playSampleSound(type = 'dodo') {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                if (ctx.state === 'suspended') ctx.resume();
+
+                if (type === 'dodo') {
+                    // Tom recorrente "Do-Do" característico de pareamento Yoosee
+                    const playTone = (time, freq) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, time);
+                        gain.gain.setValueAtTime(0.35, time);
+                        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.12);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(time);
+                        osc.stop(time + 0.12);
+                    };
+                    const now = ctx.currentTime;
+                    playTone(now, 920);
+                    playTone(now + 0.18, 920);
+                    playTone(now + 0.55, 920);
+                    playTone(now + 0.73, 920);
+                } else if (type === 'dingdong') {
+                    // Sinal sonoro Ding-Dong de sucesso de leitura
+                    const now = ctx.currentTime;
+                    const osc1 = ctx.createOscillator();
+                    const gain1 = ctx.createGain();
+                    osc1.type = 'triangle';
+                    osc1.frequency.setValueAtTime(784, now); // G5
+                    gain1.gain.setValueAtTime(0.35, now);
+                    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+                    osc1.connect(gain1);
+                    gain1.connect(ctx.destination);
+                    osc1.start(now);
+                    osc1.stop(now + 0.38);
+
+                    const osc2 = ctx.createOscillator();
+                    const gain2 = ctx.createGain();
+                    osc2.type = 'triangle';
+                    osc2.frequency.setValueAtTime(523.25, now + 0.35); // C5
+                    gain2.gain.setValueAtTime(0.4, now + 0.35);
+                    gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.1);
+                    osc2.connect(gain2);
+                    gain2.connect(ctx.destination);
+                    osc2.start(now + 0.35);
+                    osc2.stop(now + 1.1);
+                }
+            } catch (e) {
+                console.warn('Audio synthesis error:', e);
+            }
+        }
+
+        // ─── Lógica do Assistente Guiado (Wizard Estilo Yoosee) ─────────────
+        let currentWizardStep = 1;
+
+        function switchPowerSubtab(type, btn) {
+            document.querySelectorAll('#wizard-pane-1 .kc-subtab-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            const plug = document.getElementById('power-content-plug');
+            const batt = document.getElementById('power-content-battery');
+            if (plug) plug.style.display = (type === 'plug') ? 'block' : 'none';
+            if (batt) batt.style.display = (type === 'battery') ? 'block' : 'none';
+        }
+
+        function toggleWizardBtn(step) {
+            if (step === 1) {
+                const chk = document.getElementById('chk-power-on');
+                const btn = document.getElementById('btn-step-1-next');
+                if (btn) btn.disabled = !chk || !chk.checked;
+            } else if (step === 2) {
+                const chk = document.getElementById('chk-reset-done');
+                const btn = document.getElementById('btn-step-2-next');
+                if (btn) btn.disabled = !chk || !chk.checked;
+            }
+        }
+
+        function goToWizardStep(step) {
+            currentWizardStep = step;
+            for (let i = 1; i <= 3; i++) {
+                const pane = document.getElementById(`wizard-pane-${i}`);
+                const node = document.getElementById(`step-node-${i}`);
+                if (pane) pane.style.display = (i === step) ? 'block' : 'none';
+                if (node) {
+                    node.classList.remove('active', 'completed');
+                    if (i === step) node.classList.add('active');
+                    else if (i < step) node.classList.add('completed');
+                }
+            }
+            if (step === 3) {
+                generateWizardWifiQr();
+            }
+        }
+
+        function switchConnSubtab(type) {
+            const btnQr = document.getElementById('btn-sub-qrcode');
+            const btnHp = document.getElementById('btn-sub-hotspot');
+            const paneQr = document.getElementById('conn-pane-qrcode');
+            const paneHp = document.getElementById('conn-pane-hotspot');
+
+            if (btnQr) btnQr.classList.toggle('active', type === 'qrcode');
+            if (btnHp) btnHp.classList.toggle('active', type === 'hotspot');
+            if (paneQr) paneQr.style.display = (type === 'qrcode') ? 'block' : 'none';
+            if (paneHp) paneHp.style.display = (type === 'hotspot') ? 'block' : 'none';
+            if (type === 'qrcode') generateWizardWifiQr();
+        }
+
+        let wizardQrInstance = null;
+        function generateWizardWifiQr() {
+            const ssidEl = document.getElementById('wizard-wifi-ssid');
+            const passEl = document.getElementById('wizard-wifi-pass');
+            const ssid = ssidEl ? ssidEl.value.trim() : '';
+            const pass = passEl ? passEl.value.trim() : '';
+
+            const container = document.getElementById('wizard-qrcode-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const qrText = ssid ? `WIFI:T:WPA;S:${ssid};P:${pass};;` : 'WIFI:T:WPA;S:RedeCasa_2.4G;P:Senha123;;';
+
+            if (window.QRCode) {
+                wizardQrInstance = new QRCode(container, {
+                    text: qrText,
+                    width: 200,
+                    height: 200,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            }
+        }
+
+        function proceedFromWizardToSave() {
+            playSampleSound('dingdong');
+            document.querySelector('.kc-tab-btn[data-tab="tab-rtsp"]')?.click();
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'Câmera pareada com sucesso!',
+                text: 'Confirme o nome e clique em Salvar Câmera.',
+                showConfirmButton: false,
+                timer: 3000
+            });
+        }
+
+        function useHotspotIp(ip) {
+            document.getElementById('cam-ip').value = ip;
+            document.getElementById('cam-name').value = 'Câmera Ponto de Acesso';
+            setManualMode('ip');
+            document.querySelector('.kc-tab-btn[data-tab="tab-rtsp"]')?.click();
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'info',
+                title: `IP ${ip} preenchido!`,
+                text: 'Insira o usuário/senha e salve.',
+                showConfirmButton: false,
+                timer: 2500
+            });
+        }
+
+        // ─── Leitor de QR Code da Câmera (Webcam / Celular) ─────────────────
+        let html5QrScanner = null;
+
+        function startCameraQrScanner() {
+            const btnStart = document.getElementById('btn-start-scanner');
+            const btnStop = document.getElementById('btn-stop-scanner');
+            const statusEl = document.getElementById('scanner-status');
+            const placeholder = document.getElementById('scanner-placeholder');
+
+            if (typeof Html5Qrcode === 'undefined') {
+                Swal.fire('Aviso', 'A biblioteca do leitor está carregando. Tente novamente em instantes.', 'info');
+                return;
+            }
+
+            if (placeholder) placeholder.style.display = 'none';
+            btnStart.disabled = true;
+            btnStart.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Abrindo Câmera...';
+            if (statusEl) statusEl.textContent = 'Solicitando acesso à câmera...';
+
+            html5QrScanner = new Html5Qrcode("camera-qr-reader");
+
+            const qrConfig = {
+                fps: 15,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+
+            html5QrScanner.start(
+                { facingMode: "environment" },
+                qrConfig,
+                (decodedText, decodedResult) => {
+                    console.log('QR Code escaneado com sucesso:', decodedText);
+                    playSampleSound('dingdong');
+                    stopCameraQrScanner();
+                    handleScannedCameraQr(decodedText);
+                },
+                (errorMessage) => {
+                    // Frame scan contínuo
+                }
+            ).then(() => {
+                btnStart.style.display = 'none';
+                btnStop.style.display = 'inline-flex';
+                btnStart.disabled = false;
+                btnStart.innerHTML = '<i class="fas fa-camera"></i> Iniciar Câmera Traseira';
+                if (statusEl) statusEl.innerHTML = '<span style="color: var(--kc-gold);">● Câmera ativa!</span> Aponte para o QR Code da câmera.';
+            }).catch(err => {
+                console.warn('Erro ao abrir câmera:', err);
+                btnStart.disabled = false;
+                btnStart.innerHTML = '<i class="fas fa-camera"></i> Tentar Novamente';
+                if (placeholder) placeholder.style.display = 'block';
+                if (statusEl) statusEl.textContent = 'Permita o acesso à câmera no navegador ou use a configuração manual.';
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Permissão da Câmera',
+                    text: 'Não foi possível acessar a câmera. Certifique-se de autorizar a permissão no navegador ou cadastre pelo ID/IP manualmente.',
+                    confirmButtonColor: '#f59e0b'
+                });
+            });
+        }
+
+        function stopCameraQrScanner() {
+            const btnStart = document.getElementById('btn-start-scanner');
+            const btnStop = document.getElementById('btn-stop-scanner');
+            const statusEl = document.getElementById('scanner-status');
+            const placeholder = document.getElementById('scanner-placeholder');
+
+            if (html5QrScanner) {
+                html5QrScanner.stop().then(() => {
+                    html5QrScanner.clear();
+                    html5QrScanner = null;
+                }).catch(() => {
+                    html5QrScanner = null;
+                });
+            }
+            if (btnStart) {
+                btnStart.style.display = 'inline-flex';
+                btnStart.disabled = false;
+            }
+            if (btnStop) btnStop.style.display = 'none';
+            if (placeholder) placeholder.style.display = 'block';
+            if (statusEl) statusEl.textContent = 'Suporta etiquetas Yoosee, Intelbras, Tapo, V380 e URLs RTSP.';
+        }
+
+        function handleScannedCameraQr(text) {
+            let detectedId = text.trim();
+            let detectedIp = '';
+            let detectedPort = 554;
+            let detectedUser = 'admin';
+            let detectedPath = '/onvif1';
+
+            if (detectedId.startsWith('rtsp://')) {
+                try {
+                    const u = new URL(detectedId);
+                    detectedIp = u.hostname;
+                    detectedPort = u.port || 554;
+                    if (u.username) detectedUser = u.username;
+                    detectedPath = u.pathname || '/onvif1';
+                } catch(e) {}
+            } else {
+                const match = detectedId.match(/(?:id=|ID=|sn=|SN=|uid=)?([0-9]{6,12})/i);
+                if (match) {
+                    detectedId = match[1];
+                }
+            }
+
+            document.getElementById('cam-name').value = `Câmera ${detectedId.slice(-4) || 'IP'}`;
+            document.getElementById('cam-ip').value = detectedIp || detectedId;
+            document.getElementById('cam-port').value = detectedPort;
+            document.getElementById('cam-path').value = detectedPath;
+            document.getElementById('cam-user').value = detectedUser;
+
+            setManualMode(detectedIp ? 'ip' : 'id');
+            document.querySelector('.kc-tab-btn[data-tab="tab-rtsp"]')?.click();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'QR Code Reconhecido!',
+                html: `Dispositivo identificado: <b style="color: #f59e0b;">${escapeHtml(detectedId)}</b>.<br>Os dados foram preenchidos. Clique em <b>Salvar Câmera</b>.`,
+                confirmButtonColor: '#f59e0b'
+            });
+        }
+
+        // ─── Alternador de Modo Manual (ID vs IP) ──────────────────────────
+        let currentManualMode = 'id';
+
+        function setManualMode(mode) {
+            currentManualMode = mode;
+            const btnId = document.getElementById('btn-type-id');
+            const btnIp = document.getElementById('btn-type-ip');
+            const lblIp = document.getElementById('lbl-cam-ip');
+            const inputIp = document.getElementById('cam-ip');
+            const hintIp = document.getElementById('hint-cam-ip');
+
+            if (btnId) btnId.classList.toggle('active', mode === 'id');
+            if (btnIp) btnIp.classList.toggle('active', mode === 'ip');
+
+            if (mode === 'id') {
+                if (lblIp) lblIp.textContent = 'ID da Câmera (3C ID / Yoosee / Cloud ID) *';
+                if (inputIp) inputIp.placeholder = 'Ex: 10482910 (Encontrado na etiqueta ou app Yoosee)';
+                if (hintIp) hintIp.textContent = 'O ID da câmera de 7 a 10 dígitos impresso na etiqueta da sua câmera.';
+            } else {
+                if (lblIp) lblIp.textContent = 'Endereço IP ou Host DDNS *';
+                if (inputIp) inputIp.placeholder = 'Ex: 172.16.100.215 ou minhacasa.ddns.net';
+                if (hintIp) hintIp.textContent = 'Endereço IP da câmera na sua rede local ou hostname DDNS.';
+            }
         }
 
         // Salvar Câmera
@@ -1561,27 +2391,311 @@
             }
         }
 
-        // Gerador de QR Code Wi-Fi para novas câmeras
-        function generateWifiQr() {
-            const ssid = document.getElementById('wifi-ssid').value.trim();
-            const pass = document.getElementById('wifi-pass').value.trim();
-            const type = document.getElementById('wifi-type').value;
+        // ─── Preset de Marcas ──────────────────────────────────────────────
+        const BRAND_PRESETS = {
+            generic: { port: 554, path: '/onvif1', user: 'admin', hint: 'Padrão ONVIF universal' },
+            yoosee: { port: 554, path: '/onvif1', user: 'admin', hint: 'Yoosee / CamHi / Tuya - habilitar RTSP nas configurações do app' },
+            intelbras: { port: 554, path: '/cam/realmonitor?channel=1&subtype=0', user: 'admin', hint: 'Intelbras Mibo / VIP - usuário e senha do dispositivo' },
+            hikvision: { port: 554, path: '/Streaming/Channels/101', user: 'admin', hint: 'Hikvision / Ezviz - stream principal canal 1' },
+            tapo: { port: 554, path: '/stream1', user: 'admin', hint: 'TP-Link Tapo - conta criada em Configurações Avançadas > Conta da Câmera' },
+            dahua: { port: 554, path: '/cam/realmonitor?channel=1&subtype=1', user: 'admin', hint: 'Dahua / IMOU - sub-stream rápido' },
+            v380: { port: 554, path: '/live/ch0', user: 'admin', hint: 'V380 Pro - ativar RTSP nas configurações do app' },
+        };
 
-            const container = document.getElementById('kc-qrcode-container');
-            container.innerHTML = '';
+        function applyBrandPreset(brandKey) {
+            const preset = BRAND_PRESETS[brandKey] || BRAND_PRESETS.generic;
+            const portEl = document.getElementById('cam-port');
+            const pathEl = document.getElementById('cam-path');
+            const userEl = document.getElementById('cam-user');
+            const hintEl = document.getElementById('brand-hint');
 
-            const qrText = ssid ? `WIFI:T:${type};S:${ssid};P:${pass};;` : 'WIFI:T:WPA;S:Rede;P:Senha;;';
+            if (portEl) portEl.value = preset.port;
+            if (pathEl) pathEl.value = preset.path;
+            if (userEl && !userEl.value) userEl.value = preset.user;
+            if (hintEl) hintEl.textContent = preset.hint;
+        }
 
-            if (window.QRCode) {
-                qrCodeInstance = new QRCode(container, {
-                    text: qrText,
-                    width: 180,
-                    height: 180,
-                    colorDark: '#000000',
-                    colorLight: '#ffffff',
-                    correctLevel: QRCode.CorrectLevel.M
+        // ─── Modal de Compartilhamento Temporário ───────────────────────────
+        const modalShare = document.getElementById('modal-share');
+
+        function setupDurationChips() {
+            document.querySelectorAll('.kc-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    document.querySelectorAll('.kc-chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    const sec = chip.getAttribute('data-sec');
+                    document.getElementById('share-duration-sec').value = sec;
+                });
+            });
+        }
+
+        function openShareModal(camId) {
+            const cam = camerasData.find(c => c.id === camId);
+            if (!cam) return;
+
+            document.getElementById('share-cam-id').value = camId;
+            document.getElementById('share-label').value = `Convidado (${cam.name})`;
+            modalShare.classList.add('active');
+            loadCameraShares(camId);
+        }
+
+        function closeShareModal() {
+            modalShare.classList.remove('active');
+        }
+
+        async function createShareLink(e) {
+            e.preventDefault();
+            const camId = document.getElementById('share-cam-id').value;
+            const btn = document.getElementById('btn-create-share');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
+
+            const payload = {
+                duration_seconds: parseInt(document.getElementById('share-duration-sec').value || 3600),
+                label: document.getElementById('share-label').value.trim() || 'Convidado',
+                can_audio: true,
+                can_ptz: false
+            };
+
+            try {
+                const res = await fetch(`/api/cameras/${camId}/shares`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json();
+                if (json.success) {
+                    const shareUrl = json.data.share_url;
+                    navigator.clipboard.writeText(shareUrl).catch(() => {});
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Link Gerado & Copiado!',
+                        html: `
+                            <p style="font-size: 0.9rem; margin-bottom: 0.75rem;">O link temporário foi copiado para sua área de transferência:</p>
+                            <input type="text" readonly value="${shareUrl}" style="width: 100%; padding: 0.5rem; background: rgba(0,0,0,0.3); border: 1px solid #334155; color: #fbbf24; border-radius: 6px; font-size: 0.82rem; text-align: center;" onclick="this.select()">
+                            <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.5rem;">Válido por ${Math.round(payload.duration_seconds / 60)} minutos.</p>
+                        `,
+                        confirmButtonColor: '#f59e0b'
+                    });
+                    loadCameraShares(camId);
+                } else {
+                    Swal.fire('Erro', json.message || 'Falha ao criar link.', 'error');
+                }
+            } catch (err) {
+                Swal.fire('Erro', 'Não foi possível gerar link.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-link"></i> Gerar Link de Acesso';
+            }
+        }
+
+        async function loadCameraShares(camId) {
+            const listEl = document.getElementById('shares-list-container');
+            listEl.innerHTML = '<div style="font-size: 0.8rem; color: var(--kc-text-dim);"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>';
+
+            try {
+                const res = await fetch(`/api/cameras/${camId}/shares`, {
+                    credentials: 'include',
+                    headers: getAuthHeaders()
+                });
+                const json = await res.json();
+                if (json.success && json.data.length > 0) {
+                    listEl.innerHTML = '';
+                    json.data.forEach(s => {
+                        const row = document.createElement('div');
+                        row.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid var(--kc-border); border-radius: 8px; padding: 0.6rem 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;';
+                        const mins = Math.max(0, Math.round(s.seconds_remaining / 60));
+                        row.innerHTML = `
+                            <div style="min-width: 0;">
+                                <div style="font-weight: 600; font-size: 0.82rem; color: #fff;">${escapeHtml(s.label)}</div>
+                                <div style="font-size: 0.72rem; color: ${mins > 0 ? '#fbbf24' : '#f43f5e'};">
+                                    <i class="fas fa-clock"></i> ${mins > 0 ? mins + ' min restantes' : 'Expirado'} • ${s.view_count} visualizações
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.4rem; flex-shrink: 0;">
+                                <button type="button" class="kc-icon-btn" onclick="copyShareUrl('${s.share_url}')" title="Copiar Link" style="width: 26px; height: 26px; font-size: 0.75rem;">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button type="button" class="kc-icon-btn" onclick="revokeShareLink(${s.id}, ${camId})" title="Revogar Agora" style="width: 26px; height: 26px; font-size: 0.75rem; color: var(--kc-rose);">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        `;
+                        listEl.appendChild(row);
+                    });
+                } else {
+                    listEl.innerHTML = '<div style="font-size: 0.8rem; color: var(--kc-text-dim);">Nenhum link ativo no momento.</div>';
+                }
+            } catch (err) {
+                listEl.innerHTML = '<div style="font-size: 0.8rem; color: var(--kc-rose);">Falha ao listar links.</div>';
+            }
+        }
+
+        function copyShareUrl(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Link copiado!',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            });
+        }
+
+        async function revokeShareLink(shareId, camId) {
+            try {
+                const res = await fetch(`/api/cameras/shares/${shareId}`, {
+                    method: 'DELETE',
+                    credentials: 'include',
+                    headers: getAuthHeaders()
+                });
+                const json = await res.json();
+                if (json.success) {
+                    loadCameraShares(camId);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // ─── IA de Áudio (Web Audio API - Noise Suppression) ───────────────
+        const audioNodes = {};
+
+        function toggleAiAudio(camId) {
+            const v = document.getElementById(`video-${camId}`);
+            const btn = document.getElementById(`btn-ai-audio-${camId}`);
+            if (!v || !btn) return;
+
+            if (!audioNodes[camId]) {
+                try {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const src = ctx.createMediaElementSource(v);
+
+                    const hp = ctx.createBiquadFilter();
+                    hp.type = 'highpass';
+                    hp.frequency.value = 300;
+
+                    const lp = ctx.createBiquadFilter();
+                    lp.type = 'lowpass';
+                    lp.frequency.value = 3400;
+
+                    const comp = ctx.createDynamicsCompressor();
+                    comp.threshold.value = -30;
+                    comp.knee.value = 15;
+                    comp.ratio.value = 8;
+                    comp.attack.value = 0.003;
+                    comp.release.value = 0.25;
+
+                    src.connect(hp);
+                    hp.connect(lp);
+                    lp.connect(comp);
+                    comp.connect(ctx.destination);
+
+                    audioNodes[camId] = { ctx, active: true };
+                    btn.classList.add('active');
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'IA Áudio Cristalino Ativado!',
+                        text: 'Filtro anti-chiado e ganho de fala em tempo real.',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                } catch (e) {
+                    console.warn(e);
+                }
+            } else {
+                const n = audioNodes[camId];
+                n.active = !n.active;
+                if (n.active) {
+                    n.ctx.resume();
+                    btn.classList.add('active');
+                } else {
+                    n.ctx.suspend();
+                    btn.classList.remove('active');
+                }
+            }
+        }
+
+        // ─── IA de Vídeo (Night Vision & Sharpness) ────────────────────────
+        function toggleAiVideoNight(camId) {
+            const v = document.getElementById(`video-${camId}`);
+            const btn = document.getElementById(`btn-ai-night-${camId}`);
+            if (!v || !btn) return;
+
+            v.classList.toggle('ai-night-vision');
+            if (v.classList.contains('ai-night-vision')) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        }
+
+        function toggleAiVideoSharp(camId) {
+            const v = document.getElementById(`video-${camId}`);
+            const btn = document.getElementById(`btn-ai-sharp-${camId}`);
+            if (!v || !btn) return;
+
+            v.classList.toggle('ai-sharpness');
+            if (v.classList.contains('ai-sharpness')) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        }
+
+        // ─── Modo Patrulha / Carrossel ─────────────────────────────────────
+        let patrolTimer = null;
+        let patrolIdx = 0;
+
+        function togglePatrolMode() {
+            const btn = document.getElementById('btn-patrol-mode');
+            if (patrolTimer) {
+                clearInterval(patrolTimer);
+                patrolTimer = null;
+                btn.classList.remove('active');
+                document.querySelectorAll('.kc-card').forEach(c => c.style.display = '');
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'info',
+                    title: 'Modo Patrulha Desativado',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            } else {
+                if (camerasData.length <= 1) {
+                    Swal.fire('Info', 'Adicione mais de uma câmera para usar o Modo Patrulha sequencial.', 'info');
+                    return;
+                }
+                btn.classList.add('active');
+                patrolIdx = 0;
+                applyPatrol();
+                patrolTimer = setInterval(() => {
+                    patrolIdx = (patrolIdx + 1) % camerasData.length;
+                    applyPatrol();
+                }, 10000);
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Modo Patrulha Ativo!',
+                    text: 'Alternando câmeras a cada 10 segundos.',
+                    showConfirmButton: false,
+                    timer: 2000
                 });
             }
+        }
+
+        function applyPatrol() {
+            const target = camerasData[patrolIdx];
+            document.querySelectorAll('.kc-card').forEach(c => {
+                c.style.display = (c.id === `card-cam-${target.id}`) ? '' : 'none';
+            });
         }
 
         function escapeHtml(text) {
