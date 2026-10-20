@@ -2135,6 +2135,12 @@
                         stopCameraQrScanner();
                     } else if (tabId === 'tab-scan') {
                         // Não inicia câmera automaticamente para respeitar consentimento, mas prepara
+                    } else if (tabId === 'tab-lan-scan') {
+                        stopCameraQrScanner();
+                        const resultsEl = document.getElementById('lan-scan-results');
+                        if (resultsEl && resultsEl.children.length === 0 && !isLanScanning) {
+                            triggerLanScan();
+                        }
                     } else {
                         stopCameraQrScanner();
                     }
@@ -3277,9 +3283,13 @@
                         const mins = Math.max(0, Math.round(s.seconds_remaining / 60));
                         row.innerHTML = `
                             <div style="min-width: 0;">
-                                <div style="font-weight: 600; font-size: 0.82rem; color: #fff;">${escapeHtml(s.label)}</div>
-                                <div style="font-size: 0.72rem; color: ${mins > 0 ? '#fbbf24' : '#f43f5e'};">
-                                    <i class="fas fa-clock"></i> ${mins > 0 ? mins + ' min restantes' : 'Expirado'} • ${s.view_count} visualizações
+                                <div style="font-weight: 600; font-size: 0.84rem; color: #fff;">${escapeHtml(s.label)}</div>
+                                <div style="font-size: 0.74rem; margin-top: 0.2rem; display: flex; align-items: center; gap: 0.4rem; color: #cbd5e1;">
+                                    ${mins > 0 
+                                        ? `<span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; padding: 2px 6px; border-radius: 4px; font-weight: 600;"><i class="fas fa-clock"></i> ${mins} min restantes</span>` 
+                                        : `<span style="background: rgba(244, 63, 94, 0.2); color: #fb7185; padding: 2px 6px; border-radius: 4px; font-weight: 600;"><i class="fas fa-ban"></i> Expirado</span>`
+                                    }
+                                    <span style="color: #94a3b8;">• ${s.view_count} visualizações</span>
                                 </div>
                             </div>
                             <div style="display: flex; gap: 0.4rem; flex-shrink: 0;">
