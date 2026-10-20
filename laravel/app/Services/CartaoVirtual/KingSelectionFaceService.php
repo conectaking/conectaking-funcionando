@@ -1235,7 +1235,7 @@ class KingSelectionFaceService
 
             if ($totalMatches === 0) {
                 $cFace = DB::selectOne(
-                    'SELECT embedding FROM rekognition_client_faces WHERE gallery_id = ? AND client_id = ? LIMIT 1',
+                    'SELECT embedding FROM rekognition_client_faces WHERE gallery_id = ? AND client_id = ? ORDER BY id DESC LIMIT 1',
                     [$galleryId, $clientId]
                 );
                 if ($cFace && ! empty($cFace->embedding)) {
@@ -2991,6 +2991,26 @@ class KingSelectionFaceService
         }
     }
 
+    public function extractEmbeddingLocalAi(string $jpeg, string $localAiUrl): ?array
+    {
+        try {
+            $res = \Illuminate\Support\Facades\Http::timeout(15)
+                ->withBody($jpeg, 'image/jpeg')
+                ->post("{$localAiUrl}/extract");
+            if (! $res->successful()) {
+                return null;
+            }
+            $faces = $res->json('faces') ?? [];
+            if (empty($faces)) {
+                return null;
+            }
+            return $faces[0];
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('ks.face.extractEmbeddingLocalAi', ['error' => $e->getMessage()]);
+            return null;
+        }
+    }
+
     public function enrollClientLocalAi(int $galleryId, int $clientId, string $jpeg, string $refKey, string $localAiUrl): array
     {
         try {
@@ -3074,7 +3094,7 @@ class KingSelectionFaceService
 
         try {
             $defaultThresh = (count($clientEmbedding) === 512) ? 0.48 : 0.55;
-            $res = \Illuminate\Support\Facades\Http::timeout(15)->post("{$localAiUrl}/match", [
+            $res = \Illuminate\Support\Facades\Http::timeout(30)->post("{$localAiUrl}/match", [
                 'query_embedding' => $clientEmbedding,
                 'targets' => $targets,
                 'threshold' => (float) (env('FACE_AI_THRESHOLD') ?: $defaultThresh),
