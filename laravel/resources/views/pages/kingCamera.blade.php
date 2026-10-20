@@ -187,6 +187,18 @@
             box-shadow: 0 6px 18px rgba(0, 136, 204, 0.5);
         }
 
+        .kc-btn-emerald {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+        }
+
+        .kc-btn-emerald:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(16, 185, 129, 0.5);
+            filter: brightness(1.08);
+        }
+
         /* Main Container */
         .kc-main {
             max-width: 1500px;
