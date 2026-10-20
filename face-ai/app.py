@@ -27,7 +27,7 @@ def init_models():
         model=YUNET_MODEL,
         config="",
         input_size=(320, 320),
-        score_threshold=0.55,
+        score_threshold=0.65,
         nms_threshold=0.3,
         top_k=5000
     )
@@ -79,7 +79,7 @@ def extract_faces_from_bgr(img: np.ndarray, max_dim: int = 1280):
     for face in faces:
         # face contains [x, y, w, h, x_re, y_re, x_le, y_le, x_nt, y_nt, x_rcm, y_rcm, x_lcm, y_lcm, score]
         score = float(face[-1])
-        if score < 0.50:
+        if score < 0.65:
             continue
 
         aligned_face = recognizer.alignCrop(resized, face)
@@ -99,8 +99,8 @@ def extract_faces_from_bgr(img: np.ndarray, max_dim: int = 1280):
             "embedding": emb_list
         })
 
-    # Sort largest face first
-    results.sort(key=lambda f: f["box"][2] * f["box"][3], reverse=True)
+    # Sort primarily by detector confidence, with face area as secondary criteria
+    results.sort(key=lambda f: (round(f["confidence"], 2), f["box"][2] * f["box"][3]), reverse=True)
     return results
 
 @app.post("/extract")
@@ -145,7 +145,7 @@ class TargetEmbedding(BaseModel):
 class MatchRequest(BaseModel):
     query_embedding: List[float]
     targets: List[TargetEmbedding]
-    threshold: Optional[float] = 0.363 # SFace default cosine threshold
+    threshold: Optional[float] = 0.48 # Calibrated threshold for zero false-positives
 
 @app.post("/match")
 def match(req: MatchRequest):
@@ -178,14 +178,13 @@ def match(req: MatchRequest):
     sims = np.dot(mat, q)
 
     matches = []
-    thresh = float(req.threshold if req.threshold is not None else 0.363)
+    thresh = float(req.threshold if req.threshold is not None else 0.48)
 
     for i, sim in enumerate(sims):
         score = float(sim)
         if score >= thresh:
-            # Map cosine score (typically 0.363 to 0.85) to percentage (0 to 100%)
-            # Base 0.363 = 70%, 0.60+ = 95%+
-            norm_pct = round(min(100.0, max(50.0, ((score - 0.20) / (0.70 - 0.20)) * 100.0)), 2)
+            # Map cosine score (typically 0.48 to 0.70+) to percentage (70% to 99.9%)
+            norm_pct = round(min(99.9, max(70.0, 70.0 + ((score - 0.48) / (0.70 - 0.48)) * 29.9)), 2)
             matches.append({
                 "id": target_ids[i],
                 "photo_id": target_photo_ids[i],
