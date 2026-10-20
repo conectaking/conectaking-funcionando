@@ -443,34 +443,68 @@
         }
 
         .kc-duration-chips {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.45rem;
-            margin-top: 0.4rem;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        @media (max-width: 600px) {
+            .kc-duration-chips {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.4rem;
+            }
         }
 
         .kc-chip {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--kc-border);
             color: var(--kc-text-muted);
-            padding: 0.35rem 0.65rem;
-            border-radius: 8px;
-            font-size: 0.76rem;
+            padding: 0.5rem 0.4rem;
+            border-radius: 10px;
+            font-size: 0.78rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-height: 38px;
+            user-select: none;
         }
 
         .kc-chip:hover {
             color: #fff;
-            border-color: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.25);
             background: rgba(255, 255, 255, 0.1);
         }
 
         .kc-chip.active {
-            background: rgba(245, 158, 11, 0.18);
+            background: rgba(245, 158, 11, 0.2);
             border-color: var(--kc-gold);
             color: #fbbf24;
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
+        }
+
+        .kc-share-form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 1.25rem;
+        }
+
+        @media (max-width: 600px) {
+            .kc-share-form-actions {
+                flex-direction: column-reverse;
+                gap: 0.5rem;
+            }
+            .kc-share-form-actions .kc-btn {
+                width: 100%;
+                justify-content: center;
+                padding: 0.75rem 1rem;
+                font-size: 0.88rem;
+            }
         }
 
         .kc-icon-btn.active {
@@ -499,73 +533,75 @@
             opacity: 1 !important;
         }
 
-        /* Botões Laterais PTZ de Rotação Rápida (Sempre visíveis no Fullscreen ou ao passar o mouse) */
+        /* Botões Laterais PTZ de Rotação Rápida - Sutis, Compactos e Semi-Transparentes */
         .kc-side-ptz-btn {
             position: absolute;
             z-index: 2147483640;
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(8px);
-            border: 1.5px solid rgba(245, 158, 11, 0.55);
-            color: #fff;
-            width: 44px;
-            height: 44px;
+            background: rgba(15, 23, 42, 0.25);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            color: rgba(255, 255, 255, 0.68);
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 1.15rem;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 0 10px rgba(245, 158, 11, 0.25);
-            transition: all 0.15s ease;
+            font-size: 0.82rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+            transition: all 0.18s ease;
             user-select: none;
             -webkit-user-select: none;
             touch-action: manipulation;
-            opacity: 0.75;
+            opacity: 0.38; /* Bem translúcido para não tampar a visão do quarto ou do bebê */
         }
 
         .kc-side-ptz-btn:hover,
         .kc-side-ptz-btn:active {
-            opacity: 1;
-            background: var(--kc-gold);
-            color: #000;
+            opacity: 0.92;
+            background: rgba(245, 158, 11, 0.55);
+            color: #fff;
             border-color: var(--kc-gold);
-            box-shadow: 0 0 20px var(--kc-gold-glow);
+            box-shadow: 0 0 14px rgba(245, 158, 11, 0.45);
+            transform: scale(1.1);
         }
 
         .kc-side-ptz-btn.side-left {
-            left: 14px;
+            left: 10px;
             top: 50%;
             transform: translateY(-50%);
         }
         .kc-side-ptz-btn.side-left:hover, .kc-side-ptz-btn.side-left:active {
-            transform: translateY(-50%) scale(1.15);
+            transform: translateY(-50%) scale(1.1);
         }
 
         .kc-side-ptz-btn.side-right {
-            right: 14px;
+            right: 10px;
             top: 50%;
             transform: translateY(-50%);
         }
         .kc-side-ptz-btn.side-right:hover, .kc-side-ptz-btn.side-right:active {
-            transform: translateY(-50%) scale(1.15);
+            transform: translateY(-50%) scale(1.1);
         }
 
         .kc-side-ptz-btn.side-up {
-            top: 14px;
+            top: 10px;
             left: 50%;
             transform: translateX(-50%);
         }
         .kc-side-ptz-btn.side-up:hover, .kc-side-ptz-btn.side-up:active {
-            transform: translateX(-50%) scale(1.15);
+            transform: translateX(-50%) scale(1.1);
         }
 
         .kc-side-ptz-btn.side-down {
-            bottom: 14px;
+            bottom: 10px;
             left: 50%;
             transform: translateX(-50%);
         }
         .kc-side-ptz-btn.side-down:hover, .kc-side-ptz-btn.side-down:active {
-            transform: translateX(-50%) scale(1.15);
+            transform: translateX(-50%) scale(1.1);
         }
 
         /* Em tela cheia, garante que a barra de controles e os botões fiquem no topo */
@@ -578,10 +614,11 @@
 
         .kc-video-wrap:fullscreen .kc-side-ptz-btn,
         .kc-video-wrap:-webkit-full-screen .kc-side-ptz-btn {
-            width: 54px;
-            height: 54px;
-            font-size: 1.4rem;
-            opacity: 0.9;
+            width: 36px;
+            height: 36px;
+            font-size: 0.92rem;
+            opacity: 0.4;
+            background: rgba(15, 23, 42, 0.28);
         }
 
         .kc-video-wrap:fullscreen .kc-ptz-floating-box,
@@ -1856,29 +1893,92 @@
                 gap: 1rem;
             }
             .kc-overlay-top {
-                padding: 0.4rem 0.5rem;
+                padding: 0.45rem 0.55rem;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 0.4rem;
             }
             .kc-overlay-controls {
-                gap: 0.25rem;
+                gap: 0.3rem;
+                display: flex;
+                align-items: center;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 2px;
+                max-width: 65%;
             }
-            .kc-icon-btn {
-                width: 28px;
-                height: 28px;
-                font-size: 0.75rem;
-                border-radius: 6px;
+            .kc-overlay-controls::-webkit-scrollbar {
+                display: none;
             }
+            .kc-overlay-controls .kc-icon-btn {
+                width: 30px;
+                height: 30px;
+                font-size: 0.8rem;
+                flex-shrink: 0;
+                border-radius: 8px;
+            }
+
+            /* Botões Laterais PTZ discretos e semi-transparentes no mobile */
+            .kc-side-ptz-btn {
+                width: 30px !important;
+                height: 30px !important;
+                font-size: 0.75rem !important;
+                opacity: 0.35 !important;
+                background: rgba(15, 23, 42, 0.22) !important;
+                border: 1px solid rgba(255, 255, 255, 0.16) !important;
+            }
+            .kc-side-ptz-btn:active {
+                opacity: 0.95 !important;
+                background: rgba(245, 158, 11, 0.65) !important;
+                color: #fff !important;
+            }
+            .kc-side-ptz-btn.side-left { left: 8px; }
+            .kc-side-ptz-btn.side-right { right: 8px; }
+            .kc-side-ptz-btn.side-up { top: 8px; }
+            .kc-side-ptz-btn.side-down { bottom: 8px; }
+
+            /* Rodapé do Card adaptado para Mobile com 6 botões perfeitamente alinhados */
             .kc-card-footer {
-                padding: 0.65rem 0.85rem;
-                flex-wrap: wrap;
-                gap: 0.5rem;
+                padding: 0.75rem 0.85rem;
+                display: flex;
+                flex-direction: column;
+                gap: 0.55rem;
+            }
+            .kc-card-footer-top {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+            }
+            .kc-card-status {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.35rem;
+                font-size: 0.72rem;
+                font-weight: 600;
+                color: #10b981;
+                background: rgba(16, 185, 129, 0.12);
+                padding: 0.2rem 0.55rem;
+                border-radius: 6px;
+                border: 1px solid rgba(16, 185, 129, 0.25);
             }
             .kc-footer-actions {
-                gap: 0.35rem;
+                display: grid;
+                grid-template-columns: repeat(6, 1fr);
+                gap: 0.4rem;
+                width: 100%;
             }
             .kc-footer-actions .kc-icon-btn {
-                width: 28px;
-                height: 28px;
+                width: 100% !important;
+                height: 38px !important;
+                border-radius: 10px;
+                font-size: 0.95rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
+
             /* Joystick adaptado para telas mobile */
             .kc-ptz-floating-box {
                 width: 116px;
@@ -1905,13 +2005,18 @@
                 font-size: 0.65rem;
                 padding: 3px 4px;
             }
-            /* Modal mobile */
+
+            /* Modal Mobile tipo Bottom-Sheet Ultra Elegante */
+            .kc-modal-backdrop {
+                padding: 0.5rem !important;
+                align-items: flex-end;
+            }
             .kc-modal {
-                width: 95vw !important;
-                max-width: 95vw !important;
-                margin: 0.5rem auto;
-                max-height: 94vh;
-                border-radius: 14px;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                max-height: 92vh;
+                border-radius: 20px 20px 0 0 !important;
             }
             .kc-modal-header {
                 padding: 0.85rem 1rem;
@@ -3082,6 +3187,9 @@
                                     <button class="kc-icon-btn" onclick="toggleAudio(${cam.id})" title="Áudio On/Off" id="btn-audio-${cam.id}">
                                         <i class="fas fa-volume-mute"></i>
                                     </button>
+                                    <button class="kc-icon-btn kc-btn-share-highlight" onclick="openShareModal(${cam.id})" title="Compartilhar Câmera">
+                                        <i class="fas fa-share-nodes"></i>
+                                    </button>
                                     <button class="kc-icon-btn" onclick="toggleAiAudio(${cam.id})" title="IA Áudio Cristalino (Anti-Chiado)" id="btn-ai-audio-${cam.id}">
                                         <i class="fas fa-magic"></i>
                                     </button>
@@ -3122,26 +3230,32 @@
                         </div>
                     </div>
                     <div class="kc-card-footer">
-                        <div class="kc-ip-tag">
-                            <i class="fas fa-ethernet"></i> ${cam.ip_address}:${cam.port || 554}
+                        <div class="kc-card-footer-top">
+                            <div class="kc-ip-tag">
+                                <i class="fas fa-ethernet"></i> ${cam.ip_address}:${cam.port || 554}
+                            </div>
+                            <div class="kc-card-status">
+                                <span class="kc-live-dot" style="width: 7px; height: 7px;"></span>
+                                <span>Online</span>
+                            </div>
                         </div>
                         <div class="kc-footer-actions">
-                            <button class="kc-icon-btn" onclick="togglePtzWidget(${cam.id})" title="Girar Câmera 360° (PTZ)" style="width: 28px; height: 28px; color: var(--kc-gold);">
+                            <button type="button" class="kc-icon-btn" onclick="togglePtzWidget(${cam.id})" title="Girar Câmera 360° (PTZ)" style="color: var(--kc-gold);">
                                 <i class="fas fa-arrows-alt"></i>
                             </button>
-                            <button class="kc-icon-btn" onclick="openBabyAiModal(${cam.id})" title="Configurar IA Babá & Cerca do Berço" style="width: 28px; height: 28px; color: var(--kc-cyan);">
+                            <button type="button" class="kc-icon-btn" onclick="openBabyAiModal(${cam.id})" title="Configurar IA Babá & Cerca do Berço" style="color: var(--kc-cyan);">
                                 <i class="fas fa-baby"></i>
                             </button>
-                            <button class="kc-icon-btn" onclick="openShareModal(${cam.id})" title="Compartilhar Link Temporário com Expiração" style="width: 28px; height: 28px; color: var(--kc-gold);">
+                            <button type="button" class="kc-icon-btn kc-btn-share-highlight" onclick="openShareModal(${cam.id})" title="Compartilhar Link Temporário">
                                 <i class="fas fa-share-nodes"></i>
                             </button>
-                            <button class="kc-icon-btn" onclick="triggerTelegramTest(${cam.id})" title="Testar Alerta no Telegram" style="width: 28px; height: 28px;">
+                            <button type="button" class="kc-icon-btn" onclick="triggerTelegramTest(${cam.id})" title="Testar Alerta no Telegram" style="color: #38bdf8;">
                                 <i class="fab fa-telegram-plane"></i>
                             </button>
-                            <button class="kc-icon-btn" onclick="editCamera(${cam.id})" title="Configurações" style="width: 28px; height: 28px;">
+                            <button type="button" class="kc-icon-btn" onclick="editCamera(${cam.id})" title="Configurações">
                                 <i class="fas fa-cog"></i>
                             </button>
-                            <button class="kc-icon-btn" onclick="deleteCamera(${cam.id})" title="Remover Câmera" style="width: 28px; height: 28px; color: var(--kc-rose);">
+                            <button type="button" class="kc-icon-btn" onclick="deleteCamera(${cam.id})" title="Remover Câmera" style="color: var(--kc-rose);">
                                 <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
@@ -4494,15 +4608,27 @@
                 if (json.success) {
                     const shareUrl = json.data.share_url;
                     navigator.clipboard.writeText(shareUrl).catch(() => {});
+                    const whatsappMsg = encodeURIComponent(`Olá! Acesse a transmissão da câmera ao vivo aqui: ${shareUrl}`);
+                    const whatsappUrl = `https://api.whatsapp.com/send?text=${whatsappMsg}`;
+
                     Swal.fire({
                         icon: 'success',
-                        title: 'Link Gerado & Copiado!',
+                        title: 'Link Gerado com Sucesso!',
                         html: `
-                            <p style="font-size: 0.9rem; margin-bottom: 0.75rem;">O link temporário foi copiado para sua área de transferência:</p>
-                            <input type="text" readonly value="${shareUrl}" style="width: 100%; padding: 0.5rem; background: rgba(0,0,0,0.3); border: 1px solid #334155; color: #fbbf24; border-radius: 6px; font-size: 0.82rem; text-align: center;" onclick="this.select()">
-                            <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.5rem;">Válido por ${Math.round(payload.duration_seconds / 60)} minutos.</p>
+                            <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 0.75rem;">O link temporário foi criado. Você já pode enviar para quem quiser assistir:</p>
+                            <input type="text" readonly value="${shareUrl}" style="width: 100%; padding: 0.6rem; background: rgba(0,0,0,0.4); border: 1px solid #334155; color: #fbbf24; border-radius: 8px; font-size: 0.82rem; text-align: center; margin-bottom: 0.75rem;" onclick="this.select()">
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <a href="${whatsappUrl}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.7rem 1rem; background: #25D366; color: #fff; font-weight: 700; font-size: 0.9rem; border-radius: 8px; text-decoration: none; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);">
+                                    <i class="fab fa-whatsapp" style="font-size: 1.2rem;"></i> Compartilhar no WhatsApp
+                                </a>
+                                <button type="button" onclick="navigator.clipboard.writeText('${shareUrl}'); Swal.showValidationMessage('Link copiado para a área de transferência!');" style="padding: 0.6rem; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #fff; border-radius: 8px; font-size: 0.84rem; cursor: pointer;">
+                                    <i class="fas fa-copy"></i> Copiar Link Novamente
+                                </button>
+                            </div>
+                            <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.65rem;">Válido por ${Math.round(payload.duration_seconds / 60)} minutos.</p>
                         `,
-                        confirmButtonColor: '#f59e0b'
+                        confirmButtonColor: '#f59e0b',
+                        confirmButtonText: 'Fechar'
                     });
                     loadCameraShares(camId);
                 } else {
@@ -4530,24 +4656,30 @@
                     listEl.innerHTML = '';
                     json.data.forEach(s => {
                         const row = document.createElement('div');
-                        row.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid var(--kc-border); border-radius: 8px; padding: 0.6rem 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;';
+                        row.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid var(--kc-border); border-radius: 10px; padding: 0.65rem 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;';
                         const mins = Math.max(0, Math.round(s.seconds_remaining / 60));
+                        const whatsappMsg = encodeURIComponent(`Olá! Acesse a câmera ao vivo aqui: ${s.share_url}`);
+                        const whatsappUrl = `https://api.whatsapp.com/send?text=${whatsappMsg}`;
+
                         row.innerHTML = `
-                            <div style="min-width: 0;">
-                                <div style="font-weight: 600; font-size: 0.84rem; color: #fff;">${escapeHtml(s.label)}</div>
-                                <div style="font-size: 0.74rem; margin-top: 0.2rem; display: flex; align-items: center; gap: 0.4rem; color: #cbd5e1;">
+                            <div style="min-width: 0; flex: 1;">
+                                <div style="font-weight: 600; font-size: 0.84rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(s.label)}</div>
+                                <div style="font-size: 0.72rem; margin-top: 0.2rem; display: flex; align-items: center; gap: 0.35rem; color: #cbd5e1; flex-wrap: wrap;">
                                     ${mins > 0 
-                                        ? `<span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; padding: 2px 6px; border-radius: 4px; font-weight: 600;"><i class="fas fa-clock"></i> ${mins} min restantes</span>` 
+                                        ? `<span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; padding: 2px 6px; border-radius: 4px; font-weight: 600;"><i class="fas fa-clock"></i> ${mins} min</span>` 
                                         : `<span style="background: rgba(244, 63, 94, 0.2); color: #fb7185; padding: 2px 6px; border-radius: 4px; font-weight: 600;"><i class="fas fa-ban"></i> Expirado</span>`
                                     }
-                                    <span style="color: #94a3b8;">• ${s.view_count} visualizações</span>
+                                    <span style="color: #94a3b8;">• ${s.view_count} views</span>
                                 </div>
                             </div>
-                            <div style="display: flex; gap: 0.4rem; flex-shrink: 0;">
-                                <button type="button" class="kc-icon-btn" onclick="copyShareUrl('${s.share_url}')" title="Copiar Link" style="width: 26px; height: 26px; font-size: 0.75rem;">
+                            <div style="display: flex; gap: 0.35rem; flex-shrink: 0;">
+                                <a href="${whatsappUrl}" target="_blank" class="kc-icon-btn" title="Enviar WhatsApp" style="width: 30px; height: 30px; font-size: 0.9rem; color: #25D366; text-decoration: none; border-color: rgba(37, 211, 102, 0.35); background: rgba(37, 211, 102, 0.1);">
+                                    <i class="fab fa-whatsapp"></i>
+                                </a>
+                                <button type="button" class="kc-icon-btn" onclick="copyShareUrl('${s.share_url}')" title="Copiar Link" style="width: 30px; height: 30px; font-size: 0.82rem;">
                                     <i class="fas fa-copy"></i>
                                 </button>
-                                <button type="button" class="kc-icon-btn" onclick="revokeShareLink(${s.id}, ${camId})" title="Revogar Agora" style="width: 26px; height: 26px; font-size: 0.75rem; color: var(--kc-rose);">
+                                <button type="button" class="kc-icon-btn" onclick="revokeShareLink(${s.id}, ${camId})" title="Revogar Agora" style="width: 30px; height: 30px; font-size: 0.82rem; color: var(--kc-rose);">
                                     <i class="fas fa-trash-alt"></i>
                                 </button>
                             </div>
@@ -4570,9 +4702,9 @@
                     icon: 'success',
                     title: 'Link copiado!',
                     showConfirmButton: false,
-                    timer: 1500
+                    timer: 1800
                 });
-            });
+            }).catch(() => {});
         }
 
         async function revokeShareLink(shareId, camId) {
