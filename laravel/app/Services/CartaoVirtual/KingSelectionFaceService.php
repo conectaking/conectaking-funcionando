@@ -328,11 +328,13 @@ class KingSelectionFaceService
             if ($enrollRes['status'] !== 200) {
                 return $enrollRes;
             }
-            $token = app(\App\Services\Auth\JwtService::class)->issueClientToken([
+            $token = app(\App\Services\Auth\JwtService::class)->encode([
+                'type' => 'kingselection_client',
                 'galleryId' => $galleryId,
                 'clientId' => $clientId,
-                'type' => 'kingselection_client',
-            ]);
+                'slug' => (string) ($g->slug ?? $slug),
+                'tyh' => false,
+            ], '14d');
             return ['status' => 200, 'body' => [
                 'success' => true,
                 'token' => $token,
