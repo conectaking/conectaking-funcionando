@@ -2915,7 +2915,7 @@
         <div class="kc-modal" style="max-width: 560px;">
             <div class="kc-modal-header">
                 <div class="kc-modal-title">
-                    <i class="fas fa-share-nodes" style="color: var(--kc-gold); margin-right: 0.4rem;"></i>
+                    <i class="fas fa-share-alt" style="color: var(--kc-gold); margin-right: 0.4rem;"></i>
                     Compartilhar Câmera Temporariamente
                 </div>
                 <button type="button" class="kc-modal-close" onclick="closeShareModal()" aria-label="Fechar">&times;</button>
@@ -2949,7 +2949,7 @@
                         <input type="hidden" id="share-duration-sec" value="3600">
                     </div>
 
-                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem;">
+                    <div class="kc-share-form-actions">
                         <button type="button" class="kc-btn kc-btn-secondary" onclick="closeShareModal()">Cancelar</button>
                         <button type="submit" class="kc-btn kc-btn-primary" id="btn-create-share">
                             <i class="fas fa-link"></i> Gerar Link de Acesso
