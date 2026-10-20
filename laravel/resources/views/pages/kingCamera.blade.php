@@ -492,8 +492,103 @@
             transition: opacity 0.2s ease;
         }
 
-        .kc-card:hover .kc-video-overlay {
+        .kc-card:hover .kc-video-overlay,
+        .kc-video-wrap:fullscreen .kc-video-overlay,
+        .kc-video-wrap:-webkit-full-screen .kc-video-overlay,
+        .kc-video-wrap.show-overlay .kc-video-overlay {
+            opacity: 1 !important;
+        }
+
+        /* Botões Laterais PTZ de Rotação Rápida (Sempre visíveis no Fullscreen ou ao passar o mouse) */
+        .kc-side-ptz-btn {
+            position: absolute;
+            z-index: 2147483640;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(8px);
+            border: 1.5px solid rgba(245, 158, 11, 0.55);
+            color: #fff;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.15rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 0 10px rgba(245, 158, 11, 0.25);
+            transition: all 0.15s ease;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            opacity: 0.75;
+        }
+
+        .kc-side-ptz-btn:hover,
+        .kc-side-ptz-btn:active {
             opacity: 1;
+            background: var(--kc-gold);
+            color: #000;
+            border-color: var(--kc-gold);
+            box-shadow: 0 0 20px var(--kc-gold-glow);
+        }
+
+        .kc-side-ptz-btn.side-left {
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .kc-side-ptz-btn.side-left:hover, .kc-side-ptz-btn.side-left:active {
+            transform: translateY(-50%) scale(1.15);
+        }
+
+        .kc-side-ptz-btn.side-right {
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .kc-side-ptz-btn.side-right:hover, .kc-side-ptz-btn.side-right:active {
+            transform: translateY(-50%) scale(1.15);
+        }
+
+        .kc-side-ptz-btn.side-up {
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .kc-side-ptz-btn.side-up:hover, .kc-side-ptz-btn.side-up:active {
+            transform: translateX(-50%) scale(1.15);
+        }
+
+        .kc-side-ptz-btn.side-down {
+            bottom: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .kc-side-ptz-btn.side-down:hover, .kc-side-ptz-btn.side-down:active {
+            transform: translateX(-50%) scale(1.15);
+        }
+
+        /* Em tela cheia, garante que a barra de controles e os botões fiquem no topo */
+        .kc-video-wrap:fullscreen,
+        .kc-video-wrap:-webkit-full-screen {
+            width: 100vw !important;
+            height: 100vh !important;
+            background: #000;
+        }
+
+        .kc-video-wrap:fullscreen .kc-side-ptz-btn,
+        .kc-video-wrap:-webkit-full-screen .kc-side-ptz-btn {
+            width: 54px;
+            height: 54px;
+            font-size: 1.4rem;
+            opacity: 0.9;
+        }
+
+        .kc-video-wrap:fullscreen .kc-ptz-floating-box,
+        .kc-video-wrap:-webkit-full-screen .kc-ptz-floating-box {
+            z-index: 2147483645 !important;
+            bottom: 24px;
+            right: 24px;
         }
 
         .kc-overlay-top {
@@ -2953,6 +3048,33 @@
                             <div style="font-size: 0.85rem; font-weight: 500;">Conectando WebRTC...</div>
                             <div style="font-size: 0.72rem; color: var(--kc-text-dim);">IP: ${cam.ip_address}</div>
                         </div>
+
+                        <!-- Botões Rápidos de Giro Lateral PTZ (< e >) Direto no Vídeo -->
+                        <button type="button" class="kc-side-ptz-btn side-left" 
+                            onmousedown="ptzStart(${cam.id}, 'left')" onmouseup="ptzStop(${cam.id})"
+                            ontouchstart="ptzStart(${cam.id}, 'left')" ontouchend="ptzStop(${cam.id})"
+                            title="Girar Câmera para Esquerda">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button type="button" class="kc-side-ptz-btn side-right" 
+                            onmousedown="ptzStart(${cam.id}, 'right')" onmouseup="ptzStop(${cam.id})"
+                            ontouchstart="ptzStart(${cam.id}, 'right')" ontouchend="ptzStop(${cam.id})"
+                            title="Girar Câmera para Direita">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <button type="button" class="kc-side-ptz-btn side-up" 
+                            onmousedown="ptzStart(${cam.id}, 'up')" onmouseup="ptzStop(${cam.id})"
+                            ontouchstart="ptzStart(${cam.id}, 'up')" ontouchend="ptzStop(${cam.id})"
+                            title="Inclinar Câmera para Cima">
+                            <i class="fas fa-chevron-up"></i>
+                        </button>
+                        <button type="button" class="kc-side-ptz-btn side-down" 
+                            onmousedown="ptzStart(${cam.id}, 'down')" onmouseup="ptzStop(${cam.id})"
+                            ontouchstart="ptzStart(${cam.id}, 'down')" ontouchend="ptzStop(${cam.id})"
+                            title="Inclinar Câmera para Baixo">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+
                         <div class="kc-video-overlay">
                             <div class="kc-overlay-top">
                                 <div class="kc-overlay-timestamp" id="time-${cam.id}">--:--:--</div>
@@ -3026,6 +3148,10 @@
                     </div>
                 `;
                 grid.appendChild(card);
+
+                // Ativa gestos de deslizar (swipe) no vídeo para girar câmera
+                const videoWrap = card.querySelector('.kc-video-wrap');
+                attachVideoSwipePtz(videoWrap, cam.id);
 
                 // Inicia streaming WebRTC para a câmera
                 startWebRtcStream(cam);
@@ -3328,6 +3454,103 @@
                 }, 3500);
             }, 2000);
         }
+
+        // ─── GESTOS DE TOUCH/SWIPE E TECLADO PARA MOVIMENTAÇÃO PTZ ──────────
+        function attachVideoSwipePtz(wrapEl, camId) {
+            if (!wrapEl) return;
+            let startX = 0;
+            let startY = 0;
+            let isMoving = false;
+            let activeDir = null;
+
+            wrapEl.addEventListener('touchstart', (e) => {
+                if (e.target.closest('.kc-side-ptz-btn, .kc-icon-btn, .kc-ptz-floating-box, input, button')) return;
+                if (e.touches.length === 1) {
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                    isMoving = true;
+                    activeDir = null;
+                }
+            }, { passive: true });
+
+            wrapEl.addEventListener('touchmove', (e) => {
+                if (!isMoving || e.touches.length !== 1) return;
+                const curX = e.touches[0].clientX;
+                const curY = e.touches[0].clientY;
+                const diffX = curX - startX;
+                const diffY = curY - startY;
+
+                // Limiar de 25px para iniciar movimento na direção desejada
+                if (!activeDir && (Math.abs(diffX) > 25 || Math.abs(diffY) > 25)) {
+                    if (Math.abs(diffX) > Math.abs(diffY)) {
+                        activeDir = diffX > 0 ? 'right' : 'left';
+                    } else {
+                        activeDir = diffY > 0 ? 'down' : 'up';
+                    }
+                    ptzStart(camId, activeDir);
+                }
+            }, { passive: true });
+
+            const stopSwipe = () => {
+                if (isMoving && activeDir) {
+                    ptzStop(camId);
+                }
+                isMoving = false;
+                activeDir = null;
+            };
+
+            wrapEl.addEventListener('touchend', stopSwipe);
+            wrapEl.addEventListener('touchcancel', stopSwipe);
+        }
+
+        // Controle por Teclado (Setas do Teclado: Esquerda, Direita, Cima, Baixo)
+        let activeKeyDir = null;
+        let activeKeyCamId = null;
+
+        function getActiveCamIdForKeyboard() {
+            // Se estiver em fullscreen
+            const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+            if (fsEl) {
+                const match = fsEl.closest('.kc-card')?.id?.match(/card-cam-(\d+)/);
+                if (match) return parseInt(match[1]);
+            }
+            // Se houver câmeras cadastradas, usa a primeira por padrão
+            if (camerasData && camerasData.length > 0) {
+                return camerasData[0].id;
+            }
+            return null;
+        }
+
+        window.addEventListener('keydown', (e) => {
+            const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+            if (['input', 'textarea', 'select'].includes(activeTag)) return;
+
+            let dir = null;
+            if (e.key === 'ArrowLeft') dir = 'left';
+            else if (e.key === 'ArrowRight') dir = 'right';
+            else if (e.key === 'ArrowUp') dir = 'up';
+            else if (e.key === 'ArrowDown') dir = 'down';
+
+            if (dir && !activeKeyDir) {
+                e.preventDefault();
+                const camId = getActiveCamIdForKeyboard();
+                if (camId) {
+                    activeKeyDir = dir;
+                    activeKeyCamId = camId;
+                    ptzStart(camId, dir);
+                }
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+                if (activeKeyCamId) {
+                    ptzStop(activeKeyCamId);
+                }
+                activeKeyDir = null;
+                activeKeyCamId = null;
+            }
+        });
 
         // Download Snapshot
         async function downloadSnapshot(camId) {
