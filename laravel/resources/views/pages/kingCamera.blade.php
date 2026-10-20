@@ -1386,6 +1386,150 @@
             color: #000;
             box-shadow: 0 2px 8px var(--kc-gold-glow);
         }
+
+        /* PTZ 360 Floating D-Pad */
+        .kc-ptz-floating-box {
+            position: absolute;
+            bottom: 0.75rem;
+            right: 0.75rem;
+            background: rgba(11, 15, 25, 0.94);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--kc-border-active);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(245, 158, 11, 0.2);
+            border-radius: 18px;
+            padding: 0.75rem;
+            z-index: 25;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.6rem;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .kc-ptz-floating-header {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--kc-gold);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding-bottom: 0.35rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .kc-ptz-floating-close {
+            background: transparent;
+            border: none;
+            color: var(--kc-text-muted);
+            font-size: 1.1rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0 0.2rem;
+        }
+
+        .kc-ptz-floating-close:hover {
+            color: #fff;
+        }
+
+        .kc-dpad-circle {
+            width: 130px;
+            height: 130px;
+            background: radial-gradient(circle at center, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+            border: 2px solid rgba(245, 158, 11, 0.35);
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.9), 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .kc-dpad-arrow {
+            position: absolute;
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .kc-dpad-arrow:hover {
+            background: rgba(245, 158, 11, 0.3);
+            border-color: var(--kc-gold);
+            color: var(--kc-gold);
+            transform: scale(1.08);
+        }
+
+        .kc-dpad-arrow:active {
+            background: var(--kc-gold);
+            color: #000;
+            transform: scale(0.95);
+        }
+
+        .dpad-up { top: 6px; left: 50%; transform: translateX(-50%); border-radius: 8px 8px 4px 4px; }
+        .dpad-down { bottom: 6px; left: 50%; transform: translateX(-50%); border-radius: 4px 4px 8px 8px; }
+        .dpad-left { left: 6px; top: 50%; transform: translateY(-50%); border-radius: 8px 4px 4px 8px; }
+        .dpad-right { right: 6px; top: 50%; transform: translateY(-50%); border-radius: 4px 8px 8px 4px; }
+        .dpad-center {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: rgba(245, 158, 11, 0.18);
+            border: 1px solid rgba(245, 158, 11, 0.5);
+            color: var(--kc-gold);
+            font-size: 0.78rem;
+        }
+        .dpad-center:hover {
+            background: var(--kc-gold);
+            color: #000;
+        }
+
+        .kc-ptz-footer-actions {
+            display: flex;
+            gap: 0.4rem;
+            width: 100%;
+        }
+
+        .kc-ptz-mini-btn {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--kc-border);
+            color: var(--kc-text);
+            padding: 0.35rem;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+            transition: all 0.15s ease;
+        }
+
+        .kc-ptz-mini-btn:hover {
+            background: rgba(245, 158, 11, 0.2);
+            border-color: var(--kc-gold);
+            color: #fbbf24;
+        }
+
+        .kc-ptz-mini-btn:active {
+            background: var(--kc-gold);
+            color: #000;
+        }
     </style>
 </head>
 <body>
@@ -2318,10 +2462,30 @@
                                     <button class="kc-icon-btn" onclick="downloadSnapshot(${cam.id})" title="Capturar Foto Instantânea">
                                         <i class="fas fa-camera"></i>
                                     </button>
+                                    <button class="kc-icon-btn" onclick="togglePtzWidget(${cam.id})" title="Giro 360° PTZ Motorizado" id="btn-ptz-${cam.id}" style="color: var(--kc-gold);">
+                                        <i class="fas fa-arrows-alt"></i>
+                                    </button>
                                     <button class="kc-icon-btn" onclick="toggleFullscreen(${cam.id})" title="Tela Cheia">
                                         <i class="fas fa-expand"></i>
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                        <div class="kc-ptz-floating-box" id="ptz-box-${cam.id}" style="display: none;">
+                            <div class="kc-ptz-floating-header">
+                                <span><i class="fas fa-arrows-alt"></i> Giro 360° PTZ</span>
+                                <button class="kc-ptz-floating-close" onclick="togglePtzWidget(${cam.id})">&times;</button>
+                            </div>
+                            <div class="kc-dpad-circle">
+                                <button class="kc-dpad-arrow dpad-up" onmousedown="ptzStart(${cam.id}, 'up')" onmouseup="ptzStop(${cam.id})" ontouchstart="ptzStart(${cam.id}, 'up')" ontouchend="ptzStop(${cam.id})" title="Inclinar para Cima"><i class="fas fa-chevron-up"></i></button>
+                                <button class="kc-dpad-arrow dpad-left" onmousedown="ptzStart(${cam.id}, 'left')" onmouseup="ptzStop(${cam.id})" ontouchstart="ptzStart(${cam.id}, 'left')" ontouchend="ptzStop(${cam.id})" title="Girar para Esquerda"><i class="fas fa-chevron-left"></i></button>
+                                <button class="kc-dpad-arrow dpad-center" onclick="triggerPtzSweep(${cam.id})" title="Giro 360° Automático"><i class="fas fa-sync-alt"></i></button>
+                                <button class="kc-dpad-arrow dpad-right" onmousedown="ptzStart(${cam.id}, 'right')" onmouseup="ptzStop(${cam.id})" ontouchstart="ptzStart(${cam.id}, 'right')" ontouchend="ptzStop(${cam.id})" title="Girar para Direita"><i class="fas fa-chevron-right"></i></button>
+                                <button class="kc-dpad-arrow dpad-down" onmousedown="ptzStart(${cam.id}, 'down')" onmouseup="ptzStop(${cam.id})" ontouchstart="ptzStart(${cam.id}, 'down')" ontouchend="ptzStop(${cam.id})" title="Inclinar para Baixo"><i class="fas fa-chevron-down"></i></button>
+                            </div>
+                            <div class="kc-ptz-footer-actions">
+                                <button class="kc-ptz-mini-btn" onmousedown="ptzStart(${cam.id}, 'zoom_in')" onmouseup="ptzStop(${cam.id})" ontouchstart="ptzStart(${cam.id}, 'zoom_in')" ontouchend="ptzStop(${cam.id})" title="Aproximar Zoom"><i class="fas fa-plus"></i> Zoom</button>
+                                <button class="kc-ptz-mini-btn" onmousedown="ptzStart(${cam.id}, 'zoom_out')" onmouseup="ptzStop(${cam.id})" ontouchstart="ptzStart(${cam.id}, 'zoom_out')" ontouchend="ptzStop(${cam.id})" title="Afastar Zoom"><i class="fas fa-minus"></i> Zoom</button>
                             </div>
                         </div>
                     </div>
@@ -2330,6 +2494,9 @@
                             <i class="fas fa-ethernet"></i> ${cam.ip_address}:${cam.port || 554}
                         </div>
                         <div class="kc-footer-actions">
+                            <button class="kc-icon-btn" onclick="togglePtzWidget(${cam.id})" title="Girar Câmera 360° (PTZ)" style="width: 28px; height: 28px; color: var(--kc-gold);">
+                                <i class="fas fa-arrows-alt"></i>
+                            </button>
                             <button class="kc-icon-btn" onclick="openShareModal(${cam.id})" title="Compartilhar Link Temporário com Expiração" style="width: 28px; height: 28px; color: var(--kc-gold);">
                                 <i class="fas fa-share-nodes"></i>
                             </button>
@@ -2594,6 +2761,59 @@
             } else {
                 document.exitFullscreen();
             }
+        }
+
+        // ─── CONTROLE PTZ 360° MOTORIZADO ──────────────────────────────────
+        function togglePtzWidget(camId) {
+            const box = document.getElementById(`ptz-box-${camId}`);
+            if (!box) return;
+            const isVisible = box.style.display !== 'none';
+            box.style.display = isVisible ? 'none' : 'flex';
+        }
+
+        async function ptzStart(camId, direction, speed = 0.6) {
+            try {
+                await fetch(`/api/cameras/${camId}/ptz`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ direction, speed })
+                });
+            } catch (e) {
+                console.warn('PTZ move error:', e);
+            }
+        }
+
+        async function ptzStop(camId) {
+            try {
+                await fetch(`/api/cameras/${camId}/ptz`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ direction: 'stop' })
+                });
+            } catch (e) {
+                console.warn('PTZ stop error:', e);
+            }
+        }
+
+        function triggerPtzSweep(camId) {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'info',
+                title: 'Varredura 360° Ativa',
+                text: 'A câmera está girando o motor horizontalmente.',
+                showConfirmButton: false,
+                timer: 2500
+            });
+            ptzStart(camId, 'left', 0.5);
+            setTimeout(() => {
+                ptzStart(camId, 'right', 0.5);
+                setTimeout(() => {
+                    ptzStop(camId);
+                }, 3500);
+            }, 2000);
         }
 
         // Download Snapshot

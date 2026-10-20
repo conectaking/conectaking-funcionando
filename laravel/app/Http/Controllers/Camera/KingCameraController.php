@@ -633,4 +633,24 @@ class KingCameraController extends Controller
             'label' => "Câmera Detectada ({$ip})",
         ];
     }
+
+    /**
+     * Controle de rotação PTZ 360° (Pan, Tilt, Zoom, Stop).
+     */
+    public function ptzControl(Request $request, int $id): JsonResponse
+    {
+        $userId = (string) $request->attributes->get('auth_user_id', '');
+        $camera = KingCamera::where('id', $id)->where('user_id', $userId)->first();
+
+        if (! $camera) {
+            return response()->json(['success' => false, 'message' => 'Câmera não encontrada.'], 404);
+        }
+
+        $direction = (string) $request->input('direction', 'stop');
+        $speed = (float) $request->input('speed', 0.6);
+
+        $result = $this->cameraService->ptzMove($camera, $direction, $speed);
+
+        return response()->json($result);
+    }
 }
