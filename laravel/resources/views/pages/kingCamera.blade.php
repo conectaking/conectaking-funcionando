@@ -2499,6 +2499,9 @@
                 <button type="button" class="kc-tab-btn tab-edit-only" data-tab="tab-light-ptz" id="tab-btn-light-ptz" style="display: none;">
                     <i class="fas fa-lightbulb"></i> Luz &amp; Rastreio 360°
                 </button>
+                <button type="button" class="kc-tab-btn tab-edit-only" data-tab="tab-shares" id="tab-btn-shares" style="display: none;">
+                    <i class="fas fa-link"></i> Links &amp; Convidados
+                </button>
             </div>
             <div class="kc-modal-body">
 
@@ -3261,6 +3264,87 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- ═════════════════════════════════════════════════════════════ -->
+                <!-- ABA 7: LINKS & CONVIDADOS (GERENCIAMENTO DE ACESSO & PERMISSÕES)-->
+                <!-- ═════════════════════════════════════════════════════════════ -->
+                <div class="kc-tab-pane" id="tab-shares">
+                    <div style="text-align: center; margin-bottom: 1.25rem;">
+                        <h4 style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem;">
+                            <i class="fas fa-user-lock" style="color: var(--kc-gold); margin-right: 0.4rem;"></i>
+                            Controle de Acesso &amp; Links Compartilhados
+                        </h4>
+                        <p style="font-size: 0.82rem; color: var(--kc-text-muted); max-width: 520px; margin: 0 auto;">
+                            Crie links temporários com permissões personalizadas. Você decide exatamente o que cada pessoa pode ver e controlar (Áudio, Giro 360°, Lâmpada e Fotos).
+                        </p>
+                    </div>
+
+                    <!-- Formulário de Criação na Própria Aba -->
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--kc-border); border-radius: 12px; padding: 1rem; margin-bottom: 1.25rem;">
+                        <h5 style="font-size: 0.88rem; font-weight: 700; color: #fff; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
+                            <i class="fas fa-plus-circle" style="color: var(--kc-gold);"></i> Criar Novo Link com Permissões
+                        </h5>
+                        <form onsubmit="createShareFromTab(event)">
+                            <div class="kc-form-group">
+                                <label class="kc-label">Identificação do Convidado</label>
+                                <input type="text" id="tab-share-label" class="kc-input" placeholder="Ex: Babá, Familiar, Segurança, Vizinho" value="Convidado">
+                            </div>
+
+                            <div class="kc-form-group">
+                                <label class="kc-label">Tempo de Validade do Link</label>
+                                <select id="tab-share-duration" class="kc-input">
+                                    <option value="1800">30 Minutos</option>
+                                    <option value="3600" selected>1 Hora</option>
+                                    <option value="7200">2 Horas</option>
+                                    <option value="21600">6 Horas</option>
+                                    <option value="43200">12 Horas</option>
+                                    <option value="86400">24 Horas (1 Dia)</option>
+                                    <option value="604800">7 Dias</option>
+                                    <option value="2592000">30 Dias</option>
+                                </select>
+                            </div>
+
+                            <div class="kc-form-group">
+                                <label class="kc-label" style="margin-bottom: 0.45rem;">
+                                    <i class="fas fa-shield-alt" style="color: var(--kc-gold);"></i> O que este convidado pode acessar:
+                                </label>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.6rem; background: rgba(0,0,0,0.25); padding: 0.75rem; border-radius: 9px; border: 1px solid var(--kc-border);">
+                                    <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; cursor: pointer;">
+                                        <input type="checkbox" id="tab-perm-audio" checked style="accent-color: var(--kc-gold); width: 17px; height: 17px;">
+                                        <span>🔊 <b>Áudio ao Vivo</b></span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; cursor: pointer;">
+                                        <input type="checkbox" id="tab-perm-ptz" style="accent-color: var(--kc-gold); width: 17px; height: 17px;">
+                                        <span>🔄 <b>Giro 360° (Mover Câmera)</b></span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; cursor: pointer;">
+                                        <input type="checkbox" id="tab-perm-light" style="accent-color: var(--kc-gold); width: 17px; height: 17px;">
+                                        <span>💡 <b>Lâmpada LED da Câmera</b></span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; cursor: pointer;">
+                                        <input type="checkbox" id="tab-perm-snapshot" checked style="accent-color: var(--kc-gold); width: 17px; height: 17px;">
+                                        <span>📸 <b>Tirar Foto Instantânea</b></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="kc-btn kc-btn-primary" id="btn-tab-create-share" style="width: 100%; padding: 0.65rem;">
+                                <i class="fas fa-link"></i> Gerar Link com Estas Permissões
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Lista de Links Ativos e Histórico -->
+                    <h5 style="font-size: 0.88rem; font-weight: 700; color: #fff; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
+                        <span><i class="fas fa-list-check" style="color: var(--kc-gold);"></i> Links Criados para Esta Câmera</span>
+                        <button type="button" onclick="loadTabSharesList()" class="kc-btn kc-btn-secondary" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">
+                            <i class="fas fa-sync-alt"></i> Atualizar
+                        </button>
+                    </h5>
+                    <div id="tab-shares-list-container" style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 280px; overflow-y: auto;">
+                        <div style="font-size: 0.8rem; color: var(--kc-text-dim);">Carregando links...</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -3302,6 +3386,30 @@
                             <button type="button" class="kc-chip" data-sec="604800">7 Dias</button>
                         </div>
                         <input type="hidden" id="share-duration-sec" value="3600">
+                    </div>
+
+                    <div class="kc-form-group">
+                        <label class="kc-label" style="margin-bottom: 0.45rem;">
+                            <i class="fas fa-shield-alt" style="color: var(--kc-gold);"></i> O que este convidado pode acessar:
+                        </label>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.5rem; background: rgba(0,0,0,0.25); padding: 0.75rem; border-radius: 9px; border: 1px solid var(--kc-border);">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; cursor: pointer;">
+                                <input type="checkbox" id="share-perm-audio" checked style="accent-color: var(--kc-gold); width: 17px; height: 17px;">
+                                <span>🔊 <b>Áudio ao Vivo</b></span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; cursor: pointer;">
+                                <input type="checkbox" id="share-perm-ptz" style="accent-color: var(--kc-gold); width: 17px; height: 17px;">
+                                <span>🔄 <b>Giro 360° (Mover)</b></span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; cursor: pointer;">
+                                <input type="checkbox" id="share-perm-light" style="accent-color: var(--kc-gold); width: 17px; height: 17px;">
+                                <span>💡 <b>Lâmpada LED</b></span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; cursor: pointer;">
+                                <input type="checkbox" id="share-perm-snapshot" checked style="accent-color: var(--kc-gold); width: 17px; height: 17px;">
+                                <span>📸 <b>Tirar Foto</b></span>
+                            </label>
+                        </div>
                     </div>
 
                     <div class="kc-share-form-actions">

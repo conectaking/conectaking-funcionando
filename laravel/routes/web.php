@@ -1011,6 +1011,9 @@ Route::get('/monitor/{token}', [\App\Http\Controllers\Camera\KingCameraControlle
 Route::get('/camera-share/{token}', fn (string $token) => redirect('/monitor/' . $token, 301));
 Route::get('/api/public/camera-share/{token}/info', [\App\Http\Controllers\Camera\KingCameraController::class, 'publicShareInfo'])->where('token', '[a-zA-Z0-9_\-]+');
 Route::post('/api/public/camera-share/{token}/webrtc', [\App\Http\Controllers\Camera\KingCameraController::class, 'publicShareWebRtcHandshake'])->where('token', '[a-zA-Z0-9_\-]+');
+Route::post('/api/public/camera-share/{token}/ptz', [\App\Http\Controllers\Camera\KingCameraController::class, 'publicSharePtz'])->where('token', '[a-zA-Z0-9_\-]+');
+Route::post('/api/public/camera-share/{token}/light', [\App\Http\Controllers\Camera\KingCameraController::class, 'publicShareLight'])->where('token', '[a-zA-Z0-9_\-]+');
+Route::get('/api/public/camera-share/{token}/snapshot', [\App\Http\Controllers\Camera\KingCameraController::class, 'publicShareSnapshot'])->where('token', '[a-zA-Z0-9_\-]+');
 
 // King Câmera API & Webhooks
 Route::post('/api/cameras/telegram-webhook', [\App\Http\Controllers\Camera\KingCameraController::class, 'telegramWebhook']);
@@ -1033,6 +1036,7 @@ Route::middleware(['jwt', 'module:king_camera'])->group(function () {
     // Compartilhamento com expiração programada
     Route::get('/api/cameras/{id}/shares', [\App\Http\Controllers\Camera\KingCameraController::class, 'listShares'])->where('id', '[0-9]+');
     Route::post('/api/cameras/{id}/shares', [\App\Http\Controllers\Camera\KingCameraController::class, 'createShare'])->where('id', '[0-9]+');
+    Route::put('/api/cameras/shares/{shareId}', [\App\Http\Controllers\Camera\KingCameraController::class, 'updateShare'])->where('shareId', '[0-9]+');
     Route::delete('/api/cameras/shares/{shareId}', [\App\Http\Controllers\Camera\KingCameraController::class, 'revokeShare'])->where('shareId', '[0-9]+');
 });
 

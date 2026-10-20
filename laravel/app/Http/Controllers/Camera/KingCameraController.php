@@ -367,6 +367,52 @@ class KingCameraController extends Controller
     /**
      * Cria um novo link de compartilhamento com tempo de expiração customizado.
      */
+    /**
+     * Lista todos os links de compartilhamento da câmera com suas permissões.
+     */
+    public function listShares(Request $request, int $id): JsonResponse
+    {
+        $userId = (string) $request->attributes->get('auth_user_id', '');
+        $camera = KingCamera::where('id', $id)->where('user_id', $userId)->first();
+        if (! $camera) {
+            return response()->json(['success' => false, 'message' => 'Câmera não encontrada.'], 404);
+        }
+
+        $shares = KingCameraShare::where('camera_id', $camera->id)
+            ->where('user_id', $userId)
+            ->orderBy('id', 'desc')
+            ->get()
+            ->map(function ($s) {
+                $secondsRemaining = max(0, intval($s->expires_at->diffInSeconds(now(), false) * -1));
+                return [
+                    'id' => $s->id,
+                    'token' => $s->share_token,
+                    'label' => $s->label,
+                    'share_url' => url('/monitor/' . $s->share_token),
+                    'can_audio' => (bool) $s->can_audio,
+                    'can_ptz' => (bool) $s->can_ptz,
+                    'can_light' => (bool) ($s->can_light ?? false),
+                    'can_snapshot' => (bool) ($s->can_snapshot ?? true),
+                    'can_record' => (bool) ($s->can_record ?? false),
+                    'expires_at' => $s->expires_at->toIso8601String(),
+                    'duration_seconds' => $s->duration_seconds,
+                    'seconds_remaining' => $secondsRemaining,
+                    'is_expired' => $s->isExpired(),
+                    'is_active' => (bool) $s->is_active,
+                    'view_count' => $s->view_count,
+                    'created_at' => $s->created_at ? $s->created_at->format('d/m/Y H:i') : '',
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $shares,
+        ]);
+    }
+
+    /**
+     * Gera um novo link público com expiração programada e permissões detalhadas.
+     */
     public function createShare(Request $request, int $id): JsonResponse
     {
         $userId = (string) $request->attributes->get('auth_user_id', '');
@@ -380,6 +426,9 @@ class KingCameraController extends Controller
             'label' => 'nullable|string|max:100',
             'can_audio' => 'nullable|boolean',
             'can_ptz' => 'nullable|boolean',
+            'can_light' => 'nullable|boolean',
+            'can_snapshot' => 'nullable|boolean',
+            'can_record' => 'nullable|boolean',
         ]);
 
         $duration = (int) $validated['duration_seconds'];
@@ -395,6 +444,9 @@ class KingCameraController extends Controller
             'duration_seconds' => $duration,
             'can_audio' => (bool) ($validated['can_audio'] ?? true),
             'can_ptz' => (bool) ($validated['can_ptz'] ?? false),
+            'can_light' => (bool) ($validated['can_light'] ?? false),
+            'can_snapshot' => (bool) ($validated['can_snapshot'] ?? true),
+            'can_record' => (bool) ($validated['can_record'] ?? false),
             'is_active' => true,
         ]);
 
@@ -406,11 +458,47 @@ class KingCameraController extends Controller
                 'token' => $share->share_token,
                 'label' => $share->label,
                 'share_url' => url('/monitor/' . $share->share_token),
+                'can_audio' => $share->can_audio,
+                'can_ptz' => $share->can_ptz,
+                'can_light' => $share->can_light,
+                'can_snapshot' => $share->can_snapshot,
+                'can_record' => $share->can_record,
                 'expires_at' => $share->expires_at->toIso8601String(),
                 'duration_seconds' => $share->duration_seconds,
                 'seconds_remaining' => $duration,
             ],
         ], 201);
+    }
+
+    /**
+     * Atualiza permissões de um link de compartilhamento existente.
+     */
+    public function updateShare(Request $request, int $shareId): JsonResponse
+    {
+        $userId = (string) $request->attributes->get('auth_user_id', '');
+        $share = KingCameraShare::where('id', $shareId)->where('user_id', $userId)->first();
+        if (! $share) {
+            return response()->json(['success' => false, 'message' => 'Link não encontrado.'], 404);
+        }
+
+        $validated = $request->validate([
+            'label' => 'nullable|string|max:100',
+            'can_audio' => 'nullable|boolean',
+            'can_ptz' => 'nullable|boolean',
+            'can_light' => 'nullable|boolean',
+            'can_snapshot' => 'nullable|boolean',
+            'can_record' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
+        ]);
+
+        $share->fill($validated);
+        $share->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Permissões do link atualizadas com sucesso!',
+            'data' => $share,
+        ]);
     }
 
     /**
@@ -456,11 +544,13 @@ class KingCameraController extends Controller
             ], 404);
         }
 
+        $secondsRemaining = max(0, intval($share->expires_at->diffInSeconds(now(), false) * -1));
+
         return view('pages.kingCameraMonitor', [
             'share' => $share,
             'camera' => $camera,
             'token' => $token,
-            'secondsRemaining' => max(0, $share->expires_at->diffInSeconds(now(), false) * -1),
+            'secondsRemaining' => $secondsRemaining,
         ]);
     }
 
@@ -479,7 +569,7 @@ class KingCameraController extends Controller
         }
 
         $camera = $share->camera;
-        $secondsRemaining = max(0, $share->expires_at->diffInSeconds(now(), false) * -1);
+        $secondsRemaining = max(0, intval($share->expires_at->diffInSeconds(now(), false) * -1));
 
         return response()->json([
             'success' => true,
@@ -487,7 +577,11 @@ class KingCameraController extends Controller
                 'camera_name' => $camera->name,
                 'room' => $camera->room,
                 'label' => $share->label,
-                'can_audio' => $share->can_audio,
+                'can_audio' => (bool) $share->can_audio,
+                'can_ptz' => (bool) $share->can_ptz,
+                'can_light' => (bool) ($share->can_light ?? false),
+                'can_snapshot' => (bool) ($share->can_snapshot ?? true),
+                'can_record' => (bool) ($share->can_record ?? false),
                 'expires_at' => $share->expires_at->toIso8601String(),
                 'seconds_remaining' => $secondsRemaining,
             ],
@@ -524,6 +618,97 @@ class KingCameraController extends Controller
 
         return response($answerSdp, 200)
             ->header('Content-Type', 'application/sdp');
+    }
+
+    /**
+     * Controle PTZ para visualizadores convidados (apenas se autorizado pelo proprietário).
+     */
+    public function publicSharePtz(Request $request, string $token): JsonResponse
+    {
+        $share = KingCameraShare::with('camera')->where('share_token', $token)->first();
+        if (! $share || ! $share->is_active || $share->isExpired()) {
+            return response()->json(['success' => false, 'message' => 'Link expirado ou inválido.'], 403);
+        }
+
+        if (! $share->can_ptz) {
+            return response()->json([
+                'success' => false,
+                'message' => 'O proprietário da câmera não autorizou controle de movimento (Giro 360°) para este link.',
+            ], 403);
+        }
+
+        $camera = $share->camera;
+        if (! $camera) {
+            return response()->json(['success' => false, 'message' => 'Câmera não encontrada.'], 404);
+        }
+
+        $direction = (string) $request->input('direction', 'stop');
+        $speed = (float) $request->input('speed', 0.5);
+
+        $result = $this->cameraService->ptzMove($camera, $direction, $speed);
+
+        return response()->json([
+            'success' => $result,
+            'message' => $result ? "PTZ {$direction} enviado." : 'Falha ao comandar PTZ.',
+        ]);
+    }
+
+    /**
+     * Controle de lâmpada para visualizadores convidados (apenas se autorizado pelo proprietário).
+     */
+    public function publicShareLight(Request $request, string $token): JsonResponse
+    {
+        $share = KingCameraShare::with('camera')->where('share_token', $token)->first();
+        if (! $share || ! $share->is_active || $share->isExpired()) {
+            return response()->json(['success' => false, 'message' => 'Link expirado ou inválido.'], 403);
+        }
+
+        if (! ($share->can_light ?? false)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'O proprietário da câmera não autorizou acender a lâmpada para este link.',
+            ], 403);
+        }
+
+        $camera = $share->camera;
+        if (! $camera) {
+            return response()->json(['success' => false, 'message' => 'Câmera não encontrada.'], 404);
+        }
+
+        $state = $request->input('state', 'toggle');
+        $result = $this->cameraService->setLight($camera, $state);
+
+        return response()->json([
+            'success' => $result,
+            'message' => $result ? 'Luz da câmera alterada.' : 'Falha ao acionar lâmpada.',
+        ]);
+    }
+
+    /**
+     * Snapshot ao vivo para visualizador convidado (apenas se autorizado pelo proprietário).
+     */
+    public function publicShareSnapshot(Request $request, string $token)
+    {
+        $share = KingCameraShare::with('camera')->where('share_token', $token)->first();
+        if (! $share || ! $share->is_active || $share->isExpired()) {
+            return response('Link expired or invalid', 403);
+        }
+
+        if (! ($share->can_snapshot ?? true)) {
+            return response('Captura de foto não autorizada para este link', 403);
+        }
+
+        $camera = $share->camera;
+        if (! $camera) {
+            return response('Camera not found', 404);
+        }
+
+        $frame = $this->cameraService->getSnapshotFrame($camera->stream_id);
+        if (! $frame) {
+            return response('Frame unavailable', 503);
+        }
+
+        return response($frame, 200)->header('Content-Type', 'image/jpeg');
     }
 
     /**
