@@ -992,11 +992,29 @@
             });
         }
 
+        function getAuthHeaders(extra = {}) {
+            let token = null;
+            try {
+                if (typeof localStorage !== 'undefined') {
+                    token = localStorage.getItem('token') || localStorage.getItem('conectaKingToken');
+                }
+                if (!token && typeof sessionStorage !== 'undefined') {
+                    token = sessionStorage.getItem('token');
+                }
+            } catch (e) {}
+            const headers = { 'Accept': 'application/json', ...extra };
+            if (token) {
+                headers['Authorization'] = 'Bearer ' + token;
+            }
+            return headers;
+        }
+
         // Carrega câmeras da API
         async function loadCameras() {
             try {
                 const res = await fetch('/api/cameras', {
-                    headers: { 'Accept': 'application/json' }
+                    credentials: 'include',
+                    headers: getAuthHeaders()
                 });
                 
                 if (res.status === 401 || res.status === 403) {
@@ -1157,7 +1175,8 @@
                 // Envia oferta SDP para o endpoint do backend
                 const response = await fetch(`/api/cameras/${cam.id}/webrtc`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/sdp' },
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/sdp' }),
                     body: offer.sdp
                 });
 
@@ -1224,7 +1243,10 @@
         // Download Snapshot
         async function downloadSnapshot(camId) {
             try {
-                const res = await fetch(`/api/cameras/${camId}/snapshot`);
+                const res = await fetch(`/api/cameras/${camId}/snapshot`, {
+                    credentials: 'include',
+                    headers: getAuthHeaders()
+                });
                 if (res.ok) {
                     const blob = await res.blob();
                     const url = URL.createObjectURL(blob);
@@ -1257,7 +1279,8 @@
             try {
                 const res = await fetch(`/api/cameras/${camId}/test-telegram`, {
                     method: 'POST',
-                    headers: { 'Accept': 'application/json' }
+                    credentials: 'include',
+                    headers: getAuthHeaders()
                 });
                 const json = await res.json();
                 if (json.success) {
@@ -1351,10 +1374,8 @@
             try {
                 const res = await fetch(url, {
                     method: method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                    },
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify(payload)
                 });
 
@@ -1402,7 +1423,8 @@
                 try {
                     const delRes = await fetch(`/api/cameras/${id}`, {
                         method: 'DELETE',
-                        headers: { 'Accept': 'application/json' }
+                        credentials: 'include',
+                        headers: getAuthHeaders()
                     });
                     const json = await delRes.json();
                     if (json.success) {

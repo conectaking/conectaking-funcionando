@@ -27,8 +27,8 @@ class KingCameraController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $userId = (int) $request->attributes->get('auth_user_id', 0);
-        if ($userId <= 0) {
+        $userId = (string) $request->attributes->get('auth_user_id', '');
+        if ($userId === '') {
             return response()->json(['success' => false, 'message' => 'Não autorizado.'], 401);
         }
 
@@ -36,11 +36,12 @@ class KingCameraController extends Controller
 
         // Se o usuário não tiver nenhuma câmera ainda, cadastra automaticamente a câmera piloto
         if ($cameras->isEmpty()) {
+            $sanitizedId = preg_replace('/[^a-zA-Z0-9]/', '', $userId);
             $pilot = KingCamera::create([
                 'user_id' => $userId,
                 'name' => 'Quarto Bebê',
                 'room' => 'Quarto',
-                'stream_id' => "cam_user_{$userId}_pilot",
+                'stream_id' => "cam_user_{$sanitizedId}_pilot",
                 'ip_address' => '172.16.100.215',
                 'port' => 554,
                 'rtsp_path' => '/onvif1',
@@ -91,8 +92,8 @@ class KingCameraController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $userId = (int) $request->attributes->get('auth_user_id', 0);
-        if ($userId <= 0) {
+        $userId = (string) $request->attributes->get('auth_user_id', '');
+        if ($userId === '') {
             return response()->json(['success' => false, 'message' => 'Não autorizado.'], 401);
         }
 
@@ -109,7 +110,8 @@ class KingCameraController extends Controller
             'motion_detection_enabled' => 'nullable|boolean',
         ]);
 
-        $streamId = 'cam_u' . $userId . '_' . substr(bin2hex(random_bytes(4)), 0, 8);
+        $sanitizedId = preg_replace('/[^a-zA-Z0-9]/', '', $userId);
+        $streamId = 'cam_u' . substr($sanitizedId, 0, 12) . '_' . substr(bin2hex(random_bytes(4)), 0, 8);
 
         $camera = KingCamera::create([
             'user_id' => $userId,
@@ -141,7 +143,7 @@ class KingCameraController extends Controller
      */
     public function update(Request $request, int $id): JsonResponse
     {
-        $userId = (int) $request->attributes->get('auth_user_id', 0);
+        $userId = (string) $request->attributes->get('auth_user_id', '');
         $camera = KingCamera::where('id', $id)->where('user_id', $userId)->first();
 
         if (! $camera) {
@@ -182,7 +184,7 @@ class KingCameraController extends Controller
      */
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $userId = (int) $request->attributes->get('auth_user_id', 0);
+        $userId = (string) $request->attributes->get('auth_user_id', '');
         $camera = KingCamera::where('id', $id)->where('user_id', $userId)->first();
 
         if (! $camera) {
@@ -204,7 +206,7 @@ class KingCameraController extends Controller
      */
     public function webrtcHandshake(Request $request, int $id): Response
     {
-        $userId = (int) $request->attributes->get('auth_user_id', 0);
+        $userId = (string) $request->attributes->get('auth_user_id', '');
         $camera = KingCamera::where('id', $id)->where('user_id', $userId)->first();
 
         if (! $camera) {
@@ -233,7 +235,7 @@ class KingCameraController extends Controller
      */
     public function snapshot(Request $request, int $id): Response
     {
-        $userId = (int) $request->attributes->get('auth_user_id', 0);
+        $userId = (string) $request->attributes->get('auth_user_id', '');
         $camera = KingCamera::where('id', $id)->where('user_id', $userId)->first();
 
         if (! $camera) {
@@ -255,7 +257,7 @@ class KingCameraController extends Controller
      */
     public function testTelegramAlert(Request $request, int $id): JsonResponse
     {
-        $userId = (int) $request->attributes->get('auth_user_id', 0);
+        $userId = (string) $request->attributes->get('auth_user_id', '');
         $camera = KingCamera::where('id', $id)->where('user_id', $userId)->first();
 
         if (! $camera) {

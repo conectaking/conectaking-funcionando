@@ -82,10 +82,14 @@
                     item.key === 'hasCartaoVirtual' ||
                     item.key === 'hasDigitalForm' ||
                     item.key === 'hasKingDocs' ||
-                    item.key === 'hasKingSelection'
+                    item.key === 'hasKingSelection' ||
+                    item.key === 'hasKingCamera'
                 ) {
                     show = true;
                 }
+            }
+            if (item.key === 'hasKingCamera' && (user.isAdmin || user.accountType === 'adm_principal')) {
+                show = true;
             }
             /* Standby produto: esconde Gestão Financeira sem apagar código/API. */
             if (item.module === 'finance' && typeof window !== 'undefined' && window.CK_FINANCE_STANDBY === true) {
@@ -160,6 +164,9 @@
         if (cartaoAtivo) {
             sel.push('.sidebar-nav a[data-target="editar-pane"]');
             sel.push('.sidebar-nav a[data-target="compartilhar-pane"]');
+        }
+        if (user && (user.isAdmin || user.accountType === 'adm_principal' || user.hasKingCamera)) {
+            sel.push('#king-camera-sidebar-link');
         }
         try {
             var nav = document.querySelector('#sidebar .sidebar-nav, aside .sidebar-nav, nav.sidebar-nav');
