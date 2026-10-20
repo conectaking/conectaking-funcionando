@@ -9,7 +9,7 @@ from fastapi import FastAPI, UploadFile, File, Request, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 
-app = FastAPI(title="ConectaKing Face AI (ArcFace 512D)", version="2.0.0")
+app = FastAPI(title="ConectaKing Face AI (ArcFace 512D)", version="2.1.0")
 
 YUNET_MODEL = "models/face_detection_yunet_2023mar.onnx"
 ARCFACE_MODEL = "models/w600k_mbf.onnx"
@@ -36,7 +36,7 @@ def init_models():
         model=YUNET_MODEL,
         config="",
         input_size=(320, 320),
-        score_threshold=0.65,
+        score_threshold=0.50, # Optimized to detect distant/stage faces
         nms_threshold=0.3,
         top_k=5000
     )
@@ -46,7 +46,7 @@ def init_models():
     opts.intra_op_num_threads = 2
     arcface_session = ort.InferenceSession(ARCFACE_MODEL, opts, providers=['CPUExecutionProvider'])
     arcface_input_name = arcface_session.get_inputs()[0].name
-    print("[ConectaKing Face AI v2] Loaded ArcFace 512D (w600k_mbf) + YuNet via ONNXRuntime")
+    print("[ConectaKing Face AI v2.1] Loaded ArcFace 512D (w600k_mbf) + YuNet via ONNXRuntime")
 
 @app.on_event("startup")
 def startup_event():
@@ -58,10 +58,10 @@ def health():
         "status": "ok",
         "service": "conectaking-face-ai",
         "engine": "InsightFace-ArcFace-ONNX",
-        "detector": "YuNet (2023mar)",
+        "detector": "YuNet (2023mar) Multi-Scale Refined",
         "recognizer": "ArcFace MobileFaceNet (MS1MV3/W600K)",
         "embedding_dim": 512,
-        "version": "2.0.0"
+        "version": "2.1.0"
     }
 
 def decode_image_bytes(data: bytes) -> np.ndarray:
@@ -71,7 +71,7 @@ def decode_image_bytes(data: bytes) -> np.ndarray:
         raise ValueError("Formato de imagem inválido ou não suportado.")
     return img
 
-def extract_faces_from_bgr(img: np.ndarray, max_dim: int = 1280, flip_aug_single: bool = True):
+def extract_faces_from_bgr(img: np.ndarray, max_dim: int = 1600, flip_aug_single: bool = True):
     h, w = img.shape[:2]
     scale = 1.0
     if max(h, w) > max_dim:
@@ -92,26 +92,49 @@ def extract_faces_from_bgr(img: np.ndarray, max_dim: int = 1280, flip_aug_single
 
     for face in faces:
         score = float(face[-1])
-        if score < 0.65:
+        if score < 0.50:
             continue
 
-        # Scale box back to original image dimensions
-        bw = int(face[2] / scale)
-        bh = int(face[3] / scale)
-        if bw < 32 or bh < 32:
+        # Coordinates in original image dimensions
+        orig_x = int(face[0] / scale)
+        orig_y = int(face[1] / scale)
+        orig_w = int(face[2] / scale)
+        orig_h = int(face[3] / scale)
+
+        if orig_w < 32 or orig_h < 32:
             # Filter distant background spectators
             continue
 
-        x = int(face[0] / scale)
-        y = int(face[1] / scale)
+        # Two-stage landmark refinement on crop for tilted / small distant faces
+        pad_w = int(orig_w * 0.25)
+        pad_h = int(orig_h * 0.25)
+        x1 = max(0, orig_x - pad_w)
+        y1 = max(0, orig_y - pad_h)
+        x2 = min(w, orig_x + orig_w + pad_w)
+        y2 = min(h, orig_y + orig_h + pad_h)
 
-        # 5 facial landmarks in resized image
-        kps = face[4:14].reshape((5, 2))
-        M, _ = cv2.estimateAffinePartial2D(kps, ARCFACE_REF_POINTS)
+        crop = img[y1:y2, x1:x2]
+        ch, cw = crop.shape[:2]
+        
+        final_kps = None
+        if ch >= 32 and cw >= 32:
+            detector.setInputSize((cw, ch))
+            _, crop_faces = detector.detect(crop)
+            if crop_faces is not None and len(crop_faces) > 0:
+                best_crop_f = crop_faces[0]
+                crop_kps = best_crop_f[4:14].reshape((5, 2))
+                final_kps = crop_kps + np.array([x1, y1], dtype=np.float32)
+
+        if final_kps is None:
+            # Fallback to coarse landmarks
+            final_kps = face[4:14].reshape((5, 2)) / scale
+
+        M, _ = cv2.estimateAffinePartial2D(final_kps, ARCFACE_REF_POINTS)
         if M is None:
             continue
 
-        warped = cv2.warpAffine(resized, M, (112, 112), borderValue=0.0)
+        # Sample from original full-resolution image for maximum clarity
+        warped = cv2.warpAffine(img, M, (112, 112), flags=cv2.INTER_CUBIC, borderValue=0.0)
 
         # Normalized blob: BGR -> RGB, centered around 0 in [-1, 1]
         blob = (warped[:, :, ::-1].transpose(2, 0, 1).astype(np.float32) - 127.5) / 127.5
@@ -130,7 +153,7 @@ def extract_faces_from_bgr(img: np.ndarray, max_dim: int = 1280, flip_aug_single
         emb_list = [round(float(v), 6) for v in feat_norm]
 
         results.append({
-            "box": [max(0, x), max(0, y), bw, bh],
+            "box": [max(0, orig_x), max(0, orig_y), orig_w, orig_h],
             "confidence": round(score, 4),
             "embedding": emb_list
         })
@@ -180,27 +203,39 @@ class TargetEmbedding(BaseModel):
     embedding: List[float]
 
 class MatchRequest(BaseModel):
-    query_embedding: List[float]
+    query_embedding: Optional[List[float]] = None
+    query_embeddings: Optional[List[List[float]]] = None
     targets: List[TargetEmbedding]
     threshold: Optional[float] = 0.48 # Calibrated threshold for ArcFace 512D
 
 @app.post("/match")
 def match(req: MatchRequest):
     t0 = time.time()
-    if not req.query_embedding or not req.targets:
+    query_vectors = []
+    if req.query_embeddings and len(req.query_embeddings) > 0:
+        for q_vec in req.query_embeddings:
+            q_arr = np.array(q_vec, dtype=np.float32)
+            n = np.linalg.norm(q_arr)
+            if n > 0:
+                query_vectors.append(q_arr / n)
+    elif req.query_embedding and len(req.query_embedding) > 0:
+        q_arr = np.array(req.query_embedding, dtype=np.float32)
+        n = np.linalg.norm(q_arr)
+        if n > 0:
+            query_vectors.append(q_arr / n)
+
+    if not query_vectors or not req.targets:
         return {"success": True, "matches": [], "match_count": 0, "elapsed_ms": 0}
 
-    q = np.array(req.query_embedding, dtype=np.float32)
-    q_norm = np.linalg.norm(q)
-    if q_norm > 0:
-        q = q / q_norm
+    q_mat = np.array(query_vectors, dtype=np.float32)
+    expected_dim = q_mat.shape[1]
 
     target_vectors = []
     target_ids = []
     target_photo_ids = []
 
     for t in req.targets:
-        if len(t.embedding) == len(req.query_embedding):
+        if len(t.embedding) == expected_dim:
             target_ids.append(t.id)
             target_photo_ids.append(t.photo_id if t.photo_id is not None else t.id)
             vec = np.array(t.embedding, dtype=np.float32)
@@ -211,11 +246,16 @@ def match(req: MatchRequest):
         return {"success": True, "matches": [], "match_count": 0, "elapsed_ms": 0}
 
     mat = np.array(target_vectors, dtype=np.float32)
-    # Cosine similarities = dot product of normalized vectors
-    sims = np.dot(mat, q)
+    
+    # Multi-template matching: dot product with all query templates, take max score
+    # mat: (N, 512), q_mat.T: (512, K) -> sim_matrix: (N, K)
+    sim_matrix = np.dot(mat, q_mat.T)
+    if sim_matrix.shape[1] > 1:
+        sims = np.max(sim_matrix, axis=1)
+    else:
+        sims = sim_matrix.flatten()
 
     matches = []
-    # For ArcFace 512D, random people are < 0.25, same person is > 0.50. Threshold 0.48 gives zero false positives.
     thresh = float(req.threshold if req.threshold is not None else 0.48)
 
     for i, sim in enumerate(sims):

@@ -136,10 +136,11 @@ class KingSelectionFaceIndexCommand extends Command
                 // Match imediato contra clientes já cadastrados
                 if (! empty($insertedFaceIds) && ! empty($clientEmbeddings)) {
                     foreach ($clientEmbeddings as $cid => $cEmb) {
+                        $defThresh = (count($cEmb) === 512) ? 0.48 : 0.55;
                         $mRes = Http::timeout(5)->post("{$aiUrl}/match", [
                             'query_embedding' => $cEmb,
                             'targets' => $insertedFaceIds,
-                            'threshold' => (float) (env('FACE_AI_THRESHOLD') ?: 0.55),
+                            'threshold' => (float) (env('FACE_AI_THRESHOLD') ?: $defThresh),
                         ]);
                         if ($mRes->successful()) {
                             $matches = $mRes->json('matches') ?? [];

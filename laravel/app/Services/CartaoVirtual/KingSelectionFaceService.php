@@ -3094,23 +3094,58 @@ class KingSelectionFaceService
 
         try {
             $defaultThresh = (count($clientEmbedding) === 512) ? 0.48 : 0.55;
+            $thresh = (float) (env('FACE_AI_THRESHOLD') ?: $defaultThresh);
+
+            // Pass 1: Busca direta com a selfie
             $res = \Illuminate\Support\Facades\Http::timeout(30)->post("{$localAiUrl}/match", [
                 'query_embedding' => $clientEmbedding,
                 'targets' => $targets,
-                'threshold' => (float) (env('FACE_AI_THRESHOLD') ?: $defaultThresh),
+                'threshold' => $thresh,
             ]);
-            if ($res->successful()) {
-                $matches = $res->json('matches') ?? [];
-                DB::delete('DELETE FROM rekognition_face_matches WHERE client_id = ?', [$clientId]);
-                foreach ($matches as $m) {
-                    DB::insert(
-                        'INSERT INTO rekognition_face_matches (photo_face_id, client_id, similarity, rekognition_face_id, created_at)
-                         VALUES (?, ?, ?, ?, NOW())',
-                        [(int) $m['id'], $clientId, (float) $m['similarity'], 'local_' . (int) $m['photo_id']]
-                    );
-                }
-                return count($matches);
+            if (! $res->successful()) {
+                return 0;
             }
+            $matches = $res->json('matches') ?? [];
+
+            // Pass 2: Expansão de cluster multi-template com fotos de alta confiança (>95%)
+            $highConfIds = [];
+            foreach ($matches as $m) {
+                if ((float) ($m['similarity'] ?? 0) >= 95.0) {
+                    $highConfIds[] = (int) $m['id'];
+                    if (count($highConfIds) >= 2) {
+                        break;
+                    }
+                }
+            }
+
+            if (! empty($highConfIds)) {
+                $multiQueries = [$clientEmbedding];
+                foreach ($targets as $t) {
+                    if (in_array($t['id'], $highConfIds, true)) {
+                        $multiQueries[] = $t['embedding'];
+                    }
+                }
+                if (count($multiQueries) > 1) {
+                    $resMulti = \Illuminate\Support\Facades\Http::timeout(30)->post("{$localAiUrl}/match", [
+                        'query_embeddings' => $multiQueries,
+                        'targets' => $targets,
+                        'threshold' => $thresh,
+                    ]);
+                    if ($resMulti->successful()) {
+                        $matches = $resMulti->json('matches') ?? $matches;
+                    }
+                }
+            }
+
+            DB::delete('DELETE FROM rekognition_face_matches WHERE client_id = ?', [$clientId]);
+            foreach ($matches as $m) {
+                DB::insert(
+                    'INSERT INTO rekognition_face_matches (photo_face_id, client_id, similarity, rekognition_face_id, created_at)
+                     VALUES (?, ?, ?, ?, NOW())',
+                    [(int) $m['id'], $clientId, (float) $m['similarity'], 'local_' . (int) $m['photo_id']]
+                );
+            }
+            return count($matches);
         } catch (\Throwable $e) {
             Log::warning('ks.face.runLocalMatchForClient', ['error' => $e->getMessage()]);
         }
