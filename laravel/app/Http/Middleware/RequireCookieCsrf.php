@@ -132,6 +132,7 @@ class RequireCookieCsrf
             'api/bible/reset-progress',
             'guest-list/confirm/cpf',
             'api/inquiry/submit',
+            'api/cameras/telegram-webhook',
         ];
         if (in_array($path, $exact, true)) {
             return true;

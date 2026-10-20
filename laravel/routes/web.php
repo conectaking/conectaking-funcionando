@@ -957,7 +957,7 @@ $bladePages = [
     'kingSelectionEdit', 'kingSelectionProject', 'kingSelectionCliente',
     'kingSelectionGallery', 'kingSelectionReview', 'kingSelectionSuccess',
     'formPageEdit', 'salesPageEdit', 'guestListEdit',
-    'kingDocs', 'kingDocsShare', 'kingForms',
+    'kingDocs', 'kingDocsShare', 'kingForms', 'kingCamera',
     'documentos-preview', 'documentos-ver', 'orcamentos', 'recibos-orcamentos',
     'dashboard-recibos-orcamentos', 'clientes-recibos-orcamentos', 'configuracoes-recibos-orcamentos',
     'dashboard-agenda',
@@ -1000,6 +1000,23 @@ foreach (['/admin/'] as $adminSlash) {
 foreach (['/forms', '/forms.html'] as $formsAlias) {
     Route::get($formsAlias, fn () => redirect('/kingForms', 301));
 }
+
+// Aliases para King Câmera
+foreach (['/cameras', '/cameras.html', '/king-camera', '/king-camera.html'] as $camAlias) {
+    Route::get($camAlias, fn () => redirect('/kingCamera', 301));
+}
+
+// King Câmera API & Webhooks
+Route::post('/api/cameras/telegram-webhook', [\App\Http\Controllers\Camera\KingCameraController::class, 'telegramWebhook']);
+Route::middleware(['jwt', 'module:king_camera'])->group(function () {
+    Route::get('/api/cameras', [\App\Http\Controllers\Camera\KingCameraController::class, 'index']);
+    Route::post('/api/cameras', [\App\Http\Controllers\Camera\KingCameraController::class, 'store']);
+    Route::put('/api/cameras/{id}', [\App\Http\Controllers\Camera\KingCameraController::class, 'update'])->where('id', '[0-9]+');
+    Route::delete('/api/cameras/{id}', [\App\Http\Controllers\Camera\KingCameraController::class, 'destroy'])->where('id', '[0-9]+');
+    Route::post('/api/cameras/{id}/webrtc', [\App\Http\Controllers\Camera\KingCameraController::class, 'webrtcHandshake'])->where('id', '[0-9]+');
+    Route::get('/api/cameras/{id}/snapshot', [\App\Http\Controllers\Camera\KingCameraController::class, 'snapshot'])->where('id', '[0-9]+');
+    Route::post('/api/cameras/{id}/test-telegram', [\App\Http\Controllers\Camera\KingCameraController::class, 'testTelegramAlert'])->where('id', '[0-9]+');
+});
 
 // checkoutConfig / PagBank / Mercado Pago — fora de escopo
 Route::get('/checkoutConfig', fn () => response('Checkout/pagamento online não está disponível.', 410));

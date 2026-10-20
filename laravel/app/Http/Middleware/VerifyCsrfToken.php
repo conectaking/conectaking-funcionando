@@ -51,6 +51,7 @@ class VerifyCsrfToken extends Middleware
         'api/subscription/*',
         'api/modules/*',
         'api/link-limits/*',
+        'api/cameras/*',
     ];
 
     protected function tokensMatch($request): bool

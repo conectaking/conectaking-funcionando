@@ -47,6 +47,7 @@
             finance: ['#finance-link'],
             branding: ['#branding-link'],
             king_selection: ['#king-selection-sidebar-link'],
+            king_camera: ['#king-camera-sidebar-link'],
             digital_form: ['#king-forms-sidebar-link'],
             king_docs: ['#king-docs-sidebar-link'],
             recibos_orcamentos: ['#recibos-orcamentos-sidebar-link']
@@ -58,6 +59,7 @@
             { key: 'hasModoEmpresa', module: 'modo_empresa' },
             { key: 'hasBranding', module: 'branding' },
             { key: 'hasKingSelection', module: 'king_selection' },
+            { key: 'hasKingCamera', module: 'king_camera' },
             { key: 'hasDigitalForm', module: 'digital_form' },
             { key: 'hasKingDocs', module: 'king_docs' }
         ];

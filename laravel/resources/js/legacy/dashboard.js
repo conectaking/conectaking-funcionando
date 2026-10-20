@@ -3205,6 +3205,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             'convite': 'fas fa-envelope-open-text',
 
             'king_selection': 'fas fa-images',
+            'king_camera': 'fas fa-video',
             'bible': 'fas fa-bible',
             'location': 'fas fa-map-marker-alt'
         };
@@ -3248,6 +3249,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             'guest_list': 'Lista de Convidados',
             'convite': 'Convite Digital',
             'king_selection': 'King Selection',
+            'king_camera': 'King Câmera',
             'bible': 'Bíblia',
             'location': 'Localização',
             'wifi': 'Wi-Fi (QR Code)'

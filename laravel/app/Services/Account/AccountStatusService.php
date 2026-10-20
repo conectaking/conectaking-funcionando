@@ -116,6 +116,7 @@ class AccountStatusService
             'hasBranding' => $has('branding'),
             'hasKingBrief' => false,
             'hasKingSelection' => $has('king_selection'),
+            'hasKingCamera' => $has('king_camera'),
             'hasPhotographerSite' => false,
             'hasDigitalForm' => $has('digital_form'),
             'hasKingDocs' => $has('king_docs'),

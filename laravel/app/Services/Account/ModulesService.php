@@ -172,6 +172,7 @@ class ModulesService
         }
 
         $this->ensureCartaoVirtualProvisioned($plans);
+        $this->ensureKingCameraProvisioned($plans);
 
         $modulesMap = [];
         try {
@@ -236,6 +237,38 @@ class ModulesService
         }
     }
 
+    private function ensureKingCameraProvisioned(array $plans): void
+    {
+        try {
+            if (! Schema::hasTable('module_plan_availability')) {
+                return;
+            }
+            $exists = DB::selectOne(
+                "SELECT 1 FROM module_plan_availability WHERE module_type = 'king_camera' LIMIT 1"
+            );
+            if (! $exists) {
+                $codes = [];
+                foreach ($plans as $p) {
+                    if (! empty($p->plan_code)) {
+                        $codes[] = (string) $p->plan_code;
+                    }
+                }
+                if ($codes === []) {
+                    $codes = ['free', 'basic', 'individual', 'individual_com_logo', 'premium', 'enterprise', 'adm_principal'];
+                }
+                foreach ($codes as $c) {
+                    $isAvail = in_array($c, ['enterprise', 'adm_principal'], true);
+                    DB::insert(
+                        'INSERT INTO module_plan_availability (module_type, plan_code, is_available) VALUES (?, ?, ?)',
+                        ['king_camera', $c, $isAvail]
+                    );
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('modules.provisionKingCamera', ['error' => $e->getMessage()]);
+        }
+    }
+
     /**
      * Público (landing): subset de módulos para o planRenderer da index.
      *
@@ -246,6 +279,7 @@ class ModulesService
         $types = [
             'cartao_virtual',
             'king_selection',
+            'king_camera',
             'whatsapp', 'telegram', 'email', 'pix', 'pix_qrcode', 'wifi',
             'facebook', 'instagram', 'tiktok', 'twitter', 'youtube',
             'spotify', 'linkedin', 'pinterest',
@@ -496,6 +530,8 @@ class ModulesService
             if (empty($allTypes)) {
                 $allTypes = [
                     'cartao_virtual',
+                    'king_selection',
+                    'king_camera',
                     'whatsapp', 'telegram', 'email', 'pix', 'pix_qrcode', 'wifi',
                     'facebook', 'instagram', 'tiktok', 'twitter', 'youtube',
                     'spotify', 'linkedin', 'pinterest',

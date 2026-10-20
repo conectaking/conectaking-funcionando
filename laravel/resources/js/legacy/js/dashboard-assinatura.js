@@ -604,6 +604,7 @@ async function renderPlansEditForm(plans) {
         'branding': 'Personalização da Marca',
         'location': 'Localização',
         'king_selection': 'King Selection',
+        'king_camera': 'King Câmera',
         'king_docs': 'King Docs',
         'recibos_orcamentos': 'Recibos e Orçamentos'
     };
@@ -788,6 +789,7 @@ window.savePlan = async function (planId) {
             'Banner': 'banner',
             'Gestão Financeira': 'finance',
             'King Selection': 'king_selection',
+            'King Câmera': 'king_camera',
             'King Docs': 'king_docs',
             'Recibos e Orçamentos': 'recibos_orcamentos',
             'Personalização da Marca': 'branding',
