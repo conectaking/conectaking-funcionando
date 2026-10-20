@@ -674,4 +674,44 @@ class KingCameraController extends Controller
 
         return response()->json($result);
     }
+
+    /**
+     * Liga/desliga ou alterna a lâmpada / LED holofote da câmera
+     */
+    public function toggleLight(Request $request, int $id): JsonResponse
+    {
+        $userId = (string) $request->attributes->get('auth_user_id', '');
+        $camera = KingCamera::where('id', $id)->where('user_id', $userId)->first();
+
+        if (! $camera) {
+            return response()->json(['success' => false, 'message' => 'Câmera não encontrada.'], 404);
+        }
+
+        $state = $request->input('state', null);
+        $result = $this->cameraService->setLight($camera, $state);
+
+        return response()->json($result);
+    }
+
+    /**
+     * Liga/desliga o auto-tracking (seguir bebê/pessoa) da câmera
+     */
+    public function toggleAutoTracking(Request $request, int $id): JsonResponse
+    {
+        $userId = (string) $request->attributes->get('auth_user_id', '');
+        $camera = KingCamera::where('id', $id)->where('user_id', $userId)->first();
+
+        if (! $camera) {
+            return response()->json(['success' => false, 'message' => 'Câmera não encontrada.'], 404);
+        }
+
+        $enabled = $request->has('enabled')
+            ? (bool) $request->input('enabled')
+            : ! $camera->auto_tracking_enabled;
+
+        $result = $this->cameraService->setAutoTracking($camera, $enabled);
+
+        return response()->json($result);
+    }
 }
+

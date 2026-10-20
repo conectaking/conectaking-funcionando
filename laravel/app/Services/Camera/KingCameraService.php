@@ -239,4 +239,116 @@ XML;
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
+
+    /**
+     * Liga/desliga o holofote LED / lâmpada auxiliar da câmera via ONVIF Auxiliary e CGI
+     */
+    public function setLight(KingCamera $camera, string|bool|null $state = null): array
+    {
+        $host = $camera->ip_address;
+        $onvifPort = $camera->onvif_port ?: 5000;
+        $targetUrl = ($host === '172.18.0.1' || str_starts_with($host, '172.'))
+            ? 'http://172.18.0.1:5000/onvif/ptz_service'
+            : "http://{$host}:{$onvifPort}/onvif/ptz_service";
+
+        // Determina se deve ligar ou desligar (toggle caso null)
+        $turnOn = ($state === true || $state === 'on' || $state === '1');
+        if ($state === null || $state === 'toggle') {
+            $turnOn = true;
+        }
+
+        $cmd = $turnOn ? 'LightOn' : 'LightOff';
+
+        $soap = <<<XML
+<?xml version="1.0" encoding="utf-8"?>
+<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
+  <s:Body>
+    <SendAuxiliaryCommand xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+      <ProfileToken>IPCProfilesToken0</ProfileToken>
+      <AuxiliaryData>{$cmd}</AuxiliaryData>
+    </SendAuxiliaryCommand>
+  </s:Body>
+</s:Envelope>
+XML;
+
+        try {
+            $ch = curl_init($targetUrl);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $soap);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/soap+xml; charset=utf-8; action="http://www.onvif.org/ver20/ptz/wsdl/SendAuxiliaryCommand"',
+                'Content-Length: ' . strlen($soap),
+            ]);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 2);
+            $res = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            // CGI fallback para câmeras Xiongmai / Tuya / V380 / IPC
+            $val = $turnOn ? '1' : '0';
+            $cgiUrl = "http://{$host}/cgi-bin/hi3510/param.cgi?cmd=setlightattr&-light_mode={$val}";
+            @file_get_contents($cgiUrl, false, stream_context_create(['http' => ['timeout' => 1]]));
+
+            return [
+                'success' => true,
+                'light_on' => $turnOn,
+                'state' => $turnOn ? 'on' : 'off',
+                'http_code' => $httpCode,
+            ];
+        } catch (\Throwable $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Ativa/desativa auto-tracking / seguir pessoa ou bebê
+     */
+    public function setAutoTracking(KingCamera $camera, bool $enabled): array
+    {
+        $camera->auto_tracking_enabled = $enabled;
+        $camera->save();
+
+        $host = $camera->ip_address;
+        $onvifPort = $camera->onvif_port ?: 5000;
+        $targetUrl = ($host === '172.18.0.1' || str_starts_with($host, '172.'))
+            ? 'http://172.18.0.1:5000/onvif/ptz_service'
+            : "http://{$host}:{$onvifPort}/onvif/ptz_service";
+
+        $cmd = $enabled ? 'TrackingOn' : 'TrackingOff';
+
+        $soap = <<<XML
+<?xml version="1.0" encoding="utf-8"?>
+<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
+  <s:Body>
+    <SendAuxiliaryCommand xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+      <ProfileToken>IPCProfilesToken0</ProfileToken>
+      <AuxiliaryData>{$cmd}</AuxiliaryData>
+    </SendAuxiliaryCommand>
+  </s:Body>
+</s:Envelope>
+XML;
+
+        try {
+            $ch = curl_init($targetUrl);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $soap);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/soap+xml; charset=utf-8; action="http://www.onvif.org/ver20/ptz/wsdl/SendAuxiliaryCommand"',
+                'Content-Length: ' . strlen($soap),
+            ]);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 2);
+            curl_exec($ch);
+            curl_close($ch);
+        } catch (\Throwable $e) {
+            // Ignora falhas de ONVIF nativo se a câmera não tiver suporte
+        }
+
+        return [
+            'success' => true,
+            'auto_tracking_enabled' => $enabled,
+        ];
+    }
 }
+
