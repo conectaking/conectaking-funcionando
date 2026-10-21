@@ -38,6 +38,7 @@ class KingCameraService
         if ($camera->rtsp_port === 1554 || str_contains($rtspUrl, ':1554/')) {
             $url2 = str_replace(['/onvif1', '/onvif2'], '/onvif2', $rtspUrl);
             $sources[] = $url2;
+            $sources[] = $transcodeProducer;
         } else {
             $sources[] = $rtspUrl;
             $sources[] = $transcodeProducer;
@@ -46,7 +47,8 @@ class KingCameraService
         try {
             $query = 'name=' . urlencode($streamId);
             foreach ($sources as $s) {
-                $query .= '&src=' . urlencode($s);
+                $encodedSrc = str_replace(['%2A', '%2a'], '*', urlencode($s));
+                $query .= '&src=' . $encodedSrc;
             }
             $endpoint = "{$goUrl}/api/streams?{$query}";
             $res = Http::timeout(5)->put($endpoint);
@@ -112,7 +114,7 @@ class KingCameraService
     {
         $goUrl = $this->getGo2RtcUrl();
         try {
-            $res = Http::timeout(8.0)->get("{$goUrl}/api/frame.jpeg?src=" . urlencode($camera->stream_id));
+            $res = Http::timeout(10.0)->get("{$goUrl}/api/frame.jpeg?src=" . urlencode($camera->stream_id));
             if ($res->successful() && ! empty($res->body())) {
                 return $res->body();
             }
