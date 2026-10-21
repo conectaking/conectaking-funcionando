@@ -243,11 +243,11 @@ XML;
                     curl_setopt($ch, CURLOPT_POST, true);
                     curl_setopt($ch, CURLOPT_POSTFIELDS, $soap);
                     curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                        "Content-Type: application/soap+xml; charset=utf-8; action=\"http://www.onvif.org/ver20/ptz/wsdl/{$action}\"",
+                        'Content-Type: application/soap+xml; charset=utf-8',
                         'Content-Length: ' . strlen($soap),
                     ]);
                     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                    curl_setopt($ch, CURLOPT_TIMEOUT, 2);
+                    curl_setopt($ch, CURLOPT_TIMEOUT, 4);
                     $res = curl_exec($ch);
                     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
                     curl_close($ch);

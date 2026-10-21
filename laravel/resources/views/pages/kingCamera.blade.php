@@ -3773,14 +3773,14 @@
                                 <input type="text" id="cam-user" class="kc-input" placeholder="admin" value="admin" autocomplete="off">
                             </div>
                             <div class="kc-form-group">
-                                <label class="kc-label" for="cam-pass">Senha RTSP (Definida no app Yoosee)</label>
+                                <label class="kc-label" for="cam-pass">Senha RTSP <span style="color: #94a3b8; font-weight: normal; font-size: 0.82rem;">(Opcional - deixe vazio se não tiver)</span></label>
                                 <div style="position: relative; display: flex; align-items: center;">
-                                    <input type="password" id="cam-pass" class="kc-input" placeholder="Digite a senha RTSP da câmera" autocomplete="new-password" data-lpignore="true" style="padding-right: 42px;">
+                                    <input type="password" id="cam-pass" class="kc-input" placeholder="Deixe em branco se a câmera não tiver senha" autocomplete="new-password" data-lpignore="true" style="padding-right: 42px;">
                                     <button type="button" onclick="togglePasswordVisibility('cam-pass', this)" style="position: absolute; right: 8px; background: none; border: none; color: #94a3b8; cursor: pointer; padding: 6px; font-size: 0.95rem; display: flex; align-items: center; justify-content: center;" title="Mostrar/Ocultar Senha">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                 </div>
-                                <div class="kc-form-help">No app Yoosee: <b>Configurações &gt; Conexão NVR / RTSP</b>.</div>
+                                <div class="kc-form-help">Modelos CloudCam / TWG de fábrica <b>não usam senha</b>. Deixe vazio se não tiver configurado senha.</div>
                             </div>
                         </div>
 
@@ -5210,6 +5210,12 @@
                         modalChk.checked = newState;
                     }
 
+                    if (newState) {
+                        startAutoTrackingLoop(camId);
+                    } else {
+                        stopAutoTrackingLoop(camId);
+                    }
+
                     Swal.fire({
                         toast: true,
                         position: 'top-end',
@@ -5238,6 +5244,89 @@
                     showConfirmButton: false,
                     timer: 2500
                 });
+            }
+        }
+
+        // Loop ativo de rastreamento visual inteligente
+        const autoTrackingLoops = {};
+
+        function startAutoTrackingLoop(camId) {
+            stopAutoTrackingLoop(camId);
+
+            const video = document.getElementById(`video-${camId}`);
+            if (!video) return;
+
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = 160;
+            offCanvas.height = 120;
+            const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+            let prevData = null;
+            let isMoving = false;
+
+            const intervalId = setInterval(async () => {
+                if (isMoving || !video || video.paused || video.ended || video.readyState < 2) return;
+
+                try {
+                    offCtx.drawImage(video, 0, 0, 160, 120);
+                    const currentData = offCtx.getImageData(0, 0, 160, 120).data;
+
+                    if (!prevData) {
+                        prevData = currentData;
+                        return;
+                    }
+
+                    let motionPixels = 0;
+                    let sumX = 0;
+                    const len = currentData.length;
+
+                    // Amostra a cada 4 pixels para máxima velocidade sem travar a interface
+                    for (let i = 0; i < len; i += 16) {
+                        const rDiff = Math.abs(currentData[i] - prevData[i]);
+                        const gDiff = Math.abs(currentData[i + 1] - prevData[i + 1]);
+                        const bDiff = Math.abs(currentData[i + 2] - prevData[i + 2]);
+                        if (rDiff + gDiff + bDiff > 70) {
+                            const pixelIndex = i / 4;
+                            const x = pixelIndex % 160;
+                            sumX += x;
+                            motionPixels++;
+                        }
+                    }
+
+                    prevData = currentData;
+
+                    // Se detectou movimento significativo no enquadramento
+                    if (motionPixels > 40) {
+                        const avgX = sumX / motionPixels;
+                        // Se a pessoa/movimento está no terço esquerdo (< 55px)
+                        if (avgX < 55) {
+                            isMoving = true;
+                            await ptzStart(camId, 'left', 0.5);
+                            setTimeout(async () => {
+                                await ptzStop(camId);
+                                setTimeout(() => { isMoving = false; prevData = null; }, 400);
+                            }, 300);
+                        } else if (avgX > 105) {
+                            // Se a pessoa/movimento está no terço direito (> 105px)
+                            isMoving = true;
+                            await ptzStart(camId, 'right', 0.5);
+                            setTimeout(async () => {
+                                await ptzStop(camId);
+                                setTimeout(() => { isMoving = false; prevData = null; }, 400);
+                            }, 300);
+                        }
+                    }
+                } catch (err) {
+                    console.debug('Tracking loop tick:', err);
+                }
+            }, 1200);
+
+            autoTrackingLoops[camId] = intervalId;
+        }
+
+        function stopAutoTrackingLoop(camId) {
+            if (autoTrackingLoops[camId]) {
+                clearInterval(autoTrackingLoops[camId]);
+                delete autoTrackingLoops[camId];
             }
         }
 
@@ -8159,7 +8248,39 @@
                 playToneSound(880, 0.1);
             } catch (err) {
                 console.warn('Microfone não concedido:', err);
-                Swal.fire('Permissão de Microfone', 'Por favor, conceda permissão ao microfone para falar na câmera.', 'warning');
+                Swal.fire({
+                    title: '🎙️ Como Ativar o Microfone no Celular',
+                    html: `
+                        <div style="text-align: left; font-size: 0.92rem; line-height: 1.6; color: #cbd5e1; background: #0f172a; padding: 1rem; border-radius: 10px; border: 1px solid #334155;">
+                            <p style="margin-bottom: 0.75rem; color: #f8fafc;">Se o Google Chrome ou Safari bloqueou o microfone ou não exibiu a confirmação:</p>
+                            <div style="display: flex; gap: 0.6rem; margin-bottom: 0.75rem; align-items: flex-start;">
+                                <div style="background: #3b82f6; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">1</div>
+                                <div>Toque no <b>ícone do cadeado 🔒 ou ajustes</b> ao lado de <i>conectaking.com.br</i> na barra de navegação superior.</div>
+                            </div>
+                            <div style="display: flex; gap: 0.6rem; margin-bottom: 0.75rem; align-items: flex-start;">
+                                <div style="background: #3b82f6; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">2</div>
+                                <div>Toque em <b>Permissões</b> (ou <i>Configurações do Site</i>).</div>
+                            </div>
+                            <div style="display: flex; gap: 0.6rem; margin-bottom: 0.75rem; align-items: flex-start;">
+                                <div style="background: #3b82f6; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">3</div>
+                                <div>Localize <b>Microfone</b> e mude para <b style="color: #10b981;">Permitir</b>.</div>
+                            </div>
+                            <div style="display: flex; gap: 0.6rem; align-items: flex-start;">
+                                <div style="background: #10b981; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">4</div>
+                                <div>Toque no botão abaixo para tentar novamente!</div>
+                            </div>
+                        </div>
+                    `,
+                    icon: 'info',
+                    confirmButtonText: '🔄 Tentar Novamente Agora',
+                    confirmButtonColor: '#10b981',
+                    showCancelButton: true,
+                    cancelButtonText: 'Fechar'
+                }).then((r) => {
+                    if (r.isConfirmed) {
+                        startIntercomTalk(camId);
+                    }
+                });
                 stopIntercomTalk(camId);
             }
         }
