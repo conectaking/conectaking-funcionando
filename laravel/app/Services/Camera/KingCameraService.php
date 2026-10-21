@@ -34,11 +34,10 @@ class KingCameraService
         $sources = [];
 
         // Para câmeras na porta 1554 (Quarto Bebê), usa exclusivamente o canal /onvif2
-        // que é estável, ultra rápido e não bloqueia a porta RTSP
+        // que é H.264 nativo, ultra rápido e não necessita de transcodificação ffmpeg
         if ($camera->rtsp_port === 1554 || str_contains($rtspUrl, ':1554/')) {
             $url2 = str_replace(['/onvif1', '/onvif2'], '/onvif2', $rtspUrl);
             $sources[] = $url2;
-            $sources[] = $transcodeProducer;
         } else {
             $sources[] = $rtspUrl;
             $sources[] = $transcodeProducer;
