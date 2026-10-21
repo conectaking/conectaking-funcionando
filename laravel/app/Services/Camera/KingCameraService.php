@@ -142,32 +142,15 @@ class KingCameraService
     public function ptzMove(KingCamera $camera, string $direction, float $speed = 0.5): array
     {
         $host = $camera->ip_address;
-        $onvifPort = $camera->onvif_port ?: 5000;
+        $onvifPort = $camera->onvif_port ?: 80;
 
-        if ($host === '172.18.0.1' || str_starts_with($host, '172.')) {
-            $targetUrl = 'http://172.18.0.1:5000/onvif/ptz_service';
-        } else {
-            $targetUrl = "http://{$host}:{$onvifPort}/onvif/ptz_service";
-        }
+        $targetHost = ($host === '172.18.0.1' || str_starts_with($host, '172.'))
+            ? '172.18.0.1'
+            : $host;
 
         $direction = strtolower(trim($direction));
-        $profileToken = 'IPCProfilesToken0';
 
-        if ($direction === 'stop') {
-            $action = 'Stop';
-            $soap = <<<XML
-<?xml version="1.0" encoding="utf-8"?>
-<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
-  <s:Body>
-    <Stop xmlns="http://www.onvif.org/ver20/ptz/wsdl">
-      <ProfileToken>{$profileToken}</ProfileToken>
-      <PanTilt>true</PanTilt>
-      <Zoom>true</Zoom>
-    </Stop>
-  </s:Body>
-</s:Envelope>
-XML;
-        } else {
+        if ($direction !== 'stop') {
             $x = 0.0;
             $y = 0.0;
             $z = 0.0;
@@ -210,9 +193,36 @@ XML;
                 default:
                     return ['success' => false, 'message' => "Direção inválida: {$direction}"];
             }
+        }
 
-            $action = 'ContinuousMove';
-            $soap = <<<XML
+        $candidateUrls = [
+            "http://{$targetHost}:{$onvifPort}/onvif/PTZ",
+            "http://{$targetHost}:{$onvifPort}/onvif/ptz_service",
+            "http://{$targetHost}:{$onvifPort}/onvif/device_service",
+        ];
+
+        $candidateProfiles = ['Profile_1', 'IPCProfilesToken0', 'ProfileToken_1'];
+        $lastHttpCode = 0;
+
+        foreach ($candidateUrls as $url) {
+            foreach ($candidateProfiles as $profileToken) {
+                if ($direction === 'stop') {
+                    $action = 'Stop';
+                    $soap = <<<XML
+<?xml version="1.0" encoding="utf-8"?>
+<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
+  <s:Body>
+    <Stop xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+      <ProfileToken>{$profileToken}</ProfileToken>
+      <PanTilt>true</PanTilt>
+      <Zoom>true</Zoom>
+    </Stop>
+  </s:Body>
+</s:Envelope>
+XML;
+                } else {
+                    $action = 'ContinuousMove';
+                    $soap = <<<XML
 <?xml version="1.0" encoding="utf-8"?>
 <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
   <s:Body>
@@ -226,26 +236,33 @@ XML;
   </s:Body>
 </s:Envelope>
 XML;
+                }
+
+                try {
+                    $ch = curl_init($url);
+                    curl_setopt($ch, CURLOPT_POST, true);
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, $soap);
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                        "Content-Type: application/soap+xml; charset=utf-8; action=\"http://www.onvif.org/ver20/ptz/wsdl/{$action}\"",
+                        'Content-Length: ' . strlen($soap),
+                    ]);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_TIMEOUT, 2);
+                    $res = curl_exec($ch);
+                    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                    curl_close($ch);
+                    $lastHttpCode = $httpCode;
+
+                    if ($httpCode === 200) {
+                        return ['success' => true, 'direction' => $direction, 'http_code' => 200, 'url' => $url, 'profile' => $profileToken];
+                    }
+                } catch (\Throwable $e) {
+                    // Tenta próximo endpoint
+                }
+            }
         }
 
-        try {
-            $ch = curl_init($targetUrl);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $soap);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                "Content-Type: application/soap+xml; charset=utf-8; action=\"http://www.onvif.org/ver20/ptz/wsdl/{$action}\"",
-                'Content-Length: ' . strlen($soap),
-            ]);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 2);
-            $res = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            return ['success' => true, 'direction' => $direction, 'http_code' => $httpCode];
-        } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
-        }
+        return ['success' => false, 'error' => "ONVIF PTZ não respondeu 200. Último código: {$lastHttpCode}"];
     }
 
     /**
@@ -254,10 +271,11 @@ XML;
     public function setLight(KingCamera $camera, string|bool|null $state = null): array
     {
         $host = $camera->ip_address;
-        $onvifPort = $camera->onvif_port ?: 5000;
-        $targetUrl = ($host === '172.18.0.1' || str_starts_with($host, '172.'))
-            ? 'http://172.18.0.1:5000/onvif/ptz_service'
-            : "http://{$host}:{$onvifPort}/onvif/ptz_service";
+        $onvifPort = $camera->onvif_port ?: 80;
+        $targetHost = ($host === '172.18.0.1' || str_starts_with($host, '172.'))
+            ? '172.18.0.1'
+            : $host;
+        $targetUrl = "http://{$targetHost}:{$onvifPort}/onvif/ptz_service";
 
         // Determina se deve ligar ou desligar (toggle caso null)
         $turnOn = ($state === true || $state === 'on' || $state === '1');
@@ -272,7 +290,7 @@ XML;
 <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
   <s:Body>
     <SendAuxiliaryCommand xmlns="http://www.onvif.org/ver20/ptz/wsdl">
-      <ProfileToken>IPCProfilesToken0</ProfileToken>
+      <ProfileToken>Profile_1</ProfileToken>
       <AuxiliaryData>{$cmd}</AuxiliaryData>
     </SendAuxiliaryCommand>
   </s:Body>
@@ -295,7 +313,7 @@ XML;
 
             // CGI fallback para câmeras Xiongmai / Tuya / V380 / IPC
             $val = $turnOn ? '1' : '0';
-            $cgiUrl = "http://{$host}/cgi-bin/hi3510/param.cgi?cmd=setlightattr&-light_mode={$val}";
+            $cgiUrl = "http://{$targetHost}:{$onvifPort}/cgi-bin/hi3510/param.cgi?cmd=setlightattr&-light_mode={$val}";
             @file_get_contents($cgiUrl, false, stream_context_create(['http' => ['timeout' => 1]]));
 
             return [
@@ -318,10 +336,11 @@ XML;
         $camera->save();
 
         $host = $camera->ip_address;
-        $onvifPort = $camera->onvif_port ?: 5000;
-        $targetUrl = ($host === '172.18.0.1' || str_starts_with($host, '172.'))
-            ? 'http://172.18.0.1:5000/onvif/ptz_service'
-            : "http://{$host}:{$onvifPort}/onvif/ptz_service";
+        $onvifPort = $camera->onvif_port ?: 80;
+        $targetHost = ($host === '172.18.0.1' || str_starts_with($host, '172.'))
+            ? '172.18.0.1'
+            : $host;
+        $targetUrl = "http://{$targetHost}:{$onvifPort}/onvif/ptz_service";
 
         $cmd = $enabled ? 'TrackingOn' : 'TrackingOff';
 
@@ -330,7 +349,7 @@ XML;
 <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
   <s:Body>
     <SendAuxiliaryCommand xmlns="http://www.onvif.org/ver20/ptz/wsdl">
-      <ProfileToken>IPCProfilesToken0</ProfileToken>
+      <ProfileToken>Profile_1</ProfileToken>
       <AuxiliaryData>{$cmd}</AuxiliaryData>
     </SendAuxiliaryCommand>
   </s:Body>
