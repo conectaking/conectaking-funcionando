@@ -1029,6 +1029,8 @@ Route::middleware(['jwt', 'module:king_camera'])->group(function () {
     Route::post('/api/cameras/{id}/light', [\App\Http\Controllers\Camera\KingCameraController::class, 'toggleLight'])->where('id', '[0-9]+');
     Route::post('/api/cameras/{id}/auto-tracking', [\App\Http\Controllers\Camera\KingCameraController::class, 'toggleAutoTracking'])->where('id', '[0-9]+');
     Route::post('/api/cameras/{id}/tracking', [\App\Http\Controllers\Camera\KingCameraController::class, 'toggleAutoTracking'])->where('id', '[0-9]+');
+    Route::get('/api/cameras/{id}/events', [\App\Http\Controllers\Camera\KingCameraController::class, 'listEvents'])->where('id', '[0-9]+');
+    Route::post('/api/cameras/{id}/events', [\App\Http\Controllers\Camera\KingCameraController::class, 'recordEvent'])->where('id', '[0-9]+');
 
     // Detecção / Varredura de Câmeras na Rede Local (Wi-Fi / Cabo)
     Route::get('/api/cameras/discover-lan', [\App\Http\Controllers\Camera\KingCameraController::class, 'discoverLan']);

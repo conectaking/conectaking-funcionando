@@ -56,6 +56,7 @@ class KingCameraController extends Controller
                 'auto_tracking_enabled' => (bool) $cam->auto_tracking_enabled,
                 'audio_detection_enabled' => (bool) $cam->audio_detection_enabled,
                 'crib_fence_enabled' => (bool) $cam->crib_fence_enabled,
+                'crib_roi_json' => $cam->crib_roi_json,
                 'baby_stand_enabled' => (bool) $cam->baby_stand_enabled,
                 'baby_cry_enabled' => (bool) $cam->baby_cry_enabled,
                 'telegram_alerts_enabled' => (bool) $cam->telegram_alerts_enabled,
@@ -864,5 +865,81 @@ class KingCameraController extends Controller
 
         return response()->json($result);
     }
+
+    /**
+     * Lista eventos recentes registrados para a câmera (movimento, cerca, choro, sirene).
+     */
+    public function listEvents(Request $request, int $id): JsonResponse
+    {
+        $userId = (string) $request->attributes->get('auth_user_id', '');
+        $camera = KingCamera::where('id', $id)
+            ->where(function ($q) use ($userId, $request) {
+                $q->where('user_id', $userId);
+                if ($request->attributes->get('auth_role') === 'admin' || $request->attributes->get('is_admin')) {
+                    $q->orWhereNotNull('id');
+                }
+            })
+            ->first();
+
+        if (! $camera) {
+            return response()->json(['success' => false, 'message' => 'Câmera não encontrada.'], 404);
+        }
+
+        $events = \App\Models\KingCameraEvent::where('camera_id', $camera->id)
+            ->orderBy('created_at', 'desc')
+            ->limit(30)
+            ->get(['id', 'event_type', 'description', 'notified_telegram', 'created_at']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $events,
+        ]);
+    }
+
+    /**
+     * Registra um evento em tempo real e dispara alerta Telegram se habilitado.
+     */
+    public function recordEvent(Request $request, int $id): JsonResponse
+    {
+        $userId = (string) $request->attributes->get('auth_user_id', '');
+        $camera = KingCamera::where('id', $id)
+            ->where(function ($q) use ($userId, $request) {
+                $q->where('user_id', $userId);
+                if ($request->attributes->get('auth_role') === 'admin' || $request->attributes->get('is_admin')) {
+                    $q->orWhereNotNull('id');
+                }
+            })
+            ->first();
+
+        if (! $camera) {
+            return response()->json(['success' => false, 'message' => 'Câmera não encontrada.'], 404);
+        }
+
+        $eventType = (string) $request->input('event_type', 'motion');
+        $description = (string) $request->input('description', 'Evento detectado na câmera');
+
+        $event = \App\Models\KingCameraEvent::create([
+            'camera_id' => $camera->id,
+            'user_id' => $camera->user_id,
+            'event_type' => $eventType,
+            'description' => $description,
+            'notified_telegram' => false,
+        ]);
+
+        $camera->update(['last_event_at' => now()]);
+
+        if ($camera->telegram_alerts_enabled && $camera->telegram_chat_id && in_array($eventType, ['baby_cry', 'crib_fence', 'siren', 'motion'])) {
+            try {
+                $this->telegramAgent->sendAlert($camera, $eventType, $description);
+                $event->update(['notified_telegram' => true]);
+            } catch (\Throwable $e) {}
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $event,
+        ]);
+    }
 }
+
 
