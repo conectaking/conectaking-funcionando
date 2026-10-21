@@ -3783,6 +3783,7 @@
             }
             img.style.display = 'block';
 
+            let failCount = 0;
             const refreshFrame = async () => {
                 if (!document.getElementById(`card-cam-${camId}`)) {
                     if (window[`snapInterval_${camId}`]) {
@@ -3797,6 +3798,7 @@
                         headers: getAuthHeaders()
                     });
                     if (res.ok) {
+                        failCount = 0;
                         const blob = await res.blob();
                         const newUrl = URL.createObjectURL(blob);
                         if (img.src && img.src.startsWith('blob:')) {
@@ -3805,15 +3807,31 @@
                         img.src = newUrl;
                         const loaderEl = document.getElementById(`loader-${camId}`);
                         if (loaderEl) loaderEl.style.display = 'none';
+                    } else {
+                        failCount++;
+                        if (failCount >= 3) {
+                            if (window[`snapInterval_${camId}`]) {
+                                clearInterval(window[`snapInterval_${camId}`]);
+                                delete window[`snapInterval_${camId}`];
+                            }
+                            showCameraStreamOffline(camId, 'Câmera não respondeu ao feed de vídeo. Verifique se ela está ligada e conectada ao Wi-Fi.');
+                        }
                     }
                 } catch (e) {
-                    console.warn('Snapshot refresh error:', e);
+                    failCount++;
+                    if (failCount >= 3) {
+                        if (window[`snapInterval_${camId}`]) {
+                            clearInterval(window[`snapInterval_${camId}`]);
+                            delete window[`snapInterval_${camId}`];
+                        }
+                        showCameraStreamOffline(camId, 'Falha ao conectar ao fluxo de vídeo da câmera.');
+                    }
                 }
             };
 
             refreshFrame();
             if (!window[`snapInterval_${camId}`]) {
-                window[`snapInterval_${camId}`] = setInterval(refreshFrame, 1500);
+                window[`snapInterval_${camId}`] = setInterval(refreshFrame, 2500);
             }
         }
 
