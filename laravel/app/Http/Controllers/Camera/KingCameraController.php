@@ -103,16 +103,46 @@ class KingCameraController extends Controller
         $sanitizedId = preg_replace('/[^a-zA-Z0-9]/', '', $userId);
         $streamId = 'cam_u' . substr($sanitizedId, 0, 12) . '_' . substr(bin2hex(random_bytes(4)), 0, 8);
 
+        $rawIp = trim($validated['ip_address']);
+        $rawPort = (int) ($validated['port'] ?? 554);
+        $rawOnvifPort = (int) ($validated['onvif_port'] ?? 80);
+        $rawPassword = $validated['password'] ?? null;
+        $rawName = $validated['name'];
+
+        // Mapeamento automático de câmeras locais atrás do túnel reverso
+        if ($rawIp === '172.16.100.215' || ($rawIp === '172.18.0.1' && $rawPort === 1554)) {
+            $rawIp = '172.18.0.1';
+            $rawPort = 1554;
+            $rawOnvifPort = 1557;
+            if (empty($rawPassword)) {
+                $rawPassword = 'Playadryan22*';
+            }
+            if (empty($rawName) || $rawName === 'Câmera IP' || str_contains($rawName, '172.16.100.215') || str_contains(strtolower($rawName), 'bebe')) {
+                $rawName = 'Quarto Bebê';
+            }
+        } elseif ($rawIp === '172.16.100.43' || ($rawIp === '172.18.0.1' && $rawPort === 1555)) {
+            $rawIp = '172.18.0.1';
+            $rawPort = 1555;
+            $rawOnvifPort = 1556;
+            if ($rawPassword === null) {
+                $rawPassword = '';
+            }
+            if (empty($rawName) || $rawName === 'Câmera IP' || str_contains($rawName, '172.16.100.43') || str_contains(strtolower($rawName), 'sala')) {
+                $rawName = 'Câmera 2 (Sala)';
+            }
+        }
+
         $camera = KingCamera::create([
             'user_id' => $userId,
-            'name' => $validated['name'],
+            'name' => $rawName,
             'room' => $validated['room'] ?? null,
             'stream_id' => $streamId,
-            'ip_address' => trim($validated['ip_address']),
-            'port' => (int) ($validated['port'] ?? 554),
+            'ip_address' => $rawIp,
+            'port' => $rawPort,
+            'onvif_port' => $rawOnvifPort,
             'rtsp_path' => '/' . ltrim((string) ($validated['rtsp_path'] ?? 'onvif1'), '/'),
-            'username' => $validated['username'] ?? null,
-            'password' => $validated['password'] ?? null,
+            'username' => $validated['username'] ?? 'admin',
+            'password' => $rawPassword,
             'telegram_chat_id' => $validated['telegram_chat_id'] ?? null,
             'telegram_phone' => $validated['telegram_phone'] ?? null,
             'telegram_alerts_enabled' => (bool) ($validated['telegram_alerts_enabled'] ?? true),
@@ -672,11 +702,60 @@ class KingCameraController extends Controller
 
         $detected = [];
 
+        // 1. Detecção automática de câmeras locais conectadas pelo Túnel do Conecta King:
+        $errno = 0;
+        $errstr = '';
+        $sock1 = @stream_socket_client("tcp://172.18.0.1:1554", $errno, $errstr, 0.2);
+        if ($sock1) {
+            fclose($sock1);
+            $detected[] = [
+                'ip' => '172.16.100.215',
+                'real_ip' => '172.18.0.1',
+                'port' => 1554,
+                'onvif_port' => 1557,
+                'service_port' => 554,
+                'brand' => 'Quarto Bebê (172.16.100.215)',
+                'rtsp_path' => '/onvif1',
+                'status' => 'online',
+                'label' => 'Quarto Bebê (172.16.100.215)',
+                'default_name' => 'Quarto Bebê',
+                'default_password' => 'Playadryan22*',
+            ];
+        }
+
+        $sock2 = @stream_socket_client("tcp://172.18.0.1:1555", $errno, $errstr, 0.2);
+        if ($sock2) {
+            fclose($sock2);
+            $detected[] = [
+                'ip' => '172.16.100.43',
+                'real_ip' => '172.18.0.1',
+                'port' => 1555,
+                'onvif_port' => 1556,
+                'service_port' => 554,
+                'brand' => 'Câmera 2 (Sala)',
+                'rtsp_path' => '/onvif1',
+                'status' => 'online',
+                'label' => 'Câmera 2 Sala (172.16.100.43)',
+                'default_name' => 'Câmera 2 (Sala)',
+                'default_password' => '',
+            ];
+        }
+
         // Se o usuário digitou um IP específico para testar diretamente:
         if ($targetIp !== '' && filter_var($targetIp, FILTER_VALIDATE_IP)) {
             $probe = $this->probeCameraIp($targetIp);
             if ($probe) {
-                $detected[] = $probe;
+                // Evita duplicatas se já adicionado pelo túnel
+                $exists = false;
+                foreach ($detected as $d) {
+                    if ($d['ip'] === $probe['ip']) {
+                        $exists = true;
+                        break;
+                    }
+                }
+                if (! $exists) {
+                    $detected[] = $probe;
+                }
             }
         } else {
             // Determina as subnets a escanear:
@@ -706,7 +785,7 @@ class KingCameraController extends Controller
             // Escaneia IPs promissores
             $ipsToProbe = [];
             foreach ($subnetsToScan as $sub) {
-                $candidates = [215, 1, 100, 10, 20, 50, 101, 105, 110, 120, 150, 200, 2, 220, 254];
+                $candidates = [215, 43, 1, 100, 10, 20, 50, 101, 105, 110, 120, 150, 200, 2, 220, 254];
                 foreach ($existingIps as $eip) {
                     if (str_starts_with($eip, $sub . '.')) {
                         $p = (int) substr($eip, strlen($sub) + 1);
@@ -724,6 +803,16 @@ class KingCameraController extends Controller
             }
 
             foreach ($ipsToProbe as $ip) {
+                // Evita reprobar se já detectada
+                $already = false;
+                foreach ($detected as $d) {
+                    if ($d['ip'] === $ip) {
+                        $already = true;
+                        break;
+                    }
+                }
+                if ($already) continue;
+
                 $probe = $this->probeCameraIp($ip);
                 if ($probe) {
                     $detected[] = $probe;
@@ -744,6 +833,47 @@ class KingCameraController extends Controller
      */
     private function probeCameraIp(string $ip): ?array
     {
+        $errno = 0;
+        $errstr = '';
+
+        if ($ip === '172.16.100.215') {
+            $conn = @stream_socket_client("tcp://172.18.0.1:1554", $errno, $errstr, 0.3);
+            if ($conn) {
+                fclose($conn);
+                return [
+                    'ip' => '172.16.100.215',
+                    'real_ip' => '172.18.0.1',
+                    'port' => 1554,
+                    'onvif_port' => 1557,
+                    'service_port' => 554,
+                    'brand' => 'Quarto Bebê (172.16.100.215)',
+                    'rtsp_path' => '/onvif1',
+                    'status' => 'online',
+                    'label' => 'Quarto Bebê (172.16.100.215)',
+                    'default_name' => 'Quarto Bebê',
+                    'default_password' => 'Playadryan22*',
+                ];
+            }
+        } elseif ($ip === '172.16.100.43') {
+            $conn = @stream_socket_client("tcp://172.18.0.1:1555", $errno, $errstr, 0.3);
+            if ($conn) {
+                fclose($conn);
+                return [
+                    'ip' => '172.16.100.43',
+                    'real_ip' => '172.18.0.1',
+                    'port' => 1555,
+                    'onvif_port' => 1556,
+                    'service_port' => 554,
+                    'brand' => 'Câmera 2 (Sala)',
+                    'rtsp_path' => '/onvif1',
+                    'status' => 'online',
+                    'label' => 'Câmera 2 Sala (172.16.100.43)',
+                    'default_name' => 'Câmera 2 (Sala)',
+                    'default_password' => '',
+                ];
+            }
+        }
+
         $ports = [554, 8899, 5000, 80];
         $openPort = null;
 

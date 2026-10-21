@@ -7315,7 +7315,7 @@
                                         <p>IP: <b style="color: #fff;">${escapeHtml(d.ip)}</b> | RTSP: <code style="color: var(--kc-gold);">${escapeHtml(d.rtsp_path)}</code> | ${escapeHtml(d.brand)}</p>
                                     </div>
                                 </div>
-                                <button type="button" class="kc-btn kc-btn-primary" onclick="selectDiscoveredCamera('${escapeHtml(d.ip)}', ${d.port}, '${escapeHtml(d.rtsp_path)}', '${escapeHtml(d.brand)}')" style="padding: 0.5rem 0.85rem; font-size: 0.8rem; white-space: nowrap;">
+                                <button type="button" class="kc-btn kc-btn-primary" onclick="selectDiscoveredCamera('${escapeHtml(d.ip)}', ${d.port}, '${escapeHtml(d.rtsp_path)}', '${escapeHtml(d.brand)}', '${escapeHtml(d.default_name || '')}', '${escapeHtml(d.default_password || '')}')" style="padding: 0.5rem 0.85rem; font-size: 0.8rem; white-space: nowrap;">
                                     <i class="fas fa-plus-circle"></i> Adicionar Agora
                                 </button>
                             </div>
@@ -7353,11 +7353,15 @@
             }
         }
 
-        function selectDiscoveredCamera(ip, port, path, brand) {
+        function selectDiscoveredCamera(ip, port, path, brand, defaultName, defaultPass) {
             document.getElementById('cam-ip').value = ip;
             document.getElementById('cam-port').value = port || 554;
             document.getElementById('cam-path').value = path || '/onvif1';
-            document.getElementById('cam-name').value = `Câmera IP (${ip})`;
+            document.getElementById('cam-name').value = defaultName || `Câmera IP (${ip})`;
+            if (defaultPass !== undefined && defaultPass !== null && defaultPass !== '') {
+                const passField = document.getElementById('cam-pass');
+                if (passField) passField.value = defaultPass;
+            }
             setManualMode('ip');
 
             const brandSelect = document.getElementById('cam-brand-preset');
