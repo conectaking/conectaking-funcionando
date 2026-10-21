@@ -132,6 +132,11 @@ class KingCameraController extends Controller
             }
         }
 
+        $rawRtspPath = '/' . ltrim((string) ($validated['rtsp_path'] ?? 'onvif1'), '/');
+        if ($rawPort === 1554 || $rawIp === '172.16.100.215') {
+            $rawRtspPath = '/onvif2';
+        }
+
         $camera = KingCamera::create([
             'user_id' => $userId,
             'name' => $rawName,
@@ -140,7 +145,7 @@ class KingCameraController extends Controller
             'ip_address' => $rawIp,
             'port' => $rawPort,
             'onvif_port' => $rawOnvifPort,
-            'rtsp_path' => '/' . ltrim((string) ($validated['rtsp_path'] ?? 'onvif1'), '/'),
+            'rtsp_path' => $rawRtspPath,
             'username' => $validated['username'] ?? 'admin',
             'password' => $rawPassword,
             'telegram_chat_id' => $validated['telegram_chat_id'] ?? null,
@@ -705,7 +710,7 @@ class KingCameraController extends Controller
         // 1. Detecção automática de câmeras locais conectadas pelo Túnel do Conecta King:
         $errno = 0;
         $errstr = '';
-        $sock1 = @stream_socket_client("tcp://172.18.0.1:1554", $errno, $errstr, 0.2);
+        $sock1 = @stream_socket_client("tcp://172.18.0.1:1554", $errno, $errstr, 0.8);
         if ($sock1) {
             fclose($sock1);
             $detected[] = [
@@ -715,7 +720,7 @@ class KingCameraController extends Controller
                 'onvif_port' => 1557,
                 'service_port' => 554,
                 'brand' => 'Quarto Bebê (172.16.100.215)',
-                'rtsp_path' => '/onvif1',
+                'rtsp_path' => '/onvif2',
                 'status' => 'online',
                 'label' => 'Quarto Bebê (172.16.100.215)',
                 'default_name' => 'Quarto Bebê',
@@ -723,7 +728,7 @@ class KingCameraController extends Controller
             ];
         }
 
-        $sock2 = @stream_socket_client("tcp://172.18.0.1:1555", $errno, $errstr, 0.2);
+        $sock2 = @stream_socket_client("tcp://172.18.0.1:1555", $errno, $errstr, 0.8);
         if ($sock2) {
             fclose($sock2);
             $detected[] = [
@@ -837,7 +842,7 @@ class KingCameraController extends Controller
         $errstr = '';
 
         if ($ip === '172.16.100.215') {
-            $conn = @stream_socket_client("tcp://172.18.0.1:1554", $errno, $errstr, 0.3);
+            $conn = @stream_socket_client("tcp://172.18.0.1:1554", $errno, $errstr, 0.8);
             if ($conn) {
                 fclose($conn);
                 return [
@@ -847,7 +852,7 @@ class KingCameraController extends Controller
                     'onvif_port' => 1557,
                     'service_port' => 554,
                     'brand' => 'Quarto Bebê (172.16.100.215)',
-                    'rtsp_path' => '/onvif1',
+                    'rtsp_path' => '/onvif2',
                     'status' => 'online',
                     'label' => 'Quarto Bebê (172.16.100.215)',
                     'default_name' => 'Quarto Bebê',
@@ -855,7 +860,7 @@ class KingCameraController extends Controller
                 ];
             }
         } elseif ($ip === '172.16.100.43') {
-            $conn = @stream_socket_client("tcp://172.18.0.1:1555", $errno, $errstr, 0.3);
+            $conn = @stream_socket_client("tcp://172.18.0.1:1555", $errno, $errstr, 0.8);
             if ($conn) {
                 fclose($conn);
                 return [

@@ -112,7 +112,7 @@ class KingCameraService
     {
         $goUrl = $this->getGo2RtcUrl();
         try {
-            $res = Http::timeout(4.0)->get("{$goUrl}/api/frame.jpeg?src=" . urlencode($camera->stream_id));
+            $res = Http::timeout(8.0)->get("{$goUrl}/api/frame.jpeg?src=" . urlencode($camera->stream_id));
             if ($res->successful() && ! empty($res->body())) {
                 return $res->body();
             }

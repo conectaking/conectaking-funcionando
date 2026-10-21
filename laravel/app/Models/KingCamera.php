@@ -43,6 +43,8 @@ class KingCamera extends Model
         'last_snapshot_url',
     ];
 
+    protected $appends = ['display_ip'];
+
     protected $casts = [
         'rtsp_port' => 'integer',
         'onvif_port' => 'integer',
@@ -57,6 +59,22 @@ class KingCamera extends Model
         'roi_zones_json' => 'array',
         'last_event_at' => 'datetime',
     ];
+
+    public function getDisplayIpAttribute(): string
+    {
+        $ip = (string) ($this->attributes['ip_address'] ?? '');
+        $port = (int) ($this->attributes['rtsp_port'] ?? 554);
+        $name = strtolower($this->attributes['name'] ?? '');
+        if ($ip === '172.18.0.1' || $ip === '127.0.0.1' || $ip === 'localhost') {
+            if ($port === 1554 || str_contains($name, 'bebe') || str_contains($name, 'bebê')) {
+                return '172.16.100.215';
+            }
+            if ($port === 1555 || str_contains($name, 'sala')) {
+                return '172.16.100.43';
+            }
+        }
+        return $ip;
+    }
 
     public function getPortAttribute(): int
     {
@@ -111,7 +129,7 @@ class KingCamera extends Model
     public function getFullRtspUrlAttribute(): string
     {
         $user = urlencode((string) ($this->username ?: 'admin'));
-        $pass = urlencode($this->getDecryptedPassword());
+        $pass = str_replace('%2A', '*', urlencode($this->getDecryptedPassword()));
         $auth = ($user !== '' || $pass !== '') ? "{$user}:{$pass}@" : '';
         $port = (int) ($this->rtsp_port ?: 554);
         $path = '/' . ltrim((string) ($this->stream_path ?: '/onvif1'), '/');

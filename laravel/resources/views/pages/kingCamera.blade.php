@@ -4829,6 +4829,7 @@
             empty.style.display = 'none';
 
             camerasData.forEach(cam => {
+                const realDisplayIp = cam.display_ip || (cam.ip_address === '172.18.0.1' ? (cam.port == 1554 ? '172.16.100.215' : '172.16.100.43') : cam.ip_address);
                 const card = document.createElement('div');
                 card.className = 'kc-card';
                 card.id = `card-cam-${cam.id}`;
@@ -4837,6 +4838,7 @@
                         <div class="kc-card-title-group">
                             <span class="kc-card-title">${escapeHtml(cam.name)}</span>
                             <span class="kc-room-badge"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(cam.room || 'Geral')}</span>
+                            <span class="kc-room-badge" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #10b981;" title="IP Real no Wi-Fi"><i class="fas fa-wifi"></i> ${realDisplayIp}</span>
                         </div>
                         <div class="kc-card-header-actions">
                             <div class="kc-live-badge">
@@ -4858,7 +4860,7 @@
                         <div class="kc-state-box" id="loader-${cam.id}">
                             <div class="kc-spinner"></div>
                             <div style="font-size: 0.85rem; font-weight: 500;">Conectando WebRTC...</div>
-                            <div style="font-size: 0.72rem; color: var(--kc-text-dim);">IP: ${cam.ip_address}</div>
+                            <div style="font-size: 0.72rem; color: #10b981;"><i class="fas fa-wifi"></i> IP Wi-Fi: ${realDisplayIp}</div>
                         </div>
 
                         <!-- Banners de Alerta em Tempo Real (Choro, Saída do Berço e Movimento) -->
@@ -5043,17 +5045,20 @@
                                     </div>
                                 </div>
                                 <div class="kc-crib-toggles-grid">
-                                    <button type="button" class="kc-pill-btn kc-btn-fence ${cam.crib_fence_enabled ? 'active' : ''}" id="btn-fence-${cam.id}" onclick="toggleCribFence(${cam.id})">
+                                    <button type="button" class="kc-pill-btn kc-btn-track" id="btn-track-person-${cam.id}" onclick="togglePersonTracking(${cam.id})" title="Rastrear e Seguir Pessoa 360°">
+                                        <i class="fas fa-walking" style="color: #3b82f6;"></i> <span>Seguir Pessoa</span>
+                                    </button>
+                                    <button type="button" class="kc-pill-btn kc-btn-track ${cam.auto_tracking_enabled ? 'active' : ''}" id="btn-track-baby-${cam.id}" onclick="toggleBabyTracking(${cam.id})" title="Rastrear e Seguir Bebê no Berço / Quarto">
+                                        <i class="fas fa-baby" style="color: #f59e0b;"></i> <span>Seguir Bebê</span>
+                                    </button>
+                                    <button type="button" class="kc-pill-btn kc-btn-cry ${cam.baby_cry_enabled ? 'active' : ''}" id="btn-cry-${cam.id}" onclick="toggleBabyCryDetector(${cam.id})" title="Alerta Sonoro quando a criança chorar">
+                                        <i class="fas fa-volume-up" style="color: #ec4899;"></i> <span>Monitor Choro</span>
+                                    </button>
+                                    <button type="button" class="kc-pill-btn kc-btn-fence ${cam.crib_fence_enabled ? 'active' : ''}" id="btn-fence-${cam.id}" onclick="toggleCribFence(${cam.id})" title="Desenhar e Ativar Cerca de Proteção do Berço">
                                         <i class="fas fa-vector-square" style="color: #06b6d4;"></i> <span>Cerca do Berço</span>
                                     </button>
-                                    <button type="button" class="kc-pill-btn kc-btn-motion" id="btn-motion-alert-${cam.id}" onclick="toggleBabyMotionAlert(${cam.id})">
-                                        <i class="fas fa-running" style="color: #10b981;"></i> <span>Avisar se Mexer</span>
-                                    </button>
-                                    <button type="button" class="kc-pill-btn kc-btn-cry ${cam.baby_cry_enabled ? 'active' : ''}" id="btn-cry-${cam.id}" onclick="toggleBabyCryDetector(${cam.id})">
-                                        <i class="fas fa-baby" style="color: #ec4899;"></i> <span>Monitor Choro</span>
-                                    </button>
-                                    <button type="button" class="kc-pill-btn kc-btn-track ${cam.auto_tracking_enabled ? 'active' : ''}" id="btn-track-${cam.id}" onclick="toggleAutoTracking(${cam.id})">
-                                        <i class="fas fa-crosshairs" style="color: #f59e0b;"></i> <span>Seguir Bebê</span>
+                                    <button type="button" class="kc-pill-btn kc-btn-motion active" id="btn-motion-alert-${cam.id}" onclick="toggleBabyMotionAlert(${cam.id})" title="Detectar Movimento com Foto Automática e Gravação de 10s">
+                                        <i class="fas fa-running" style="color: #10b981;"></i> <span>Movimento (Foto + 10s)</span>
                                     </button>
                                 </div>
                             </div>
@@ -5638,18 +5643,63 @@
             }
         }
 
-        // ─── AUTO-TRACKING 360° (SEGUIR PESSOA / BEBÊ) ───────────────────────
-        async function toggleAutoTracking(camId) {
+        // ─── AUTO-TRACKING 360° (SEGUIR PESSOA & SEGUIR BEBÊ) ───────────────────────
+        window.trackingModes = window.trackingModes || {};
+
+        async function togglePersonTracking(camId) {
+            const isCurrentlyPerson = Boolean(cameraTracking[camId]) && window.trackingModes[camId] === 'person';
+            if (isCurrentlyPerson) {
+                window.trackingModes[camId] = null;
+                await toggleAutoTracking(camId, false);
+            } else {
+                window.trackingModes[camId] = 'person';
+                await toggleAutoTracking(camId, true, 'person');
+            }
+            updateTrackingPills(camId);
+        }
+
+        async function toggleBabyTracking(camId) {
+            const isCurrentlyBaby = Boolean(cameraTracking[camId]) && window.trackingModes[camId] === 'baby';
+            if (isCurrentlyBaby) {
+                window.trackingModes[camId] = null;
+                await toggleAutoTracking(camId, false);
+            } else {
+                window.trackingModes[camId] = 'baby';
+                await toggleAutoTracking(camId, true, 'baby');
+            }
+            updateTrackingPills(camId);
+        }
+
+        function updateTrackingPills(camId) {
+            const btnPerson = document.getElementById(`btn-track-person-${camId}`);
+            const btnBaby = document.getElementById(`btn-track-baby-${camId}`);
+            const badge = document.getElementById(`track-badge-${camId}`);
+            const isTracking = Boolean(cameraTracking[camId]);
+            const mode = window.trackingModes[camId] || (isTracking ? 'baby' : null);
+
+            if (btnPerson) {
+                btnPerson.classList.toggle('active', isTracking && mode === 'person');
+            }
+            if (btnBaby) {
+                btnBaby.classList.toggle('active', isTracking && mode === 'baby');
+            }
+            if (badge) {
+                badge.style.display = isTracking ? 'inline-flex' : 'none';
+                badge.innerHTML = `<i class="fas fa-crosshairs"></i> Seguir ${mode === 'person' ? 'Pessoa' : 'Bebê'} Ativo`;
+            }
+        }
+
+        async function toggleAutoTracking(camId, forceState = null, mode = 'baby') {
             const cam = camerasData.find(c => c.id === camId);
-            const btnPill = document.getElementById(`btn-track-${camId}`);
             const badge = document.getElementById(`track-badge-${camId}`);
             const modalChk = document.getElementById('modal-auto-tracking-chk');
             const currentState = cam ? Boolean(cam.auto_tracking_enabled) : false;
-            const newState = !currentState;
+            const newState = (forceState !== null) ? forceState : !currentState;
 
-            if (btnPill) {
-                btnPill.disabled = true;
-                btnPill.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Aguarde...</span>';
+            if (newState && !window.trackingModes[camId]) {
+                window.trackingModes[camId] = mode;
+            } else if (!newState) {
+                window.trackingModes[camId] = null;
             }
 
             try {
@@ -5665,15 +5715,7 @@
                     if (cam) cam.auto_tracking_enabled = newState;
                     cameraTracking[camId] = newState;
 
-                    if (btnPill) {
-                        btnPill.disabled = false;
-                        btnPill.classList.toggle('active', newState);
-                        btnPill.innerHTML = `<i class="fas fa-crosshairs" style="color: #10b981;"></i> <span>Seguir ${newState ? 'ATIVO' : 'Bebê'}</span>`;
-                    }
-
-                    if (badge) {
-                        badge.style.display = newState ? 'inline-flex' : 'none';
-                    }
+                    updateTrackingPills(camId);
 
                     if (modalChk && currentEditingId === camId) {
                         modalChk.checked = newState;
@@ -5685,13 +5727,14 @@
                         stopAutoTrackingLoop(camId);
                     }
 
+                    const trackName = window.trackingModes[camId] === 'person' ? 'Pessoa' : 'Bebê';
                     Swal.fire({
                         toast: true,
                         position: 'top-end',
                         icon: 'success',
-                        title: newState ? '🎯 Seguir Bebê / Pessoa Ativado' : '🎯 Rastreamento 360° Desativado',
-                        text: newState ? 'A lente acompanhará automaticamente a criança ou pessoa no quarto.' : 'Câmera em posição fixa.',
-                        timer: 2200,
+                        title: newState ? `🎯 Seguir ${trackName} Ativado!` : '🎯 Rastreamento 360° Desativado',
+                        text: newState ? `A lente acompanhará automaticamente ${trackName === 'Pessoa' ? 'a pessoa' : 'a neném'} no ambiente.` : 'Câmera mantida em posição fixa.',
+                        timer: 2400,
                         showConfirmButton: false
                     });
                 } else {
@@ -5699,16 +5742,12 @@
                 }
             } catch (e) {
                 console.warn('Erro ao acionar rastreamento:', e);
-                if (btnPill) {
-                    btnPill.disabled = false;
-                    btnPill.classList.toggle('active', currentState);
-                    btnPill.innerHTML = '<i class="fas fa-crosshairs" style="color: #10b981;"></i> <span>Seguir Bebê</span>';
-                }
+                updateTrackingPills(camId);
                 Swal.fire({
                     toast: true,
                     position: 'top-end',
                     icon: 'error',
-                    title: 'Erro ao acionar Seguir Bebê',
+                    title: 'Erro ao acionar Seguir',
                     text: e.message || 'Verifique se a câmera suporta rotação ONVIF.',
                     showConfirmButton: false,
                     timer: 2500
@@ -7315,9 +7354,14 @@
                                         <p>IP: <b style="color: #fff;">${escapeHtml(d.ip)}</b> | RTSP: <code style="color: var(--kc-gold);">${escapeHtml(d.rtsp_path)}</code> | ${escapeHtml(d.brand)}</p>
                                     </div>
                                 </div>
-                                <button type="button" class="kc-btn kc-btn-primary" onclick="selectDiscoveredCamera('${escapeHtml(d.ip)}', ${d.port}, '${escapeHtml(d.rtsp_path)}', '${escapeHtml(d.brand)}', '${escapeHtml(d.default_name || '')}', '${escapeHtml(d.default_password || '')}')" style="padding: 0.5rem 0.85rem; font-size: 0.8rem; white-space: nowrap;">
-                                    <i class="fas fa-plus-circle"></i> Adicionar Agora
-                                </button>
+                                <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                                    <button type="button" class="kc-btn kc-btn-emerald" onclick="quickAddDiscoveredCamera('${escapeHtml(d.ip)}', ${d.port}, '${escapeHtml(d.rtsp_path)}', '${escapeHtml(d.brand)}', '${escapeHtml(d.default_name || '')}', '${escapeHtml(d.default_password || '')}')" style="padding: 0.5rem 0.85rem; font-size: 0.8rem; font-weight: 700; white-space: nowrap;">
+                                        <i class="fas fa-bolt"></i> Adicionar com 1 Clique
+                                    </button>
+                                    <button type="button" class="kc-btn kc-btn-secondary" onclick="selectDiscoveredCamera('${escapeHtml(d.ip)}', ${d.port}, '${escapeHtml(d.rtsp_path)}', '${escapeHtml(d.brand)}', '${escapeHtml(d.default_name || '')}', '${escapeHtml(d.default_password || '')}')" style="padding: 0.5rem 0.65rem; font-size: 0.8rem; white-space: nowrap;">
+                                        <i class="fas fa-sliders-h"></i> Personalizar
+                                    </button>
+                                </div>
                             </div>
                         `;
                     });
@@ -7378,6 +7422,59 @@
                 confirmButtonText: 'Continuar',
                 confirmButtonColor: '#f59e0b'
             });
+        }
+
+        async function quickAddDiscoveredCamera(ip, port, path, brand, defaultName, defaultPass) {
+            Swal.fire({
+                title: 'Conectando Câmera...',
+                html: `Vinculando <b>${escapeHtml(defaultName || ip)}</b> (${escapeHtml(ip)}) à sua Timeline...`,
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            try {
+                const payload = {
+                    name: defaultName || `Câmera ${ip}`,
+                    room: (defaultName && defaultName.toLowerCase().includes('sala')) ? 'Sala' : 'Quarto',
+                    ip_address: ip,
+                    port: port || 554,
+                    rtsp_path: path || '/onvif1',
+                    username: 'admin',
+                    password: defaultPass || '',
+                    telegram_alerts_enabled: true,
+                    motion_detection_enabled: true,
+                    audio_detection_enabled: true
+                };
+
+                const res = await fetch('/api/cameras', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(payload)
+                });
+
+                const json = await res.json();
+                if (res.ok && json.success) {
+                    closeAddModal();
+                    await fetchCameras();
+                    Swal.fire({
+                        icon: 'success',
+                        title: '🎉 Câmera Adicionada!',
+                        html: `<b>${escapeHtml(json.data.name)}</b> conectada com sucesso na sua timeline!`,
+                        timer: 3000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    throw new Error(json.message || 'Falha ao adicionar câmera');
+                }
+            } catch (err) {
+                console.error('Quick add error:', err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro ao Adicionar',
+                    text: err.message || 'Verifique se a câmera está ligada na mesma rede Wi-Fi.'
+                });
+            }
         }
 
         // ─── Pareamento via Bluetooth (Web Bluetooth API) ────────────────────
@@ -8739,25 +8836,38 @@
                     activeHandle: null,
                     dragOffset: { x: 0, y: 0 }
                 };
+
                 canvas.style.display = 'block';
+                canvas.style.pointerEvents = 'auto';
+                canvas.classList.add('editing');
+                canvas.style.zIndex = '25';
+                canvas.style.touchAction = 'none';
+
                 btn.classList.add('active');
                 initCribCanvas(camId);
                 startFenceMonitor(camId);
                 saveCameraFenceConfig(camId, true, roi);
 
+                const wrap = canvas.parentElement;
+                if (wrap) {
+                    wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+
                 Swal.fire({
                     toast: true,
                     position: 'top-end',
                     icon: 'success',
-                    title: 'Cerca do Berço Ativada!',
-                    text: 'Arraste os círculos azuis sobre o berço para demarcar a área de proteção.',
+                    title: '👶 Cerca do Berço Ativa!',
+                    text: 'O retângulo azul apareceu no vídeo. Arraste os círculos ou o centro para cobrir o berço.',
                     showConfirmButton: false,
-                    timer: 3500
+                    timer: 4000
                 });
             } else {
                 const s = cribFenceState[camId];
                 s.enabled = false;
                 canvas.style.display = 'none';
+                canvas.style.pointerEvents = 'none';
+                canvas.classList.remove('editing');
                 btn.classList.remove('active');
                 if (s.interval) clearInterval(s.interval);
                 saveCameraFenceConfig(camId, false, s.roi);
@@ -8791,8 +8901,9 @@
 
             const getPos = (e) => {
                 const rect = canvas.getBoundingClientRect();
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const touches = e.touches && e.touches.length > 0 ? e.touches[0] : (e.changedTouches && e.changedTouches.length > 0 ? e.changedTouches[0] : e);
+                const clientX = touches.clientX;
+                const clientY = touches.clientY;
                 return {
                     x: ((clientX - rect.left) / rect.width) * 100,
                     y: ((clientY - rect.top) / rect.height) * 100,
@@ -8816,7 +8927,7 @@
                 const bw = (rw / 100) * canvas.width;
                 const bh = (rh / 100) * canvas.height;
 
-                // Verifica proximidade dos 4 cantos (raio de 26px)
+                // Hit test ampliado para mobile: 38px
                 const handles = [
                     { id: 'tl', x: bx, y: by },
                     { id: 'tr', x: bx + bw, y: by },
@@ -8827,13 +8938,13 @@
                 activeHandle = null;
                 for (let h of handles) {
                     const dist = Math.hypot(pos.px - h.x, pos.py - h.y);
-                    if (dist <= 26) {
+                    if (dist <= 38) {
                         activeHandle = h.id;
                         break;
                     }
                 }
 
-                // Se não clicou num canto, mas clicou dentro do retângulo -> arrastar caixa toda
+                // Se clicou dentro da área, arrasta a caixa inteira
                 if (!activeHandle) {
                     if (pos.x >= rx && pos.x <= rx + rw && pos.y >= ry && pos.y <= ry + rh) {
                         activeHandle = 'move';
@@ -8845,6 +8956,7 @@
                     startPos = { x: pos.x, y: pos.y };
                     initialRoi = { x: rx, y: ry, w: rw, h: rh };
                     if (e.cancelable) e.preventDefault();
+                    if (e.stopPropagation) e.stopPropagation();
                 }
             };
 
@@ -8897,6 +9009,7 @@
 
                 drawCribBox(camId);
                 if (e.cancelable) e.preventDefault();
+                if (e.stopPropagation) e.stopPropagation();
             };
 
             const onEnd = () => {
@@ -8909,6 +9022,9 @@
             };
 
             canvas.onpointerdown = onStart;
+            canvas.addEventListener('touchstart', onStart, { passive: false });
+            canvas.addEventListener('touchmove', onMove, { passive: false });
+            canvas.addEventListener('touchend', onEnd, { passive: false });
             window.addEventListener('pointermove', onMove);
             window.addEventListener('pointerup', onEnd);
             window.addEventListener('pointercancel', onEnd);
@@ -8935,18 +9051,18 @@
             const bh = (rh / 100) * canvas.height;
 
             // Fundo semitransparente azul ciano
-            ctx.fillStyle = 'rgba(6, 182, 212, 0.16)';
+            ctx.fillStyle = 'rgba(6, 182, 212, 0.22)';
             ctx.fillRect(bx, by, bw, bh);
 
-            // Borda traçada cyan
+            // Borda traçada cyan brilhante
             ctx.strokeStyle = '#06b6d4';
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 3.5;
             ctx.setLineDash([8, 4]);
             ctx.strokeRect(bx, by, bw, bh);
             ctx.setLineDash([]);
 
-            // 4 Círculos de Redimensionamento dos Cantos
-            const handleR = 10;
+            // 4 Círculos de Redimensionamento dos Cantos (Grandes para toque mobile)
+            const handleR = 14;
             const corners = [
                 { x: bx, y: by },
                 { x: bx + bw, y: by },
@@ -8960,20 +9076,21 @@
                 ctx.fillStyle = '#06b6d4';
                 ctx.fill();
                 ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 2.5;
+                ctx.lineWidth = 3;
                 ctx.stroke();
             });
 
             // Tag com texto nítido
-            ctx.fillStyle = '#06b6d4';
+            ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 12px Inter, sans-serif';
-            ctx.fillText('🚼 ÁREA SEGURA DO BERÇO (Arraste cantos para ajustar)', bx + 8, Math.max(16, by - 6));
+            ctx.fillText('👶 ÁREA SEGURA DO BERÇO (Arraste cantos ou centro)', bx + 8, Math.max(16, by - 8));
         }
 
-        // ── ALERTA DE MOVIMENTO DA NENÉM ("Avisar quando a neném se mexer") ───────
+        // ── ALERTA DE MOVIMENTO COM FOTO INSTANTÂNEA E VÍDEO DE 10 SEGUNDOS ───────
         window.babyMotionAlerts = {};
         window.babyMotionIntervals = {};
         let lastMotionAlertSent = 0;
+        let isMotionRecordingMap = {};
 
         function toggleBabyMotionAlert(camId) {
             const isNowActive = !window.babyMotionAlerts[camId];
@@ -8988,8 +9105,8 @@
                     toast: true,
                     position: 'top-end',
                     icon: 'success',
-                    title: 'Alerta de Movimento Ativado!',
-                    text: 'Você será avisado no Telegram e com som no celular quando a neném se mexer.',
+                    title: '📸 Detecção Ativa (Foto + Vídeo 10s)',
+                    text: 'Ao detectar qualquer movimento, uma foto será capturada e um clipe de 10 segundos gravado automaticamente!',
                     showConfirmButton: false,
                     timer: 3500
                 });
@@ -8999,7 +9116,7 @@
                     toast: true,
                     position: 'top-end',
                     icon: 'info',
-                    title: 'Alerta de Movimento Desativado',
+                    title: 'Detecção de Movimento Desativada',
                     showConfirmButton: false,
                     timer: 2000
                 });
@@ -9031,12 +9148,12 @@
                     }
 
                     // Se movimentação detectada
-                    if (diff > 180) {
+                    if (diff > 160) {
                         triggerBabyMotionDetected(camId);
                     }
                 }
                 prevData = currentData;
-            }, 1800);
+            }, 1500);
         }
 
         function stopBabyMotionWatcher(camId) {
@@ -9052,36 +9169,83 @@
             const banner = document.getElementById(`motion-alert-${camId}`);
             if (banner) {
                 banner.style.display = 'flex';
-                setTimeout(() => { if (banner) banner.style.display = 'none'; }, 4000);
+                banner.innerHTML = '<i class="fas fa-running"></i> <span>🏃 <b>MOVIMENTO DETECTADO!</b> Foto tirada e gravando vídeo de 10s...</span>';
+                setTimeout(() => { if (banner) banner.style.display = 'none'; }, 6000);
             }
             playToneSound(660, 0.15);
 
             const now = Date.now();
-            if (now - lastMotionAlertSent > 45000) {
-                lastMotionAlertSent = now;
-                try {
-                    fetch(`/api/cameras/${camId}/events`, {
-                        method: 'POST',
-                        credentials: 'include',
-                        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-                        body: JSON.stringify({
-                            event_type: 'motion',
-                            description: '👶 Alerta: A neném se mexeu no berço!'
-                        })
-                    });
-                } catch(e) {}
+            window.lastMotionTriggerTimes = window.lastMotionTriggerTimes || {};
+            if (now - (window.lastMotionTriggerTimes[camId] || 0) < 20000) {
+                return;
             }
+            window.lastMotionTriggerTimes[camId] = now;
+
+            // 1. Tira foto instantânea e guarda no histórico
+            captureAutoSnapshot(camId);
+
+            // 2. Grava vídeo de 10 segundos
+            if (!isMotionRecordingMap[camId]) {
+                isMotionRecordingMap[camId] = true;
+                startVideoRecording(camId, true, 'Detecção de Movimento (10s)');
+                setTimeout(() => {
+                    if (activeRecorders[camId]) {
+                        stopVideoRecording(camId);
+                    }
+                    isMotionRecordingMap[camId] = false;
+                }, 10000);
+            }
+
+            // 3. Notifica Telegram e Banco de Dados
+            try {
+                fetch(`/api/cameras/${camId}/events`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({
+                        event_type: 'motion',
+                        description: '🏃 Movimento detectado! Foto tirada e vídeo de 10s gravado.'
+                    })
+                });
+            } catch(e) {}
         }
 
-        function startFenceMonitor(camId) {
-            const s = cribFenceState[camId];
-            if (!s) return;
-            if (s.interval) clearInterval(s.interval);
-
-            s.interval = setInterval(() => {
-                const video = document.getElementById(`video-${camId}`);
-                if (!video || video.readyState < 2) return;
-            }, 3000);
+        function captureAutoSnapshot(camId) {
+            const v = document.getElementById(`video-${camId}`);
+            if (v && v.videoWidth > 0 && v.videoHeight > 0) {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = v.videoWidth;
+                    canvas.height = v.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            const url = URL.createObjectURL(blob);
+                            const now = new Date();
+                            const clip = {
+                                id: 'snap_' + Date.now(),
+                                camId,
+                                camName: (camerasData.find(c => c.id === camId) || {}).name || 'Câmera',
+                                reason: 'Foto Automática (Movimento)',
+                                date: now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR'),
+                                duration: 'Foto',
+                                url: url,
+                                blob
+                            };
+                            savedClips.unshift(clip);
+                            if (savedClips.length > 50) savedClips.pop();
+                            try {
+                                const metaOnly = savedClips.map(c => ({ id: c.id, camId: c.camId, camName: c.camName, reason: c.reason, date: c.date, duration: c.duration, url: c.url }));
+                                localStorage.setItem('kc_saved_clips_meta', JSON.stringify(metaOnly));
+                            } catch(e) {}
+                            updateClipsBadge();
+                        }
+                    }, 'image/jpeg', 0.92);
+                } catch(e) {
+                    console.warn('Auto snapshot error:', e);
+                }
+            }
         }
 
         async function saveCameraFenceConfig(camId, enabled, roi) {
@@ -9199,33 +9363,42 @@
                 try {
                     let ctx = null;
                     let interval = null;
-                    if (video) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) {
+                        ctx = new AudioCtx();
+                        if (ctx.state === 'suspended') {
+                            ctx.resume();
+                        }
+                    }
+
+                    if (video && ctx) {
                         try {
-                            ctx = new (window.AudioContext || window.webkitAudioContext)();
-                            const src = ctx.createMediaElementSource(video);
-                            const analyser = ctx.createAnalyser();
-                            analyser.fftSize = 512;
-                            src.connect(analyser);
-                            analyser.connect(ctx.destination);
+                            const stream = video.srcObject || (video.captureStream ? video.captureStream() : null);
+                            if (stream && stream.getAudioTracks().length > 0) {
+                                const src = ctx.createMediaStreamSource(stream);
+                                const analyser = ctx.createAnalyser();
+                                analyser.fftSize = 512;
+                                src.connect(analyser);
 
-                            const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                            let cooldown = 0;
+                                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                                let cooldown = 0;
 
-                            interval = setInterval(() => {
-                                analyser.getByteFrequencyData(dataArray);
-                                let cryEnergy = 0;
-                                for (let i = 9; i <= 30; i++) cryEnergy += dataArray[i];
-                                const avg = cryEnergy / 22;
-                                if (avg > 150) {
-                                    const now = Date.now();
-                                    if (now - cooldown > 20000) {
-                                        cooldown = now;
-                                        triggerCryAlert(camId);
+                                interval = setInterval(() => {
+                                    analyser.getByteFrequencyData(dataArray);
+                                    let cryEnergy = 0;
+                                    for (let i = 9; i <= 30; i++) cryEnergy += dataArray[i];
+                                    const avg = cryEnergy / 22;
+                                    if (avg > 140) {
+                                        const now = Date.now();
+                                        if (now - cooldown > 20000) {
+                                            cooldown = now;
+                                            triggerCryAlert(camId);
+                                        }
                                     }
-                                }
-                            }, 1200);
+                                }, 1200);
+                            }
                         } catch(e) {
-                            console.warn('AudioContext source error:', e);
+                            console.warn('Audio stream error, running visual/sound cry monitor:', e);
                         }
                     }
 
@@ -9237,8 +9410,8 @@
                         toast: true,
                         position: 'top-end',
                         icon: 'success',
-                        title: 'Monitor de Choro IA Ativado!',
-                        text: 'A IA notificará você e o Telegram imediatamente se o bebê chorar.',
+                        title: '😭 Monitor de Choro IA Ativado!',
+                        text: 'Você e seu Telegram serão alertados imediatamente se o bebê chorar.',
                         showConfirmButton: false,
                         timer: 3500
                     });
