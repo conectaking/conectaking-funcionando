@@ -207,8 +207,22 @@ class KingCameraService
         foreach ($candidateUrls as $url) {
             foreach ($candidateProfiles as $profileToken) {
                 if ($direction === 'stop') {
-                    $action = 'Stop';
-                    $soap = <<<XML
+                    $soaps = [
+                        <<<XML
+<?xml version="1.0" encoding="utf-8"?>
+<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
+  <s:Body>
+    <ContinuousMove xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+      <ProfileToken>{$profileToken}</ProfileToken>
+      <Velocity>
+        <PanTilt x="0" y="0" xmlns="http://www.onvif.org/ver10/schema"/>
+      </Velocity>
+    </ContinuousMove>
+  </s:Body>
+</s:Envelope>
+XML
+,
+                        <<<XML
 <?xml version="1.0" encoding="utf-8"?>
 <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
   <s:Body>
@@ -219,10 +233,11 @@ class KingCameraService
     </Stop>
   </s:Body>
 </s:Envelope>
-XML;
+XML
+                    ];
                 } else {
-                    $action = 'ContinuousMove';
-                    $soap = <<<XML
+                    $soaps = [
+                        <<<XML
 <?xml version="1.0" encoding="utf-8"?>
 <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
   <s:Body>
@@ -235,29 +250,32 @@ XML;
     </ContinuousMove>
   </s:Body>
 </s:Envelope>
-XML;
+XML
+                    ];
                 }
 
-                try {
-                    $ch = curl_init($url);
-                    curl_setopt($ch, CURLOPT_POST, true);
-                    curl_setopt($ch, CURLOPT_POSTFIELDS, $soap);
-                    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                        'Content-Type: application/soap+xml; charset=utf-8',
-                        'Content-Length: ' . strlen($soap),
-                    ]);
-                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                    curl_setopt($ch, CURLOPT_TIMEOUT, 4);
-                    $res = curl_exec($ch);
-                    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                    curl_close($ch);
-                    $lastHttpCode = $httpCode;
+                foreach ($soaps as $soap) {
+                    try {
+                        $ch = curl_init($url);
+                        curl_setopt($ch, CURLOPT_POST, true);
+                        curl_setopt($ch, CURLOPT_POSTFIELDS, $soap);
+                        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                            'Content-Type: application/soap+xml; charset=utf-8',
+                            'Content-Length: ' . strlen($soap),
+                        ]);
+                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                        curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+                        $res = curl_exec($ch);
+                        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                        curl_close($ch);
+                        $lastHttpCode = $httpCode;
 
-                    if ($httpCode === 200) {
-                        return ['success' => true, 'direction' => $direction, 'http_code' => 200, 'url' => $url, 'profile' => $profileToken];
+                        if ($httpCode === 200) {
+                            return ['success' => true, 'direction' => $direction, 'http_code' => 200, 'url' => $url, 'profile' => $profileToken];
+                        }
+                    } catch (\Throwable $e) {
+                        // Tenta próximo soap / endpoint
                     }
-                } catch (\Throwable $e) {
-                    // Tenta próximo endpoint
                 }
             }
         }

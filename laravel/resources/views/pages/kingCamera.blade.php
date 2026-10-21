@@ -582,29 +582,30 @@
             opacity: 1 !important;
         }
 
-        /* Botões Laterais PTZ de Rotação Rápida - Acionados apenas no Modo PTZ 360° ou Fullscreen */
+        /* Botões Laterais PTZ de Rotação Rápida - Acionados no Modo PTZ 360° ou Fullscreen */
         .kc-side-ptz-btn {
             position: absolute;
-            z-index: 20;
-            background: rgba(15, 23, 42, 0.28);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            color: rgba(255, 255, 255, 0.75);
-            width: 30px;
-            height: 30px;
+            z-index: 50;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1.5px solid rgba(245, 158, 11, 0.45);
+            color: #fbbf24;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            display: none; /* Oculto por padrão para manter o feed da câmera 100% limpo */
+            display: none;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 0.78rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-            transition: all 0.18s ease;
+            font-size: 1.05rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
             user-select: none;
             -webkit-user-select: none;
-            touch-action: manipulation;
-            opacity: 0.38; /* Bem translúcido para enxergar o quarto e bebê através do botão */
+            touch-action: none;
+            pointer-events: auto;
+            opacity: 0.85;
         }
 
         /* Ativação quando o usuário clica no botão PTZ ou quando está em tela cheia */
@@ -616,11 +617,11 @@
 
         .kc-side-ptz-btn:hover,
         .kc-side-ptz-btn:active {
-            opacity: 0.95;
-            background: rgba(245, 158, 11, 0.65);
-            color: #fff;
-            border-color: var(--kc-gold);
-            box-shadow: 0 0 14px rgba(245, 158, 11, 0.5);
+            opacity: 1;
+            background: var(--kc-gold);
+            color: #0f172a;
+            border-color: #fff;
+            box-shadow: 0 0 18px rgba(245, 158, 11, 0.8);
             transform: scale(1.15);
         }
 
@@ -2930,22 +2931,25 @@
                 border-radius: 8px;
             }
 
-            /* Botões Laterais PTZ discretos e semi-transparentes no mobile */
+            /* Botões Laterais PTZ ergonômicos e táteis no mobile */
             .kc-side-ptz-btn {
-                width: 28px !important;
-                height: 28px !important;
-                font-size: 0.72rem !important;
-                opacity: 0.35 !important;
-                background: rgba(15, 23, 42, 0.22) !important;
-                border: 1px solid rgba(255, 255, 255, 0.16) !important;
+                width: 42px !important;
+                height: 42px !important;
+                font-size: 1.15rem !important;
+                opacity: 0.9 !important;
+                background: rgba(15, 23, 42, 0.75) !important;
+                border: 1.5px solid var(--kc-gold) !important;
+                color: #fbbf24 !important;
+                box-shadow: 0 4px 14px rgba(0,0,0,0.6) !important;
             }
             .kc-side-ptz-btn:active {
-                opacity: 0.95 !important;
-                background: rgba(245, 158, 11, 0.65) !important;
-                color: #fff !important;
+                opacity: 1 !important;
+                background: var(--kc-gold) !important;
+                color: #0f172a !important;
+                transform: scale(1.18) !important;
             }
-            .kc-side-ptz-btn.side-left { left: 6px; }
-            .kc-side-ptz-btn.side-right { right: 6px; }
+            .kc-side-ptz-btn.side-left { left: 8px; }
+            .kc-side-ptz-btn.side-right { right: 8px; }
             .kc-side-ptz-btn.side-up { top: 12px; }
             .kc-side-ptz-btn.side-down { bottom: 8px; }
 
@@ -4501,26 +4505,34 @@
 
                         <!-- Botões Rápidos de Giro Lateral PTZ (< e >) Direto no Vídeo -->
                         <button type="button" class="kc-side-ptz-btn side-left" 
-                            onmousedown="ptzStart(${cam.id}, 'left')" onmouseup="ptzStop(${cam.id})"
-                            ontouchstart="ptzStart(${cam.id}, 'left')" ontouchend="ptzStop(${cam.id})"
+                            onpointerdown="ptzActionPress(${cam.id}, 'left', event)" 
+                            onpointerup="ptzActionRelease(${cam.id}, 'left', event)"
+                            onpointercancel="ptzActionRelease(${cam.id}, 'left', event)"
+                            onclick="ptzSingleClickStep(${cam.id}, 'left', event)"
                             title="Girar Câmera para Esquerda">
                             <i class="fas fa-chevron-left"></i>
                         </button>
                         <button type="button" class="kc-side-ptz-btn side-right" 
-                            onmousedown="ptzStart(${cam.id}, 'right')" onmouseup="ptzStop(${cam.id})"
-                            ontouchstart="ptzStart(${cam.id}, 'right')" ontouchend="ptzStop(${cam.id})"
+                            onpointerdown="ptzActionPress(${cam.id}, 'right', event)" 
+                            onpointerup="ptzActionRelease(${cam.id}, 'right', event)"
+                            onpointercancel="ptzActionRelease(${cam.id}, 'right', event)"
+                            onclick="ptzSingleClickStep(${cam.id}, 'right', event)"
                             title="Girar Câmera para Direita">
                             <i class="fas fa-chevron-right"></i>
                         </button>
                         <button type="button" class="kc-side-ptz-btn side-up" 
-                            onmousedown="ptzStart(${cam.id}, 'up')" onmouseup="ptzStop(${cam.id})"
-                            ontouchstart="ptzStart(${cam.id}, 'up')" ontouchend="ptzStop(${cam.id})"
+                            onpointerdown="ptzActionPress(${cam.id}, 'up', event)" 
+                            onpointerup="ptzActionRelease(${cam.id}, 'up', event)"
+                            onpointercancel="ptzActionRelease(${cam.id}, 'up', event)"
+                            onclick="ptzSingleClickStep(${cam.id}, 'up', event)"
                             title="Inclinar Câmera para Cima">
                             <i class="fas fa-chevron-up"></i>
                         </button>
                         <button type="button" class="kc-side-ptz-btn side-down" 
-                            onmousedown="ptzStart(${cam.id}, 'down')" onmouseup="ptzStop(${cam.id})"
-                            ontouchstart="ptzStart(${cam.id}, 'down')" ontouchend="ptzStop(${cam.id})"
+                            onpointerdown="ptzActionPress(${cam.id}, 'down', event)" 
+                            onpointerup="ptzActionRelease(${cam.id}, 'down', event)"
+                            onpointercancel="ptzActionRelease(${cam.id}, 'down', event)"
+                            onclick="ptzSingleClickStep(${cam.id}, 'down', event)"
                             title="Inclinar Câmera para Baixo">
                             <i class="fas fa-chevron-down"></i>
                         </button>
