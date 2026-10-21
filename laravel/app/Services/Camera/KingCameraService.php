@@ -31,10 +31,26 @@ class KingCameraService
         }
         $transcodeProducer = "ffmpeg:{$streamId}#video=h264#audio=opus";
 
+        $sources = [];
+
+        // Para câmeras na porta 1554 (Quarto Bebê), insere /onvif2 e /onvif1 com alta resiliência
+        if ($camera->rtsp_port === 1554 || str_contains($rtspUrl, ':1554/')) {
+            $url2 = str_replace(['/onvif1', '/onvif2'], '/onvif2', $rtspUrl);
+            $url1 = str_replace(['/onvif1', '/onvif2'], '/onvif1', $rtspUrl);
+            $sources[] = $url2;
+            $sources[] = $url1;
+        } else {
+            $sources[] = $rtspUrl;
+        }
+
+        $sources[] = $transcodeProducer;
+
         try {
-            $endpoint = "{$goUrl}/api/streams?name=" . urlencode($streamId)
-                . '&src=' . urlencode($rtspUrl)
-                . '&src=' . urlencode($transcodeProducer);
+            $query = 'name=' . urlencode($streamId);
+            foreach ($sources as $s) {
+                $query .= '&src=' . urlencode($s);
+            }
+            $endpoint = "{$goUrl}/api/streams?{$query}";
             $res = Http::timeout(5)->put($endpoint);
 
             if ($res->successful()) {
