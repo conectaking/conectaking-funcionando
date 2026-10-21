@@ -35,30 +35,6 @@ class KingCameraController extends Controller
 
         $cameras = KingCamera::where('user_id', $userId)->orderBy('created_at', 'asc')->get();
 
-        // Se o usuário não tiver nenhuma câmera ainda, cadastra automaticamente a câmera piloto
-        if ($cameras->isEmpty()) {
-            $sanitizedId = preg_replace('/[^a-zA-Z0-9]/', '', $userId);
-            $pilot = KingCamera::create([
-                'user_id' => $userId,
-                'name' => 'Quarto Bebê',
-                'room' => 'Quarto',
-                'stream_id' => "cam_user_{$sanitizedId}_pilot",
-                'ip_address' => '172.16.100.215',
-                'port' => 554,
-                'rtsp_path' => '/onvif1',
-                'username' => 'admin',
-                'password' => 'Playadryan22*',
-                'telegram_alerts_enabled' => true,
-                'telegram_chat_id' => '78792434',
-                'status' => 'online',
-            ]);
-
-            // Registra no go2rtc
-            $this->cameraService->syncStreamToGo2Rtc($pilot);
-
-            $cameras = collect([$pilot]);
-        }
-
         $botUsername = $this->telegramAgent->getBotUsername();
         $telegramDeepLink = "https://t.me/{$botUsername}?start=user_{$userId}";
 

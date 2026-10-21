@@ -3528,6 +3528,9 @@
                             <button type="button" class="kc-card-edit-btn" onclick="editCamera(${cam.id})" title="Configurações e Edição da Câmera">
                                 <i class="fas fa-sliders-h"></i> <span>Configurar</span>
                             </button>
+                            <button type="button" class="kc-card-delete-btn" onclick="deleteCamera(${cam.id})" title="Remover Câmera" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #f87171; border-radius: 8px; padding: 0.35rem 0.65rem; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                <i class="fas fa-trash-alt"></i> <span>Remover</span>
+                            </button>
                         </div>
                     </div>
                     <div class="kc-video-wrap">
@@ -5779,9 +5782,18 @@
                         credentials: 'include',
                         headers: getAuthHeaders()
                     });
-                    const json = await delRes.json();
                     if (json.success) {
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'Câmera removida com sucesso!',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
                         loadCameras();
+                    } else {
+                        Swal.fire('Erro', json.message || 'Não foi possível remover.', 'error');
                     }
                 } catch (err) {
                     Swal.fire('Erro', 'Não foi possível remover.', 'error');
