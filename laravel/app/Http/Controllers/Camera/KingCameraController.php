@@ -332,42 +332,6 @@ class KingCameraController extends Controller
     }
 
     /**
-     * Lista todos os links de compartilhamento ativos de uma câmera.
-     */
-    public function listShares(Request $request, int $id): JsonResponse
-    {
-        $userId = (string) $request->attributes->get('auth_user_id', '');
-        $camera = KingCamera::where('id', $id)->where('user_id', $userId)->first();
-        if (! $camera) {
-            return response()->json(['success' => false, 'message' => 'Câmera não encontrada.'], 404);
-        }
-
-        $shares = KingCameraShare::where('camera_id', $id)
-            ->where('is_active', true)
-            ->orderByDesc('id')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $shares->map(fn (KingCameraShare $s) => [
-                'id' => $s->id,
-                'token' => $s->share_token,
-                'label' => $s->label,
-                'share_url' => url('/monitor/' . $s->share_token),
-                'expires_at' => $s->expires_at->toIso8601String(),
-                'duration_seconds' => $s->duration_seconds,
-                'is_expired' => $s->isExpired(),
-                'seconds_remaining' => max(0, $s->expires_at->diffInSeconds(now(), false) * -1),
-                'view_count' => $s->view_count,
-                'created_at' => $s->created_at?->toIso8601String(),
-            ]),
-        ]);
-    }
-
-    /**
-     * Cria um novo link de compartilhamento com tempo de expiração customizado.
-     */
-    /**
      * Lista todos os links de compartilhamento da câmera com suas permissões.
      */
     public function listShares(Request $request, int $id): JsonResponse

@@ -708,14 +708,16 @@
 
         /* Card Footer */
         .kc-card-footer {
-            padding: 0.85rem 1.15rem;
+            padding: 0.85rem 1rem;
             display: flex;
-            align-items: center;
-            justify-content: space-between;
+            flex-direction: column;
+            gap: 0.65rem;
             border-top: 1px solid var(--kc-border);
             font-size: 0.8rem;
             color: var(--kc-text-dim);
             background: rgba(15, 20, 34, 0.4);
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .kc-ip-tag {
@@ -2473,22 +2475,10 @@
                 <div class="kc-modal-title" id="modal-title">Conectar Nova Câmera</div>
                 <button type="button" class="kc-modal-close" onclick="closeModal()">&times;</button>
             </div>
-            <!-- Tabs -->
-            <div class="kc-modal-tabs">
-                <button type="button" class="kc-tab-btn active tab-add-only" data-tab="tab-wizard">
-                    <i class="fas fa-wand-magic-sparkles"></i> Assistente Guiado
-                </button>
-                <button type="button" class="kc-tab-btn tab-add-only" data-tab="tab-lan-scan">
-                    <i class="fas fa-network-wired"></i> Detectar na Rede
-                </button>
-                <button type="button" class="kc-tab-btn tab-add-only" data-tab="tab-bluetooth">
-                    <i class="fab fa-bluetooth-b"></i> Bluetooth
-                </button>
-                <button type="button" class="kc-tab-btn tab-add-only" data-tab="tab-scan">
-                    <i class="fas fa-camera"></i> Ler QR da Câmera
-                </button>
-                <button type="button" class="kc-tab-btn" data-tab="tab-rtsp" id="tab-btn-rtsp">
-                    <i class="fas fa-sliders-h"></i> <span id="tab-title-rtsp">ID ou IP (Manual)</span>
+            <!-- Tabs (Modo Configuração / Edição de Câmera Existente) -->
+            <div class="kc-modal-tabs" id="modal-tabs-header" style="display: none;">
+                <button type="button" class="kc-tab-btn active" data-tab="tab-rtsp" id="tab-btn-rtsp">
+                    <i class="fas fa-sliders-h"></i> <span id="tab-title-rtsp">Câmera &amp; Conexão</span>
                 </button>
                 <button type="button" class="kc-tab-btn" data-tab="tab-ai-baby" id="tab-btn-ai-baby">
                     <i class="fas fa-baby"></i> IA Babá &amp; Berço
@@ -2496,313 +2486,206 @@
                 <button type="button" class="kc-tab-btn" data-tab="tab-telegram" id="tab-btn-telegram">
                     <i class="fab fa-telegram-plane"></i> Agente Telegram
                 </button>
-                <button type="button" class="kc-tab-btn tab-edit-only" data-tab="tab-light-ptz" id="tab-btn-light-ptz" style="display: none;">
+                <button type="button" class="kc-tab-btn tab-edit-only" data-tab="tab-light-ptz" id="tab-btn-light-ptz">
                     <i class="fas fa-lightbulb"></i> Luz &amp; Rastreio 360°
                 </button>
-                <button type="button" class="kc-tab-btn tab-edit-only" data-tab="tab-shares" id="tab-btn-shares" style="display: none;">
+                <button type="button" class="kc-tab-btn tab-edit-only" data-tab="tab-shares" id="tab-btn-shares">
                     <i class="fas fa-link"></i> Links &amp; Convidados
                 </button>
             </div>
             <div class="kc-modal-body">
 
                 <!-- ═════════════════════════════════════════════════════════════ -->
-                <!-- ABA 1: ASSISTENTE INTELIGENTE ESTILO YOOSEE / TUYA / MIBO     -->
+                <!-- HUB DE SELEÇÃO: ADICIONAR NOVA CÂMERA (ESTILO YOOSEE / TUYA)   -->
                 <!-- ═════════════════════════════════════════════════════════════ -->
-                <div class="kc-tab-pane active" id="tab-wizard">
-                    <!-- Stepper -->
-                    <div class="kc-stepper">
-                        <div class="kc-step-item active" id="step-node-1">
-                            <div class="kc-step-bubble">1</div>
-                            <div class="kc-step-title">Ligar</div>
+                <div id="kc-add-hub" style="display: none; padding: 0.25rem 0 0.75rem;">
+                    <div style="text-align: center; margin-bottom: 1.25rem;">
+                        <h3 style="font-size: 1.15rem; font-weight: 800; color: #fff; margin-bottom: 0.35rem;">
+                            Como deseja conectar sua câmera?
+                        </h3>
+                        <p style="font-size: 0.85rem; color: #94a3b8; max-width: 520px; margin: 0 auto; line-height: 1.45;">
+                            Escolha o método mais simples de acordo com o modelo da sua câmera:
+                        </p>
+                    </div>
+
+                    <div class="kc-add-cards-grid">
+                        <!-- Opção 1: QR Code na Tela (Recomendado) -->
+                        <div class="kc-add-card highlight" onclick="openAddFlow('qrcode')">
+                            <div class="kc-add-card-badge">MAIS RÁPIDO</div>
+                            <div class="kc-add-card-icon" style="color: var(--kc-gold); background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.35);">
+                                <i class="fas fa-qrcode"></i>
+                            </div>
+                            <div class="kc-add-card-body">
+                                <h4>1. Ler QR Code na Tela</h4>
+                                <p>Digite o Wi-Fi de casa. O celular gera o QR Code e a lente da câmera lê direto da sua tela em segundos.</p>
+                                <span class="kc-add-card-tag"><i class="fas fa-bolt"></i> Recomendado para Yoosee / Tuya / Smart Life</span>
+                            </div>
+                            <i class="fas fa-chevron-right kc-add-card-arrow"></i>
                         </div>
-                        <div class="kc-step-item" id="step-node-2">
-                            <div class="kc-step-bubble">2</div>
-                            <div class="kc-step-title">Reset &amp; Som</div>
+
+                        <!-- Opção 2: Ponto de Acesso / Modo AP -->
+                        <div class="kc-add-card" onclick="openAddFlow('hotspot')">
+                            <div class="kc-add-card-icon" style="color: var(--kc-cyan); background: rgba(6, 182, 212, 0.12); border-color: rgba(6, 182, 212, 0.35);">
+                                <i class="fas fa-wifi"></i>
+                            </div>
+                            <div class="kc-add-card-body">
+                                <h4>2. Wi-Fi da Câmera (Rede GW_IPC / AP)</h4>
+                                <p>A câmera está emitindo uma rede Wi-Fi própria? Veja onde conectar no celular e use o IP padrão de fábrica <b>192.168.1.1</b>.</p>
+                                <span class="kc-add-card-tag" style="color: var(--kc-cyan);"><i class="fas fa-network-wired"></i> Sem QR Code / Modo Direto</span>
+                            </div>
+                            <i class="fas fa-chevron-right kc-add-card-arrow"></i>
                         </div>
-                        <div class="kc-step-item" id="step-node-3">
-                            <div class="kc-step-bubble">3</div>
-                            <div class="kc-step-title">Conectar</div>
+
+                        <!-- Opção 3: Já na Rede Wi-Fi / Cabo -->
+                        <div class="kc-add-card" onclick="openAddFlow('lan')">
+                            <div class="kc-add-card-icon" style="color: var(--kc-emerald); background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.35);">
+                                <i class="fas fa-radar"></i>
+                            </div>
+                            <div class="kc-add-card-body">
+                                <h4>3. Já Conectada no Wi-Fi ou Cabo</h4>
+                                <p>Sua câmera já está ligada na sua internet ou cabo de rede? Localize o endereço IP dela automaticamente com 1 clique.</p>
+                                <span class="kc-add-card-tag" style="color: var(--kc-emerald);"><i class="fas fa-magnifying-glass"></i> Varredura Automática</span>
+                            </div>
+                            <i class="fas fa-chevron-right kc-add-card-arrow"></i>
+                        </div>
+
+                        <!-- Opção 4: Manual por ID ou IP -->
+                        <div class="kc-add-card" onclick="openAddFlow('manual')">
+                            <div class="kc-add-card-icon" style="color: #94a3b8; background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.15);">
+                                <i class="fas fa-sliders-h"></i>
+                            </div>
+                            <div class="kc-add-card-body">
+                                <h4>4. Manual por ID ou IP Fixo</h4>
+                                <p>Para quem já possui o ID de 7 a 10 dígitos da etiqueta (ex: 10482910) ou câmeras com IP fixo / CFTV.</p>
+                                <span class="kc-add-card-tag" style="color: #cbd5e1;"><i class="fas fa-keyboard"></i> Configuração Avançada</span>
+                            </div>
+                            <i class="fas fa-chevron-right kc-add-card-arrow"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═════════════════════════════════════════════════════════════ -->
+                <!-- FLUXO 1: CONEXÃO RÁPIDA POR QR CODE NA TELA                    -->
+                <!-- ═════════════════════════════════════════════════════════════ -->
+                <div class="kc-tab-pane" id="flow-qrcode" style="display: none;">
+                    <button type="button" class="kc-back-hub-btn" onclick="showAddHub()">
+                        <i class="fas fa-arrow-left"></i> Voltar às opções de conexão
+                    </button>
+
+                    <div style="text-align: center; margin-bottom: 1rem;">
+                        <h4 style="font-size: 1.05rem; font-weight: 800; color: #fff; margin-bottom: 0.25rem;">
+                            <i class="fas fa-qrcode" style="color: var(--kc-gold); margin-right: 0.35rem;"></i>
+                            Conexão Rápida por QR Code
+                        </h4>
+                        <p style="font-size: 0.82rem; color: #94a3b8; max-width: 460px; margin: 0 auto; line-height: 1.45;">
+                            Digite os dados do Wi-Fi da sua casa (2.4 GHz). Aproxime a tela para a lente da câmera a 15-20cm até ela apitar.
+                        </p>
+                    </div>
+
+                    <div class="kc-form-row">
+                        <div class="kc-form-group">
+                            <label class="kc-label" for="qr-wifi-ssid">Nome do Wi-Fi (SSID 2.4GHz) *</label>
+                            <input type="text" id="qr-wifi-ssid" class="kc-input" placeholder="Ex: MeuWiFi_2.4G" oninput="generateFastWifiQr()">
+                        </div>
+                        <div class="kc-form-group">
+                            <label class="kc-label" for="qr-wifi-pass">Senha do Wi-Fi *</label>
+                            <input type="text" id="qr-wifi-pass" class="kc-input" placeholder="Senha da rede" oninput="generateFastWifiQr()">
                         </div>
                     </div>
 
-                    <!-- ETAPA 1: LIGAR DISPOSITIVO -->
-                    <div id="wizard-pane-1">
-                        <div class="kc-subtabs">
-                            <button type="button" class="kc-subtab-btn active" onclick="switchPowerSubtab('plug', this)">
-                                <i class="fas fa-plug"></i> Dispositivo Plugável (Tomada)
-                            </button>
-                            <button type="button" class="kc-subtab-btn" onclick="switchPowerSubtab('battery', this)">
-                                <i class="fas fa-battery-full"></i> Bateria / Solar
-                            </button>
-                        </div>
+                    <!-- QR Code Display Box -->
+                    <div style="background: #ffffff; padding: 1.25rem; border-radius: 16px; margin: 0.75rem auto; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 8px 30px rgba(0,0,0,0.5); max-width: 260px;">
+                        <div id="fast-qrcode-container"></div>
+                    </div>
 
-                        <div id="power-content-plug">
-                            <div class="kc-method-card">
-                                <div class="kc-method-icon-box"><i class="fas fa-plug-circle-check"></i></div>
-                                <div class="kc-method-details">
-                                    <h5>Método A: Fonte de Alimentação</h5>
-                                    <p>Conecte o cabo micro-USB ou fonte 12V na tomada. Aguarde cerca de 30 segundos até a câmera girar ou emitir o primeiro sinal de inicialização.</p>
-                                </div>
+                    <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 10px; padding: 0.75rem; text-align: center; margin: 0.75rem 0;">
+                        <div style="font-size: 0.82rem; color: #fcd34d; font-weight: 600;">
+                            <i class="fas fa-bell"></i> Aproxime a tela da lente até a câmera dizer <i>"Conectando ao Wi-Fi"</i> ou emitir o bipe.
+                        </div>
+                    </div>
+
+                    <div class="kc-form-row" style="margin-top: 0.75rem;">
+                        <div class="kc-form-group" style="flex: 2;">
+                            <label class="kc-label" for="qr-cam-name">Nome da Câmera *</label>
+                            <input type="text" id="qr-cam-name" class="kc-input" placeholder="Ex: Sala de Estar" value="Câmera Wi-Fi">
+                        </div>
+                        <div class="kc-form-group" style="flex: 1;">
+                            <label class="kc-label" for="qr-cam-room">Cômodo</label>
+                            <input type="text" id="qr-cam-room" class="kc-input" placeholder="Ex: Sala" value="Sala">
+                        </div>
+                    </div>
+
+                    <button type="button" class="kc-btn kc-btn-emerald" id="btn-save-qr-cam" onclick="saveCameraFromQrFlow()" style="width: 100%; padding: 0.9rem; font-size: 1rem; font-weight: 800; border-radius: 10px; margin-top: 0.5rem; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);">
+                        <i class="fas fa-check-circle"></i> A Câmera Leu o QR Code! (Conectar e Salvar)
+                    </button>
+                </div>
+
+                <!-- ═════════════════════════════════════════════════════════════ -->
+                <!-- FLUXO 2: WI-FI PRÓPRIO DA CÂMERA (PONTO DE ACESSO / MODO AP)   -->
+                <!-- ═════════════════════════════════════════════════════════════ -->
+                <div class="kc-tab-pane" id="flow-hotspot" style="display: none;">
+                    <button type="button" class="kc-back-hub-btn" onclick="showAddHub()">
+                        <i class="fas fa-arrow-left"></i> Voltar às opções de conexão
+                    </button>
+
+                    <div style="background: rgba(6, 182, 212, 0.08); border: 1.5px solid rgba(6, 182, 212, 0.35); border-radius: 14px; padding: 1.15rem; margin-bottom: 1rem;">
+                        <h4 style="font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-wifi" style="color: var(--kc-cyan);"></i> Como funciona a rede própria da câmera (Modo AP)
+                        </h4>
+                        <p style="font-size: 0.82rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 0.85rem;">
+                            Quando a câmera é ligada ou resetada, ela transmite uma rede Wi-Fi própria para você se conectar direto nela, sem precisar de internet:
+                        </p>
+                        
+                        <div class="kc-method-card" style="margin-bottom: 0.65rem;">
+                            <div class="kc-method-icon-box" style="color: var(--kc-gold);"><i class="fas fa-mobile-screen"></i></div>
+                            <div class="kc-method-details">
+                                <h5>1. Abra as Configurações de Wi-Fi do seu Celular</h5>
+                                <p>Procure na lista de redes sem fio próximas por nomes como: <b style="color: var(--kc-gold);">GW_IPC_...</b>, <b style="color: var(--kc-gold);">CAM_...</b>, <b style="color: var(--kc-gold);">Cloud_...</b> ou <b style="color: var(--kc-gold);">V380_...</b></p>
                             </div>
                         </div>
 
-                        <div id="power-content-battery" style="display: none;">
-                            <div class="kc-method-card">
-                                <div class="kc-method-icon-box"><i class="fas fa-power-off"></i></div>
-                                <div class="kc-method-details">
-                                    <h5>Método A: Botão Power</h5>
-                                    <p>Pressione e segure o botão de ligar até acender o LED indicador ou ouvir o som de inicialização.</p>
-                                </div>
-                            </div>
-                            <div class="kc-method-card">
-                                <div class="kc-method-icon-box"><i class="fas fa-toggle-on"></i></div>
-                                <div class="kc-method-details">
-                                    <h5>Método B: Chave Alternadora (ON / OFF)</h5>
-                                    <p>Localize o interruptor sob a tampa de borracha e deslize-o para a posição <b>ON</b>.</p>
-                                </div>
+                        <div class="kc-method-card" style="margin-bottom: 0.65rem;">
+                            <div class="kc-method-icon-box" style="color: var(--kc-cyan);"><i class="fas fa-key"></i></div>
+                            <div class="kc-method-details">
+                                <h5>2. Senha de Fábrica da Câmera</h5>
+                                <p>A senha padrão da rede Wi-Fi da câmera é <b style="color: #fff; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px;">12345678</b> ou rede aberta sem senha.</p>
                             </div>
                         </div>
 
-                        <label class="kc-checkbox-label" for="chk-power-on">
-                            <input type="checkbox" id="chk-power-on" onchange="toggleWizardBtn(1)">
-                            <span>O dispositivo está ligado e com energia</span>
-                        </label>
+                        <div class="kc-method-card" style="margin-bottom: 0.65rem;">
+                            <div class="kc-method-icon-box" style="color: var(--kc-emerald);"><i class="fas fa-shield-halved"></i></div>
+                            <div class="kc-method-details">
+                                <h5>3. Celular avisou "Sem internet"?</h5>
+                                <p>Toque em <b>"Manter conexão Wi-Fi"</b>. Seus dados móveis (4G/5G) podem ficar ligados para continuar acessando o Conecta King normalmente.</p>
+                            </div>
+                        </div>
 
-                        <button type="button" class="kc-btn kc-btn-primary" id="btn-step-1-next" onclick="goToWizardStep(2)" disabled style="width: 100%; margin-top: 1.25rem;">
-                            Próximo: Redefinir Câmera <i class="fas fa-arrow-right"></i>
+                        <div class="kc-method-card">
+                            <div class="kc-method-icon-box" style="color: #3b82f6;"><i class="fas fa-globe"></i></div>
+                            <div class="kc-method-details">
+                                <h5>4. Qual é o IP para conectar?</h5>
+                                <p>Toda câmera conectada no modo AP responde no endereço de fábrica: <b style="color: var(--kc-cyan);">192.168.1.1</b>.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ação Direta -->
+                    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--kc-border); border-radius: 12px; padding: 1.1rem;">
+                        <h5 style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 0.75rem;">
+                            <i class="fas fa-bolt" style="color: var(--kc-gold);"></i> Conectar Câmera em Modo Direto (IP 192.168.1.1)
+                        </h5>
+                        <div class="kc-form-group">
+                            <label class="kc-label" for="ap-cam-name">Nome da Câmera</label>
+                            <input type="text" id="ap-cam-name" class="kc-input" placeholder="Ex: Câmera Portão" value="Câmera Wi-Fi (Modo AP)">
+                        </div>
+                        <div class="kc-form-group">
+                            <label class="kc-label" for="ap-cam-pass">Senha da Câmera (RTSP)</label>
+                            <input type="password" id="ap-cam-pass" class="kc-input" placeholder="Ex: 123456, admin ou Playadryan22*" value="Playadryan22*">
+                            <div class="kc-form-help">Se não configurou senha ainda, o padrão de fábrica é <code>admin</code> ou <code>Playadryan22*</code>.</div>
+                        </div>
+                        <button type="button" class="kc-btn kc-btn-primary" id="btn-save-ap-cam" onclick="saveCameraFromApMode()" style="width: 100%; padding: 0.85rem; font-size: 0.95rem; font-weight: 700; border-radius: 10px; margin-top: 0.5rem;">
+                            <i class="fas fa-link"></i> Salvar Câmera no IP 192.168.1.1 Agora
                         </button>
-                    </div>
-
-                    <!-- ETAPA 2: REDEFINIR DISPOSITIVO (RESET & SOM) -->
-                    <div id="wizard-pane-2" style="display: none;">
-                        <h4 style="font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem;">
-                            Passo 2: Redefinir Dispositivo (Reset)
-                        </h4>
-                        <p style="font-size: 0.8rem; color: var(--kc-text-muted); margin-bottom: 1rem;">
-                            Pressione e segure o botão Reset da câmera até que o dispositivo emita um aviso sonoro contínuo ou diga <i>"Restoring factory settings"</i>.
-                        </p>
-
-                        <div class="kc-method-card">
-                            <div class="kc-method-icon-box"><i class="fas fa-compress-arrows-alt"></i></div>
-                            <div class="kc-method-details">
-                                <h5>Método A: Orifício Reset com Agulha</h5>
-                                <p>Insira a chavinha de reset ou clipe no orifício marcado como <b>RESET</b> e segure por 5 a 10 segundos.</p>
-                            </div>
-                        </div>
-
-                        <div class="kc-method-card">
-                            <div class="kc-method-icon-box"><i class="fas fa-sd-card"></i></div>
-                            <div class="kc-method-details">
-                                <h5>Método B: Botão Físico ao Lado do Cartão SD</h5>
-                                <p>Gire a lente da câmera para cima e pressione o botão Reset posicionado junto ao slot de memória.</p>
-                            </div>
-                        </div>
-
-                        <div class="kc-method-card">
-                            <div class="kc-method-icon-box"><i class="fas fa-code-fork"></i></div>
-                            <div class="kc-method-details">
-                                <h5>Método C: Botão no Chicote de Cabos</h5>
-                                <p>Em câmeras externas tipo Bullet ou PTZ, pressione o botão com tampa emborrachada no cabo de conexão.</p>
-                            </div>
-                        </div>
-
-                        <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 12px; padding: 1rem; margin-top: 0.85rem; text-align: center;">
-                            <div style="font-size: 0.82rem; color: var(--kc-cyan); font-weight: 600; margin-bottom: 0.4rem;">
-                                Teste o som que a câmera deve estar emitindo:
-                            </div>
-                            <button type="button" class="kc-sample-sound-btn" onclick="playSampleSound('dodo')">
-                                <i class="fas fa-volume-high"></i> Reproduzir Som Amostra "Do-Do"
-                            </button>
-                            <div style="font-size: 0.72rem; color: var(--kc-text-dim);">
-                                (Sinal sonoro intermitente indicando prontidão para conexão)
-                            </div>
-                        </div>
-
-                        <label class="kc-checkbox-label" for="chk-reset-done">
-                            <input type="checkbox" id="chk-reset-done" onchange="toggleWizardBtn(2)">
-                            <span>Eu ouvi o tom recorrente "Do-Do" ou bipe contínuo</span>
-                        </label>
-
-                        <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem;">
-                            <button type="button" class="kc-btn kc-btn-secondary" onclick="goToWizardStep(1)">
-                                <i class="fas fa-arrow-left"></i> Voltar
-                            </button>
-                            <button type="button" class="kc-btn kc-btn-primary" id="btn-step-2-next" onclick="goToWizardStep(3)" disabled style="flex: 1;">
-                                Próximo: Escolher Modo de Conexão <i class="fas fa-arrow-right"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- ETAPA 3: ESCOLHER MODO DE CONEXÃO (ESTILO YOOSEE / TUYA) -->
-                    <div id="wizard-pane-3" style="display: none;">
-                        <h4 style="font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem;">
-                            Passo 3: Escolher Método de Conexão
-                        </h4>
-                        <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 1rem;">
-                            Escolha como deseja conectar sua câmera ao sistema:
-                        </p>
-
-                        <!-- Menu de 5 Métodos Estilo Yoosee -->
-                        <div class="kc-type-switch" style="overflow-x: auto; scrollbar-width: thin; padding-bottom: 4px;">
-                            <button type="button" class="kc-type-btn active" id="btn-sub-qrcode" onclick="switchConnSubtab('qrcode')">
-                                <i class="fas fa-qrcode"></i> 1. Via Wi-Fi (QR Code)
-                            </button>
-                            <button type="button" class="kc-type-btn" id="btn-sub-cable" onclick="switchConnSubtab('cable')">
-                                <i class="fas fa-network-wired"></i> 2. Cabo de Rede
-                            </button>
-                            <button type="button" class="kc-type-btn" id="btn-sub-bluetooth" onclick="switchConnSubtab('bluetooth')">
-                                <i class="fab fa-bluetooth-b"></i> 3. Bluetooth
-                            </button>
-                            <button type="button" class="kc-type-btn" id="btn-sub-hotspot" onclick="switchConnSubtab('hotspot')">
-                                <i class="fas fa-wifi"></i> 4. Ponto de Acesso
-                            </button>
-                            <button type="button" class="kc-type-btn" id="btn-sub-lan" onclick="switchConnSubtab('lan')">
-                                <i class="fas fa-radar"></i> 5. Já na Rede
-                            </button>
-                        </div>
-
-                        <!-- 1. Opção A: QR Code na Tela (Lente Lê) -->
-                        <div id="conn-pane-qrcode">
-                            <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 0.85rem;">
-                                Digite os dados da sua rede Wi-Fi de <b>2.4 GHz</b>. Aproxime a tela para a lente da câmera:
-                            </p>
-                            <div class="kc-form-row">
-                                <div class="kc-form-group">
-                                    <label class="kc-label" for="wizard-wifi-ssid">Nome do Wi-Fi (SSID) *</label>
-                                    <input type="text" id="wizard-wifi-ssid" class="kc-input" placeholder="Ex: MinhaCasa_2.4G" oninput="generateWizardWifiQr()">
-                                </div>
-                                <div class="kc-form-group">
-                                    <label class="kc-label" for="wizard-wifi-pass">Senha do Wi-Fi *</label>
-                                    <input type="text" id="wizard-wifi-pass" class="kc-input" placeholder="Senha da rede" oninput="generateWizardWifiQr()">
-                                </div>
-                            </div>
-
-                            <div class="kc-qr-box">
-                                <div id="wizard-qrcode-container"></div>
-                                <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin: 0.5rem 0;">
-                                    <button type="button" class="kc-sample-sound-btn" onclick="playSampleSound('dingdong')">
-                                        <i class="fas fa-volume-high"></i> Ouvir Som de Sucesso "Ding-Dong"
-                                    </button>
-                                </div>
-                                <div style="font-size: 0.78rem; color: #94a3b8; text-align: center; max-width: 380px;">
-                                    Posicione o celular a cerca de <b>15 a 20 cm</b> da lente da câmera. Ao ouvir o som <i>"Ding-Dong"</i> ou aviso <i>"Wi-Fi Connecting"</i>, clique abaixo:
-                                </div>
-                            </div>
-
-                            <button type="button" class="kc-btn kc-btn-primary" onclick="proceedFromWizardToSave()" style="width: 100%; margin-top: 1rem;">
-                                <i class="fas fa-check-circle"></i> A Câmera Leu o QR Code (Salvar Câmera)
-                            </button>
-                        </div>
-
-                        <!-- 2. Opção B: Cabo de Rede (Ethernet RJ-45) -->
-                        <div id="conn-pane-cable" style="display: none;">
-                            <div class="kc-method-card">
-                                <div class="kc-method-icon-box" style="color: var(--kc-cyan); background: rgba(6, 182, 212, 0.1); border-color: rgba(6, 182, 212, 0.3);">
-                                    <i class="fas fa-network-wired"></i>
-                                </div>
-                                <div class="kc-method-details">
-                                    <h5>1. Conecte o Cabo de Rede RJ-45</h5>
-                                    <p>Plugue uma ponta do cabo de rede no roteador e a outra na porta Ethernet da câmera. O LED da porta começará a piscar.</p>
-                                </div>
-                            </div>
-                            <div class="kc-method-card">
-                                <div class="kc-method-icon-box" style="color: var(--kc-emerald); background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3);">
-                                    <i class="fas fa-check-double"></i>
-                                </div>
-                                <div class="kc-method-details">
-                                    <h5>2. A Câmera Recebe IP Automático</h5>
-                                    <p>O roteador atribui um endereço IP via DHCP em segundos. A câmera anunciará <i>"Network Connected"</i> ou emitirá bipe.</p>
-                                </div>
-                            </div>
-                            <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 12px; padding: 0.9rem; margin: 1rem 0; font-size: 0.8rem; color: #cbd5e1;">
-                                <b style="color: var(--kc-cyan);"><i class="fas fa-lightbulb"></i> Migração de Cabo para Wi-Fi:</b> Após adicionar a câmera pelo cabo, você pode acessar as configurações da câmera pelo IP ou app original, selecionar a sua rede Wi-Fi sem fio e desconectar o cabo físico!
-                            </div>
-                            <button type="button" class="kc-btn kc-btn-emerald" onclick="document.querySelector('.kc-tab-btn[data-tab=\'tab-lan-scan\']')?.click(); triggerLanScan();" style="width: 100%;">
-                                <i class="fas fa-radar"></i> Localizar Câmera no Cabo de Rede (Varredura Automática)
-                            </button>
-                        </div>
-
-                        <!-- 3. Opção C: Bluetooth Low Energy (BLE) -->
-                        <div id="conn-pane-bluetooth" style="display: none;">
-                            <div class="kc-method-card">
-                                <div class="kc-method-icon-box" style="color: #3b82f6; background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3);">
-                                    <i class="fab fa-bluetooth-b"></i>
-                                </div>
-                                <div class="kc-method-details">
-                                    <h5>Pareamento Sem Fio por Bluetooth</h5>
-                                    <p>Câmeras modernas Yoosee/Tuya transmitem sinal Bluetooth BLE durante a inicialização para envio seguro do Wi-Fi.</p>
-                                </div>
-                            </div>
-                            <button type="button" class="kc-btn" onclick="document.querySelector('.kc-tab-btn[data-tab=\'tab-bluetooth\']')?.click(); startBluetoothScan();" style="width: 100%; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #fff; font-weight: 700; padding: 0.75rem; border-radius: 9px; margin-top: 0.5rem;">
-                                <i class="fab fa-bluetooth-b"></i> Abrir Busca por Bluetooth
-                            </button>
-                        </div>
-
-                        <!-- 4. Opção D: Ponto de Acesso (Hotspot AP da Câmera) -->
-                        <div id="conn-pane-hotspot" style="display: none;">
-                            <div class="kc-method-card">
-                                <div class="kc-method-icon-box"><i class="fas fa-tower-broadcast"></i></div>
-                                <div class="kc-method-details">
-                                    <h5>1. Abra as Configurações de Wi-Fi do Celular</h5>
-                                    <p>Procure por redes sem fio próximas. A câmera gera uma rede própria começando com: <code style="color: var(--kc-gold);">GW_IPC_...</code>, <code style="color: var(--kc-gold);">CAM_...</code>, <code style="color: var(--kc-gold);">Cloud_...</code> ou <code style="color: var(--kc-gold);">TP-Link_...</code></p>
-                                </div>
-                            </div>
-                            <div class="kc-method-card">
-                                <div class="kc-method-icon-box"><i class="fas fa-key"></i></div>
-                                <div class="kc-method-details">
-                                    <h5>2. Conecte-se na Rede da Câmera</h5>
-                                    <p>A senha de fábrica costuma ser <b>12345678</b> ou rede aberta sem senha. Se o celular avisar "Internet indisponível", confirme em <i>"Manter conexão Wi-Fi"</i>.</p>
-                                </div>
-                            </div>
-                            <div class="kc-method-card">
-                                <div class="kc-method-icon-box"><i class="fas fa-laptop-code"></i></div>
-                                <div class="kc-method-details">
-                                    <h5>3. Conecte pelo IP Local de Fábrica</h5>
-                                    <p>Nesse modo direto, a câmera responde no IP padrão <code style="color: var(--kc-cyan);">192.168.1.1</code> ou <code style="color: var(--kc-cyan);">192.168.0.1</code>.</p>
-                                </div>
-                            </div>
-
-                            <!-- DICA CELULAR / DADOS MÓVEIS -->
-                            <div style="background: rgba(245, 158, 11, 0.1); border: 1.5px solid var(--kc-gold); border-radius: 12px; padding: 0.9rem; margin-top: 0.65rem;">
-                                <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--kc-gold); font-weight: 700; font-size: 0.85rem; margin-bottom: 0.35rem;">
-                                    <i class="fas fa-mobile-screen-button"></i> Dica de Ouro para Celular (4G/5G):
-                                </div>
-                                <div style="font-size: 0.78rem; color: #cbd5e1; line-height: 1.45;">
-                                    A rede Wi-Fi da câmera <b>não tem internet</b>. Para o Conecta King não fechar nem perder a conexão ao se conectar na rede da câmera:
-                                    <ul style="margin-left: 1.1rem; margin-top: 0.3rem;">
-                                        <li>Mantenha seus <b>Dados Móveis (4G/5G) LIGADOS</b> no celular.</li>
-                                        <li>Quando o celular avisar <i>"Rede sem internet, deseja trocar?"</i>, clique em <b>Manter Conectado</b>.</li>
-                                        <li>Assim o navegador fala com o Conecta King pelos dados móveis e com a câmera pelo Wi-Fi simultaneamente!</li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <button type="button" class="kc-btn kc-btn-primary" onclick="useHotspotIp('192.168.1.1')" style="width: 100%; margin-top: 0.85rem;">
-                                <i class="fas fa-link"></i> Usar IP Padrão do Ponto de Acesso (192.168.1.1)
-                            </button>
-                        </div>
-
-                        <!-- 5. Opção E: Câmera Já na Rede Local -->
-                        <div id="conn-pane-lan" style="display: none;">
-                            <div class="kc-method-card">
-                                <div class="kc-method-icon-box" style="color: var(--kc-emerald); background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3);">
-                                    <i class="fas fa-wifi"></i>
-                                </div>
-                                <div class="kc-method-details">
-                                    <h5>A Câmera Já Está Conectada ao seu Wi-Fi?</h5>
-                                    <p>Se você já configurou a câmera anteriormente no seu roteador (via app original ou cabo), não precisa resetar! O King Câmera localiza o endereço IP dela na sua rede automaticamente.</p>
-                                </div>
-                            </div>
-                            <button type="button" class="kc-btn kc-btn-emerald" onclick="document.querySelector('.kc-tab-btn[data-tab=\'tab-lan-scan\']')?.click(); triggerLanScan();" style="width: 100%; margin-top: 0.5rem;">
-                                <i class="fas fa-radar"></i> Fazer Varredura de Câmeras na Rede Local Agora
-                            </button>
-                        </div>
-
-                        <div style="margin-top: 1.25rem;">
-                            <button type="button" class="kc-btn kc-btn-secondary" onclick="goToWizardStep(2)">
-                                <i class="fas fa-arrow-left"></i> Voltar ao Passo 2
-                            </button>
-                        </div>
                     </div>
                 </div>
 
@@ -3466,6 +3349,8 @@
         let qrCodeInstance = null;
         let telegramDeepLink = '';
         let authUserId = '{{ auth()->id() ?? "" }}';
+        let cameraLights = {};
+        let cameraTracking = {};
 
         document.addEventListener('DOMContentLoaded', () => {
             loadCameras();
@@ -3498,6 +3383,9 @@
                         if (resultsEl && resultsEl.children.length === 0 && !isLanScanning) {
                             triggerLanScan();
                         }
+                    } else if (tabId === 'tab-shares') {
+                        stopCameraQrScanner();
+                        loadTabSharesList();
                     } else {
                         stopCameraQrScanner();
                     }
@@ -4453,14 +4341,158 @@
         }
 
 
-        // Tela cheia
+        // Tela cheia (Compatível com Android, iPhone iOS Safari, iPad e Desktop)
         function toggleFullscreen(camId) {
             const wrap = document.querySelector(`#card-cam-${camId} .kc-video-wrap`);
+            const v = document.getElementById(`video-${camId}`);
             if (!wrap) return;
-            if (!document.fullscreenElement) {
-                wrap.requestFullscreen().catch(err => console.error(err));
+
+            const isFs = document.fullscreenElement || document.webkitFullscreenElement;
+            if (!isFs) {
+                if (wrap.requestFullscreen) {
+                    wrap.requestFullscreen().catch(() => {
+                        if (v && v.webkitEnterFullscreen) v.webkitEnterFullscreen();
+                    });
+                } else if (wrap.webkitRequestFullscreen) {
+                    wrap.webkitRequestFullscreen();
+                } else if (v && v.webkitEnterFullscreen) {
+                    v.webkitEnterFullscreen();
+                }
             } else {
-                document.exitFullscreen();
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            }
+        }
+
+        // ─── Luz LED / Lâmpada Noturna da Câmera ───────────────────────────
+        async function toggleCameraLight(camId) {
+            const btn = document.getElementById(`btn-light-${camId}`);
+            const btnModal = document.getElementById('btn-modal-light-toggle');
+            const currentState = Boolean(cameraLights[camId]);
+            const newState = !currentState;
+
+            // Feedback visual instantâneo (otimista)
+            cameraLights[camId] = newState;
+            if (btn) btn.classList.toggle('active', newState);
+            if (btnModal && currentEditingId === camId) {
+                btnModal.innerHTML = newState 
+                    ? '<i class="fas fa-lightbulb" style="color: #fbbf24;"></i> Apagar Luz' 
+                    : '<i class="fas fa-power-off"></i> Ligar Luz LED';
+            }
+
+            try {
+                const res = await fetch(`/api/cameras/${camId}/light`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ state: newState ? 'on' : 'off' })
+                });
+                const json = await res.json();
+                cameraLights[camId] = (json.light_state === 'on') || newState;
+                if (btn) btn.classList.toggle('active', cameraLights[camId]);
+
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: cameraLights[camId] ? '💡 Lâmpada LED Ligada' : '💡 Lâmpada LED Apagada',
+                    showConfirmButton: false,
+                    timer: 1600
+                });
+            } catch (e) {
+                console.warn('Light toggle error:', e);
+            }
+        }
+
+        // ─── Rastreamento Motorizado Automático (Seguir Pessoa / Bebê) ───────
+        async function toggleAutoTracking(camId) {
+            const cam = camerasData.find(c => c.id === camId);
+            const btn = document.getElementById(`btn-track-${camId}`);
+            const badge = document.getElementById(`track-badge-${camId}`);
+            const modalChk = document.getElementById('modal-auto-tracking-chk');
+            const currentState = cam ? Boolean(cam.auto_tracking_enabled) : false;
+            const newState = !currentState;
+
+            if (cam) cam.auto_tracking_enabled = newState;
+            if (btn) btn.classList.toggle('active', newState);
+            if (badge) badge.style.display = newState ? 'inline-flex' : 'none';
+            if (modalChk && currentEditingId === camId) modalChk.checked = newState;
+
+            try {
+                await fetch(`/api/cameras/${camId}/tracking`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ enabled: newState })
+                });
+
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: newState ? '🎯 Seguir Bebê / Pessoa Ativado' : '🎯 Rastreamento 360° Desativado',
+                    text: newState ? 'A câmera irá girar motorizada acompanhando o movimento.' : '',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            } catch (e) {
+                console.warn('Tracking toggle error:', e);
+            }
+        }
+
+        // ─── Áudio Turbo (Ouvir e Amplificar com Booster Web Audio) ─────────
+        function toggleAudioBooster(camId) {
+            const v = document.getElementById(`video-${camId}`);
+            const btn = document.getElementById(`btn-turbo-audio-${camId}`);
+            if (!v) return;
+
+            v.muted = !v.muted;
+            if (v.muted) {
+                if (btn) btn.classList.remove('active');
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'info',
+                    title: 'Áudio Silenciado',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            } else {
+                v.volume = 1.0;
+                v.play().catch(() => {});
+                if (btn) btn.classList.add('active');
+
+                try {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) {
+                        if (!v._boostCtx) {
+                            const ctx = new AudioCtx();
+                            const src = v.srcObject ? ctx.createMediaStreamSource(v.srcObject) : ctx.createMediaElementSource(v);
+                            const gain = ctx.createGain();
+                            gain.gain.value = 2.5; // Ganho de 250%
+                            src.connect(gain);
+                            gain.connect(ctx.destination);
+                            v._boostCtx = ctx;
+                        } else if (v._boostCtx.state === 'suspended') {
+                            v._boostCtx.resume();
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Booster error:', e);
+                }
+
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Áudio Turbo Ativado (300%)',
+                    text: 'Som do quarto amplificado em alta definição.',
+                    showConfirmButton: false,
+                    timer: 1800
+                });
             }
         }
 
@@ -4760,12 +4792,17 @@
             }
 
             // Alterna visibilidade das abas para modo Edição vs Nova Câmera
-            document.querySelectorAll('.tab-add-only').forEach(el => el.style.display = cam ? 'none' : 'inline-flex');
-            document.querySelectorAll('.tab-edit-only').forEach(el => el.style.display = cam ? 'inline-flex' : 'none');
+            const tabsHeader = document.getElementById('modal-tabs-header');
             const tabTitleRtsp = document.getElementById('tab-title-rtsp');
             if (tabTitleRtsp) tabTitleRtsp.textContent = cam ? 'Câmera & Conexão' : 'ID ou IP (Manual)';
 
             if (cam) {
+                if (tabsHeader) tabsHeader.style.display = 'flex';
+                const hub = document.getElementById('kc-add-hub');
+                if (hub) hub.style.display = 'none';
+                const backManualBtn = document.getElementById('btn-back-from-manual');
+                if (backManualBtn) backManualBtn.style.display = 'none';
+
                 setManualMode('ip');
                 document.querySelector('.kc-tab-btn[data-tab="tab-rtsp"]')?.click();
 
@@ -4781,15 +4818,14 @@
                 if (modalAutoTrackChk) {
                     modalAutoTrackChk.checked = Boolean(cam.auto_tracking_enabled);
                 }
+
+                // Inicializa campo de identificação de compartilhamento na aba
+                const tabShareLabel = document.getElementById('tab-share-label');
+                if (tabShareLabel) tabShareLabel.value = `Convidado (${cam.name})`;
+                loadTabSharesList();
             } else {
-                goToWizardStep(1);
-                const chk1 = document.getElementById('chk-power-on');
-                const chk2 = document.getElementById('chk-reset-done');
-                if (chk1) chk1.checked = false;
-                if (chk2) chk2.checked = false;
-                toggleWizardBtn(1);
-                toggleWizardBtn(2);
-                document.querySelector('.kc-tab-btn[data-tab="tab-wizard"]')?.click();
+                // Modo Adicionar Câmera: abre direto o Hub de Escolha Clara (Estilo Yoosee/Tuya)
+                showAddHub();
             }
 
             const dangerZone = document.getElementById('modal-danger-zone');
@@ -4798,6 +4834,185 @@
             }
 
             modalBackdrop.classList.add('active');
+        }
+
+        // ─── Hub de Adição de Câmeras ──────────────────────────────────────
+        function showAddHub() {
+            stopCameraQrScanner();
+            document.getElementById('modal-title').textContent = 'Adicionar Câmera';
+            const tabsHeader = document.getElementById('modal-tabs-header');
+            if (tabsHeader) tabsHeader.style.display = 'none';
+
+            // Oculta todas as abas e painéis de fluxo
+            document.querySelectorAll('.kc-tab-pane').forEach(el => el.style.display = 'none');
+
+            // Exibe o Hub
+            const hub = document.getElementById('kc-add-hub');
+            if (hub) hub.style.display = 'block';
+        }
+
+        function openAddFlow(flow) {
+            const hub = document.getElementById('kc-add-hub');
+            if (hub) hub.style.display = 'none';
+
+            // Oculta todos os painéis
+            document.querySelectorAll('.kc-tab-pane').forEach(el => el.style.display = 'none');
+
+            if (flow === 'qrcode') {
+                const pane = document.getElementById('flow-qrcode');
+                if (pane) pane.style.display = 'block';
+                generateFastWifiQr();
+            } else if (flow === 'hotspot') {
+                const pane = document.getElementById('flow-hotspot');
+                if (pane) pane.style.display = 'block';
+            } else if (flow === 'lan') {
+                const pane = document.getElementById('tab-lan-scan');
+                if (pane) pane.style.display = 'block';
+                triggerLanScan();
+            } else if (flow === 'manual') {
+                const pane = document.getElementById('tab-rtsp');
+                if (pane) pane.style.display = 'block';
+                const backManualBtn = document.getElementById('btn-back-from-manual');
+                if (backManualBtn) backManualBtn.style.display = 'inline-flex';
+                setManualMode('id');
+            }
+        }
+
+        let fastQrInstance = null;
+        function generateFastWifiQr() {
+            const ssidEl = document.getElementById('qr-wifi-ssid');
+            const passEl = document.getElementById('qr-wifi-pass');
+            const ssid = ssidEl ? ssidEl.value.trim() : '';
+            const pass = passEl ? passEl.value.trim() : '';
+
+            const container = document.getElementById('fast-qrcode-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const qrText = ssid ? `WIFI:T:WPA;S:${ssid};P:${pass};;` : 'WIFI:T:WPA;S:RedeCasa_2.4G;P:Senha123;;';
+
+            if (window.QRCode) {
+                fastQrInstance = new QRCode(container, {
+                    text: qrText,
+                    width: 210,
+                    height: 210,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            }
+        }
+
+        async function saveCameraFromQrFlow() {
+            const btn = document.getElementById('btn-save-qr-cam');
+            const name = document.getElementById('qr-cam-name')?.value.trim() || 'Câmera Wi-Fi';
+            const room = document.getElementById('qr-cam-room')?.value.trim() || 'Casa';
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Conectando Câmera...';
+
+            playSampleSound('dingdong');
+
+            const payload = {
+                name: name,
+                room: room,
+                ip_address: '192.168.1.1',
+                port: 554,
+                rtsp_path: '/onvif1',
+                username: 'admin',
+                password: 'Playadryan22*',
+                telegram_alerts_enabled: true
+            };
+
+            try {
+                const res = await fetch('/api/cameras', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(payload)
+                });
+                let json;
+                try {
+                    json = await res.json();
+                } catch (e) {
+                    json = { success: false, message: `Erro de comunicação (HTTP ${res.status})` };
+                }
+
+                if (res.ok && json.success) {
+                    closeModal();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Câmera Pareada!',
+                        text: 'Câmera conectada com sucesso! O feed ao vivo está pronto.',
+                        confirmButtonColor: '#10b981'
+                    });
+                    loadCameras();
+                } else {
+                    const msg = json.message || (json.errors ? Object.values(json.errors).flat().join('<br>') : 'Não foi possível cadastrar a câmera.');
+                    Swal.fire('Atenção', msg, 'warning');
+                }
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Aviso de Conexão', 'Não foi possível cadastrar a câmera: ' + (err.message || 'Verifique sua conexão.'), 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> A Câmera Leu o QR Code! (Conectar e Salvar)';
+            }
+        }
+
+        async function saveCameraFromApMode() {
+            const btn = document.getElementById('btn-save-ap-cam');
+            const name = document.getElementById('ap-cam-name')?.value.trim() || 'Câmera Wi-Fi (Modo AP)';
+            const pass = document.getElementById('ap-cam-pass')?.value.trim() || 'Playadryan22*';
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando no IP 192.168.1.1...';
+
+            const payload = {
+                name: name,
+                room: 'Modo Direto',
+                ip_address: '192.168.1.1',
+                port: 554,
+                rtsp_path: '/onvif1',
+                username: 'admin',
+                password: pass,
+                telegram_alerts_enabled: true
+            };
+
+            try {
+                const res = await fetch('/api/cameras', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(payload)
+                });
+                let json;
+                try {
+                    json = await res.json();
+                } catch (e) {
+                    json = { success: false, message: `Erro de comunicação (HTTP ${res.status})` };
+                }
+
+                if (res.ok && json.success) {
+                    closeModal();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Câmera Conectada!',
+                        text: 'Câmera no IP padrão 192.168.1.1 adicionada com sucesso!',
+                        confirmButtonColor: '#10b981'
+                    });
+                    loadCameras();
+                } else {
+                    const msg = json.message || (json.errors ? Object.values(json.errors).flat().join('<br>') : 'Falha ao salvar câmera.');
+                    Swal.fire('Atenção', msg, 'warning');
+                }
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Erro', 'Não foi possível salvar a câmera: ' + (err.message || 'Verifique a conexão.'), 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-link"></i> Salvar Câmera no IP 192.168.1.1 Agora';
+            }
         }
 
         async function toggleCameraLightFromModal() {
@@ -5407,7 +5622,7 @@
                 username: document.getElementById('cam-user').value,
                 telegram_chat_id: document.getElementById('cam-telegram-chat-id')?.value.trim() || null,
                 telegram_phone: document.getElementById('cam-telegram-phone')?.value.trim() || null,
-                telegram_alerts_enabled: document.getElementById('cam-telegram-alerts').checked,
+                telegram_alerts_enabled: document.getElementById('cam-telegram-alerts')?.checked ?? true,
                 crib_fence_enabled: document.getElementById('cam-crib-fence-enabled')?.checked || false,
                 crib_roi_json: {
                     x: parseInt(document.getElementById('cam-crib-x')?.value || 20),
@@ -5434,22 +5649,30 @@
                     body: JSON.stringify(payload)
                 });
 
-                const json = await res.json();
-                if (json.success) {
+                let json;
+                try {
+                    json = await res.json();
+                } catch (pe) {
+                    json = { success: false, message: `Erro no servidor (HTTP ${res.status}).` };
+                }
+
+                if (res.ok && json.success) {
                     closeModal();
                     Swal.fire({
                         icon: 'success',
                         title: isEdit ? 'Câmera Atualizada!' : 'Câmera Conectada!',
-                        text: json.message,
+                        text: json.message || 'Câmera salva com sucesso.',
                         timer: 1800,
                         showConfirmButton: false
                     });
                     loadCameras();
                 } else {
-                    Swal.fire('Erro', json.message || 'Falha ao salvar câmera.', 'error');
+                    const msg = json.message || (json.errors ? Object.values(json.errors).flat().join('<br>') : `Falha ao salvar (HTTP ${res.status}).`);
+                    Swal.fire('Atenção', msg, 'warning');
                 }
             } catch (err) {
-                Swal.fire('Erro', 'Não foi possível conectar ao servidor.', 'error');
+                console.error('Erro ao salvar câmera:', err);
+                Swal.fire('Aviso de Conexão', 'Não foi possível comunicar com o servidor: ' + (err.message || 'Verifique sua conexão.'), 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-save"></i> Salvar Câmera';
@@ -5612,8 +5835,11 @@
             const payload = {
                 duration_seconds: parseInt(document.getElementById('share-duration-sec').value || 3600),
                 label: document.getElementById('share-label').value.trim() || 'Convidado',
-                can_audio: true,
-                can_ptz: false
+                can_audio: document.getElementById('share-perm-audio')?.checked ?? true,
+                can_ptz: document.getElementById('share-perm-ptz')?.checked ?? false,
+                can_light: document.getElementById('share-perm-light')?.checked ?? false,
+                can_snapshot: document.getElementById('share-perm-snapshot')?.checked ?? true,
+                can_record: false
             };
 
             try {
@@ -5634,7 +5860,7 @@
                         icon: 'success',
                         title: 'Link Gerado com Sucesso!',
                         html: `
-                            <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 0.75rem;">O link temporário foi criado. Você já pode enviar para quem quiser assistir:</p>
+                            <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 0.75rem;">O link temporário foi criado com as permissões configuradas:</p>
                             <input type="text" readonly value="${shareUrl}" style="width: 100%; padding: 0.6rem; background: rgba(0,0,0,0.4); border: 1px solid #334155; color: #fbbf24; border-radius: 8px; font-size: 0.82rem; text-align: center; margin-bottom: 0.75rem;" onclick="this.select()">
                             <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                                 <a href="${whatsappUrl}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.7rem 1rem; background: #25D366; color: #fff; font-weight: 700; font-size: 0.9rem; border-radius: 8px; text-decoration: none; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);">
@@ -5650,6 +5876,7 @@
                         confirmButtonText: 'Fechar'
                     });
                     loadCameraShares(camId);
+                    loadTabSharesList();
                 } else {
                     Swal.fire('Erro', json.message || 'Falha ao criar link.', 'error');
                 }
@@ -5661,8 +5888,97 @@
             }
         }
 
+        async function createShareFromTab(e) {
+            e.preventDefault();
+            if (!currentEditingId) {
+                Swal.fire('Aviso', 'Selecione uma câmera para gerar link.', 'warning');
+                return;
+            }
+            const camId = currentEditingId;
+            const btn = document.getElementById('btn-tab-create-share');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando Link...';
+            }
+
+            const payload = {
+                duration_seconds: parseInt(document.getElementById('tab-share-duration')?.value || 3600),
+                label: document.getElementById('tab-share-label')?.value.trim() || 'Convidado',
+                can_audio: document.getElementById('tab-perm-audio')?.checked ?? true,
+                can_ptz: document.getElementById('tab-perm-ptz')?.checked ?? false,
+                can_light: document.getElementById('tab-perm-light')?.checked ?? false,
+                can_snapshot: document.getElementById('tab-perm-snapshot')?.checked ?? true,
+                can_record: false
+            };
+
+            try {
+                const res = await fetch(`/api/cameras/${camId}/shares`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json();
+                if (json.success) {
+                    const shareUrl = json.data.share_url;
+                    navigator.clipboard.writeText(shareUrl).catch(() => {});
+                    const whatsappMsg = encodeURIComponent(`Olá! Acesse a câmera ao vivo aqui: ${shareUrl}`);
+                    const whatsappUrl = `https://api.whatsapp.com/send?text=${whatsappMsg}`;
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Link Personalizado Criado!',
+                        html: `
+                            <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 0.75rem;">O link temporário para <b>${escapeHtml(payload.label)}</b> foi gerado com sucesso:</p>
+                            <input type="text" readonly value="${shareUrl}" style="width: 100%; padding: 0.6rem; background: rgba(0,0,0,0.4); border: 1px solid #334155; color: #fbbf24; border-radius: 8px; font-size: 0.82rem; text-align: center; margin-bottom: 0.75rem;" onclick="this.select()">
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <a href="${whatsappUrl}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.7rem 1rem; background: #25D366; color: #fff; font-weight: 700; font-size: 0.9rem; border-radius: 8px; text-decoration: none; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);">
+                                    <i class="fab fa-whatsapp" style="font-size: 1.2rem;"></i> Compartilhar no WhatsApp
+                                </a>
+                                <button type="button" onclick="navigator.clipboard.writeText('${shareUrl}'); Swal.showValidationMessage('Link copiado!');" style="padding: 0.6rem; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #fff; border-radius: 8px; font-size: 0.84rem; cursor: pointer;">
+                                    <i class="fas fa-copy"></i> Copiar Link Novamente
+                                </button>
+                            </div>
+                            <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.65rem;">Válido por ${Math.round(payload.duration_seconds / 60)} minutos.</p>
+                        `,
+                        confirmButtonColor: '#f59e0b',
+                        confirmButtonText: 'Concluído'
+                    });
+                    loadTabSharesList();
+                    loadCameraShares(camId);
+                } else {
+                    Swal.fire('Erro', json.message || 'Falha ao criar link.', 'error');
+                }
+            } catch (err) {
+                Swal.fire('Erro', 'Não foi possível criar o link compartilhado.', 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-link"></i> Gerar Link com Estas Permissões';
+                }
+            }
+        }
+
+        function renderSharePermissionsBadges(s) {
+            let badges = '';
+            if (s.can_audio) {
+                badges += `<span style="background: rgba(59,130,246,0.18); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); padding: 1px 6px; border-radius: 4px; font-size: 0.68rem; font-weight: 600;"><i class="fas fa-volume-high"></i> Áudio</span> `;
+            }
+            if (s.can_ptz) {
+                badges += `<span style="background: rgba(16,185,129,0.18); color: #34d399; border: 1px solid rgba(16,185,129,0.3); padding: 1px 6px; border-radius: 4px; font-size: 0.68rem; font-weight: 600;"><i class="fas fa-arrows-alt"></i> Giro 360°</span> `;
+            }
+            if (s.can_light) {
+                badges += `<span style="background: rgba(251,191,36,0.18); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); padding: 1px 6px; border-radius: 4px; font-size: 0.68rem; font-weight: 600;"><i class="fas fa-lightbulb"></i> Luz LED</span> `;
+            }
+            if (s.can_snapshot) {
+                badges += `<span style="background: rgba(168,85,247,0.18); color: #c084fc; border: 1px solid rgba(168,85,247,0.3); padding: 1px 6px; border-radius: 4px; font-size: 0.68rem; font-weight: 600;"><i class="fas fa-camera"></i> Foto</span> `;
+            }
+            return badges || `<span style="color: var(--kc-text-dim); font-size: 0.68rem;">Apenas Vídeo</span>`;
+        }
+
         async function loadCameraShares(camId) {
             const listEl = document.getElementById('shares-list-container');
+            if (!listEl) return;
             listEl.innerHTML = '<div style="font-size: 0.8rem; color: var(--kc-text-dim);"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>';
 
             try {
@@ -5690,13 +6006,19 @@
                                     }
                                     <span style="color: #94a3b8;">• ${s.view_count} views</span>
                                 </div>
+                                <div style="margin-top: 0.3rem; display: flex; flex-wrap: wrap; gap: 0.25rem;">
+                                    ${renderSharePermissionsBadges(s)}
+                                </div>
                             </div>
-                            <div style="display: flex; gap: 0.35rem; flex-shrink: 0;">
+                            <div style="display: flex; gap: 0.35rem; flex-shrink: 0; align-items: center;">
                                 <a href="${whatsappUrl}" target="_blank" class="kc-icon-btn" title="Enviar WhatsApp" style="width: 30px; height: 30px; font-size: 0.9rem; color: #25D366; text-decoration: none; border-color: rgba(37, 211, 102, 0.35); background: rgba(37, 211, 102, 0.1);">
                                     <i class="fab fa-whatsapp"></i>
                                 </a>
                                 <button type="button" class="kc-icon-btn" onclick="copyShareUrl('${s.share_url}')" title="Copiar Link" style="width: 30px; height: 30px; font-size: 0.82rem;">
                                     <i class="fas fa-copy"></i>
+                                </button>
+                                <button type="button" class="kc-icon-btn" onclick='editSharePermissions(${JSON.stringify(s)}, ${camId})' title="Configurar Permissões" style="width: 30px; height: 30px; font-size: 0.82rem; color: var(--kc-gold); border-color: rgba(245,158,11,0.3);">
+                                    <i class="fas fa-sliders-h"></i>
                                 </button>
                                 <button type="button" class="kc-icon-btn" onclick="revokeShareLink(${s.id}, ${camId})" title="Revogar Agora" style="width: 30px; height: 30px; font-size: 0.82rem; color: var(--kc-rose);">
                                     <i class="fas fa-trash-alt"></i>
@@ -5713,6 +6035,147 @@
             }
         }
 
+        async function loadTabSharesList() {
+            const listEl = document.getElementById('tab-shares-list-container');
+            if (!listEl) return;
+            const camId = currentEditingId;
+            if (!camId) {
+                listEl.innerHTML = '<div style="font-size: 0.8rem; color: var(--kc-text-dim);">Selecione uma câmera salva para gerenciar links.</div>';
+                return;
+            }
+
+            listEl.innerHTML = '<div style="font-size: 0.8rem; color: var(--kc-text-dim);"><i class="fas fa-spinner fa-spin"></i> Carregando lista de links compartilhados...</div>';
+
+            try {
+                const res = await fetch(`/api/cameras/${camId}/shares`, {
+                    credentials: 'include',
+                    headers: getAuthHeaders()
+                });
+                const json = await res.json();
+                if (json.success && json.data.length > 0) {
+                    listEl.innerHTML = '';
+                    json.data.forEach(s => {
+                        const row = document.createElement('div');
+                        row.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid var(--kc-border); border-radius: 12px; padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;';
+                        const mins = Math.max(0, Math.round(s.seconds_remaining / 60));
+                        const whatsappMsg = encodeURIComponent(`Olá! Acesse a câmera ao vivo aqui: ${s.share_url}`);
+                        const whatsappUrl = `https://api.whatsapp.com/send?text=${whatsappMsg}`;
+
+                        row.innerHTML = `
+                            <div style="min-width: 0; flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                    <span style="font-weight: 700; font-size: 0.88rem; color: #fff;">${escapeHtml(s.label)}</span>
+                                    ${mins > 0 
+                                        ? `<span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); padding: 1px 7px; border-radius: 6px; font-weight: 600; font-size: 0.72rem;"><i class="fas fa-clock"></i> ${mins} min restantes</span>` 
+                                        : `<span style="background: rgba(244, 63, 94, 0.2); color: #fb7185; border: 1px solid rgba(244,63,94,0.3); padding: 1px 7px; border-radius: 6px; font-weight: 600; font-size: 0.72rem;"><i class="fas fa-ban"></i> Expirado</span>`
+                                    }
+                                    <span style="color: #94a3b8; font-size: 0.72rem;">${s.view_count} visualizações</span>
+                                </div>
+                                <div style="margin-top: 0.4rem; display: flex; flex-wrap: wrap; gap: 0.35rem;">
+                                    ${renderSharePermissionsBadges(s)}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.4rem; flex-shrink: 0; align-items: center;">
+                                <a href="${whatsappUrl}" target="_blank" class="kc-icon-btn" title="Enviar no WhatsApp" style="width: 32px; height: 32px; font-size: 0.95rem; color: #25D366; text-decoration: none; border-color: rgba(37, 211, 102, 0.35); background: rgba(37, 211, 102, 0.1);">
+                                    <i class="fab fa-whatsapp"></i>
+                                </a>
+                                <button type="button" class="kc-icon-btn" onclick="copyShareUrl('${s.share_url}')" title="Copiar Link" style="width: 32px; height: 32px; font-size: 0.85rem;">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button type="button" class="kc-icon-btn" onclick='editSharePermissions(${JSON.stringify(s)}, ${camId})' title="Editar Permissões do Link" style="width: 32px; height: 32px; font-size: 0.85rem; color: var(--kc-gold); border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.08);">
+                                    <i class="fas fa-sliders-h"></i>
+                                </button>
+                                <button type="button" class="kc-icon-btn" onclick="revokeShareLink(${s.id}, ${camId})" title="Revogar Link" style="width: 32px; height: 32px; font-size: 0.85rem; color: var(--kc-rose); border-color: rgba(244,63,94,0.3);">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        `;
+                        listEl.appendChild(row);
+                    });
+                } else {
+                    listEl.innerHTML = `
+                        <div style="text-align: center; padding: 1.5rem 1rem; color: var(--kc-text-dim);">
+                            <i class="fas fa-link-slash" style="font-size: 1.8rem; margin-bottom: 0.5rem; opacity: 0.4;"></i>
+                            <div style="font-size: 0.88rem; font-weight: 600; color: #fff;">Nenhum link ativo no momento</div>
+                            <div style="font-size: 0.78rem; margin-top: 0.25rem;">Use o formulário acima para gerar um link com permissões personalizadas.</div>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                listEl.innerHTML = '<div style="font-size: 0.8rem; color: var(--kc-rose);">Falha ao carregar links da câmera.</div>';
+            }
+        }
+
+        function editSharePermissions(s, camId) {
+            Swal.fire({
+                title: 'Editar Permissões do Convidado',
+                html: `
+                    <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 0.75rem;">
+                        Altere o que <b>${escapeHtml(s.label)}</b> tem permissão de fazer em tempo real, sem precisar mudar o link de acesso:
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 0.65rem; text-align: left; background: rgba(0,0,0,0.3); padding: 0.85rem; border-radius: 9px; border: 1px solid #334155;">
+                        <label style="display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; cursor: pointer; color: #fff;">
+                            <input type="checkbox" id="swal-perm-audio" ${s.can_audio ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #f59e0b;">
+                            <span>🔊 <b>Liberar Áudio ao Vivo</b></span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; cursor: pointer; color: #fff;">
+                            <input type="checkbox" id="swal-perm-ptz" ${s.can_ptz ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #f59e0b;">
+                            <span>🔄 <b>Permitir Giro 360° (Mover a Câmera)</b></span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; cursor: pointer; color: #fff;">
+                            <input type="checkbox" id="swal-perm-light" ${s.can_light ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #f59e0b;">
+                            <span>💡 <b>Lâmpada LED (Acender/Apagar)</b></span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; cursor: pointer; color: #fff;">
+                            <input type="checkbox" id="swal-perm-snapshot" ${s.can_snapshot ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #f59e0b;">
+                            <span>📸 <b>Tirar Fotos Instantâneas</b></span>
+                        </label>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonColor: '#f59e0b',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '<i class="fas fa-check"></i> Salvar Permissões',
+                cancelButtonText: 'Cancelar',
+                preConfirm: () => {
+                    return {
+                        can_audio: document.getElementById('swal-perm-audio').checked,
+                        can_ptz: document.getElementById('swal-perm-ptz').checked,
+                        can_light: document.getElementById('swal-perm-light').checked,
+                        can_snapshot: document.getElementById('swal-perm-snapshot').checked
+                    };
+                }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const res = await fetch(`/api/cameras/shares/${s.id}`, {
+                            method: 'PUT',
+                            credentials: 'include',
+                            headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                            body: JSON.stringify(result.value)
+                        });
+                        const json = await res.json();
+                        if (json.success) {
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end',
+                                icon: 'success',
+                                title: 'Permissões atualizadas com sucesso!',
+                                showConfirmButton: false,
+                                timer: 2000
+                            });
+                            if (camId) loadCameraShares(camId);
+                            loadTabSharesList();
+                        } else {
+                            Swal.fire('Erro', json.message || 'Falha ao atualizar.', 'error');
+                        }
+                    } catch (err) {
+                        Swal.fire('Erro', 'Não foi possível atualizar as permissões.', 'error');
+                    }
+                }
+            });
+        }
+
         function copyShareUrl(url) {
             navigator.clipboard.writeText(url).then(() => {
                 Swal.fire({
@@ -5727,6 +6190,19 @@
         }
 
         async function revokeShareLink(shareId, camId) {
+            const confirm = await Swal.fire({
+                title: 'Revogar Link?',
+                text: 'A pessoa não conseguirá mais acessar a câmera através deste link.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Sim, Revogar Agora',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (!confirm.isConfirmed) return;
+
             try {
                 const res = await fetch(`/api/cameras/shares/${shareId}`, {
                     method: 'DELETE',
@@ -5735,7 +6211,16 @@
                 });
                 const json = await res.json();
                 if (json.success) {
-                    loadCameraShares(camId);
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Link revogado com sucesso!',
+                        showConfirmButton: false,
+                        timer: 1800
+                    });
+                    if (camId) loadCameraShares(camId);
+                    loadTabSharesList();
                 }
             } catch (err) {
                 console.error(err);
