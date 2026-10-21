@@ -38,6 +38,8 @@ class KingCamera extends Model
         'baby_stand_enabled',
         'baby_cry_enabled',
         'auto_tracking_enabled',
+        'device_id',
+        'mac_address',
         'roi_zones_json',
         'last_event_at',
         'last_snapshot_url',

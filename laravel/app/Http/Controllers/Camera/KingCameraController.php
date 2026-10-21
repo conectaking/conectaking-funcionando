@@ -43,6 +43,9 @@ class KingCameraController extends Controller
             'data' => $cameras->map(fn (KingCamera $cam) => [
                 'id' => $cam->id,
                 'name' => $cam->name,
+                'device_id' => $cam->device_id,
+                'mac_address' => $cam->mac_address,
+                'display_ip' => $cam->display_ip,
                 'room' => $cam->room,
                 'stream_id' => $cam->stream_id,
                 'ip_address' => $cam->ip_address,
@@ -84,6 +87,8 @@ class KingCameraController extends Controller
             'name' => 'required|string|max:100',
             'room' => 'nullable|string|max:100',
             'ip_address' => 'required|string|max:100',
+            'device_id' => 'nullable|string|max:100',
+            'mac_address' => 'nullable|string|max:50',
             'port' => 'nullable|integer|min:1|max:65535',
             'rtsp_path' => 'nullable|string|max:150',
             'username' => 'nullable|string|max:100',
@@ -108,22 +113,27 @@ class KingCameraController extends Controller
         $rawOnvifPort = (int) ($validated['onvif_port'] ?? 80);
         $rawPassword = $validated['password'] ?? null;
         $rawName = $validated['name'];
+        $rawDeviceId = trim($validated['device_id'] ?? '');
+        $rawMac = trim($validated['mac_address'] ?? '');
 
-        // Mapeamento automático de câmeras locais atrás do túnel reverso
-        if ($rawIp === '172.16.100.215' || ($rawIp === '172.18.0.1' && $rawPort === 1554)) {
+        // Mapeamento automático por IP ou por ID da Câmera (Device ID Yoosee)
+        if ($rawIp === '172.16.100.215' || ($rawIp === '172.18.0.1' && $rawPort === 1554) || $rawDeviceId === '7045951545') {
             $rawIp = '172.18.0.1';
             $rawPort = 1554;
             $rawOnvifPort = 1557;
+            $rawDeviceId = '7045951545';
+            $rawMac = '94:ff:7d:98:89:31';
             if (empty($rawPassword)) {
                 $rawPassword = 'Playadryan22*';
             }
             if (empty($rawName) || $rawName === 'Câmera IP' || str_contains($rawName, '172.16.100.215') || str_contains(strtolower($rawName), 'bebe')) {
                 $rawName = 'Quarto Bebê';
             }
-        } elseif ($rawIp === '172.16.100.43' || ($rawIp === '172.18.0.1' && $rawPort === 1555)) {
+        } elseif ($rawIp === '172.16.100.43' || ($rawIp === '172.18.0.1' && $rawPort === 1555) || $rawDeviceId === '12345679890') {
             $rawIp = '172.18.0.1';
             $rawPort = 1555;
             $rawOnvifPort = 1556;
+            $rawDeviceId = '12345679890';
             if ($rawPassword === null) {
                 $rawPassword = '';
             }
@@ -133,13 +143,15 @@ class KingCameraController extends Controller
         }
 
         $rawRtspPath = '/' . ltrim((string) ($validated['rtsp_path'] ?? 'onvif1'), '/');
-        if ($rawPort === 1554 || $rawIp === '172.16.100.215') {
+        if ($rawPort === 1554 || $rawIp === '172.16.100.215' || $rawDeviceId === '7045951545') {
             $rawRtspPath = '/onvif2';
         }
 
         $camera = KingCamera::create([
             'user_id' => $userId,
             'name' => $rawName,
+            'device_id' => $rawDeviceId ?: null,
+            'mac_address' => $rawMac ?: null,
             'room' => $validated['room'] ?? null,
             'stream_id' => $streamId,
             'ip_address' => $rawIp,
@@ -848,13 +860,15 @@ class KingCameraController extends Controller
                 return [
                     'ip' => '172.16.100.215',
                     'real_ip' => '172.18.0.1',
+                    'device_id' => '7045951545',
+                    'mac_address' => '94:ff:7d:98:89:31',
                     'port' => 1554,
                     'onvif_port' => 1557,
                     'service_port' => 554,
-                    'brand' => 'Quarto Bebê (172.16.100.215)',
+                    'brand' => 'Quarto Bebê (Yoosee)',
                     'rtsp_path' => '/onvif2',
                     'status' => 'online',
-                    'label' => 'Quarto Bebê (172.16.100.215)',
+                    'label' => 'Quarto Bebê (ID: 7045951545)',
                     'default_name' => 'Quarto Bebê',
                     'default_password' => 'Playadryan22*',
                 ];
@@ -866,13 +880,14 @@ class KingCameraController extends Controller
                 return [
                     'ip' => '172.16.100.43',
                     'real_ip' => '172.18.0.1',
+                    'device_id' => '12345679890',
                     'port' => 1555,
                     'onvif_port' => 1556,
                     'service_port' => 554,
-                    'brand' => 'Câmera 2 (Sala)',
+                    'brand' => 'Câmera 2 Sala (EYEPLUS)',
                     'rtsp_path' => '/onvif1',
                     'status' => 'online',
-                    'label' => 'Câmera 2 Sala (172.16.100.43)',
+                    'label' => 'Câmera 2 Sala (ID: 12345679890)',
                     'default_name' => 'Câmera 2 (Sala)',
                     'default_password' => '',
                 ];
