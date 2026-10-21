@@ -6895,28 +6895,40 @@
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Conectando...';
             }
 
-            // Se já temos a câmera 12 (TWG) cadastrada no IP 172.16.100.215 / túnel
-            const existingCam = camerasData.find(c => c.ip_address === '172.16.100.215' || c.id === 12);
-            if (existingCam) {
+            // Verifica se a Câmera 1 e Câmera 2 já constam cadastradas
+            const hasCam1 = camerasData.some(c => c.id === 12 || c.port === 1554 || c.ip_address === '172.16.100.215');
+            const hasCam2 = camerasData.some(c => c.id === 17 || c.port === 1555 || (c.name && (c.name.includes('2') || c.name.includes('Sala'))));
+
+            if (hasCam1 && hasCam2) {
                 closeModal();
                 Swal.fire({
                     icon: 'success',
-                    title: 'Câmera TWG Vinculada!',
-                    html: `Sua câmera <b>${escapeHtml(existingCam.name)}</b> está pronta e transmitindo ao vivo!`,
+                    title: 'Câmeras Prontas!',
+                    text: 'Suas câmeras já estão pareadas e transmitindo em tempo real.',
                     confirmButtonColor: '#3b82f6'
                 });
-                loadCameras();
+                await loadCameras();
                 return;
             }
 
-            const payload = {
-                name: 'Câmera TWG (Wi-Fi)',
-                room: 'Entrada',
-                ip_address: '172.16.100.215',
-                port: 554,
+            // Se ainda não tem a Câmera 2, cadastra a 2ª câmera via túnel
+            const payload = !hasCam1 ? {
+                name: 'Quarto Bebê (Câmera 1)',
+                room: 'Quarto',
+                ip_address: '172.18.0.1',
+                port: 1554,
                 rtsp_path: '/onvif1',
                 username: 'admin',
                 password: 'Playadryan22*',
+                telegram_alerts_enabled: true
+            } : {
+                name: 'Câmera 2 (Sala)',
+                room: 'Sala',
+                ip_address: '172.18.0.1',
+                port: 1555,
+                rtsp_path: '/onvif1',
+                username: 'admin',
+                password: '',
                 telegram_alerts_enabled: true
             };
 
