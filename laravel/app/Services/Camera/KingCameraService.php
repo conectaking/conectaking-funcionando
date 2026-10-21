@@ -45,18 +45,16 @@ class KingCameraService
         }
 
         try {
-            $query = 'name=' . urlencode($streamId);
-            foreach ($sources as $s) {
-                $encodedSrc = urlencode($s);
-                // go2rtc parses literal * without issue, but Guzzle escapes * to %2A which breaks RTSP digest authentication
-                $encodedSrc = str_replace(['%2A', '%2a'], '*', $encodedSrc);
-                $query .= '&src=' . $encodedSrc;
-            }
-            $endpoint = "{$goUrl}/api/streams?{$query}";
+            $payload = [
+                'name' => $streamId,
+                'src' => $sources,
+            ];
 
             $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $endpoint);
+            curl_setopt($ch, CURLOPT_URL, "{$goUrl}/api/streams");
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_TIMEOUT, 6);
             $res = curl_exec($ch);
