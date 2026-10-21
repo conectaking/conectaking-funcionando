@@ -3062,13 +3062,13 @@
                 <!-- ABA 3: CADASTRO MANUAL (POR ID DA CÂMERA OU POR IP / RTSP)    -->
                 <!-- ═════════════════════════════════════════════════════════════ -->
                 <div class="kc-tab-pane" id="tab-rtsp">
-                    <!-- Switch ID vs IP -->
+                    <!-- Switch IP Local vs DDNS -->
                     <div class="kc-type-switch">
-                        <button type="button" class="kc-type-btn active" id="btn-type-id" onclick="setManualMode('id')">
-                            <i class="fas fa-hashtag"></i> 1. Pelo ID da Câmera (Yoosee / Cloud ID)
+                        <button type="button" class="kc-type-btn active" id="btn-type-ip" onclick="setManualMode('ip')">
+                            <i class="fas fa-network-wired"></i> 1. IP Local da Câmera (Wi-Fi)
                         </button>
-                        <button type="button" class="kc-type-btn" id="btn-type-ip" onclick="setManualMode('ip')">
-                            <i class="fas fa-network-wired"></i> 2. Pelo Endereço IP / DDNS
+                        <button type="button" class="kc-type-btn" id="btn-type-id" onclick="setManualMode('ddns')">
+                            <i class="fas fa-globe"></i> 2. IP Público / Host DDNS
                         </button>
                     </div>
 
@@ -3103,9 +3103,9 @@
 
                         <div class="kc-form-row">
                             <div class="kc-form-group">
-                                <label class="kc-label" for="cam-ip" id="lbl-cam-ip">ID da Câmera (3C ID / Yoosee) *</label>
-                                <input type="text" id="cam-ip" class="kc-input" placeholder="Ex: 10482910 ou 172.16.100.215" required value="172.16.100.215">
-                                <div class="kc-form-help" id="hint-cam-ip">Insira o ID numérico da câmera ou endereço IP local.</div>
+                                <label class="kc-label" for="cam-ip" id="lbl-cam-ip">Endereço IP da Câmera *</label>
+                                <input type="text" id="cam-ip" class="kc-input" placeholder="Ex: 172.16.100.215 (visto no app Yoosee)" required value="172.16.100.215">
+                                <div class="kc-form-help" id="hint-cam-ip">Copie o <b>IP da rede local</b> exibido no seu aplicativo Yoosee (ex: <code>172.16.100.215</code>). Não use o ID da câmera.</div>
                             </div>
                             <div class="kc-form-group">
                                 <label class="kc-label" for="cam-port">Porta RTSP</label>
@@ -5872,8 +5872,8 @@
             });
         }
 
-        // ─── Alternador de Modo Manual (ID vs IP) ──────────────────────────
-        let currentManualMode = 'id';
+        // ─── Alternador de Modo Manual (IP Local vs DDNS) ─────────────────
+        let currentManualMode = 'ip';
 
         function setManualMode(mode) {
             currentManualMode = mode;
@@ -5883,17 +5883,17 @@
             const inputIp = document.getElementById('cam-ip');
             const hintIp = document.getElementById('hint-cam-ip');
 
-            if (btnId) btnId.classList.toggle('active', mode === 'id');
             if (btnIp) btnIp.classList.toggle('active', mode === 'ip');
+            if (btnId) btnId.classList.toggle('active', mode === 'ddns');
 
-            if (mode === 'id') {
-                if (lblIp) lblIp.textContent = 'ID da Câmera (3C ID / Yoosee / Cloud ID) *';
-                if (inputIp) inputIp.placeholder = 'Ex: 10482910 (Encontrado na etiqueta ou app Yoosee)';
-                if (hintIp) hintIp.textContent = 'O ID da câmera de 7 a 10 dígitos impresso na etiqueta da sua câmera.';
+            if (mode === 'ip') {
+                if (lblIp) lblIp.textContent = 'Endereço IP da Câmera (Wi-Fi) *';
+                if (inputIp) inputIp.placeholder = 'Ex: 172.16.100.215 (visto no app Yoosee)';
+                if (hintIp) hintIp.innerHTML = 'Copie o <b>IP da rede local</b> exibido no app Yoosee (ex: <code>172.16.100.215</code>). Não use o ID da câmera.';
             } else {
-                if (lblIp) lblIp.textContent = 'Endereço IP ou Host DDNS *';
-                if (inputIp) inputIp.placeholder = 'Ex: 172.16.100.215 ou minhacasa.ddns.net';
-                if (hintIp) hintIp.textContent = 'Endereço IP da câmera na sua rede local ou hostname DDNS.';
+                if (lblIp) lblIp.textContent = 'IP Público ou Host DDNS (Acesso Externo) *';
+                if (inputIp) inputIp.placeholder = 'Ex: minhacasa.ddns.net ou 177.100.20.15';
+                if (hintIp) hintIp.innerHTML = 'Para acesso externo, informe o IP público da sua conexão ou DDNS com a porta RTSP 554 liberada no roteador.';
             }
         }
 
@@ -5901,6 +5901,24 @@
         async function saveCamera(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-save-cam');
+
+            const rawIp = (document.getElementById('cam-ip')?.value || '').trim();
+            // Se o usuário digitou apenas números (ID da câmera como 7045951545)
+            if (/^\d{6,14}$/.test(rawIp)) {
+                await Swal.fire({
+                    icon: 'warning',
+                    title: 'Atenção: ID da Câmera Detectado',
+                    html: `Você digitou o número <b>${escapeHtml(rawIp)}</b>, que é o ID interno da câmera no app Yoosee.<br><br>` +
+                          `Para conexão RTSP, é necessário o <b>Endereço IP</b> (com pontos), por exemplo: <code>172.16.100.215</code>.<br><br>` +
+                          `<small style="color: #94a3b8;">No app Yoosee, vá em <b>Informações do dispositivo</b> e copie o valor de <b>"IP da rede local"</b>.</small>`,
+                    confirmButtonText: 'Entendido, vou corrigir',
+                    confirmButtonColor: '#f59e0b',
+                    background: '#0f1422',
+                    color: '#fff'
+                });
+                return;
+            }
+
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
 
@@ -5908,7 +5926,7 @@
             const payload = {
                 name: document.getElementById('cam-name').value,
                 room: document.getElementById('cam-room').value,
-                ip_address: document.getElementById('cam-ip').value,
+                ip_address: rawIp,
                 port: parseInt(document.getElementById('cam-port').value || 554),
                 rtsp_path: document.getElementById('cam-path').value,
                 username: document.getElementById('cam-user').value,
