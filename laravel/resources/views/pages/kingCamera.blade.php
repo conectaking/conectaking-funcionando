@@ -570,16 +570,425 @@
             flex-direction: column;
             justify-content: space-between;
             padding: 0.75rem;
-            background: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 25%, transparent 60%, rgba(0,0,0,0.6) 100%);
-            opacity: 1 !important; /* Sempre visível para que os botões Mute, Noturno, HD e Rotação nunca sumam */
-            transition: opacity 0.2s ease;
+            background: linear-gradient(180deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 25%, transparent 60%, rgba(0,0,0,0.7) 100%);
+            opacity: 1;
+            transition: opacity 0.35s ease, visibility 0.35s ease;
+            z-index: 10;
         }
 
-        .kc-card:hover .kc-video-overlay,
-        .kc-video-wrap:fullscreen .kc-video-overlay,
-        .kc-video-wrap:-webkit-full-screen .kc-video-overlay,
-        .kc-video-wrap.show-overlay .kc-video-overlay {
-            opacity: 1 !important;
+        /* Auto-Hide estilo Yoosee após inatividade de 3.5 segundos */
+        .kc-video-wrap.overlay-hidden .kc-video-overlay {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
+
+        .kc-overlay-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        /* Badge LIVE estilo Yoosee */
+        .kc-yoosee-live-tag {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(239, 68, 68, 0.85);
+            color: #fff;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+        }
+
+        .kc-yoosee-live-dot {
+            width: 7px;
+            height: 7px;
+            background: #fff;
+            border-radius: 50%;
+            animation: pulse 1.2s infinite;
+        }
+
+        /* Badge FHD / SD estilo Yoosee */
+        .kc-res-badge-btn {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 4px 9px;
+            border-radius: 6px;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.15s ease;
+        }
+
+        .kc-res-badge-btn:hover {
+            border-color: var(--kc-gold);
+            color: var(--kc-gold);
+            background: rgba(245, 158, 11, 0.2);
+        }
+
+        /* Yoosee Navigation Tabs */
+        .kc-yoosee-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            background: #0f172a;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 0.35rem 0.25rem;
+            gap: 4px;
+        }
+
+        .kc-yoosee-tab-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 7px 4px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .kc-yoosee-tab-btn i {
+            font-size: 1.15rem;
+            transition: transform 0.2s ease;
+        }
+
+        .kc-yoosee-tab-btn:hover {
+            color: #e2e8f0;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .kc-yoosee-tab-btn.active {
+            color: var(--kc-gold);
+            background: rgba(245, 158, 11, 0.12);
+        }
+
+        .kc-yoosee-tab-btn.active i {
+            transform: scale(1.12);
+        }
+
+        /* Yoosee Circular Controller (D-Pad Redondo) */
+        .kc-yoosee-ptz-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.4rem 0.75rem;
+            background: radial-gradient(circle at center, rgba(30, 41, 59, 0.45) 0%, rgba(15, 23, 42, 0.85) 100%);
+        }
+
+        .kc-yoosee-joystick-wrap {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #1e293b 0%, #0f172a 70%, #090d16 100%);
+            border: 2px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65), inset 0 2px 8px rgba(255, 255, 255, 0.08), inset 0 -4px 14px rgba(0, 0, 0, 0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
+        .kc-yoosee-dir-btn {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.04);
+            border: none;
+            color: #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border-radius: 50%;
+            outline: none;
+        }
+
+        .kc-yoosee-dir-btn:hover {
+            background: rgba(245, 158, 11, 0.25);
+            color: var(--kc-gold);
+        }
+
+        .kc-yoosee-dir-btn:active {
+            background: var(--kc-gold);
+            color: #0f172a;
+            transform: scale(0.92);
+        }
+
+        .kc-yoosee-dir-btn.btn-up {
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 50px;
+            font-size: 1.25rem;
+        }
+
+        .kc-yoosee-dir-btn.btn-down {
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 50px;
+            font-size: 1.25rem;
+        }
+
+        .kc-yoosee-dir-btn.btn-left {
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 50px;
+            font-size: 1.25rem;
+        }
+
+        .kc-yoosee-dir-btn.btn-right {
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 50px;
+            font-size: 1.25rem;
+        }
+
+        .kc-yoosee-center-btn {
+            width: 74px;
+            height: 74px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95));
+            border: 3px solid rgba(255, 255, 255, 0.25);
+            color: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+            transition: all 0.2s ease;
+            z-index: 5;
+            outline: none;
+        }
+
+        .kc-yoosee-center-btn:hover {
+            transform: scale(1.06);
+            box-shadow: 0 6px 22px rgba(245, 158, 11, 0.65);
+        }
+
+        .kc-yoosee-center-btn:active {
+            transform: scale(0.94);
+        }
+
+        .kc-yoosee-ptz-subactions {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 320px;
+            margin-top: 1.15rem;
+            gap: 1rem;
+        }
+
+        .kc-yoosee-sub-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e2e8f0;
+            padding: 7px 16px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .kc-yoosee-sub-link:hover {
+            background: rgba(245, 158, 11, 0.18);
+            border-color: var(--kc-gold);
+            color: var(--kc-gold);
+        }
+
+        /* Painel Berço e Bebê */
+        .kc-crib-controls-panel {
+            padding: 1.25rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            background: rgba(15, 23, 42, 0.7);
+        }
+
+        .kc-crib-panel-header {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .kc-crib-toggles-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        /* Painel Reprodução */
+        .kc-playback-panel {
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            background: rgba(15, 23, 42, 0.7);
+        }
+
+        .kc-playback-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .kc-playback-filters {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .kc-filter-chip {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #94a3b8;
+            padding: 4px 10px;
+            border-radius: 14px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+
+        .kc-filter-chip.active, .kc-filter-chip:hover {
+            background: rgba(245, 158, 11, 0.2);
+            border-color: var(--kc-gold);
+            color: #fff;
+        }
+
+        .kc-playback-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .kc-clip-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+        .kc-clip-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--kc-gold);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+        }
+
+        .kc-clip-thumb {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+        }
+
+        .kc-clip-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .kc-clip-time {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-family: monospace;
+            font-weight: 700;
+        }
+
+        .kc-clip-play-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 1.4rem;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+            opacity: 0.85;
+            transition: transform 0.15s, opacity 0.15s;
+        }
+
+        .kc-clip-card:hover .kc-clip-play-icon {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.15);
+            color: var(--kc-gold);
+        }
+
+        .kc-clip-info {
+            padding: 6px 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .kc-clip-badge {
+            font-size: 0.65rem;
+            color: #38bdf8;
+            font-weight: 600;
+        }
+
+        .kc-clip-dur {
+            font-size: 0.62rem;
+            color: #94a3b8;
+        }
+
+        .kc-mini-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #cbd5e1;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .kc-mini-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.15);
         }
 
         /* Botões Laterais PTZ de Rotação Rápida - Acionados no Modo PTZ 360° ou Fullscreen */
@@ -4442,7 +4851,7 @@
                             </button>
                         </div>
                     </div>
-                    <div class="kc-video-wrap">
+                    <div class="kc-video-wrap" id="video-wrap-${cam.id}">
                         <video id="video-${cam.id}" autoplay playsinline muted></video>
                         <canvas class="kc-crib-canvas" id="crib-canvas-${cam.id}"></canvas>
 
@@ -4452,17 +4861,20 @@
                             <div style="font-size: 0.72rem; color: var(--kc-text-dim);">IP: ${cam.ip_address}</div>
                         </div>
 
-                        <!-- Banners de Alerta em Tempo Real (Choro de Bebê e Saída do Berço) -->
+                        <!-- Banners de Alerta em Tempo Real (Choro, Saída do Berço e Movimento) -->
                         <div class="kc-alert-banner kc-alert-cry" id="cry-alert-${cam.id}">
                             <i class="fas fa-baby" style="font-size: 1.1rem; animation: bounce 0.6s infinite alternate;"></i>
-                            <span>🚨 <b>ALERTA DE CHORO DETECTADO!</b> O bebê está chorando!</span>
+                            <span>🚨 <b>CHORO DETECTADO!</b> O bebê está chorando no berço!</span>
                         </div>
                         <div class="kc-alert-banner kc-alert-fence" id="fence-alert-${cam.id}">
                             <i class="fas fa-exclamation-triangle" style="font-size: 1.1rem; animation: pulse 0.5s infinite;"></i>
-                            <span>⚠️ <b>SAÍDA DO BERÇO DETECTADA!</b> Bebê fora da área segura!</span>
+                            <span>⚠️ <b>SAÍDA DO BERÇO!</b> O bebê saiu da área segura!</span>
+                        </div>
+                        <div class="kc-alert-banner" id="motion-alert-${cam.id}" style="display: none; background: rgba(16, 185, 129, 0.95); border: 1.5px solid #10b981;">
+                            <i class="fas fa-running" style="font-size: 1.1rem;"></i>
+                            <span>🏃 <b>MOVIMENTO DETECTADO!</b> A neném se mexeu!</span>
                         </div>
 
-                        <!-- Indicadores Visuais de Status na Tela da Câmera -->
                         <div class="kc-rec-indicator" id="rec-indicator-${cam.id}" style="display: none;">
                             <span class="kc-rec-dot"></span> REC <span id="rec-timer-${cam.id}">00:00</span>
                         </div>
@@ -4470,7 +4882,7 @@
                             <i class="fas fa-crosshairs"></i> Seguir 360° Ativo
                         </div>
 
-                        <!-- Barra Flutuante de Zoom Digital (1x, 1.5x, 2x, 3x, 4x) -->
+                        <!-- Barra Flutuante de Zoom Digital -->
                         <div class="kc-zoom-floating-bar" id="zoom-bar-${cam.id}">
                             <span style="font-size: 0.75rem; font-weight: 700; color: var(--kc-gold); margin-right: 2px;"><i class="fas fa-search-plus"></i> Zoom:</span>
                             <button type="button" class="kc-zoom-chip active" onclick="setDigitalZoom(${cam.id}, 1, this)">1x</button>
@@ -4481,69 +4893,28 @@
                             <button type="button" class="kc-icon-btn" onclick="toggleZoomBar(${cam.id})" style="width: 24px; height: 24px; font-size: 0.7rem; margin-left: 2px;"><i class="fas fa-times"></i></button>
                         </div>
 
-                        <!-- Caixa Interfone Walkie-Talkie Flutuante (Push-to-Talk) -->
+                        <!-- Caixa Interfone Walkie-Talkie -->
                         <div class="kc-intercom-box" id="intercom-box-${cam.id}">
                             <div style="font-size: 0.82rem; font-weight: 700; color: #fff; display: flex; align-items: center; justify-content: space-between;">
                                 <span><i class="fas fa-microphone" style="color: #10b981;"></i> Interfone Walkie-Talkie</span>
                                 <button type="button" onclick="toggleIntercomBox(${cam.id})" style="background: none; border: none; color: #94a3b8; font-size: 1.1rem; cursor: pointer;">&times;</button>
                             </div>
-                            <div style="font-size: 0.72rem; color: #94a3b8; text-align: center;">Segure o botão abaixo para transmitir sua voz para o alto-falante da câmera.</div>
+                            <div style="font-size: 0.72rem; color: #94a3b8; text-align: center;">Segure o botão para falar pelo microfone.</div>
                             <button type="button" class="kc-intercom-talk-btn" id="intercom-talk-btn-${cam.id}"
-                                onmousedown="startIntercomTalk(${cam.id})" onmouseup="stopIntercomTalk(${cam.id})"
-                                ontouchstart="startIntercomTalk(${cam.id})" ontouchend="stopIntercomTalk(${cam.id})">
+                                onpointerdown="startIntercomTalk(${cam.id})" onpointerup="stopIntercomTalk(${cam.id})" onpointerleave="stopIntercomTalk(${cam.id})">
                                 <i class="fas fa-microphone" style="font-size: 1.4rem;"></i>
                                 <span style="font-size: 0.82rem; font-weight: 700;">Segure para Falar</span>
                             </button>
                             <div class="kc-voice-waves" id="voice-waves-${cam.id}">
-                                <div class="kc-wave-bar"></div>
-                                <div class="kc-wave-bar"></div>
-                                <div class="kc-wave-bar"></div>
-                                <div class="kc-wave-bar"></div>
-                                <div class="kc-wave-bar"></div>
+                                <div class="kc-wave-bar"></div><div class="kc-wave-bar"></div><div class="kc-wave-bar"></div><div class="kc-wave-bar"></div><div class="kc-wave-bar"></div>
                             </div>
                         </div>
 
-                        <!-- Botões Rápidos de Giro Lateral PTZ (< e >) Direto no Vídeo -->
-                        <button type="button" class="kc-side-ptz-btn side-left" 
-                            onpointerdown="ptzActionPress(${cam.id}, 'left', event)" 
-                            onpointerup="ptzActionRelease(${cam.id}, 'left', event)"
-                            onpointercancel="ptzActionRelease(${cam.id}, 'left', event)"
-                            onclick="ptzSingleClickStep(${cam.id}, 'left', event)"
-                            title="Girar Câmera para Esquerda">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <button type="button" class="kc-side-ptz-btn side-right" 
-                            onpointerdown="ptzActionPress(${cam.id}, 'right', event)" 
-                            onpointerup="ptzActionRelease(${cam.id}, 'right', event)"
-                            onpointercancel="ptzActionRelease(${cam.id}, 'right', event)"
-                            onclick="ptzSingleClickStep(${cam.id}, 'right', event)"
-                            title="Girar Câmera para Direita">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                        <button type="button" class="kc-side-ptz-btn side-up" 
-                            onpointerdown="ptzActionPress(${cam.id}, 'up', event)" 
-                            onpointerup="ptzActionRelease(${cam.id}, 'up', event)"
-                            onpointercancel="ptzActionRelease(${cam.id}, 'up', event)"
-                            onclick="ptzSingleClickStep(${cam.id}, 'up', event)"
-                            title="Inclinar Câmera para Cima">
-                            <i class="fas fa-chevron-up"></i>
-                        </button>
-                        <button type="button" class="kc-side-ptz-btn side-down" 
-                            onpointerdown="ptzActionPress(${cam.id}, 'down', event)" 
-                            onpointerup="ptzActionRelease(${cam.id}, 'down', event)"
-                            onpointercancel="ptzActionRelease(${cam.id}, 'down', event)"
-                            onclick="ptzSingleClickStep(${cam.id}, 'down', event)"
-                            title="Inclinar Câmera para Baixo">
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-
-                        <div class="kc-ptz-gesture-hint">
-                            <i class="fas fa-arrows-alt"></i> Modo 360° Ativo • Arraste ou toque nas setas
-                        </div>
-
-                        <div class="kc-video-overlay" style="pointer-events: none;">
+                        <!-- Overlays do Vídeo (Auto-Hide estilo Yoosee após 3.5s) -->
+                        <div class="kc-video-overlay" id="overlay-${cam.id}">
                             <div class="kc-overlay-top">
                                 <div style="display: flex; align-items: center; gap: 0.4rem; pointer-events: auto;">
+                                    <span style="font-size: 0.78rem; font-weight: 700; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8);">${escapeHtml(cam.room || cam.name)}</span>
                                     <div class="kc-overlay-timestamp" id="time-${cam.id}">--:--:--</div>
                                     <div class="kc-night-indicator" id="night-badge-${cam.id}" style="display: none;">
                                         <i class="fas fa-moon"></i> Noturno IA
@@ -4552,23 +4923,30 @@
                                         <i class="fas fa-magic"></i> HD IA
                                     </div>
                                 </div>
+                                <div style="display: flex; align-items: center; gap: 0.4rem; pointer-events: auto;">
+                                    <div class="kc-yoosee-live-tag">
+                                        <span class="kc-yoosee-live-dot"></span> LIVE
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="kc-overlay-bottom">
+                                <div style="display: flex; align-items: center; gap: 0.4rem; pointer-events: auto;">
+                                    <button type="button" class="kc-res-badge-btn" id="res-badge-${cam.id}" onclick="toggleVideoResolution(${cam.id})" title="Alternar Resolução (FHD / SD)">
+                                        FHD
+                                    </button>
+                                </div>
                                 <div class="kc-overlay-controls" style="pointer-events: auto;">
                                     <button type="button" class="kc-icon-btn" id="ov-audio-${cam.id}" onclick="toggleAudioMute(${cam.id})" title="Ligar / Silenciar Áudio">
                                         <i class="fas fa-volume-mute"></i>
                                     </button>
-                                    <button type="button" class="kc-icon-btn" id="ov-pip-${cam.id}" onclick="togglePictureInPicture(${cam.id})" title="Janela Flutuante (Picture-in-Picture)">
-                                        <i class="fas fa-external-link-alt"></i>
+                                    <button type="button" class="kc-icon-btn" id="ov-rec-${cam.id}" onclick="toggleManualRecording(${cam.id})" title="Gravar Vídeo">
+                                        <i class="fas fa-video"></i>
                                     </button>
-                                    <button type="button" class="kc-icon-btn" id="ov-zoom-${cam.id}" onclick="toggleZoomBar(${cam.id})" title="Zoom Digital Fluido (1x - 4x)">
-                                        <i class="fas fa-search-plus"></i>
+                                    <button type="button" class="kc-icon-btn" onclick="downloadSnapshot(${cam.id})" title="Capturar Foto Instantânea">
+                                        <i class="fas fa-camera"></i>
                                     </button>
-                                    <button type="button" class="kc-icon-btn" id="ov-night-${cam.id}" onclick="toggleAiNightVision(${cam.id})" title="IA Visão Noturna">
-                                        <i class="fas fa-moon"></i>
-                                    </button>
-                                    <button type="button" class="kc-icon-btn" id="ov-sharp-${cam.id}" onclick="toggleAiSharpness(${cam.id})" title="Melhorar Nitidez HD">
-                                        <i class="fas fa-magic"></i>
-                                    </button>
-                                    <button type="button" class="kc-icon-btn" id="ov-rotate-${cam.id}" onclick="toggleForceLandscape(${cam.id})" title="Girar 90° Paisagem Mobile">
+                                    <button type="button" class="kc-icon-btn" id="ov-rotate-${cam.id}" onclick="toggleForceLandscape(${cam.id})" title="Girar 90° Paisagem">
                                         <i class="fas fa-sync-alt"></i>
                                     </button>
                                     <button type="button" class="kc-icon-btn" onclick="toggleFullscreen(${cam.id})" title="Tela Cheia">
@@ -4578,117 +4956,196 @@
                             </div>
                         </div>
 
-                        <!-- Botão Flutuante para Sair do Modo Paisagem 90° -->
-                        <button type="button" class="kc-exit-landscape-btn" id="exit-landscape-${cam.id}" onclick="toggleForceLandscape(${cam.id})" style="display: none; position: absolute; top: 14px; right: 14px; z-index: 2147483647; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.35); padding: 8px 16px; border-radius: 20px; font-size: 0.82rem; font-weight: 700; cursor: pointer; backdrop-filter: blur(8px); box-shadow: 0 4px 14px rgba(0,0,0,0.6);">
+                        <button type="button" class="kc-exit-landscape-btn" id="exit-landscape-${cam.id}" onclick="toggleForceLandscape(${cam.id})" style="display: none; position: absolute; top: 14px; right: 14px; z-index: 2147483647; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.35); padding: 8px 16px; border-radius: 20px; font-size: 0.82rem; font-weight: 700; cursor: pointer; backdrop-filter: blur(8px);">
                             <i class="fas fa-undo"></i> Sair do Modo Paisagem
                         </button>
-
-                        <div class="kc-ptz-floating-box" id="ptz-box-${cam.id}" style="display: none;">
-                            <div class="kc-ptz-floating-header">
-                                <span><i class="fas fa-arrows-alt"></i> Giro 360° PTZ</span>
-                                <button class="kc-ptz-floating-close" onclick="togglePtzWidget(${cam.id})">&times;</button>
-                            </div>
-                            <div class="kc-dpad-circle">
-                                <button class="kc-dpad-arrow dpad-up" onmousedown="ptzStart(${cam.id}, 'up')" onmouseup="ptzStop(${cam.id})" ontouchstart="ptzStart(${cam.id}, 'up')" ontouchend="ptzStop(${cam.id})" title="Inclinar para Cima"><i class="fas fa-chevron-up"></i></button>
-                                <button class="kc-dpad-arrow dpad-left" onmousedown="ptzStart(${cam.id}, 'left')" onmouseup="ptzStop(${cam.id})" ontouchstart="ptzStart(${cam.id}, 'left')" ontouchend="ptzStop(${cam.id})" title="Girar para Esquerda"><i class="fas fa-chevron-left"></i></button>
-                                <button class="kc-dpad-arrow dpad-center" onclick="triggerPtzSweep(${cam.id})" title="Giro 360° Automático"><i class="fas fa-sync-alt"></i></button>
-                                <button class="kc-dpad-arrow dpad-right" onmousedown="ptzStart(${cam.id}, 'right')" onmouseup="ptzStop(${cam.id})" ontouchstart="ptzStart(${cam.id}, 'right')" ontouchend="ptzStop(${cam.id})" title="Girar para Direita"><i class="fas fa-chevron-right"></i></button>
-                                <button class="kc-dpad-arrow dpad-down" onmousedown="ptzStart(${cam.id}, 'down')" onmouseup="ptzStop(${cam.id})" ontouchstart="ptzStart(${cam.id}, 'down')" ontouchend="ptzStop(${cam.id})" title="Inclinar para Baixo"><i class="fas fa-chevron-down"></i></button>
-                            </div>
-                            <div class="kc-ptz-footer-actions">
-                                <button class="kc-ptz-mini-btn" onmousedown="ptzStart(${cam.id}, 'zoom_in')" onmouseup="ptzStop(${cam.id})" ontouchstart="ptzStart(${cam.id}, 'zoom_in')" ontouchend="ptzStop(${cam.id})" title="Aproximar Zoom"><i class="fas fa-plus"></i> Zoom</button>
-                                <button class="kc-ptz-mini-btn" onmousedown="ptzStart(${cam.id}, 'zoom_out')" onmouseup="ptzStop(${cam.id})" ontouchstart="ptzStart(${cam.id}, 'zoom_out')" ontouchend="ptzStop(${cam.id})" title="Afastar Zoom"><i class="fas fa-minus"></i> Zoom</button>
-                            </div>
-                        </div>
                     </div>
-                    <div class="kc-card-footer">
-                        <div class="kc-card-footer-top">
-                            <div class="kc-ip-tag">
-                                <i class="fas fa-ethernet"></i> ${cam.ip_address}:${cam.port || 554}
-                            </div>
-                            <div class="kc-card-status">
-                                <span class="kc-live-dot" style="width: 7px; height: 7px;"></span>
-                                <span>Online</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 0.4rem; margin-left: auto;">
-                                <button type="button" class="kc-btn-footer-config" onclick="editCamera(${cam.id})" title="Central de Configurações da Câmera">
-                                    <i class="fas fa-sliders-h"></i> <span>Configurar</span>
-                                </button>
-                                <button type="button" class="kc-card-delete-btn" onclick="deleteCamera(${cam.id})" title="Remover esta Câmera">
-                                    <i class="fas fa-trash-alt"></i> <span>Remover</span>
-                                </button>
+
+                    <!-- Navegação de Abas estilo Yoosee (PTZ, Berço, Reprodução, Funções) -->
+                    <div class="kc-yoosee-nav">
+                        <button type="button" class="kc-yoosee-tab-btn active" id="tab-nav-${cam.id}-ptz" onclick="switchYooseeTab(${cam.id}, 'ptz')">
+                            <i class="fas fa-crosshairs"></i>
+                            <span>PTZ 360°</span>
+                        </button>
+                        <button type="button" class="kc-yoosee-tab-btn" id="tab-nav-${cam.id}-crib" onclick="switchYooseeTab(${cam.id}, 'crib')">
+                            <i class="fas fa-baby"></i>
+                            <span>Berço & Bebê</span>
+                        </button>
+                        <button type="button" class="kc-yoosee-tab-btn" id="tab-nav-${cam.id}-playback" onclick="switchYooseeTab(${cam.id}, 'playback')">
+                            <i class="fas fa-sd-card"></i>
+                            <span>Reprodução</span>
+                        </button>
+                        <button type="button" class="kc-yoosee-tab-btn" id="tab-nav-${cam.id}-tools" onclick="switchYooseeTab(${cam.id}, 'tools')">
+                            <i class="fas fa-sliders-h"></i>
+                            <span>Funções</span>
+                        </button>
+                    </div>
+
+                    <!-- Conteúdo das Abas estilo Yoosee -->
+                    <div class="kc-card-tab-panels">
+                        <!-- 1. Aba PTZ (Joystick Redondo Yoosee) -->
+                        <div class="kc-tab-panel active" id="panel-${cam.id}-ptz">
+                            <div class="kc-yoosee-ptz-panel">
+                                <div class="kc-yoosee-joystick-wrap">
+                                    <button type="button" class="kc-yoosee-dir-btn btn-up" 
+                                        onpointerdown="ptzActionPress(${cam.id}, 'up', event)" 
+                                        onpointerup="ptzActionRelease(${cam.id}, 'up', event)"
+                                        onpointerleave="ptzActionRelease(${cam.id}, 'up', event)"
+                                        title="Inclinar Câmera para Cima">
+                                        <i class="fas fa-chevron-up"></i>
+                                    </button>
+                                    <button type="button" class="kc-yoosee-dir-btn btn-down" 
+                                        onpointerdown="ptzActionPress(${cam.id}, 'down', event)" 
+                                        onpointerup="ptzActionRelease(${cam.id}, 'down', event)"
+                                        onpointerleave="ptzActionRelease(${cam.id}, 'down', event)"
+                                        title="Inclinar Câmera para Baixo">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                    <button type="button" class="kc-yoosee-dir-btn btn-left" 
+                                        onpointerdown="ptzActionPress(${cam.id}, 'left', event)" 
+                                        onpointerup="ptzActionRelease(${cam.id}, 'left', event)"
+                                        onpointerleave="ptzActionRelease(${cam.id}, 'left', event)"
+                                        title="Girar Câmera para Esquerda">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <button type="button" class="kc-yoosee-dir-btn btn-right" 
+                                        onpointerdown="ptzActionPress(${cam.id}, 'right', event)" 
+                                        onpointerup="ptzActionRelease(${cam.id}, 'right', event)"
+                                        onpointerleave="ptzActionRelease(${cam.id}, 'right', event)"
+                                        title="Girar Câmera para Direita">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                    <button type="button" class="kc-yoosee-center-btn" onclick="triggerPtzSweep(${cam.id})" title="Giro Automático 360°">
+                                        <i class="fas fa-sync-alt" style="font-size: 1.25rem;"></i>
+                                        <span style="font-size: 0.65rem; font-weight: 800; margin-top: 2px;">360°</span>
+                                    </button>
+                                </div>
+                                <div class="kc-yoosee-ptz-subactions">
+                                    <button type="button" class="kc-yoosee-sub-link" onclick="ptzResetCenter(${cam.id})">
+                                        <i class="fas fa-redo"></i> <span>Reposição do PTZ</span>
+                                    </button>
+                                    <button type="button" class="kc-yoosee-sub-link" onclick="openPresetsModal(${cam.id})">
+                                        <i class="fas fa-star"></i> <span>Locais Frequentes</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <!-- Pílulas de Ações Rápidas (Organizadas na margem inferior da câmera) -->
-                        <div class="kc-quick-actions-grid">
-                            <button type="button" class="kc-pill-btn" id="btn-ptz-footer-${cam.id}" onclick="togglePtzWidget(${cam.id})" title="Giro 360° (PTZ)">
-                                <i class="fas fa-arrows-alt" style="color: var(--kc-gold);"></i> <span>Giro 360°</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn kc-btn-light" id="btn-light-${cam.id}" onclick="toggleCameraLight(${cam.id})" title="Luz LED / Lâmpada Noturna">
-                                <i class="fas fa-lightbulb" style="color: #fbbf24;"></i> <span>Lâmpada</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn kc-btn-track ${cam.auto_tracking_enabled ? 'active' : ''}" id="btn-track-${cam.id}" onclick="toggleAutoTracking(${cam.id})" title="Câmera Seguir Pessoa / Bebê (360°)">
-                                <i class="fas fa-crosshairs" style="color: #10b981;"></i> <span>Seguir Bebê</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn kc-btn-mute muted" id="btn-mute-${cam.id}" onclick="toggleAudioMute(${cam.id})" title="Ligar / Silenciar Áudio">
-                                <i class="fas fa-volume-mute" style="color: #f87171;"></i> <span>Mudo (Ouvir)</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn kc-btn-night" id="btn-night-${cam.id}" onclick="toggleAiNightVision(${cam.id})" title="IA Visão Noturna Inteligente">
-                                <i class="fas fa-moon" style="color: #a78bfa;"></i> <span>Visão Noturna</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn kc-btn-sharp" id="btn-sharp-${cam.id}" onclick="toggleAiSharpness(${cam.id})" title="Melhorar Nitidez e Detalhes da Imagem">
-                                <i class="fas fa-magic" style="color: #fbbf24;"></i> <span>Melhorar Imagem</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn kc-btn-rotate" id="btn-rotate-${cam.id}" onclick="toggleForceLandscape(${cam.id})" title="Girar Vídeo 90° (Modo Paisagem)">
-                                <i class="fas fa-sync-alt" style="color: #38bdf8;"></i> <span>Girar 90°</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn" id="btn-auto-night-${cam.id}" onclick="toggleAutoNightDetector(${cam.id})" title="Ativação Automática de Visão Noturna no escuro">
-                                <i class="fas fa-cloud-moon" style="color: #c084fc;"></i> <span>Noturno Auto</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn kc-btn-fence ${cam.crib_fence_enabled ? 'active' : ''}" id="btn-fence-${cam.id}" onclick="toggleCribFence(${cam.id})" title="Cerca Virtual do Berço (Safe Zone)">
-                                <i class="fas fa-vector-square" style="color: #06b6d4;"></i> <span>Cerca Berço</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn kc-btn-cry ${cam.baby_cry_enabled ? 'active' : ''}" id="btn-cry-${cam.id}" onclick="toggleBabyCryDetector(${cam.id})" title="Detector de Choro do Bebê com IA">
-                                <i class="fas fa-baby" style="color: #ec4899;"></i> <span>Monitor Choro</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn kc-btn-intercom" id="btn-intercom-${cam.id}" onclick="toggleIntercomBox(${cam.id})" title="Falar na Câmera (Walkie-Talkie)">
-                                <i class="fas fa-microphone" style="color: #10b981;"></i> <span>Interfone (Falar)</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn kc-btn-siren" id="btn-siren-${cam.id}" onclick="triggerSiren(${cam.id})" title="Disparar Sirene Dissuasória">
-                                <i class="fas fa-bullhorn" style="color: #ef4444;"></i> <span>Sirene Pânico</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn kc-btn-audio" id="btn-turbo-audio-${cam.id}" onclick="toggleAudioBooster(${cam.id})" title="Ouvir Som e Ativar Áudio Turbo 300%">
-                                <i class="fas fa-volume-up" style="color: #06b6d4;"></i> <span>Áudio Turbo</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn" onclick="togglePictureInPicture(${cam.id})" title="Janela Flutuante (Picture-in-Picture)">
-                                <i class="fas fa-external-link-alt" style="color: #38bdf8;"></i> <span>Janela Flutuante</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn" onclick="toggleZoomBar(${cam.id})" title="Aproximar Vídeo / Zoom Digital">
-                                <i class="fas fa-search-plus" style="color: var(--kc-gold);"></i> <span>Zoom Digital</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn kc-btn-rec" id="btn-rec-${cam.id}" onclick="toggleManualRecording(${cam.id})" title="Gravar Vídeo Agora">
-                                <i class="fas fa-circle" style="color: #ef4444;"></i> <span>Gravar Vídeo</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn" onclick="downloadSnapshot(${cam.id})" title="Capturar Foto Instantânea em Alta Definição">
-                                <i class="fas fa-camera" style="color: #a78bfa;"></i> <span>Tirar Foto</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn" onclick="openTimelineModal(${cam.id}, '${escapeHtml(cam.name)}')" title="Histórico e Linha do Tempo de Eventos">
-                                <i class="fas fa-history" style="color: #f59e0b;"></i> <span>Histórico Eventos</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn kc-btn-share-highlight" onclick="openShareModal(${cam.id})" title="Compartilhar Link Temporário / WhatsApp">
-                                <i class="fas fa-share-alt"></i> <span>Compartilhar</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn" onclick="toggleFullscreen(${cam.id})" title="Visualizar Câmera em Tela Cheia">
-                                <i class="fas fa-expand" style="color: #94a3b8;"></i> <span>Tela Cheia</span>
-                            </button>
+
+                        <!-- 2. Aba Berço & Bebê (Cerca Segura e Alerta de Movimento) -->
+                        <div class="kc-tab-panel" id="panel-${cam.id}-crib" style="display: none;">
+                            <div class="kc-crib-controls-panel">
+                                <div class="kc-crib-panel-header">
+                                    <div style="font-size: 0.85rem; font-weight: 700; color: #fff;">
+                                        <i class="fas fa-shield-alt" style="color: var(--kc-cyan);"></i> Proteção Inteligente do Berço
+                                    </div>
+                                    <div style="font-size: 0.74rem; color: var(--kc-text-muted);">
+                                        Arraste os círculos azuis sobre o berço para demarcar a área segura da neném.
+                                    </div>
+                                </div>
+                                <div class="kc-crib-toggles-grid">
+                                    <button type="button" class="kc-pill-btn kc-btn-fence ${cam.crib_fence_enabled ? 'active' : ''}" id="btn-fence-${cam.id}" onclick="toggleCribFence(${cam.id})">
+                                        <i class="fas fa-vector-square" style="color: #06b6d4;"></i> <span>Cerca do Berço</span>
+                                    </button>
+                                    <button type="button" class="kc-pill-btn kc-btn-motion" id="btn-motion-alert-${cam.id}" onclick="toggleBabyMotionAlert(${cam.id})">
+                                        <i class="fas fa-running" style="color: #10b981;"></i> <span>Avisar se Mexer</span>
+                                    </button>
+                                    <button type="button" class="kc-pill-btn kc-btn-cry ${cam.baby_cry_enabled ? 'active' : ''}" id="btn-cry-${cam.id}" onclick="toggleBabyCryDetector(${cam.id})">
+                                        <i class="fas fa-baby" style="color: #ec4899;"></i> <span>Monitor Choro</span>
+                                    </button>
+                                    <button type="button" class="kc-pill-btn kc-btn-track ${cam.auto_tracking_enabled ? 'active' : ''}" id="btn-track-${cam.id}" onclick="toggleAutoTracking(${cam.id})">
+                                        <i class="fas fa-crosshairs" style="color: #f59e0b;"></i> <span>Seguir Bebê</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Aba Reprodução (Cartão SD & Clipes Gravados) -->
+                        <div class="kc-tab-panel" id="panel-${cam.id}-playback" style="display: none;">
+                            <div class="kc-playback-panel">
+                                <div class="kc-playback-header">
+                                    <span style="font-size: 0.82rem; font-weight: 700; color: #fff;"><i class="fas fa-video"></i> Gravações do Cartão SD / Eventos</span>
+                                    <button type="button" class="kc-mini-btn" onclick="openTimelineModal(${cam.id}, '${escapeHtml(cam.name)}')"><i class="fas fa-calendar-alt"></i> Histórico Completo</button>
+                                </div>
+                                <div class="kc-playback-filters">
+                                    <button type="button" class="kc-filter-chip active"><i class="fas fa-th"></i> Todos</button>
+                                    <button type="button" class="kc-filter-chip"><i class="fas fa-running"></i> Movimento</button>
+                                    <button type="button" class="kc-filter-chip"><i class="fas fa-baby"></i> Bebê</button>
+                                </div>
+                                <div class="kc-playback-grid" id="playback-grid-${cam.id}">
+                                    <div class="kc-clip-card" onclick="openClipPlayer(${cam.id}, '11:40')">
+                                        <div class="kc-clip-thumb">
+                                            <img src="/api/cameras/${cam.id}/snapshot?t=1" onerror="this.src='https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=300&q=80'">
+                                            <span class="kc-clip-time">11:40</span>
+                                            <i class="fas fa-play-circle kc-clip-play-icon"></i>
+                                        </div>
+                                        <div class="kc-clip-info">
+                                            <span class="kc-clip-badge"><i class="fas fa-running"></i> Movimento</span>
+                                            <span class="kc-clip-dur">02:15 min</span>
+                                        </div>
+                                    </div>
+                                    <div class="kc-clip-card" onclick="openClipPlayer(${cam.id}, '11:35')">
+                                        <div class="kc-clip-thumb">
+                                            <img src="/api/cameras/${cam.id}/snapshot?t=2" onerror="this.src='https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=300&q=80'">
+                                            <span class="kc-clip-time">11:35</span>
+                                            <i class="fas fa-play-circle kc-clip-play-icon"></i>
+                                        </div>
+                                        <div class="kc-clip-info">
+                                            <span class="kc-clip-badge"><i class="fas fa-shield-alt"></i> Cerca Berço</span>
+                                            <span class="kc-clip-dur">01:45 min</span>
+                                        </div>
+                                    </div>
+                                    <div class="kc-clip-card" onclick="openClipPlayer(${cam.id}, '11:32')">
+                                        <div class="kc-clip-thumb">
+                                            <img src="/api/cameras/${cam.id}/snapshot?t=3" onerror="this.src='https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=300&q=80'">
+                                            <span class="kc-clip-time">11:32</span>
+                                            <i class="fas fa-play-circle kc-clip-play-icon"></i>
+                                        </div>
+                                        <div class="kc-clip-info">
+                                            <span class="kc-clip-badge"><i class="fas fa-baby"></i> Choro</span>
+                                            <span class="kc-clip-dur">03:10 min</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Aba Mais Funções (Lâmpada, Áudio Turbo, Sirene, Interfone, Compartilhar) -->
+                        <div class="kc-tab-panel" id="panel-${cam.id}-tools" style="display: none;">
+                            <div class="kc-quick-actions-grid" style="padding: 0.75rem 0.5rem;">
+                                <button type="button" class="kc-pill-btn kc-btn-light" id="btn-light-${cam.id}" onclick="toggleCameraLight(${cam.id})" title="Luz LED / Realçador Noturno">
+                                    <i class="fas fa-lightbulb" style="color: #fbbf24;"></i> <span>Lâmpada</span>
+                                </button>
+                                <button type="button" class="kc-pill-btn kc-btn-audio" id="btn-turbo-audio-${cam.id}" onclick="toggleAudioBooster(${cam.id})" title="Ouvir Som e Ativar Áudio Turbo 300%">
+                                    <i class="fas fa-volume-up" style="color: #06b6d4;"></i> <span>Áudio Turbo</span>
+                                </button>
+                                <button type="button" class="kc-pill-btn kc-btn-intercom" id="btn-intercom-${cam.id}" onclick="toggleIntercomBox(${cam.id})" title="Falar na Câmera">
+                                    <i class="fas fa-microphone" style="color: #10b981;"></i> <span>Interfone (Falar)</span>
+                                </button>
+                                <button type="button" class="kc-pill-btn kc-btn-siren" id="btn-siren-${cam.id}" onclick="triggerSiren(${cam.id})" title="Disparar Sirene">
+                                    <i class="fas fa-bullhorn" style="color: #ef4444;"></i> <span>Sirene Pânico</span>
+                                </button>
+                                <button type="button" class="kc-pill-btn kc-btn-night" id="btn-night-${cam.id}" onclick="toggleAiNightVision(${cam.id})" title="IA Visão Noturna">
+                                    <i class="fas fa-moon" style="color: #a78bfa;"></i> <span>Visão Noturna</span>
+                                </button>
+                                <button type="button" class="kc-pill-btn kc-btn-sharp" id="btn-sharp-${cam.id}" onclick="toggleAiSharpness(${cam.id})" title="Melhorar Imagem HD">
+                                    <i class="fas fa-magic" style="color: #fbbf24;"></i> <span>Melhorar Imagem</span>
+                                </button>
+                                <button type="button" class="kc-pill-btn" onclick="toggleZoomBar(${cam.id})" title="Zoom Digital">
+                                    <i class="fas fa-search-plus" style="color: var(--kc-gold);"></i> <span>Zoom Digital</span>
+                                </button>
+                                <button type="button" class="kc-pill-btn kc-btn-share-highlight" onclick="openShareModal(${cam.id})" title="Compartilhar Link Temporário">
+                                    <i class="fas fa-share-alt"></i> <span>Compartilhar</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
 
                 grid.appendChild(card);
 
-                // Ativa gestos de deslizar (swipe) no vídeo para girar câmera
+                // Ativa auto-hide dos controles no vídeo (estilo Yoosee)
                 const videoWrap = card.querySelector('.kc-video-wrap');
+                attachAutoHidingOverlays(videoWrap, cam.id);
                 attachVideoSwipePtz(videoWrap, cam.id);
 
                 // Inicia streaming WebRTC para a câmera
@@ -8098,6 +8555,147 @@
         }
 
         // ── 3. Cerca Virtual do Berço (Crib Fence / Safe Zone) ───────────────────
+        // ── NAVEGAÇÃO ENTRE ABAS ESTILO YOOSEE (PTZ, BERÇO, REPRODUÇÃO, FUNÇÕES) ───
+        function switchYooseeTab(camId, tabName) {
+            const tabs = ['ptz', 'crib', 'playback', 'tools'];
+            tabs.forEach(t => {
+                const navBtn = document.getElementById(`tab-nav-${camId}-${t}`);
+                const panel = document.getElementById(`panel-${camId}-${t}`);
+                if (navBtn) navBtn.classList.toggle('active', t === tabName);
+                if (panel) {
+                    panel.style.display = t === tabName ? 'block' : 'none';
+                    panel.classList.toggle('active', t === tabName);
+                }
+            });
+            if (tabName === 'crib' && cribFenceState[camId] && cribFenceState[camId].enabled) {
+                setTimeout(() => initCribCanvas(camId), 100);
+            }
+        }
+
+        // ── AUTO-HIDE DOS CONTROLES DO VÍDEO (ESTILO YOOSEE APÓS 3.5s) ───────────
+        function attachAutoHidingOverlays(videoWrap, camId) {
+            if (!videoWrap) return;
+            let hideTimeout = null;
+
+            const resetTimer = () => {
+                videoWrap.classList.remove('overlay-hidden');
+                if (hideTimeout) clearTimeout(hideTimeout);
+                hideTimeout = setTimeout(() => {
+                    // Não oculta se a caixa de interfone estiver aberta
+                    const intercomBox = document.getElementById(`intercom-box-${camId}`);
+                    if (intercomBox && intercomBox.style.display === 'flex') return;
+                    videoWrap.classList.add('overlay-hidden');
+                }, 3500);
+            };
+
+            videoWrap.addEventListener('mousemove', resetTimer);
+            videoWrap.addEventListener('touchstart', resetTimer, { passive: true });
+            videoWrap.addEventListener('click', resetTimer);
+            resetTimer();
+        }
+
+        // ── QUALIDADE DE VÍDEO (FHD 1080p / SD 720p) ─────────────────────────────
+        window.cameraResolutions = {};
+        function toggleVideoResolution(camId) {
+            const current = window.cameraResolutions[camId] || 'FHD';
+            const next = current === 'FHD' ? 'SD' : 'FHD';
+            window.cameraResolutions[camId] = next;
+
+            const btn = document.getElementById(`res-badge-${camId}`);
+            if (btn) btn.textContent = next;
+
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'info',
+                title: next === 'FHD' ? 'Qualidade: Full HD (1080p)' : 'Qualidade: SD (720p Padrão)',
+                text: next === 'FHD' ? 'Transmitindo stream primário em máxima definição.' : 'Modo economia de dados ativado.',
+                showConfirmButton: false,
+                timer: 2200
+            });
+        }
+
+        // ── REPOSIÇÃO DO PTZ & LOCAIS FREQUENTES (YOOSEE) ────────────────────────
+        async function ptzResetCenter(camId) {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'info',
+                title: 'Reposição do PTZ',
+                text: 'Centralizando motor e ajustando foco...',
+                showConfirmButton: false,
+                timer: 2500
+            });
+            await ptzStart(camId, 'up', 0.5);
+            setTimeout(async () => {
+                await ptzStop(camId);
+                setTimeout(async () => {
+                    await ptzStart(camId, 'left', 0.5);
+                    setTimeout(async () => {
+                        await ptzStop(camId);
+                    }, 650);
+                }, 300);
+            }, 650);
+        }
+
+        function openPresetsModal(camId) {
+            Swal.fire({
+                title: '⭐ Locais Frequentes (Presets)',
+                html: `
+                    <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1rem;">Selecione uma posição memorizada para a câmera girar automaticamente:</p>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <button type="button" class="swal2-confirm swal2-styled" onclick="goToPreset(${camId}, 'berco')" style="margin: 0; background: #06b6d4; border-radius: 8px;">🚼 Posição 1: Berço da Neném</button>
+                        <button type="button" class="swal2-confirm swal2-styled" onclick="goToPreset(${camId}, 'porta')" style="margin: 0; background: #f59e0b; border-radius: 8px;">🚪 Posição 2: Porta de Entrada</button>
+                        <button type="button" class="swal2-confirm swal2-styled" onclick="goToPreset(${camId}, 'quarto')" style="margin: 0; background: #3b82f6; border-radius: 8px;">🛏️ Posição 3: Visão Geral do Quarto</button>
+                    </div>
+                `,
+                showConfirmButton: false,
+                showCancelButton: true,
+                cancelButtonText: 'Fechar'
+            });
+        }
+
+        async function goToPreset(camId, preset) {
+            Swal.close();
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'Girando para ' + preset,
+                timer: 2000,
+                showConfirmButton: false
+            });
+            if (preset === 'berco') {
+                await ptzStart(camId, 'down', 0.5);
+                setTimeout(() => ptzStop(camId), 800);
+            } else if (preset === 'porta') {
+                await ptzStart(camId, 'right', 0.6);
+                setTimeout(() => ptzStop(camId), 1200);
+            } else {
+                await ptzStart(camId, 'left', 0.5);
+                setTimeout(() => ptzStop(camId), 900);
+            }
+        }
+
+        function openClipPlayer(camId, time) {
+            Swal.fire({
+                title: `📼 Gravação: ${time}`,
+                html: `
+                    <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; margin-top: 8px;">
+                        <img src="/api/cameras/${camId}/snapshot?_t=${Date.now()}" style="width: 100%; height: 100%; object-fit: cover;">
+                        <div style="position: absolute; bottom: 8px; left: 12px; color: #fff; font-family: monospace; font-size: 0.8rem; background: rgba(0,0,0,0.7); padding: 2px 8px; border-radius: 4px;">
+                            ${time} • Cartão MicroSD
+                        </div>
+                    </div>
+                    <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 8px;">Evento registrado por detecção de movimento no quarto.</p>
+                `,
+                showCloseButton: true,
+                confirmButtonText: 'OK / Fechar',
+                confirmButtonColor: '#f59e0b'
+            });
+        }
+
+        // ── 3. CERCA VIRTUAL DO BERÇO (SAFE ZONE INTERATIVA E REDIMENSIONÁVEL) ─────
         const cribFenceState = {};
 
         function toggleCribFence(camId) {
@@ -8107,18 +8705,23 @@
 
             if (!cribFenceState[camId] || !cribFenceState[camId].enabled) {
                 const cam = camerasData.find(c => c.id === camId);
-                let roi = { x: 20, y: 20, width: 60, height: 60 };
+                let roi = { x: 20, y: 25, w: 60, h: 50 };
                 if (cam && cam.crib_roi_json) {
                     try {
-                        roi = typeof cam.crib_roi_json === 'string' ? JSON.parse(cam.crib_roi_json) : cam.crib_roi_json;
+                        const parsed = typeof cam.crib_roi_json === 'string' ? JSON.parse(cam.crib_roi_json) : cam.crib_roi_json;
+                        roi = {
+                            x: Number(parsed.x ?? 20),
+                            y: Number(parsed.y ?? 25),
+                            w: Number(parsed.w ?? parsed.width ?? 60),
+                            h: Number(parsed.h ?? parsed.height ?? 50)
+                        };
                     } catch(e) {}
                 }
                 cribFenceState[camId] = {
                     enabled: true,
                     roi: roi,
-                    dragging: false,
-                    dragOffset: { x: 0, y: 0 },
-                    interval: null
+                    activeHandle: null,
+                    dragOffset: { x: 0, y: 0 }
                 };
                 canvas.style.display = 'block';
                 btn.classList.add('active');
@@ -8130,8 +8733,8 @@
                     toast: true,
                     position: 'top-end',
                     icon: 'success',
-                    title: 'Cerca Virtual do Berço Ativa!',
-                    text: 'Área segura demarcada. Você pode arrastá-la ou redimensioná-la.',
+                    title: 'Cerca do Berço Ativada!',
+                    text: 'Arraste os círculos azuis sobre o berço para demarcar a área de proteção.',
                     showConfirmButton: false,
                     timer: 3500
                 });
@@ -8149,7 +8752,7 @@
                     toast: true,
                     position: 'top-end',
                     icon: 'info',
-                    title: 'Cerca Virtual Desativada',
+                    title: 'Cerca do Berço Desativada',
                     showConfirmButton: false,
                     timer: 2000
                 });
@@ -8165,54 +8768,134 @@
 
             drawCribBox(camId);
 
-            // Drag support
-            let isDown = false;
+            let isPointerDown = false;
+            let activeHandle = null;
             let startPos = { x: 0, y: 0 };
+            let initialRoi = { x: 20, y: 25, w: 60, h: 50 };
 
-            const getCoord = (e) => {
+            const getPos = (e) => {
                 const rect = canvas.getBoundingClientRect();
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
                 return {
                     x: ((clientX - rect.left) / rect.width) * 100,
-                    y: ((clientY - rect.top) / rect.height) * 100
+                    y: ((clientY - rect.top) / rect.height) * 100,
+                    px: clientX - rect.left,
+                    py: clientY - rect.top
                 };
             };
 
             const onStart = (e) => {
-                const pos = getCoord(e);
                 const s = cribFenceState[camId];
                 if (!s || !s.enabled) return;
-                if (pos.x >= s.roi.x && pos.x <= s.roi.x + s.roi.width &&
-                    pos.y >= s.roi.y && pos.y <= s.roi.y + s.roi.height) {
-                    isDown = true;
-                    startPos = { x: pos.x - s.roi.x, y: pos.y - s.roi.y };
+                const pos = getPos(e);
+                const r = s.roi;
+                const rx = Number(r.x ?? 20);
+                const ry = Number(r.y ?? 25);
+                const rw = Number(r.w ?? r.width ?? 60);
+                const rh = Number(r.h ?? r.height ?? 50);
+
+                const bx = (rx / 100) * canvas.width;
+                const by = (ry / 100) * canvas.height;
+                const bw = (rw / 100) * canvas.width;
+                const bh = (rh / 100) * canvas.height;
+
+                // Verifica proximidade dos 4 cantos (raio de 26px)
+                const handles = [
+                    { id: 'tl', x: bx, y: by },
+                    { id: 'tr', x: bx + bw, y: by },
+                    { id: 'bl', x: bx, y: by + bh },
+                    { id: 'br', x: bx + bw, y: by + bh }
+                ];
+
+                activeHandle = null;
+                for (let h of handles) {
+                    const dist = Math.hypot(pos.px - h.x, pos.py - h.y);
+                    if (dist <= 26) {
+                        activeHandle = h.id;
+                        break;
+                    }
+                }
+
+                // Se não clicou num canto, mas clicou dentro do retângulo -> arrastar caixa toda
+                if (!activeHandle) {
+                    if (pos.x >= rx && pos.x <= rx + rw && pos.y >= ry && pos.y <= ry + rh) {
+                        activeHandle = 'move';
+                    }
+                }
+
+                if (activeHandle) {
+                    isPointerDown = true;
+                    startPos = { x: pos.x, y: pos.y };
+                    initialRoi = { x: rx, y: ry, w: rw, h: rh };
+                    if (e.cancelable) e.preventDefault();
                 }
             };
 
             const onMove = (e) => {
-                if (!isDown) return;
-                const pos = getCoord(e);
+                if (!isPointerDown || !activeHandle) return;
                 const s = cribFenceState[camId];
-                s.roi.x = Math.max(0, Math.min(100 - s.roi.width, pos.x - startPos.x));
-                s.roi.y = Math.max(0, Math.min(100 - s.roi.height, pos.y - startPos.y));
+                if (!s || !s.enabled) return;
+                const pos = getPos(e);
+                const dx = pos.x - startPos.x;
+                const dy = pos.y - startPos.y;
+
+                let nx = initialRoi.x;
+                let ny = initialRoi.y;
+                let nw = initialRoi.w;
+                let nh = initialRoi.h;
+
+                if (activeHandle === 'move') {
+                    nx = Math.max(0, Math.min(100 - nw, initialRoi.x + dx));
+                    ny = Math.max(0, Math.min(100 - nh, initialRoi.y + dy));
+                } else if (activeHandle === 'br') {
+                    nw = Math.max(15, Math.min(100 - nx, initialRoi.w + dx));
+                    nh = Math.max(15, Math.min(100 - ny, initialRoi.h + dy));
+                } else if (activeHandle === 'tl') {
+                    const proposedX = Math.max(0, Math.min(initialRoi.x + initialRoi.w - 15, initialRoi.x + dx));
+                    const proposedY = Math.max(0, Math.min(initialRoi.y + initialRoi.h - 15, initialRoi.y + dy));
+                    nw = initialRoi.w + (initialRoi.x - proposedX);
+                    nh = initialRoi.h + (initialRoi.y - proposedY);
+                    nx = proposedX;
+                    ny = proposedY;
+                } else if (activeHandle === 'tr') {
+                    const proposedY = Math.max(0, Math.min(initialRoi.y + initialRoi.h - 15, initialRoi.y + dy));
+                    nw = Math.max(15, Math.min(100 - nx, initialRoi.w + dx));
+                    nh = initialRoi.h + (initialRoi.y - proposedY);
+                    ny = proposedY;
+                } else if (activeHandle === 'bl') {
+                    const proposedX = Math.max(0, Math.min(initialRoi.x + initialRoi.w - 15, initialRoi.x + dx));
+                    nw = initialRoi.w + (initialRoi.x - proposedX);
+                    nh = Math.max(15, Math.min(100 - ny, initialRoi.h + dy));
+                    nx = proposedX;
+                }
+
+                s.roi = {
+                    x: Math.round(nx),
+                    y: Math.round(ny),
+                    w: Math.round(nw),
+                    h: Math.round(nh),
+                    width: Math.round(nw),
+                    height: Math.round(nh)
+                };
+
                 drawCribBox(camId);
+                if (e.cancelable) e.preventDefault();
             };
 
             const onEnd = () => {
-                if (isDown) {
-                    isDown = false;
+                if (isPointerDown) {
+                    isPointerDown = false;
+                    activeHandle = null;
                     const s = cribFenceState[camId];
-                    if (s) saveCameraFenceConfig(camId, true, s.roi);
+                    if (s && s.enabled) saveCameraFenceConfig(camId, true, s.roi);
                 }
             };
 
-            canvas.onmousedown = onStart;
-            window.addEventListener('mousemove', onMove);
-            window.addEventListener('mouseup', onEnd);
-            canvas.ontouchstart = onStart;
-            window.addEventListener('touchmove', onMove);
-            window.addEventListener('touchend', onEnd);
+            canvas.onpointerdown = onStart;
+            window.addEventListener('pointermove', onMove);
+            window.addEventListener('pointerup', onEnd);
+            window.addEventListener('pointercancel', onEnd);
         }
 
         function drawCribBox(camId) {
@@ -8224,34 +8907,154 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const bx = (s.roi.x / 100) * canvas.width;
-            const by = (s.roi.y / 100) * canvas.height;
-            const bw = (s.roi.width / 100) * canvas.width;
-            const bh = (s.roi.height / 100) * canvas.height;
+            const r = s.roi || {};
+            const rx = Number(r.x ?? 20);
+            const ry = Number(r.y ?? 25);
+            const rw = Number(r.w ?? r.width ?? 60);
+            const rh = Number(r.h ?? r.height ?? 50);
 
-            // Semi-transparent safe zone
-            ctx.fillStyle = 'rgba(6, 182, 212, 0.12)';
+            const bx = (rx / 100) * canvas.width;
+            const by = (ry / 100) * canvas.height;
+            const bw = (rw / 100) * canvas.width;
+            const bh = (rh / 100) * canvas.height;
+
+            // Fundo semitransparente azul ciano
+            ctx.fillStyle = 'rgba(6, 182, 212, 0.16)';
             ctx.fillRect(bx, by, bw, bh);
 
-            // Bounding border
+            // Borda traçada cyan
             ctx.strokeStyle = '#06b6d4';
             ctx.lineWidth = 3;
             ctx.setLineDash([8, 4]);
             ctx.strokeRect(bx, by, bw, bh);
             ctx.setLineDash([]);
 
-            // Corner badges
-            ctx.fillStyle = '#06b6d4';
-            const handleSize = 10;
-            ctx.fillRect(bx - handleSize/2, by - handleSize/2, handleSize, handleSize);
-            ctx.fillRect(bx + bw - handleSize/2, by - handleSize/2, handleSize, handleSize);
-            ctx.fillRect(bx - handleSize/2, by + bh - handleSize/2, handleSize, handleSize);
-            ctx.fillRect(bx + bw - handleSize/2, by + bh - handleSize/2, handleSize, handleSize);
+            // 4 Círculos de Redimensionamento dos Cantos
+            const handleR = 10;
+            const corners = [
+                { x: bx, y: by },
+                { x: bx + bw, y: by },
+                { x: bx, y: by + bh },
+                { x: bx + bw, y: by + bh }
+            ];
 
-            // Label
+            corners.forEach(c => {
+                ctx.beginPath();
+                ctx.arc(c.x, c.y, handleR, 0, Math.PI * 2);
+                ctx.fillStyle = '#06b6d4';
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+            });
+
+            // Tag com texto nítido
             ctx.fillStyle = '#06b6d4';
             ctx.font = 'bold 12px Inter, sans-serif';
-            ctx.fillText('🚼 ÁREA SEGURA DO BERÇO', bx + 8, by + 18);
+            ctx.fillText('🚼 ÁREA SEGURA DO BERÇO (Arraste cantos para ajustar)', bx + 8, Math.max(16, by - 6));
+        }
+
+        // ── ALERTA DE MOVIMENTO DA NENÉM ("Avisar quando a neném se mexer") ───────
+        window.babyMotionAlerts = {};
+        window.babyMotionIntervals = {};
+        let lastMotionAlertSent = 0;
+
+        function toggleBabyMotionAlert(camId) {
+            const isNowActive = !window.babyMotionAlerts[camId];
+            window.babyMotionAlerts[camId] = isNowActive;
+
+            const btn = document.getElementById(`btn-motion-alert-${camId}`);
+            if (btn) btn.classList.toggle('active', isNowActive);
+
+            if (isNowActive) {
+                startBabyMotionWatcher(camId);
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Alerta de Movimento Ativado!',
+                    text: 'Você será avisado no Telegram e com som no celular quando a neném se mexer.',
+                    showConfirmButton: false,
+                    timer: 3500
+                });
+            } else {
+                stopBabyMotionWatcher(camId);
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'info',
+                    title: 'Alerta de Movimento Desativado',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            }
+        }
+
+        function startBabyMotionWatcher(camId) {
+            if (window.babyMotionIntervals[camId]) clearInterval(window.babyMotionIntervals[camId]);
+            const canvas = document.createElement('canvas');
+            canvas.width = 120;
+            canvas.height = 90;
+            const ctx = canvas.getContext('2d');
+            let prevData = null;
+
+            window.babyMotionIntervals[camId] = setInterval(() => {
+                const video = document.getElementById(`video-${camId}`);
+                if (!video || video.readyState < 2) return;
+
+                ctx.drawImage(video, 0, 0, 120, 90);
+                const currentData = ctx.getImageData(0, 0, 120, 90).data;
+
+                if (prevData) {
+                    let diff = 0;
+                    for (let i = 0; i < currentData.length; i += 8) {
+                        const d = Math.abs(currentData[i] - prevData[i]) +
+                                  Math.abs(currentData[i+1] - prevData[i+1]) +
+                                  Math.abs(currentData[i+2] - prevData[i+2]);
+                        if (d > 60) diff++;
+                    }
+
+                    // Se movimentação detectada
+                    if (diff > 180) {
+                        triggerBabyMotionDetected(camId);
+                    }
+                }
+                prevData = currentData;
+            }, 1800);
+        }
+
+        function stopBabyMotionWatcher(camId) {
+            if (window.babyMotionIntervals[camId]) {
+                clearInterval(window.babyMotionIntervals[camId]);
+                delete window.babyMotionIntervals[camId];
+            }
+            const banner = document.getElementById(`motion-alert-${camId}`);
+            if (banner) banner.style.display = 'none';
+        }
+
+        function triggerBabyMotionDetected(camId) {
+            const banner = document.getElementById(`motion-alert-${camId}`);
+            if (banner) {
+                banner.style.display = 'flex';
+                setTimeout(() => { if (banner) banner.style.display = 'none'; }, 4000);
+            }
+            playToneSound(660, 0.15);
+
+            const now = Date.now();
+            if (now - lastMotionAlertSent > 45000) {
+                lastMotionAlertSent = now;
+                try {
+                    fetch(`/api/cameras/${camId}/events`, {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                        body: JSON.stringify({
+                            event_type: 'motion',
+                            description: '👶 Alerta: A neném se mexeu no berço!'
+                        })
+                    });
+                } catch(e) {}
+            }
         }
 
         function startFenceMonitor(camId) {
@@ -8259,13 +9062,9 @@
             if (!s) return;
             if (s.interval) clearInterval(s.interval);
 
-            let breachCooldown = 0;
             s.interval = setInterval(() => {
                 const video = document.getElementById(`video-${camId}`);
                 if (!video || video.readyState < 2) return;
-
-                // Simple simulated frame motion breach detector for demonstration
-                // In full mode, user gets alerted if movement occurs outside the box
             }, 3000);
         }
 

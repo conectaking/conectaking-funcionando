@@ -96,23 +96,16 @@ class KingCameraService
      */
     public function getSnapshot(KingCamera $camera): ?string
     {
-        $cacheKey = "camera_snap_fail_{$camera->id}";
-        if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
-            return null;
-        }
-
         $goUrl = $this->getGo2RtcUrl();
         try {
-            $res = Http::timeout(1.5)->get("{$goUrl}/api/frame.jpeg?src=" . urlencode($camera->stream_id));
+            $res = Http::timeout(4.0)->get("{$goUrl}/api/frame.jpeg?src=" . urlencode($camera->stream_id));
             if ($res->successful() && ! empty($res->body())) {
                 return $res->body();
             }
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Cache::put($cacheKey, 1, 5);
             Log::warning('ks.camera.getSnapshot', ['streamId' => $camera->stream_id, 'error' => $e->getMessage()]);
             return null;
         }
-        \Illuminate\Support\Facades\Cache::put($cacheKey, 1, 3);
         return null;
     }
 
@@ -195,20 +188,33 @@ class KingCameraService
             }
         }
 
-        $candidateUrls = [
+        $cacheKey = "cam_ptz_endpoint_{$camera->id}";
+        $cachedEndpoint = \Illuminate\Support\Facades\Cache::get($cacheKey);
+
+        $candidatePairs = [];
+        if ($cachedEndpoint && is_array($cachedEndpoint) && isset($cachedEndpoint['url'], $cachedEndpoint['profile'])) {
+            $candidatePairs[] = [$cachedEndpoint['url'], $cachedEndpoint['profile']];
+        }
+
+        $urls = [
             "http://{$targetHost}:{$onvifPort}/onvif/PTZ",
             "http://{$targetHost}:{$onvifPort}/onvif/ptz_service",
             "http://{$targetHost}:{$onvifPort}/onvif/device_service",
         ];
+        $profiles = ['Profile_1', 'IPCProfilesToken0', 'ProfileToken_1'];
 
-        $candidateProfiles = ['Profile_1', 'IPCProfilesToken0', 'ProfileToken_1'];
+        foreach ($urls as $u) {
+            foreach ($profiles as $p) {
+                $candidatePairs[] = [$u, $p];
+            }
+        }
+
         $lastHttpCode = 0;
 
-        foreach ($candidateUrls as $url) {
-            foreach ($candidateProfiles as $profileToken) {
-                if ($direction === 'stop') {
-                    $soaps = [
-                        <<<XML
+        foreach ($candidatePairs as [$url, $profileToken]) {
+            if ($direction === 'stop') {
+                $soaps = [
+                    <<<XML
 <?xml version="1.0" encoding="utf-8"?>
 <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
   <s:Body>
@@ -222,7 +228,7 @@ class KingCameraService
 </s:Envelope>
 XML
 ,
-                        <<<XML
+                    <<<XML
 <?xml version="1.0" encoding="utf-8"?>
 <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
   <s:Body>
@@ -234,10 +240,10 @@ XML
   </s:Body>
 </s:Envelope>
 XML
-                    ];
-                } else {
-                    $soaps = [
-                        <<<XML
+                ];
+            } else {
+                $soaps = [
+                    <<<XML
 <?xml version="1.0" encoding="utf-8"?>
 <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
   <s:Body>
@@ -251,31 +257,31 @@ XML
   </s:Body>
 </s:Envelope>
 XML
-                    ];
-                }
+                ];
+            }
 
-                foreach ($soaps as $soap) {
-                    try {
-                        $ch = curl_init($url);
-                        curl_setopt($ch, CURLOPT_POST, true);
-                        curl_setopt($ch, CURLOPT_POSTFIELDS, $soap);
-                        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                            'Content-Type: application/soap+xml; charset=utf-8',
-                            'Content-Length: ' . strlen($soap),
-                        ]);
-                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                        curl_setopt($ch, CURLOPT_TIMEOUT, 3);
-                        $res = curl_exec($ch);
-                        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                        curl_close($ch);
-                        $lastHttpCode = $httpCode;
+            foreach ($soaps as $soap) {
+                try {
+                    $ch = curl_init($url);
+                    curl_setopt($ch, CURLOPT_POST, true);
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, $soap);
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                        'Content-Type: application/soap+xml; charset=utf-8',
+                        'Content-Length: ' . strlen($soap),
+                    ]);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_TIMEOUT, 2);
+                    $res = curl_exec($ch);
+                    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                    curl_close($ch);
+                    $lastHttpCode = $httpCode;
 
-                        if ($httpCode === 200) {
-                            return ['success' => true, 'direction' => $direction, 'http_code' => 200, 'url' => $url, 'profile' => $profileToken];
-                        }
-                    } catch (\Throwable $e) {
-                        // Tenta próximo soap / endpoint
+                    if ($httpCode === 200) {
+                        \Illuminate\Support\Facades\Cache::put($cacheKey, ['url' => $url, 'profile' => $profileToken], 86400);
+                        return ['success' => true, 'direction' => $direction, 'http_code' => 200, 'url' => $url, 'profile' => $profileToken];
                     }
+                } catch (\Throwable $e) {
+                    // Próxima tentativa
                 }
             }
         }
