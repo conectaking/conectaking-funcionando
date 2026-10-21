@@ -2789,7 +2789,7 @@
                             </div>
                             <div class="kc-form-group">
                                 <label class="kc-label" for="bt-wifi-pass">Senha do Wi-Fi *</label>
-                                <input type="password" id="bt-wifi-pass" class="kc-input" placeholder="Senha da rede">
+                                <input type="password" id="bt-wifi-pass" class="kc-input" placeholder="Senha da rede" autocomplete="current-password">
                             </div>
                             <button type="button" class="kc-btn kc-btn-primary" onclick="sendWifiViaBluetooth()" style="width: 100%; margin-top: 0.5rem;">
                                 <i class="fas fa-paper-plane"></i> Enviar Configuração à Câmera
@@ -3986,7 +3986,6 @@
         }
 
         // ─── CONTROLE DE LÂMPADA / LED NOTURNO DA CÂMERA ────────────────────
-        const cameraLights = {}; // camId -> boolean
 
         async function toggleCameraLight(camId) {
             const btnPill = document.getElementById(`btn-light-${camId}`);
@@ -4037,7 +4036,6 @@
         }
 
         // ─── AUTO-TRACKING 360° (SEGUIR PESSOA / BEBÊ) ───────────────────────
-        const cameraTracking = {}; // camId -> boolean
 
         async function toggleAutoTracking(camId) {
             const btnPill = document.getElementById(`btn-track-${camId}`);
