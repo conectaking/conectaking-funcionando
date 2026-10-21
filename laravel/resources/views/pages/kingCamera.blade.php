@@ -432,17 +432,63 @@
         .kc-video-wrap video {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
             display: block;
+            background: #000;
             transition: filter 0.3s ease;
         }
 
         .kc-video-wrap video.ai-night-vision {
-            filter: brightness(1.55) contrast(1.2) saturate(1.1);
+            filter: brightness(1.6) contrast(1.25) saturate(1.05) drop-shadow(0 0 1px rgba(255,255,255,0.2)) !important;
         }
 
         .kc-video-wrap video.ai-sharpness {
-            filter: contrast(1.3) saturate(1.15);
+            filter: contrast(1.35) saturate(1.2) brightness(1.05) !important;
+        }
+
+        .kc-video-wrap video.ai-night-vision.ai-sharpness {
+            filter: brightness(1.65) contrast(1.4) saturate(1.2) !important;
+        }
+
+        /* Fullscreen Mobile & Desktop Sem Cortes */
+        .kc-video-wrap:fullscreen,
+        .kc-video-wrap:-webkit-full-screen {
+            width: 100vw !important;
+            height: 100vh !important;
+            background: #000 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        .kc-video-wrap:fullscreen video,
+        .kc-video-wrap:-webkit-full-screen video {
+            width: 100% !important;
+            height: 100% !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            object-fit: contain !important;
+        }
+
+        /* Rotação Forçada 90° para Celular (Paisagem Virtual sem precisar mudar config do Android) */
+        .kc-video-wrap.force-landscape-mobile {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vh !important;
+            height: 100vw !important;
+            transform: rotate(90deg) translateY(-100%);
+            transform-origin: top left;
+            z-index: 2147483640 !important;
+            background: #000 !important;
+            border-radius: 0 !important;
+            aspect-ratio: unset !important;
+        }
+
+        .kc-video-wrap.force-landscape-mobile video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important;
         }
 
         .kc-duration-chips {
@@ -709,6 +755,51 @@
             transform: scale(1.08);
         }
 
+        .kc-icon-btn.active {
+            background: rgba(16, 185, 129, 0.4) !important;
+            border-color: #10b981 !important;
+            color: #10b981 !important;
+        }
+
+        .kc-icon-btn.active-blue {
+            background: rgba(139, 92, 246, 0.45) !important;
+            border-color: #a78bfa !important;
+            color: #c4b5fd !important;
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+        }
+
+        .kc-icon-btn.active-gold {
+            background: rgba(245, 158, 11, 0.45) !important;
+            border-color: var(--kc-gold) !important;
+            color: #fbbf24 !important;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        }
+
+        .kc-night-indicator, .kc-sharp-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            backdrop-filter: blur(4px);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .kc-night-indicator {
+            background: rgba(139, 92, 246, 0.3);
+            border: 1px solid rgba(139, 92, 246, 0.6);
+            color: #ddd6fe;
+        }
+
+        .kc-sharp-indicator {
+            background: rgba(245, 158, 11, 0.3);
+            border: 1px solid rgba(245, 158, 11, 0.6);
+            color: #fde68a;
+        }
+
         /* Card Footer */
         .kc-card-footer {
             padding: 0.85rem 1rem;
@@ -931,6 +1022,32 @@
             background: rgba(6, 182, 212, 0.22) !important;
             border-color: #06b6d4 !important;
             color: #06b6d4 !important;
+        }
+
+        .kc-btn-night.active {
+            background: rgba(139, 92, 246, 0.25) !important;
+            border-color: #8b5cf6 !important;
+            color: #a78bfa !important;
+            box-shadow: 0 0 12px rgba(139, 92, 246, 0.4);
+        }
+
+        .kc-btn-sharp.active {
+            background: rgba(245, 158, 11, 0.25) !important;
+            border-color: #f59e0b !important;
+            color: #fbbf24 !important;
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+        }
+
+        .kc-btn-mute.muted {
+            background: rgba(239, 68, 68, 0.18) !important;
+            border-color: rgba(239, 68, 68, 0.38) !important;
+            color: #fca5a5 !important;
+        }
+
+        .kc-btn-mute.unmuted {
+            background: rgba(16, 185, 129, 0.22) !important;
+            border-color: #10b981 !important;
+            color: #10b981 !important;
         }
 
         .kc-btn-share-highlight {
@@ -4150,7 +4267,32 @@
 
                         <div class="kc-video-overlay" style="pointer-events: none;">
                             <div class="kc-overlay-top">
-                                <div class="kc-overlay-timestamp" id="time-${cam.id}">--:--:--</div>
+                                <div style="display: flex; align-items: center; gap: 0.4rem; pointer-events: auto;">
+                                    <div class="kc-overlay-timestamp" id="time-${cam.id}">--:--:--</div>
+                                    <div class="kc-night-indicator" id="night-badge-${cam.id}" style="display: none;">
+                                        <i class="fas fa-moon"></i> Noturno IA
+                                    </div>
+                                    <div class="kc-sharp-indicator" id="sharp-badge-${cam.id}" style="display: none;">
+                                        <i class="fas fa-magic"></i> HD IA
+                                    </div>
+                                </div>
+                                <div class="kc-overlay-controls" style="pointer-events: auto;">
+                                    <button type="button" class="kc-icon-btn" id="ov-audio-${cam.id}" onclick="toggleAudioMute(${cam.id})" title="Ligar / Silenciar Áudio">
+                                        <i class="fas fa-volume-mute"></i>
+                                    </button>
+                                    <button type="button" class="kc-icon-btn" id="ov-night-${cam.id}" onclick="toggleAiNightVision(${cam.id})" title="IA Visão Noturna">
+                                        <i class="fas fa-moon"></i>
+                                    </button>
+                                    <button type="button" class="kc-icon-btn" id="ov-sharp-${cam.id}" onclick="toggleAiSharpness(${cam.id})" title="Melhorar Nitidez HD">
+                                        <i class="fas fa-magic"></i>
+                                    </button>
+                                    <button type="button" class="kc-icon-btn" id="ov-rotate-${cam.id}" onclick="toggleForceLandscape(${cam.id})" title="Girar 90° Paisagem Mobile">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                    <button type="button" class="kc-icon-btn" onclick="toggleFullscreen(${cam.id})" title="Tela Cheia">
+                                        <i class="fas fa-expand"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <div class="kc-ptz-floating-box" id="ptz-box-${cam.id}" style="display: none;">
@@ -4199,6 +4341,15 @@
                             </button>
                             <button type="button" class="kc-pill-btn kc-btn-track ${cam.auto_tracking_enabled ? 'active' : ''}" id="btn-track-${cam.id}" onclick="toggleAutoTracking(${cam.id})" title="Câmera Seguir Pessoa / Bebê (360°)">
                                 <i class="fas fa-crosshairs" style="color: #10b981;"></i> <span>Seguir Bebê</span>
+                            </button>
+                            <button type="button" class="kc-pill-btn kc-btn-mute muted" id="btn-mute-${cam.id}" onclick="toggleAudioMute(${cam.id})" title="Ligar / Silenciar Áudio">
+                                <i class="fas fa-volume-mute" style="color: #f87171;"></i> <span>Mudo (Ouvir)</span>
+                            </button>
+                            <button type="button" class="kc-pill-btn kc-btn-night" id="btn-night-${cam.id}" onclick="toggleAiNightVision(${cam.id})" title="IA Visão Noturna Inteligente">
+                                <i class="fas fa-moon" style="color: #a78bfa;"></i> <span>Visão Noturna</span>
+                            </button>
+                            <button type="button" class="kc-pill-btn kc-btn-sharp" id="btn-sharp-${cam.id}" onclick="toggleAiSharpness(${cam.id})" title="Melhorar Nitidez e Detalhes da Imagem">
+                                <i class="fas fa-magic" style="color: #fbbf24;"></i> <span>Melhorar Imagem</span>
                             </button>
                             <button type="button" class="kc-pill-btn kc-btn-audio" id="btn-turbo-audio-${cam.id}" onclick="toggleAudioBooster(${cam.id})" title="Ouvir Som e Ativar Áudio Turbo 300%">
                                 <i class="fas fa-volume-up" style="color: #06b6d4;"></i> <span>Áudio Turbo</span>
@@ -4277,6 +4428,8 @@
                         }
                         videoEl.srcObject.addTrack(event.track);
                     }
+                    videoEl.muted = true;
+                    updateAudioMuteUI(cam.id, true);
                     videoEl.play().catch(e => console.warn('Autoplay prevented:', e));
                     if (loaderEl) loaderEl.style.display = 'none';
                 };
@@ -4468,52 +4621,349 @@
             if (cam) startWebRtcStream(cam);
         }
 
-        // ─── GERENCIADOR DE ÁUDIO TURBO (AMPLIFICADOR WEB AUDIO API 300%) ───
+        // ─── GERENCIADOR DE ÁUDIO DIRETO (MUDO / OUVIR) & TURBO BOOSTER ─────
         const audioBoosters = {}; // camId -> { ctx, gain, filter, active }
 
+        function updateAudioMuteUI(camId, isMuted) {
+            const btnOv = document.getElementById(`ov-audio-${camId}`);
+            const btnPill = document.getElementById(`btn-mute-${camId}`);
+
+            if (btnOv) {
+                btnOv.innerHTML = isMuted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+                btnOv.style.color = isMuted ? '#f87171' : '#10b981';
+                btnOv.title = isMuted ? 'Áudio Silenciado (Toque para Ouvir)' : 'Áudio Ao Vivo Ligado (Toque para Silenciar)';
+            }
+
+            if (btnPill) {
+                btnPill.classList.toggle('muted', isMuted);
+                btnPill.classList.toggle('unmuted', !isMuted);
+                btnPill.innerHTML = isMuted 
+                    ? `<i class="fas fa-volume-mute" style="color: #f87171;"></i> <span>Mudo (Ouvir)</span>`
+                    : `<i class="fas fa-volume-up" style="color: #10b981;"></i> <span>Áudio Ligado</span>`;
+            }
+        }
+
+        function toggleAudioMute(camId) {
+            const v = document.getElementById(`video-${camId}`);
+            if (!v) return;
+
+            v.muted = !v.muted;
+            const isMuted = v.muted;
+
+            if (!isMuted) {
+                v.volume = 1.0;
+                v.play().catch(() => {});
+            }
+
+            updateAudioMuteUI(camId, isMuted);
+
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: isMuted ? 'info' : 'success',
+                title: isMuted ? '🔇 Áudio Silenciado' : '🔊 Áudio Ao Vivo Ligado',
+                text: isMuted ? 'Microfone mudo no seu celular.' : 'Ouvindo o som do quarto em tempo real.',
+                showConfirmButton: false,
+                timer: 1600
+            });
+        }
+
+        // ─── IA VISÃO NOTURNA (BRILHO DINÂMICO & CONTRASTE ESCURO) ─────────
+        function toggleAiNightVision(camId) {
+            const v = document.getElementById(`video-${camId}`);
+            const btnOv = document.getElementById(`ov-night-${camId}`);
+            const btnPill = document.getElementById(`btn-night-${camId}`);
+            const badge = document.getElementById(`night-badge-${camId}`);
+            if (!v) return;
+
+            const active = v.classList.toggle('ai-night-vision');
+            if (btnOv) {
+                btnOv.classList.toggle('active-blue', active);
+                btnOv.style.color = active ? '#a78bfa' : '';
+            }
+            if (btnPill) btnPill.classList.toggle('active', active);
+            if (badge) badge.style.display = active ? 'inline-flex' : 'none';
+
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: active ? 'success' : 'info',
+                title: active ? '🌙 IA Visão Noturna Ativada' : 'Visão Noturna Desativada',
+                text: active ? 'Ganho avançado de iluminação para ambientes escuros.' : 'Retornando à imagem padrão.',
+                showConfirmButton: false,
+                timer: 1800
+            });
+        }
+
+        // ─── MELHORAR IMAGEM (SUPER RESOLUÇÃO & NITIDEZ HD IA) ──────────────
+        function toggleAiSharpness(camId) {
+            const v = document.getElementById(`video-${camId}`);
+            const btnOv = document.getElementById(`ov-sharp-${camId}`);
+            const btnPill = document.getElementById(`btn-sharp-${camId}`);
+            const badge = document.getElementById(`sharp-badge-${camId}`);
+            if (!v) return;
+
+            const active = v.classList.toggle('ai-sharpness');
+            if (btnOv) {
+                btnOv.classList.toggle('active-gold', active);
+                btnOv.style.color = active ? '#fbbf24' : '';
+            }
+            if (btnPill) btnPill.classList.toggle('active', active);
+            if (badge) badge.style.display = active ? 'inline-flex' : 'none';
+
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: active ? 'success' : 'info',
+                title: active ? '✨ Nitidez HD IA Ativada' : 'Nitidez Padrão',
+                text: active ? 'Bordas e detalhes aprimorados em alta definição.' : 'Filtro desativado.',
+                showConfirmButton: false,
+                timer: 1800
+            });
+        }
+
+        // ─── ROTAÇÃO 90° PAISAGEM VIRTUAL PARA CELULAR (SEM MUDAR ANDROID) ───
+        function toggleForceLandscape(camId) {
+            const wrap = document.querySelector(`#card-cam-${camId} .kc-video-wrap`);
+            const btnOv = document.getElementById(`ov-rotate-${camId}`);
+            if (!wrap) return;
+
+            const isRotated = wrap.classList.toggle('force-landscape-mobile');
+            if (btnOv) {
+                btnOv.classList.toggle('active-gold', isRotated);
+                btnOv.style.color = isRotated ? '#fbbf24' : '';
+            }
+
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'info',
+                title: isRotated ? '🔄 Modo Paisagem 90° Ativo' : '📱 Modo Vertical Restaurado',
+                text: isRotated ? 'Vídeo girado horizontalmente sem precisar mexer na rotação do celular.' : '',
+                showConfirmButton: false,
+                timer: 1600
+            });
+        }
+
+        // ─── TELA CHEIA INTELIGENTE (ADAPTAÇÃO CELULAR & DESKTOP) ───────────
+        async function toggleFullscreen(camId) {
+            const wrap = document.querySelector(`#card-cam-${camId} .kc-video-wrap`);
+            const v = document.getElementById(`video-${camId}`);
+            if (!wrap) return;
+
+            const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+            if (!isFs) {
+                try {
+                    if (wrap.requestFullscreen) {
+                        await wrap.requestFullscreen();
+                    } else if (wrap.webkitRequestFullscreen) {
+                        wrap.webkitRequestFullscreen();
+                    } else if (v && v.webkitEnterFullscreen) {
+                        v.webkitEnterFullscreen();
+                    }
+
+                    // No mobile, tenta travar em orientação paisagem automaticamente
+                    if (window.innerWidth <= 768 && screen.orientation && screen.orientation.lock) {
+                        try {
+                            await screen.orientation.lock('landscape');
+                        } catch (e) {
+                            // Se o navegador ou bloqueio do sistema impedir, ativa rotação 90° virtual
+                            wrap.classList.add('force-landscape-mobile');
+                        }
+                    }
+                } catch (err) {
+                    wrap.classList.toggle('force-landscape-mobile');
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+                if (screen.orientation && screen.orientation.unlock) {
+                    try { screen.orientation.unlock(); } catch (e) {}
+                }
+                wrap.classList.remove('force-landscape-mobile');
+            }
+        }
+
+        // ─── CONTROLE DE LÂMPADA / LED NOTURNO DA CÂMERA ────────────────────
+        async function toggleCameraLight(camId) {
+            const btnPill = document.getElementById(`btn-light-${camId}`);
+            const btnTop = document.getElementById(`btn-light-top-${camId}`);
+            const currentState = Boolean(cameraLights[camId]);
+            const newState = !currentState;
+
+            if (btnPill) {
+                btnPill.disabled = true;
+                btnPill.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Aguarde...</span>';
+            }
+
+            try {
+                const res = await fetch(`/api/cameras/${camId}/light`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ state: newState ? 'on' : 'off' })
+                });
+                const json = await res.json();
+
+                if (res.ok && json.success) {
+                    cameraLights[camId] = newState;
+
+                    if (btnPill) {
+                        btnPill.disabled = false;
+                        btnPill.classList.toggle('active', newState);
+                        btnPill.innerHTML = `<i class="fas fa-lightbulb" style="color: #fbbf24;"></i> <span>Lâmpada ${newState ? 'LIGADA' : 'Apagada'}</span>`;
+                    }
+
+                    if (btnTop) {
+                        btnTop.classList.toggle('active', newState);
+                    }
+
+                    const btnModal = document.getElementById('btn-modal-light-toggle');
+                    if (btnModal && currentEditingId === camId) {
+                        btnModal.innerHTML = newState 
+                            ? '<i class="fas fa-lightbulb" style="color: #fbbf24;"></i> Apagar Luz' 
+                            : '<i class="fas fa-power-off"></i> Ligar Luz LED';
+                    }
+
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: newState ? '💡 Lâmpada LED Ligada' : '💡 Lâmpada LED Apagada',
+                        showConfirmButton: false,
+                        timer: 1800
+                    });
+                } else {
+                    throw new Error(json.message || 'Falha ao acionar lâmpada');
+                }
+            } catch (e) {
+                console.warn('Erro ao acionar lâmpada da câmera:', e);
+                if (btnPill) {
+                    btnPill.disabled = false;
+                    btnPill.classList.toggle('active', currentState);
+                    btnPill.innerHTML = '<i class="fas fa-lightbulb" style="color: #fbbf24;"></i> <span>Lâmpada</span>';
+                }
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'error',
+                    title: 'Erro ao acionar lâmpada',
+                    text: e.message || 'Verifique a conexão da câmera.',
+                    showConfirmButton: false,
+                    timer: 2500
+                });
+            }
+        }
+
+        // ─── AUTO-TRACKING 360° (SEGUIR PESSOA / BEBÊ) ───────────────────────
+        async function toggleAutoTracking(camId) {
+            const cam = camerasData.find(c => c.id === camId);
+            const btnPill = document.getElementById(`btn-track-${camId}`);
+            const badge = document.getElementById(`track-badge-${camId}`);
+            const modalChk = document.getElementById('modal-auto-tracking-chk');
+            const currentState = cam ? Boolean(cam.auto_tracking_enabled) : false;
+            const newState = !currentState;
+
+            if (btnPill) {
+                btnPill.disabled = true;
+                btnPill.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Aguarde...</span>';
+            }
+
+            try {
+                const res = await fetch(`/api/cameras/${camId}/auto-tracking`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ enabled: newState })
+                });
+                const json = await res.json();
+
+                if (res.ok && json.success) {
+                    if (cam) cam.auto_tracking_enabled = newState;
+                    cameraTracking[camId] = newState;
+
+                    if (btnPill) {
+                        btnPill.disabled = false;
+                        btnPill.classList.toggle('active', newState);
+                        btnPill.innerHTML = `<i class="fas fa-crosshairs" style="color: #10b981;"></i> <span>Seguir ${newState ? 'ATIVO' : 'Bebê'}</span>`;
+                    }
+
+                    if (badge) {
+                        badge.style.display = newState ? 'inline-flex' : 'none';
+                    }
+
+                    if (modalChk && currentEditingId === camId) {
+                        modalChk.checked = newState;
+                    }
+
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: newState ? '🎯 Seguir Bebê / Pessoa Ativado' : '🎯 Rastreamento 360° Desativado',
+                        text: newState ? 'A lente acompanhará automaticamente a criança ou pessoa no quarto.' : 'Câmera em posição fixa.',
+                        timer: 2200,
+                        showConfirmButton: false
+                    });
+                } else {
+                    throw new Error(json.message || 'Falha ao acionar rastreamento');
+                }
+            } catch (e) {
+                console.warn('Erro ao acionar rastreamento:', e);
+                if (btnPill) {
+                    btnPill.disabled = false;
+                    btnPill.classList.toggle('active', currentState);
+                    btnPill.innerHTML = '<i class="fas fa-crosshairs" style="color: #10b981;"></i> <span>Seguir Bebê</span>';
+                }
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'error',
+                    title: 'Erro ao acionar Seguir Bebê',
+                    text: e.message || 'Verifique se a câmera suporta rotação ONVIF.',
+                    showConfirmButton: false,
+                    timer: 2500
+                });
+            }
+        }
+
+        // ─── ÁUDIO TURBO 300% (WEB AUDIO API GAIN) ──────────────────────────
         async function toggleAudioBooster(camId) {
             const videoEl = document.getElementById(`video-${camId}`);
             const btnPill = document.getElementById(`btn-turbo-audio-${camId}`);
-            const btnTop = document.getElementById(`btn-audio-${camId}`);
             if (!videoEl) return;
 
-            // No mobile, precisa desmutar diretamente com interação do usuário
             videoEl.muted = false;
             videoEl.volume = 1.0;
             try { await videoEl.play(); } catch (e) {}
+            updateAudioMuteUI(camId, false);
 
             if (!audioBoosters[camId]) {
                 try {
                     const AudioCtx = window.AudioContext || window.webkitAudioContext;
                     if (!AudioCtx) {
-                        videoEl.muted = !videoEl.muted;
-                        updateAudioButtons(camId, !videoEl.muted, false);
                         return;
                     }
-
                     const ctx = new AudioCtx();
                     if (ctx.state === 'suspended') await ctx.resume();
 
                     const stream = videoEl.captureStream ? videoEl.captureStream() : videoEl.srcObject;
                     if (!stream || stream.getAudioTracks().length === 0) {
-                        videoEl.muted = false;
-                        updateAudioButtons(camId, true, false);
-                        Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Áudio desmutado (Microfone ao vivo)', timer: 2000, showConfirmButton: false });
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Áudio ligado (Modo Direto)', timer: 1800, showConfirmButton: false });
                         return;
                     }
 
                     const source = ctx.createMediaStreamSource(stream);
-
-                    // Filtro Highpass corta zumbidos elétricos e ruído de fundo (<160Hz)
                     const filter = ctx.createBiquadFilter();
                     filter.type = 'highpass';
                     filter.frequency.value = 160;
 
-                    // Ganho Turbo amplificado em 280% (quase 3x o volume padrão)
                     const gain = ctx.createGain();
                     gain.gain.value = 2.8;
 
-                    // Compressor dinâmico para evitar distorção e estalos
                     const compressor = ctx.createDynamicsCompressor();
                     compressor.threshold.setValueAtTime(-24, ctx.currentTime);
                     compressor.knee.setValueAtTime(30, ctx.currentTime);
@@ -4525,158 +4975,40 @@
                     compressor.connect(ctx.destination);
 
                     audioBoosters[camId] = { ctx, gain, filter, active: true };
-                    updateAudioButtons(camId, true, true);
+                    if (btnPill) {
+                        btnPill.classList.add('active');
+                        btnPill.innerHTML = '<i class="fas fa-volume-up" style="color: #06b6d4;"></i> <span>Turbo 300% ON</span>';
+                    }
 
                     Swal.fire({
                         toast: true,
                         position: 'top-end',
                         icon: 'success',
                         title: '🔊 Áudio Turbo 300% Ativado!',
-                        text: 'Volume do microfone amplificado e ruído de fundo filtrado.',
-                        timer: 2500,
+                        text: 'Volume amplificado e ruídos de fundo filtrados.',
+                        timer: 2000,
                         showConfirmButton: false
                     });
                 } catch (err) {
-                    console.warn('Erro ao inicializar amplificador de áudio, usando modo padrão:', err);
-                    videoEl.muted = false;
-                    updateAudioButtons(camId, true, false);
+                    console.warn('Erro booster:', err);
                 }
             } else {
                 const b = audioBoosters[camId];
-                if (b.active) {
-                    videoEl.muted = true;
-                    b.active = false;
-                    updateAudioButtons(camId, false, false);
-                    Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Áudio silenciado', timer: 1500, showConfirmButton: false });
-                } else {
-                    videoEl.muted = false;
-                    if (b.ctx.state === 'suspended') await b.ctx.resume();
-                    b.active = true;
-                    updateAudioButtons(camId, true, true);
-                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: '🔊 Áudio Turbo 300% Reativado', timer: 2000, showConfirmButton: false });
-                }
-            }
-        }
-
-        function updateAudioButtons(camId, isAudible, isTurbo) {
-            const btnPill = document.getElementById(`btn-turbo-audio-${camId}`);
-            const btnTop = document.getElementById(`btn-audio-${camId}`);
-
-            if (btnPill) {
-                btnPill.classList.toggle('active', isAudible);
-                btnPill.innerHTML = isAudible 
-                    ? `<i class="fas fa-volume-up" style="color: #06b6d4;"></i> <span>${isTurbo ? 'Áudio Turbo ON' : 'Áudio Ligado'}</span>`
-                    : `<i class="fas fa-volume-mute"></i> <span>Áudio Turbo</span>`;
-            }
-
-            if (btnTop) {
-                btnTop.classList.toggle('active', isAudible);
-                btnTop.innerHTML = isAudible ? '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>';
-                btnTop.style.color = isAudible ? 'var(--kc-gold)' : '';
-            }
-        }
-
-        function toggleAudio(camId) {
-            toggleAudioBooster(camId);
-        }
-
-        // ─── CONTROLE DE LÂMPADA / LED NOTURNO DA CÂMERA ────────────────────
-
-        async function toggleCameraLight(camId) {
-            const btnPill = document.getElementById(`btn-light-${camId}`);
-            const btnTop = document.getElementById(`btn-light-top-${camId}`);
-            const currentState = cameraLights[camId] || false;
-            const newState = !currentState;
-
-            if (btnPill) {
-                btnPill.disabled = true;
-                btnPill.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Lâmpada...</span>';
-            }
-
-            try {
-                const res = await fetch(`/api/cameras/${camId}/light`, {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({ state: newState ? 'on' : 'off' })
-                });
-                const data = await res.json();
-                cameraLights[camId] = newState;
-
+                b.active = !b.active;
                 if (btnPill) {
-                    btnPill.disabled = false;
-                    btnPill.classList.toggle('active', newState);
-                    btnPill.innerHTML = `<i class="fas fa-lightbulb" style="color: #fbbf24;"></i> <span>Lâmpada ${newState ? 'ON' : 'OFF'}</span>`;
+                    btnPill.classList.toggle('active', b.active);
+                    btnPill.innerHTML = b.active 
+                        ? '<i class="fas fa-volume-up" style="color: #06b6d4;"></i> <span>Turbo 300% ON</span>'
+                        : '<i class="fas fa-volume-up" style="color: #06b6d4;"></i> <span>Áudio Turbo</span>';
                 }
-
-                if (btnTop) {
-                    btnTop.classList.toggle('active', newState);
-                }
-
                 Swal.fire({
                     toast: true,
                     position: 'top-end',
-                    icon: newState ? 'success' : 'info',
-                    title: newState ? '💡 Luz LED da Câmera Ligada' : '💡 Luz LED da Câmera Desligada',
-                    timer: 2000,
+                    icon: b.active ? 'success' : 'info',
+                    title: b.active ? '🔊 Áudio Turbo 300% Ativado' : 'Áudio Turbo Normalizado',
+                    timer: 1600,
                     showConfirmButton: false
                 });
-            } catch (e) {
-                if (btnPill) {
-                    btnPill.disabled = false;
-                    btnPill.innerHTML = '<i class="fas fa-lightbulb" style="color: #fbbf24;"></i> <span>Lâmpada</span>';
-                }
-                console.warn('Erro ao acionar lâmpada da câmera:', e);
-            }
-        }
-
-        // ─── AUTO-TRACKING 360° (SEGUIR PESSOA / BEBÊ) ───────────────────────
-
-        async function toggleAutoTracking(camId) {
-            const btnPill = document.getElementById(`btn-track-${camId}`);
-            const badge = document.getElementById(`track-badge-${camId}`);
-            const currentState = cameraTracking[camId] ?? (camerasData.find(c => c.id === camId)?.auto_tracking_enabled || false);
-            const newState = !currentState;
-
-            if (btnPill) {
-                btnPill.disabled = true;
-                btnPill.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Seguir...</span>';
-            }
-
-            try {
-                const res = await fetch(`/api/cameras/${camId}/auto-tracking`, {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({ enabled: newState })
-                });
-                const data = await res.json();
-                cameraTracking[camId] = newState;
-
-                if (btnPill) {
-                    btnPill.disabled = false;
-                    btnPill.classList.toggle('active', newState);
-                    btnPill.innerHTML = `<i class="fas fa-crosshairs" style="color: #10b981;"></i> <span>Seguir ${newState ? 'ATIVO' : 'OFF'}</span>`;
-                }
-
-                if (badge) {
-                    badge.style.display = newState ? 'inline-flex' : 'none';
-                }
-
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: newState ? 'success' : 'info',
-                    title: newState ? '🎯 Câmera Seguir Movimento Ativada (360°)' : 'Câmera Seguir Desativada',
-                    text: newState ? 'A lente acompanhará automaticamente a criança ou pessoa no quarto.' : '',
-                    timer: 2500,
-                    showConfirmButton: false
-                });
-            } catch (e) {
-                if (btnPill) {
-                    btnPill.disabled = false;
-                    btnPill.innerHTML = '<i class="fas fa-crosshairs" style="color: #10b981;"></i> <span>Seguir Bebê</span>';
-                }
             }
         }
 
@@ -4934,160 +5266,23 @@
         }
 
 
-        // Tela cheia (Compatível com Android, iPhone iOS Safari, iPad e Desktop)
-        function toggleFullscreen(camId) {
-            const wrap = document.querySelector(`#card-cam-${camId} .kc-video-wrap`);
-            const v = document.getElementById(`video-${camId}`);
-            if (!wrap) return;
-
-            const isFs = document.fullscreenElement || document.webkitFullscreenElement;
-            if (!isFs) {
-                if (wrap.requestFullscreen) {
-                    wrap.requestFullscreen().catch(() => {
-                        if (v && v.webkitEnterFullscreen) v.webkitEnterFullscreen();
-                    });
-                } else if (wrap.webkitRequestFullscreen) {
-                    wrap.webkitRequestFullscreen();
-                } else if (v && v.webkitEnterFullscreen) {
-                    v.webkitEnterFullscreen();
-                }
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
+        // ─── EVENTOS GLOBAIS DE TELA CHEIA ─────────────────────────────────
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                document.querySelectorAll('.kc-video-wrap.force-landscape-mobile').forEach(el => el.classList.remove('force-landscape-mobile'));
+                if (screen.orientation && screen.orientation.unlock) {
+                    try { screen.orientation.unlock(); } catch (e) {}
                 }
             }
-        }
-
-        // ─── Luz LED / Lâmpada Noturna da Câmera ───────────────────────────
-        async function toggleCameraLight(camId) {
-            const btn = document.getElementById(`btn-light-${camId}`);
-            const btnModal = document.getElementById('btn-modal-light-toggle');
-            const currentState = Boolean(cameraLights[camId]);
-            const newState = !currentState;
-
-            // Feedback visual instantâneo (otimista)
-            cameraLights[camId] = newState;
-            if (btn) btn.classList.toggle('active', newState);
-            if (btnModal && currentEditingId === camId) {
-                btnModal.innerHTML = newState 
-                    ? '<i class="fas fa-lightbulb" style="color: #fbbf24;"></i> Apagar Luz' 
-                    : '<i class="fas fa-power-off"></i> Ligar Luz LED';
-            }
-
-            try {
-                const res = await fetch(`/api/cameras/${camId}/light`, {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({ state: newState ? 'on' : 'off' })
-                });
-                const json = await res.json();
-                cameraLights[camId] = (json.light_state === 'on') || newState;
-                if (btn) btn.classList.toggle('active', cameraLights[camId]);
-
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'success',
-                    title: cameraLights[camId] ? '💡 Lâmpada LED Ligada' : '💡 Lâmpada LED Apagada',
-                    showConfirmButton: false,
-                    timer: 1600
-                });
-            } catch (e) {
-                console.warn('Light toggle error:', e);
-            }
-        }
-
-        // ─── Rastreamento Motorizado Automático (Seguir Pessoa / Bebê) ───────
-        async function toggleAutoTracking(camId) {
-            const cam = camerasData.find(c => c.id === camId);
-            const btn = document.getElementById(`btn-track-${camId}`);
-            const badge = document.getElementById(`track-badge-${camId}`);
-            const modalChk = document.getElementById('modal-auto-tracking-chk');
-            const currentState = cam ? Boolean(cam.auto_tracking_enabled) : false;
-            const newState = !currentState;
-
-            if (cam) cam.auto_tracking_enabled = newState;
-            if (btn) btn.classList.toggle('active', newState);
-            if (badge) badge.style.display = newState ? 'inline-flex' : 'none';
-            if (modalChk && currentEditingId === camId) modalChk.checked = newState;
-
-            try {
-                await fetch(`/api/cameras/${camId}/tracking`, {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({ enabled: newState })
-                });
-
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'success',
-                    title: newState ? '🎯 Seguir Bebê / Pessoa Ativado' : '🎯 Rastreamento 360° Desativado',
-                    text: newState ? 'A câmera irá girar motorizada acompanhando o movimento.' : '',
-                    showConfirmButton: false,
-                    timer: 2000
-                });
-            } catch (e) {
-                console.warn('Tracking toggle error:', e);
-            }
-        }
-
-        // ─── Áudio Turbo (Ouvir e Amplificar com Booster Web Audio) ─────────
-        function toggleAudioBooster(camId) {
-            const v = document.getElementById(`video-${camId}`);
-            const btn = document.getElementById(`btn-turbo-audio-${camId}`);
-            if (!v) return;
-
-            v.muted = !v.muted;
-            if (v.muted) {
-                if (btn) btn.classList.remove('active');
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'info',
-                    title: 'Áudio Silenciado',
-                    showConfirmButton: false,
-                    timer: 1500
-                });
-            } else {
-                v.volume = 1.0;
-                v.play().catch(() => {});
-                if (btn) btn.classList.add('active');
-
-                try {
-                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                    if (AudioCtx) {
-                        if (!v._boostCtx) {
-                            const ctx = new AudioCtx();
-                            const src = v.srcObject ? ctx.createMediaStreamSource(v.srcObject) : ctx.createMediaElementSource(v);
-                            const gain = ctx.createGain();
-                            gain.gain.value = 2.5; // Ganho de 250%
-                            src.connect(gain);
-                            gain.connect(ctx.destination);
-                            v._boostCtx = ctx;
-                        } else if (v._boostCtx.state === 'suspended') {
-                            v._boostCtx.resume();
-                        }
-                    }
-                } catch (e) {
-                    console.warn('Booster error:', e);
+        });
+        document.addEventListener('webkitfullscreenchange', () => {
+            if (!document.webkitFullscreenElement) {
+                document.querySelectorAll('.kc-video-wrap.force-landscape-mobile').forEach(el => el.classList.remove('force-landscape-mobile'));
+                if (screen.orientation && screen.orientation.unlock) {
+                    try { screen.orientation.unlock(); } catch (e) {}
                 }
-
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'success',
-                    title: 'Áudio Turbo Ativado (300%)',
-                    text: 'Som do quarto amplificado em alta definição.',
-                    showConfirmButton: false,
-                    timer: 1800
-                });
             }
-        }
+        });
 
         // ─── CONTROLE PTZ 360° MOTORIZADO ──────────────────────────────────
         function togglePtzWidget(camId) {

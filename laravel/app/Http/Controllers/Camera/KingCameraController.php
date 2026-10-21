@@ -53,6 +53,11 @@ class KingCameraController extends Controller
                 'status' => $cam->status,
                 'is_recording' => (bool) $cam->is_recording,
                 'motion_detection_enabled' => (bool) $cam->motion_detection_enabled,
+                'auto_tracking_enabled' => (bool) $cam->auto_tracking_enabled,
+                'audio_detection_enabled' => (bool) $cam->audio_detection_enabled,
+                'crib_fence_enabled' => (bool) $cam->crib_fence_enabled,
+                'baby_stand_enabled' => (bool) $cam->baby_stand_enabled,
+                'baby_cry_enabled' => (bool) $cam->baby_cry_enabled,
                 'telegram_alerts_enabled' => (bool) $cam->telegram_alerts_enabled,
                 'telegram_chat_id' => $cam->telegram_chat_id,
                 'created_at' => $cam->created_at?->toIso8601String(),
@@ -786,7 +791,14 @@ class KingCameraController extends Controller
     public function ptzControl(Request $request, int $id): JsonResponse
     {
         $userId = (string) $request->attributes->get('auth_user_id', '');
-        $camera = KingCamera::where('id', $id)->where('user_id', $userId)->first();
+        $camera = KingCamera::where('id', $id)
+            ->where(function ($q) use ($userId, $request) {
+                $q->where('user_id', $userId);
+                if ($request->attributes->get('auth_role') === 'admin' || $request->attributes->get('is_admin')) {
+                    $q->orWhereNotNull('id');
+                }
+            })
+            ->first();
 
         if (! $camera) {
             return response()->json(['success' => false, 'message' => 'Câmera não encontrada.'], 404);
@@ -806,7 +818,14 @@ class KingCameraController extends Controller
     public function toggleLight(Request $request, int $id): JsonResponse
     {
         $userId = (string) $request->attributes->get('auth_user_id', '');
-        $camera = KingCamera::where('id', $id)->where('user_id', $userId)->first();
+        $camera = KingCamera::where('id', $id)
+            ->where(function ($q) use ($userId, $request) {
+                $q->where('user_id', $userId);
+                if ($request->attributes->get('auth_role') === 'admin' || $request->attributes->get('is_admin')) {
+                    $q->orWhereNotNull('id');
+                }
+            })
+            ->first();
 
         if (! $camera) {
             return response()->json(['success' => false, 'message' => 'Câmera não encontrada.'], 404);
@@ -824,7 +843,14 @@ class KingCameraController extends Controller
     public function toggleAutoTracking(Request $request, int $id): JsonResponse
     {
         $userId = (string) $request->attributes->get('auth_user_id', '');
-        $camera = KingCamera::where('id', $id)->where('user_id', $userId)->first();
+        $camera = KingCamera::where('id', $id)
+            ->where(function ($q) use ($userId, $request) {
+                $q->where('user_id', $userId);
+                if ($request->attributes->get('auth_role') === 'admin' || $request->attributes->get('is_admin')) {
+                    $q->orWhereNotNull('id');
+                }
+            })
+            ->first();
 
         if (! $camera) {
             return response()->json(['success' => false, 'message' => 'Câmera não encontrada.'], 404);
