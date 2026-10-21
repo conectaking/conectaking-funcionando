@@ -47,21 +47,31 @@ class KingCameraService
         try {
             $query = 'name=' . urlencode($streamId);
             foreach ($sources as $s) {
-                $encodedSrc = str_replace(['%2A', '%2a'], '*', urlencode($s));
+                $encodedSrc = urlencode($s);
+                // go2rtc parses literal * without issue, but Guzzle escapes * to %2A which breaks RTSP digest authentication
+                $encodedSrc = str_replace(['%2A', '%2a'], '*', $encodedSrc);
                 $query .= '&src=' . $encodedSrc;
             }
             $endpoint = "{$goUrl}/api/streams?{$query}";
-            $res = Http::timeout(5)->put($endpoint);
 
-            if ($res->successful()) {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $endpoint);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+            $res = curl_exec($ch);
+            $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode >= 200 && $httpCode < 300) {
                 $camera->update(['status' => 'online']);
                 return true;
             }
 
             Log::warning('ks.camera.syncStream.failed', [
                 'stream_id' => $streamId,
-                'status' => $res->status(),
-                'body' => $res->body(),
+                'status' => $httpCode,
+                'body' => $res,
             ]);
             $camera->update(['status' => 'error']);
             return false;
@@ -132,13 +142,19 @@ class KingCameraService
     {
         $goUrl = $this->getGo2RtcUrl();
         try {
-            $res = Http::timeout(5)
+            $res = Http::timeout(10.0)
                 ->withBody($offerSdp, 'application/sdp')
                 ->post("{$goUrl}/api/webrtc?src=" . urlencode($streamId));
 
             if ($res->successful()) {
                 return $res->body();
             }
+
+            Log::warning('ks.camera.webrtcHandshake.errorResponse', [
+                'streamId' => $streamId,
+                'status' => $res->status(),
+                'body' => $res->body(),
+            ]);
         } catch (\Throwable $e) {
             Log::warning('ks.camera.webrtcHandshake', ['streamId' => $streamId, 'error' => $e->getMessage()]);
         }

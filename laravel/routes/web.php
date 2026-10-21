@@ -1023,6 +1023,7 @@ Route::middleware(['jwt', 'module:king_camera'])->group(function () {
     Route::put('/api/cameras/{id}', [\App\Http\Controllers\Camera\KingCameraController::class, 'update'])->where('id', '[0-9]+');
     Route::delete('/api/cameras/{id}', [\App\Http\Controllers\Camera\KingCameraController::class, 'destroy'])->where('id', '[0-9]+');
     Route::post('/api/cameras/{id}/webrtc', [\App\Http\Controllers\Camera\KingCameraController::class, 'webrtcHandshake'])->where('id', '[0-9]+');
+    Route::post('/api/cameras/{id}/webrtc-handshake', [\App\Http\Controllers\Camera\KingCameraController::class, 'webrtcHandshake'])->where('id', '[0-9]+');
     Route::get('/api/cameras/{id}/snapshot', [\App\Http\Controllers\Camera\KingCameraController::class, 'snapshot'])->where('id', '[0-9]+');
     Route::post('/api/cameras/{id}/test-telegram', [\App\Http\Controllers\Camera\KingCameraController::class, 'testTelegramAlert'])->where('id', '[0-9]+');
     Route::post('/api/cameras/{id}/ptz', [\App\Http\Controllers\Camera\KingCameraController::class, 'ptzControl'])->where('id', '[0-9]+');
