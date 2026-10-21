@@ -5722,6 +5722,53 @@
             }
         }
 
+        const ptzTimers = {};
+        const ptzHolding = {};
+
+        async function ptzActionPress(camId, direction, e) {
+            if (e) {
+                if (e.cancelable) e.preventDefault();
+                e.stopPropagation();
+            }
+            if (ptzTimers[camId]) {
+                clearTimeout(ptzTimers[camId]);
+                delete ptzTimers[camId];
+            }
+            ptzHolding[`${camId}_${direction}`] = Date.now();
+            await ptzStart(camId, direction, 0.6);
+        }
+
+        async function ptzActionRelease(camId, direction, e) {
+            if (e) {
+                if (e.cancelable) e.preventDefault();
+                e.stopPropagation();
+            }
+            const pressTime = ptzHolding[`${camId}_${direction}`] || 0;
+            delete ptzHolding[`${camId}_${direction}`];
+            const duration = Date.now() - pressTime;
+
+            // Se foi um clique/toque rápido (menos de 600ms), garante giro perceptível de 650ms
+            const minStepMs = 650;
+            const remainingTime = Math.max(80, minStepMs - duration);
+
+            ptzTimers[camId] = setTimeout(async () => {
+                await ptzStop(camId);
+                delete ptzTimers[camId];
+            }, remainingTime);
+        }
+
+        async function ptzSingleClickStep(camId, direction, e) {
+            if (e) e.stopPropagation();
+            if (!ptzHolding[`${camId}_${direction}`]) {
+                if (ptzTimers[camId]) clearTimeout(ptzTimers[camId]);
+                await ptzStart(camId, direction, 0.6);
+                ptzTimers[camId] = setTimeout(async () => {
+                    await ptzStop(camId);
+                    delete ptzTimers[camId];
+                }, 650);
+            }
+        }
+
         async function ptzStart(camId, direction, speed = 0.6) {
             try {
                 await fetch(`/api/cameras/${camId}/ptz`, {
