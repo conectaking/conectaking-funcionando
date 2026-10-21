@@ -570,8 +570,8 @@
             flex-direction: column;
             justify-content: space-between;
             padding: 0.75rem;
-            background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, transparent 20%, transparent 70%, rgba(0,0,0,0.6) 100%);
-            opacity: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 25%, transparent 60%, rgba(0,0,0,0.6) 100%);
+            opacity: 1 !important; /* Sempre visível para que os botões Mute, Noturno, HD e Rotação nunca sumam */
             transition: opacity 0.2s ease;
         }
 
@@ -4565,6 +4565,12 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Botão Flutuante para Sair do Modo Paisagem 90° -->
+                        <button type="button" class="kc-exit-landscape-btn" id="exit-landscape-${cam.id}" onclick="toggleForceLandscape(${cam.id})" style="display: none; position: absolute; top: 14px; right: 14px; z-index: 2147483647; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.35); padding: 8px 16px; border-radius: 20px; font-size: 0.82rem; font-weight: 700; cursor: pointer; backdrop-filter: blur(8px); box-shadow: 0 4px 14px rgba(0,0,0,0.6);">
+                            <i class="fas fa-undo"></i> Sair do Modo Paisagem
+                        </button>
+
                         <div class="kc-ptz-floating-box" id="ptz-box-${cam.id}" style="display: none;">
                             <div class="kc-ptz-floating-header">
                                 <span><i class="fas fa-arrows-alt"></i> Giro 360° PTZ</span>
@@ -4612,6 +4618,21 @@
                             <button type="button" class="kc-pill-btn kc-btn-track ${cam.auto_tracking_enabled ? 'active' : ''}" id="btn-track-${cam.id}" onclick="toggleAutoTracking(${cam.id})" title="Câmera Seguir Pessoa / Bebê (360°)">
                                 <i class="fas fa-crosshairs" style="color: #10b981;"></i> <span>Seguir Bebê</span>
                             </button>
+                            <button type="button" class="kc-pill-btn kc-btn-mute muted" id="btn-mute-${cam.id}" onclick="toggleAudioMute(${cam.id})" title="Ligar / Silenciar Áudio">
+                                <i class="fas fa-volume-mute" style="color: #f87171;"></i> <span>Mudo (Ouvir)</span>
+                            </button>
+                            <button type="button" class="kc-pill-btn kc-btn-night" id="btn-night-${cam.id}" onclick="toggleAiNightVision(${cam.id})" title="IA Visão Noturna Inteligente">
+                                <i class="fas fa-moon" style="color: #a78bfa;"></i> <span>Visão Noturna</span>
+                            </button>
+                            <button type="button" class="kc-pill-btn kc-btn-sharp" id="btn-sharp-${cam.id}" onclick="toggleAiSharpness(${cam.id})" title="Melhorar Nitidez e Detalhes da Imagem">
+                                <i class="fas fa-magic" style="color: #fbbf24;"></i> <span>Melhorar Imagem</span>
+                            </button>
+                            <button type="button" class="kc-pill-btn kc-btn-rotate" id="btn-rotate-${cam.id}" onclick="toggleForceLandscape(${cam.id})" title="Girar Vídeo 90° (Modo Paisagem)">
+                                <i class="fas fa-sync-alt" style="color: #38bdf8;"></i> <span>Girar 90°</span>
+                            </button>
+                            <button type="button" class="kc-pill-btn" id="btn-auto-night-${cam.id}" onclick="toggleAutoNightDetector(${cam.id})" title="Ativação Automática de Visão Noturna no escuro">
+                                <i class="fas fa-cloud-moon" style="color: #c084fc;"></i> <span>Noturno Auto</span>
+                            </button>
                             <button type="button" class="kc-pill-btn kc-btn-fence ${cam.crib_fence_enabled ? 'active' : ''}" id="btn-fence-${cam.id}" onclick="toggleCribFence(${cam.id})" title="Cerca Virtual do Berço (Safe Zone)">
                                 <i class="fas fa-vector-square" style="color: #06b6d4;"></i> <span>Cerca Berço</span>
                             </button>
@@ -4623,18 +4644,6 @@
                             </button>
                             <button type="button" class="kc-pill-btn kc-btn-siren" id="btn-siren-${cam.id}" onclick="triggerSiren(${cam.id})" title="Disparar Sirene Dissuasória">
                                 <i class="fas fa-bullhorn" style="color: #ef4444;"></i> <span>Sirene Pânico</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn kc-btn-mute muted" id="btn-mute-${cam.id}" onclick="toggleAudioMute(${cam.id})" title="Ligar / Silenciar Áudio">
-                                <i class="fas fa-volume-mute" style="color: #f87171;"></i> <span>Mudo (Ouvir)</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn kc-btn-night" id="btn-night-${cam.id}" onclick="toggleAiNightVision(${cam.id})" title="IA Visão Noturna Inteligente">
-                                <i class="fas fa-moon" style="color: #a78bfa;"></i> <span>Visão Noturna</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn" id="btn-auto-night-${cam.id}" onclick="toggleAutoNightDetector(${cam.id})" title="Ativação Automática de Visão Noturna no escuro">
-                                <i class="fas fa-cloud-moon" style="color: #c084fc;"></i> <span>Noturno Auto</span>
-                            </button>
-                            <button type="button" class="kc-pill-btn kc-btn-sharp" id="btn-sharp-${cam.id}" onclick="toggleAiSharpness(${cam.id})" title="Melhorar Nitidez e Detalhes da Imagem">
-                                <i class="fas fa-magic" style="color: #fbbf24;"></i> <span>Melhorar Imagem</span>
                             </button>
                             <button type="button" class="kc-pill-btn kc-btn-audio" id="btn-turbo-audio-${cam.id}" onclick="toggleAudioBooster(${cam.id})" title="Ouvir Som e Ativar Áudio Turbo 300%">
                                 <i class="fas fa-volume-up" style="color: #06b6d4;"></i> <span>Áudio Turbo</span>
@@ -5020,6 +5029,8 @@
         function toggleForceLandscape(camId) {
             const wrap = document.querySelector(`#card-cam-${camId} .kc-video-wrap`);
             const btnOv = document.getElementById(`ov-rotate-${camId}`);
+            const btnPill = document.getElementById(`btn-rotate-${camId}`);
+            const exitBtn = document.getElementById(`exit-landscape-${camId}`);
             if (!wrap) return;
 
             const isRotated = wrap.classList.toggle('force-landscape-mobile');
@@ -5027,15 +5038,21 @@
                 btnOv.classList.toggle('active-gold', isRotated);
                 btnOv.style.color = isRotated ? '#fbbf24' : '';
             }
+            if (btnPill) {
+                btnPill.classList.toggle('active', isRotated);
+            }
+            if (exitBtn) {
+                exitBtn.style.display = isRotated ? 'inline-flex' : 'none';
+            }
 
             Swal.fire({
                 toast: true,
                 position: 'top-end',
                 icon: 'info',
                 title: isRotated ? '🔄 Modo Paisagem 90° Ativo' : '📱 Modo Vertical Restaurado',
-                text: isRotated ? 'Vídeo girado horizontalmente sem precisar mexer na rotação do celular.' : '',
+                text: isRotated ? 'Vídeo expandido horizontalmente. Toque em "Sair da Rotação" quando quiser voltar.' : '',
                 showConfirmButton: false,
-                timer: 1600
+                timer: 1800
             });
         }
 
@@ -5748,8 +5765,40 @@
             }
         });
 
-        // Download Snapshot
+        // Download Snapshot em Alta Definição (Canvas Instantâneo + Fallback Backend)
         async function downloadSnapshot(camId) {
+            const v = document.getElementById(`video-${camId}`);
+            if (v && v.videoWidth > 0 && v.videoHeight > 0) {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = v.videoWidth;
+                    canvas.height = v.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `foto-camera-${camId}-${Date.now()}.jpg`;
+                            a.click();
+                            setTimeout(() => URL.revokeObjectURL(url), 3000);
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end',
+                                icon: 'success',
+                                title: '📸 Foto Capturada com Sucesso!',
+                                showConfirmButton: false,
+                                timer: 2000
+                            });
+                        }
+                    }, 'image/jpeg', 0.95);
+                    return;
+                } catch(e) {
+                    console.warn('Canvas capture fallback:', e);
+                }
+            }
+
             try {
                 const res = await fetch(`/api/cameras/${camId}/snapshot`, {
                     credentials: 'include',
@@ -5763,11 +5812,19 @@
                     a.download = `snapshot-camera-${camId}-${Date.now()}.jpg`;
                     a.click();
                     URL.revokeObjectURL(url);
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: '📸 Foto Capturada!',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
                 } else {
                     Swal.fire({
                         icon: 'info',
                         title: 'Snapshot',
-                        text: 'Câmera não respondeu com um frame no momento. Tente novamente.',
+                        text: 'Câmera não respondeu com um frame no momento. Tente novamente em alguns segundos.',
                     });
                 }
             } catch (err) {
