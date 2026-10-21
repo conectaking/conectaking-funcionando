@@ -1,0 +1,1 @@
+<?php require " vendor/autoload.php\; \ = require \bootstrap/app.php\; \->make(\Illuminate\\Contracts\\Console\\Kernel\)->bootstrap(); \ = App\\Models\\KingCamera::find(12); \ = app(App\\Services\\Camera\\KingCameraService::class); echo \PTZ MOVE RIGHT:\n\; print_r(\->ptzMove(\, \right\, 0.6)); sleep(1); echo \PTZ STOP:\n\; print_r(\->ptzMove(\, \stop\));
