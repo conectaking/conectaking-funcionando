@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>King Câmera — Monitoramento Inteligente | Conecta King</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -536,7 +539,7 @@
         /* Botões Laterais PTZ de Rotação Rápida - Acionados apenas no Modo PTZ 360° ou Fullscreen */
         .kc-side-ptz-btn {
             position: absolute;
-            z-index: 2147483640;
+            z-index: 20;
             background: rgba(15, 23, 42, 0.28);
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
@@ -1129,15 +1132,17 @@
             inset: 0;
             background: rgba(0, 0, 0, 0.75);
             backdrop-filter: blur(8px);
-            z-index: 100;
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 99999 !important;
             display: none;
             align-items: center;
             justify-content: center;
             padding: 1.5rem;
+            touch-action: manipulation;
         }
 
         .kc-modal-backdrop.active {
-            display: flex;
+            display: flex !important;
         }
 
         .kc-modal {
@@ -1227,11 +1232,11 @@
         }
 
         .kc-tab-pane {
-            display: none;
+            display: none !important;
         }
 
         .kc-tab-pane.active {
-            display: block;
+            display: block !important;
         }
 
         .kc-form-group {
@@ -1300,7 +1305,7 @@
         .swal2-container {
             backdrop-filter: blur(8px) !important;
             -webkit-backdrop-filter: blur(8px) !important;
-            z-index: 99999 !important;
+            z-index: 100000 !important;
         }
         .swal2-popup {
             background: #0f1422 !important;
@@ -1860,6 +1865,189 @@
             cursor: pointer;
         }
 
+        /* ─── Hub Cards & Mobile Action Buttons ─── */
+        .kc-add-cards-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        .kc-add-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.15rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--kc-border);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .kc-add-card:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(245, 158, 11, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .kc-add-card:active {
+            transform: scale(0.99);
+            background: rgba(255, 255, 255, 0.09);
+        }
+
+        .kc-add-card.highlight {
+            border-color: rgba(245, 158, 11, 0.35);
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(255, 255, 255, 0.02));
+        }
+
+        .kc-add-card.highlight:hover {
+            border-color: var(--kc-gold);
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.15);
+        }
+
+        .kc-add-card-badge {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #000;
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 6px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .kc-add-card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+            flex-shrink: 0;
+            border: 1px solid transparent;
+        }
+
+        .kc-add-card-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .kc-add-card-body h4 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.25rem;
+        }
+
+        .kc-add-card-body p {
+            font-size: 0.8rem;
+            color: var(--kc-text-muted);
+            line-height: 1.4;
+            margin-bottom: 0.35rem;
+        }
+
+        .kc-add-card-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--kc-gold);
+        }
+
+        .kc-add-card-arrow {
+            color: var(--kc-text-dim);
+            font-size: 0.95rem;
+            transition: transform 0.2s ease, color 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .kc-add-card:hover .kc-add-card-arrow {
+            color: #fff;
+            transform: translateX(3px);
+        }
+
+        .kc-back-hub-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.9rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--kc-border);
+            color: var(--kc-text-muted);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+        }
+
+        .kc-back-hub-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .kc-card-delete-btn {
+            background: rgba(239, 68, 68, 0.15) !important;
+            border: 1px solid rgba(239, 68, 68, 0.35) !important;
+            color: #f87171 !important;
+            border-radius: 8px;
+            padding: 0.38rem 0.75rem !important;
+            font-size: 0.78rem !important;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            transition: all 0.2s ease;
+            touch-action: manipulation !important;
+            min-height: 34px;
+        }
+
+        .kc-card-delete-btn:hover {
+            background: rgba(239, 68, 68, 0.3) !important;
+            color: #fff !important;
+            border-color: #ef4444 !important;
+            transform: translateY(-1px);
+        }
+
+        .kc-card-delete-btn:active {
+            transform: scale(0.96);
+        }
+
+        .kc-btn-danger {
+            background: rgba(239, 68, 68, 0.2) !important;
+            border: 1px solid #ef4444 !important;
+            color: #fff !important;
+            border-radius: 9px;
+            padding: 0.6rem 1.1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+            touch-action: manipulation;
+        }
+
+        .kc-btn-danger:hover {
+            background: #ef4444 !important;
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+        }
+
         /* QR Scanner Viewport */
         #camera-qr-reader {
             width: 100%;
@@ -2236,9 +2424,35 @@
                 touch-action: manipulation !important;
                 -webkit-tap-highlight-color: transparent !important;
             }
-            .kc-card-header-actions .kc-card-edit-btn {
-                padding: 0.32rem 0.65rem;
-                font-size: 0.75rem;
+            .kc-card-header {
+                padding: 0.75rem 0.85rem;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            .kc-card-title-group {
+                min-width: 0;
+                flex: 1 1 auto;
+            }
+            .kc-card-title {
+                font-size: 0.95rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 150px;
+            }
+            .kc-card-header-actions {
+                display: flex;
+                align-items: center;
+                gap: 0.35rem;
+                flex-shrink: 0;
+            }
+            .kc-card-header-actions .kc-card-edit-btn,
+            .kc-card-header-actions .kc-card-delete-btn {
+                padding: 0.4rem 0.65rem !important;
+                font-size: 0.75rem !important;
+                min-height: 36px;
+                cursor: pointer;
+                touch-action: manipulation !important;
             }
             .kc-video-overlay {
                 opacity: 1 !important;
@@ -2356,11 +2570,18 @@
         }
 
         @media (max-width: 480px) {
-            .kc-topbar-actions #btn-add-camera span {
-                display: none;
+            .kc-topbar-actions {
+                gap: 0.35rem;
             }
-            .kc-topbar-actions #btn-add-camera {
-                padding: 0.45rem 0.65rem;
+            .kc-topbar-actions #btn-open-clips-modal span,
+            .kc-topbar-actions #btn-telegram-info span,
+            .kc-topbar-actions #btn-add-camera span {
+                display: none !important;
+            }
+            .kc-topbar-actions .kc-btn {
+                padding: 0.45rem 0.65rem !important;
+                min-height: 38px;
+                touch-action: manipulation !important;
             }
             .kc-hero-text h1 {
                 font-size: 1.1rem;
@@ -2388,11 +2609,11 @@
                     <i class="fas fa-film" style="color: var(--kc-gold);"></i>
                     <span>Clipes (<span id="clips-counter">0</span>)</span>
                 </button>
-                <button type="button" class="kc-btn kc-btn-telegram" id="btn-telegram-info" title="Configurar Agente Telegram">
+                <button type="button" class="kc-btn kc-btn-telegram" id="btn-telegram-info" onclick="openTelegramFlow()" title="Configurar Agente Telegram">
                     <i class="fab fa-telegram-plane"></i>
                     <span>Agente Telegram</span>
                 </button>
-                <button type="button" class="kc-btn kc-btn-primary" id="btn-add-camera">
+                <button type="button" class="kc-btn kc-btn-primary" id="btn-add-camera" onclick="openModal('add')">
                     <i class="fas fa-plus"></i>
                     <span>Nova Câmera</span>
                 </button>
@@ -3366,11 +3587,17 @@
             document.querySelectorAll('.kc-tab-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     document.querySelectorAll('.kc-tab-btn').forEach(b => b.classList.remove('active'));
-                    document.querySelectorAll('.kc-tab-pane').forEach(p => p.classList.remove('active'));
+                    document.querySelectorAll('.kc-tab-pane').forEach(p => {
+                        p.classList.remove('active');
+                        p.style.display = 'none';
+                    });
                     btn.classList.add('active');
                     const tabId = btn.getAttribute('data-tab');
                     const pane = document.getElementById(tabId);
-                    if (pane) pane.classList.add('active');
+                    if (pane) {
+                        pane.classList.add('active');
+                        pane.style.display = 'block';
+                    }
 
                     if (tabId === 'tab-wizard') {
                         generateWizardWifiQr();
@@ -3528,7 +3755,7 @@
                             <button type="button" class="kc-card-edit-btn" onclick="editCamera(${cam.id})" title="Configurações e Edição da Câmera">
                                 <i class="fas fa-sliders-h"></i> <span>Configurar</span>
                             </button>
-                            <button type="button" class="kc-card-delete-btn" onclick="deleteCamera(${cam.id})" title="Remover Câmera" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #f87171; border-radius: 8px; padding: 0.35rem 0.65rem; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem;">
+                            <button type="button" class="kc-card-delete-btn" onclick="deleteCamera(${cam.id})" title="Remover Câmera">
                                 <i class="fas fa-trash-alt"></i> <span>Remover</span>
                             </button>
                         </div>
@@ -3611,9 +3838,14 @@
                                 <span class="kc-live-dot" style="width: 7px; height: 7px;"></span>
                                 <span>Online</span>
                             </div>
-                            <button type="button" class="kc-btn-footer-config" onclick="editCamera(${cam.id})" title="Central de Configurações da Câmera">
-                                <i class="fas fa-sliders-h"></i> <span>Configurar Câmera</span>
-                            </button>
+                            <div style="display: flex; align-items: center; gap: 0.4rem; margin-left: auto;">
+                                <button type="button" class="kc-btn-footer-config" onclick="editCamera(${cam.id})" title="Central de Configurações da Câmera">
+                                    <i class="fas fa-sliders-h"></i> <span>Configurar</span>
+                                </button>
+                                <button type="button" class="kc-card-delete-btn" onclick="deleteCamera(${cam.id})" title="Remover esta Câmera">
+                                    <i class="fas fa-trash-alt"></i> <span>Remover</span>
+                                </button>
+                            </div>
                         </div>
                         <!-- Pílulas de Ações Rápidas (Organizadas na margem inferior da câmera) -->
                         <div class="kc-quick-actions-grid">
@@ -4765,43 +4997,63 @@
         const btnAddCamera = document.getElementById('btn-add-camera');
         const btnTelegramInfo = document.getElementById('btn-telegram-info');
 
-        btnAddCamera.addEventListener('click', () => openModal('add'));
-        btnTelegramInfo.addEventListener('click', () => {
+        if (btnAddCamera) {
+            btnAddCamera.addEventListener('click', () => openModal('add'));
+        }
+        if (btnTelegramInfo) {
+            btnTelegramInfo.addEventListener('click', () => openTelegramFlow());
+        }
+
+        function openTelegramFlow() {
             openModal('add');
-            document.querySelector('.kc-tab-btn[data-tab="tab-telegram"]')?.click();
-        });
+            setTimeout(() => {
+                const tgBtn = document.querySelector('.kc-tab-btn[data-tab="tab-telegram"]');
+                if (tgBtn) tgBtn.click();
+            }, 60);
+        }
 
         function openModal(mode, cam = null) {
             currentEditingId = cam ? cam.id : null;
-            document.getElementById('modal-title').textContent = cam ? `Configurações da Câmera: ${cam.name}` : 'Conectar Nova Câmera';
-            document.getElementById('cam-id').value = cam ? cam.id : '';
-            document.getElementById('cam-name').value = cam ? cam.name : 'Quarto Bebê';
-            document.getElementById('cam-room').value = cam ? (cam.room || '') : 'Quarto';
-            document.getElementById('cam-ip').value = cam ? cam.ip_address : '172.16.100.215';
-            document.getElementById('cam-port').value = cam ? (cam.port || 554) : 554;
-            document.getElementById('cam-path').value = cam ? (cam.rtsp_path || '/onvif1') : '/onvif1';
-            document.getElementById('cam-user').value = cam ? (cam.username || 'admin') : 'admin';
-            document.getElementById('cam-pass').value = '';
-            document.getElementById('cam-telegram-alerts').checked = cam ? Boolean(cam.telegram_alerts_enabled) : true;
-            document.getElementById('cam-telegram-chat-id').value = cam ? (cam.telegram_chat_id || '') : '';
-            document.getElementById('cam-telegram-phone').value = cam ? (cam.telegram_phone || '') : '';
+            const titleEl = document.getElementById('modal-title');
+            if (titleEl) titleEl.textContent = cam ? `Configurações da Câmera: ${cam.name}` : 'Conectar Nova Câmera';
+
+            const setVal = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val;
+            };
+            const setChk = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.checked = Boolean(val);
+            };
+
+            setVal('cam-id', cam ? cam.id : '');
+            setVal('cam-name', cam ? cam.name : 'Quarto Bebê');
+            setVal('cam-room', cam ? (cam.room || '') : 'Quarto');
+            setVal('cam-ip', cam ? cam.ip_address : '172.16.100.215');
+            setVal('cam-port', cam ? (cam.port || 554) : 554);
+            setVal('cam-path', cam ? (cam.rtsp_path || '/onvif1') : '/onvif1');
+            setVal('cam-user', cam ? (cam.username || 'admin') : 'admin');
+            setVal('cam-pass', '');
+            setChk('cam-telegram-alerts', cam ? cam.telegram_alerts_enabled : true);
+            setVal('cam-telegram-chat-id', cam ? (cam.telegram_chat_id || '') : '');
+            setVal('cam-telegram-phone', cam ? (cam.telegram_phone || '') : '');
 
             // Baby AI Settings
-            document.getElementById('cam-crib-fence-enabled').checked = cam ? Boolean(cam.crib_fence_enabled) : false;
-            document.getElementById('cam-baby-stand-enabled').checked = cam ? Boolean(cam.baby_stand_enabled) : false;
-            document.getElementById('cam-baby-cry-enabled').checked = cam ? Boolean(cam.baby_cry_enabled) : false;
-            document.getElementById('cam-auto-tracking-enabled').checked = cam ? Boolean(cam.auto_tracking_enabled) : false;
+            setChk('cam-crib-fence-enabled', cam ? cam.crib_fence_enabled : false);
+            setChk('cam-baby-stand-enabled', cam ? cam.baby_stand_enabled : false);
+            setChk('cam-baby-cry-enabled', cam ? cam.baby_cry_enabled : false);
+            setChk('cam-auto-tracking-enabled', cam ? cam.auto_tracking_enabled : false);
 
             if (cam && cam.crib_roi_json) {
-                document.getElementById('cam-crib-x').value = cam.crib_roi_json.x ?? 20;
-                document.getElementById('cam-crib-y').value = cam.crib_roi_json.y ?? 25;
-                document.getElementById('cam-crib-w').value = cam.crib_roi_json.w ?? 60;
-                document.getElementById('cam-crib-h').value = cam.crib_roi_json.h ?? 50;
+                setVal('cam-crib-x', cam.crib_roi_json.x ?? 20);
+                setVal('cam-crib-y', cam.crib_roi_json.y ?? 25);
+                setVal('cam-crib-w', cam.crib_roi_json.w ?? 60);
+                setVal('cam-crib-h', cam.crib_roi_json.h ?? 50);
             } else {
-                document.getElementById('cam-crib-x').value = 20;
-                document.getElementById('cam-crib-y').value = 25;
-                document.getElementById('cam-crib-w').value = 60;
-                document.getElementById('cam-crib-h').value = 50;
+                setVal('cam-crib-x', 20);
+                setVal('cam-crib-y', 25);
+                setVal('cam-crib-w', 60);
+                setVal('cam-crib-h', 50);
             }
 
             const tgLinkBtn = document.getElementById('btn-open-telegram-link');
@@ -4852,18 +5104,23 @@
                 dangerZone.style.display = cam ? 'flex' : 'none';
             }
 
-            modalBackdrop.classList.add('active');
+            const modalEl = document.getElementById('camera-modal');
+            if (modalEl) modalEl.classList.add('active');
         }
 
         // ─── Hub de Adição de Câmeras ──────────────────────────────────────
         function showAddHub() {
             stopCameraQrScanner();
-            document.getElementById('modal-title').textContent = 'Adicionar Câmera';
+            const titleEl = document.getElementById('modal-title');
+            if (titleEl) titleEl.textContent = 'Adicionar Câmera';
             const tabsHeader = document.getElementById('modal-tabs-header');
             if (tabsHeader) tabsHeader.style.display = 'none';
 
             // Oculta todas as abas e painéis de fluxo
-            document.querySelectorAll('.kc-tab-pane').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.kc-tab-pane').forEach(el => {
+                el.classList.remove('active');
+                el.style.display = 'none';
+            });
 
             // Exibe o Hub
             const hub = document.getElementById('kc-add-hub');
@@ -4875,22 +5132,37 @@
             if (hub) hub.style.display = 'none';
 
             // Oculta todos os painéis
-            document.querySelectorAll('.kc-tab-pane').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.kc-tab-pane').forEach(el => {
+                el.classList.remove('active');
+                el.style.display = 'none';
+            });
 
             if (flow === 'qrcode') {
                 const pane = document.getElementById('flow-qrcode');
-                if (pane) pane.style.display = 'block';
+                if (pane) {
+                    pane.classList.add('active');
+                    pane.style.display = 'block';
+                }
                 generateFastWifiQr();
             } else if (flow === 'hotspot') {
                 const pane = document.getElementById('flow-hotspot');
-                if (pane) pane.style.display = 'block';
+                if (pane) {
+                    pane.classList.add('active');
+                    pane.style.display = 'block';
+                }
             } else if (flow === 'lan') {
                 const pane = document.getElementById('tab-lan-scan');
-                if (pane) pane.style.display = 'block';
+                if (pane) {
+                    pane.classList.add('active');
+                    pane.style.display = 'block';
+                }
                 triggerLanScan();
             } else if (flow === 'manual') {
                 const pane = document.getElementById('tab-rtsp');
-                if (pane) pane.style.display = 'block';
+                if (pane) {
+                    pane.classList.add('active');
+                    pane.style.display = 'block';
+                }
                 const backManualBtn = document.getElementById('btn-back-from-manual');
                 if (backManualBtn) backManualBtn.style.display = 'inline-flex';
                 setManualMode('id');
@@ -5062,7 +5334,8 @@
 
         function closeModal() {
             stopCameraQrScanner();
-            modalBackdrop.classList.remove('active');
+            const modalEl = document.getElementById('camera-modal');
+            if (modalEl) modalEl.classList.remove('active');
         }
 
         // ─── Sintetizador de Áudio Real (Web Audio API) ────────────────────
@@ -5772,7 +6045,9 @@
                 confirmButtonColor: '#ef4444',
                 cancelButtonColor: '#334155',
                 confirmButtonText: 'Sim, remover',
-                cancelButtonText: 'Cancelar'
+                cancelButtonText: 'Cancelar',
+                background: '#0f1422',
+                color: '#fff'
             });
 
             if (res.isConfirmed) {
@@ -5782,6 +6057,7 @@
                         credentials: 'include',
                         headers: getAuthHeaders()
                     });
+                    const json = await delRes.json();
                     if (json.success) {
                         Swal.fire({
                             toast: true,
