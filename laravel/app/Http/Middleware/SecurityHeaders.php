@@ -46,13 +46,19 @@ class SecurityHeaders
         $this->injectStyleNonces($response, $nonce);
 
         if (! $response->headers->has('Content-Security-Policy')) {
+            // Páginas com handlers inline (onclick="...") precisam de 'unsafe-inline' efetivo.
+            // Quando há nonce no script-src, o navegador IGNORA 'unsafe-inline' e bloqueia todos os onclick.
+            $inlineHandlersPage = $this->usesInlineHandlers($path);
+            $scriptSrc = $inlineHandlersPage
+                ? "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com"
+                : "script-src 'self' 'unsafe-inline' 'nonce-{$nonce}' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com";
             $csp = implode('; ', [
                 "default-src 'self'",
                 "base-uri 'self'",
                 "object-src 'none'",
                 "frame-ancestors 'self'",
                 "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.instagram.com https://tag.conectaking.com.br blob:",
-                "script-src 'self' 'unsafe-inline' 'nonce-{$nonce}' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com",
+                $scriptSrc,
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
                 "font-src 'self' data: https://fonts.gstatic.com",
                 "img-src 'self' data: blob: https:",
@@ -108,6 +114,13 @@ class SecurityHeaders
                 $response->headers->set('Content-Length', (string) strlen($updated));
             }
         }
+    }
+
+    private function usesInlineHandlers(string $path): bool
+    {
+        return str_starts_with($path, 'kingCamera')
+            || str_starts_with($path, 'king-camera')
+            || str_starts_with($path, 'monitor/');
     }
 
     private function allowsCamera(string $path): bool
