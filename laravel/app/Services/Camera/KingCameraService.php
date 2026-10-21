@@ -44,16 +44,20 @@ class KingCameraService
         }
 
         try {
-            $payload = [
-                'name' => $streamId,
-                'src' => $sources,
-            ];
+            // Remove stream anterior para garantir produtores limpos sem looping
+            @file_get_contents("{$goUrl}/api/streams?src=" . urlencode($streamId), false, stream_context_create([
+                'http' => ['method' => 'DELETE', 'timeout' => 2]
+            ]));
 
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, "{$goUrl}/api/streams");
+            $query = 'name=' . urlencode($streamId);
+            foreach ($sources as $s) {
+                $encodedSrc = str_replace(['%2A', '%2a'], '*', urlencode($s));
+                $query .= '&src=' . $encodedSrc;
+            }
+            $endpoint = "{$goUrl}/api/streams?{$query}";
+
+            $ch = curl_init($endpoint);
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_TIMEOUT, 6);
             $res = curl_exec($ch);

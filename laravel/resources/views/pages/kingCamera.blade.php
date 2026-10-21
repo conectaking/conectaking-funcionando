@@ -5386,7 +5386,7 @@
                         if (loaderEl) loaderEl.style.display = 'none';
                     } else {
                         failCount++;
-                        if (failCount >= 3) {
+                        if (failCount >= 10) {
                             if (window[`snapInterval_${camId}`]) {
                                 clearInterval(window[`snapInterval_${camId}`]);
                                 delete window[`snapInterval_${camId}`];
@@ -5396,7 +5396,7 @@
                     }
                 } catch (e) {
                     failCount++;
-                    if (failCount >= 3) {
+                    if (failCount >= 10) {
                         if (window[`snapInterval_${camId}`]) {
                             clearInterval(window[`snapInterval_${camId}`]);
                             delete window[`snapInterval_${camId}`];
