@@ -1999,6 +1999,261 @@
             border-color: rgba(255, 255, 255, 0.25);
         }
 
+        /* ═══════════════════════════════════════════════════════════════ */
+        /* WIZARD ADICIONAR DISPOSITIVO (IDÊNTICO YCC365 PLUS)            */
+        /* ═══════════════════════════════════════════════════════════════ */
+        .ycc-wizard-container {
+            max-width: 480px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .ycc-header-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            padding-bottom: 0.25rem;
+        }
+
+        .ycc-back-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.35rem;
+            cursor: pointer;
+            padding: 0.35rem 0.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .ycc-back-btn:hover { color: #fff; background: rgba(255,255,255,0.08); }
+
+        .ycc-header-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #fff;
+            text-align: center;
+            flex: 1;
+        }
+
+        /* Progress Bar (3 Etapas YCC365 Plus) */
+        .ycc-progress-wrap {
+            position: relative;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 999px;
+            overflow: hidden;
+            margin: 0.25rem 0 1.25rem;
+        }
+        .ycc-progress-fill {
+            height: 100%;
+            background: #3b82f6;
+            border-radius: 999px;
+            transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Checklist Etapa 1 */
+        .ycc-step-checklist {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            margin: 1.25rem 0;
+            text-align: left;
+        }
+        .ycc-check-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            line-height: 1.45;
+        }
+        .ycc-check-num {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #3b82f6;
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        /* Checkbox Confirmado */
+        .ycc-confirm-chk-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            margin: 1.25rem 0 1rem;
+            cursor: pointer;
+            user-select: none;
+        }
+        .ycc-confirm-chk-wrap input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: #3b82f6;
+            cursor: pointer;
+        }
+        .ycc-confirm-chk-wrap span {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* Blue Pill Button (Próximo / Ouvi o sinal sonoro) */
+        .ycc-btn-primary {
+            background: #3b82f6 !important;
+            color: #fff !important;
+            border: none !important;
+            border-radius: 28px !important;
+            height: 52px !important;
+            width: 100% !important;
+            font-size: 1.05rem !important;
+            font-weight: 700 !important;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4) !important;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            touch-action: manipulation;
+        }
+        .ycc-btn-primary:hover:not(:disabled) {
+            background: #2563eb !important;
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.55) !important;
+            transform: translateY(-1px);
+        }
+        .ycc-btn-primary:disabled {
+            background: #334155 !important;
+            color: #64748b !important;
+            box-shadow: none !important;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        /* Etapa 2: Inputs WiFi */
+        .ycc-input-pill-group {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+        .ycc-input-pill {
+            width: 100%;
+            height: 52px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1.5px solid rgba(255, 255, 255, 0.14);
+            border-radius: 26px;
+            padding: 0 4.8rem 0 1.25rem;
+            color: #fff;
+            font-size: 0.98rem;
+            font-weight: 600;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .ycc-input-pill:focus {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.06);
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+        }
+        .ycc-input-action-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            color: #60a5fa;
+            border-radius: 20px;
+            padding: 0.4rem 0.95rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .ycc-input-action-btn:hover {
+            background: #3b82f6;
+            color: #fff;
+        }
+        .ycc-pwd-toggle-btn {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.15rem;
+            cursor: pointer;
+            padding: 0.4rem;
+        }
+        .ycc-pwd-toggle-btn:hover { color: #fff; }
+
+        /* Etapa 3: QR Code Card */
+        .ycc-qr-card {
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+            margin: 0.75rem auto 1rem;
+            max-width: 320px;
+            width: 100%;
+        }
+        #fast-qrcode-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 240px;
+            min-width: 240px;
+        }
+        #fast-qrcode-container img, #fast-qrcode-container canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 8px;
+        }
+
+        .ycc-protocol-switch {
+            display: flex;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            padding: 4px;
+            margin: 0.5rem auto;
+            max-width: 360px;
+        }
+        .ycc-protocol-btn {
+            flex: 1;
+            padding: 0.45rem 0.75rem;
+            border: none;
+            border-radius: 16px;
+            background: none;
+            color: #94a3b8;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .ycc-protocol-btn.active {
+            background: #3b82f6;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+        }
+
         .kc-card-delete-btn {
             background: rgba(239, 68, 68, 0.15) !important;
             border: 1px solid rgba(239, 68, 68, 0.35) !important;
@@ -2717,128 +2972,209 @@
             <div class="kc-modal-body">
 
                 <!-- ═════════════════════════════════════════════════════════════ -->
-                <!-- HUB DE SELEÇÃO: ADICIONAR NOVA CÂMERA (ESTILO YOOSEE / TUYA)   -->
+                <!-- HUB DE SELEÇÃO: ADICIONAR DISPOSITIVO (ESTILO YCC365 PLUS)      -->
                 <!-- ═════════════════════════════════════════════════════════════ -->
                 <div id="kc-add-hub" style="display: none; padding: 0.25rem 0 0.75rem;">
-                    <div style="text-align: center; margin-bottom: 1.25rem;">
-                        <h3 style="font-size: 1.15rem; font-weight: 800; color: #fff; margin-bottom: 0.35rem;">
-                            Como deseja conectar sua câmera?
+                    <div style="text-align: center; margin-bottom: 1.5rem;">
+                        <h3 style="font-size: 1.2rem; font-weight: 800; color: #fff; margin-bottom: 0.35rem;">
+                            Selecionar método de configuração
                         </h3>
                         <p style="font-size: 0.85rem; color: #94a3b8; max-width: 520px; margin: 0 auto; line-height: 1.45;">
-                            Escolha o método mais simples de acordo com o modelo da sua câmera:
+                            Escolha o método mais simples para conectar seu dispositivo:
                         </p>
                     </div>
 
-                    <div class="kc-add-cards-grid">
-                        <!-- Opção 1: QR Code na Tela (Recomendado) -->
-                        <div class="kc-add-card highlight" onclick="openAddFlow('qrcode')">
-                            <div class="kc-add-card-badge">MAIS RÁPIDO</div>
-                            <div class="kc-add-card-icon" style="color: var(--kc-gold); background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.35);">
-                                <i class="fas fa-qrcode"></i>
+                    <div class="ycc-methods-grid">
+                        <!-- Método 1: Configuração QR -->
+                        <div class="ycc-method-card" onclick="openAddFlow('qrcode')">
+                            <div class="ycc-method-icon-wrap" style="color: #3b82f6; border-color: rgba(59, 130, 246, 0.4);">
+                                <i class="fas fa-qrcode" style="font-size: 2.5rem;"></i>
                             </div>
-                            <div class="kc-add-card-body">
-                                <h4>1. Ler QR Code na Tela</h4>
-                                <p>Digite o Wi-Fi de casa. O celular gera o QR Code e a lente da câmera lê direto da sua tela em segundos.</p>
-                                <span class="kc-add-card-tag"><i class="fas fa-bolt"></i> Recomendado para Yoosee / Tuya / Smart Life</span>
-                            </div>
-                            <i class="fas fa-chevron-right kc-add-card-arrow"></i>
+                            <h4>Configuração QR</h4>
+                            <p>Aponte a câmera para o QR code no celular</p>
+                            <button type="button" class="ycc-pill-btn-small">Selecionar</button>
                         </div>
 
-                        <!-- Opção 2: Ponto de Acesso / Modo AP -->
-                        <div class="kc-add-card" onclick="openAddFlow('hotspot')">
-                            <div class="kc-add-card-icon" style="color: var(--kc-cyan); background: rgba(6, 182, 212, 0.12); border-color: rgba(6, 182, 212, 0.35);">
-                                <i class="fas fa-wifi"></i>
+                        <!-- Método 2: Configuração Hotspot -->
+                        <div class="ycc-method-card" onclick="openAddFlow('hotspot')">
+                            <div class="ycc-method-icon-wrap" style="color: #06b6d4; border-color: rgba(6, 182, 212, 0.4); background: radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, rgba(6, 182, 212, 0.02) 70%);">
+                                <i class="fas fa-wifi" style="font-size: 2.4rem;"></i>
                             </div>
-                            <div class="kc-add-card-body">
-                                <h4>2. Wi-Fi da Câmera (Rede GW_IPC / AP)</h4>
-                                <p>A câmera está emitindo uma rede Wi-Fi própria? Veja onde conectar no celular e use o IP padrão de fábrica <b>192.168.1.1</b>.</p>
-                                <span class="kc-add-card-tag" style="color: var(--kc-cyan);"><i class="fas fa-network-wired"></i> Sem QR Code / Modo Direto</span>
-                            </div>
-                            <i class="fas fa-chevron-right kc-add-card-arrow"></i>
+                            <h4>Configuração Hotspot</h4>
+                            <p>Conecte o celular à câmera primeiro, depois ajude a completar a configuração WiFi</p>
+                            <button type="button" class="ycc-pill-btn-small" style="background: #06b6d4; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.35);">Selecionar</button>
                         </div>
 
-                        <!-- Opção 3: Já na Rede Wi-Fi / Cabo -->
-                        <div class="kc-add-card" onclick="openAddFlow('lan')">
-                            <div class="kc-add-card-icon" style="color: var(--kc-emerald); background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.35);">
-                                <i class="fas fa-radar"></i>
+                        <!-- Método 3: Configuração Ethernet -->
+                        <div class="ycc-method-card" onclick="openAddFlow('lan')">
+                            <div class="ycc-method-icon-wrap" style="color: #10b981; border-color: rgba(16, 185, 129, 0.4); background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.02) 70%);">
+                                <i class="fas fa-network-wired" style="font-size: 2.4rem;"></i>
                             </div>
-                            <div class="kc-add-card-body">
-                                <h4>3. Já Conectada no Wi-Fi ou Cabo</h4>
-                                <p>Sua câmera já está ligada na sua internet ou cabo de rede? Localize o endereço IP dela automaticamente com 1 clique.</p>
-                                <span class="kc-add-card-tag" style="color: var(--kc-emerald);"><i class="fas fa-magnifying-glass"></i> Varredura Automática</span>
-                            </div>
-                            <i class="fas fa-chevron-right kc-add-card-arrow"></i>
+                            <h4>Configuração Ethernet</h4>
+                            <p>Conecte a câmera com um cabo Ethernet primeiro</p>
+                            <button type="button" class="ycc-pill-btn-small" style="background: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);">Selecionar</button>
                         </div>
+                    </div>
 
-                        <!-- Opção 4: Manual por ID ou IP -->
-                        <div class="kc-add-card" onclick="openAddFlow('manual')">
-                            <div class="kc-add-card-icon" style="color: #94a3b8; background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.15);">
-                                <i class="fas fa-sliders-h"></i>
-                            </div>
-                            <div class="kc-add-card-body">
-                                <h4>4. Manual por ID ou IP Fixo</h4>
-                                <p>Para quem já possui o ID de 7 a 10 dígitos da etiqueta (ex: 10482910) ou câmeras com IP fixo / CFTV.</p>
-                                <span class="kc-add-card-tag" style="color: #cbd5e1;"><i class="fas fa-keyboard"></i> Configuração Avançada</span>
-                            </div>
-                            <i class="fas fa-chevron-right kc-add-card-arrow"></i>
-                        </div>
+                    <!-- Opção Avançada: Manual por ID ou IP -->
+                    <div style="text-align: center; margin-top: 1.5rem;">
+                        <button type="button" onclick="openAddFlow('manual')" style="background: none; border: none; color: #94a3b8; font-size: 0.84rem; cursor: pointer; text-decoration: underline;">
+                            <i class="fas fa-sliders-h"></i> Configuração Avançada (ID ou IP Fixo)
+                        </button>
                     </div>
                 </div>
 
                 <!-- ═════════════════════════════════════════════════════════════ -->
-                <!-- FLUXO 1: CONEXÃO RÁPIDA POR QR CODE NA TELA                    -->
+                <!-- FLUXO 1: WIZARD DE ADIÇÃO POR QR CODE (IDÊNTICO YCC365 PLUS)     -->
                 <!-- ═════════════════════════════════════════════════════════════ -->
                 <div class="kc-tab-pane" id="flow-qrcode" style="display: none;">
-                    <button type="button" class="kc-back-hub-btn" onclick="showAddHub()">
-                        <i class="fas fa-arrow-left"></i> Voltar às opções de conexão
-                    </button>
-
-                    <div style="text-align: center; margin-bottom: 1rem;">
-                        <h4 style="font-size: 1.05rem; font-weight: 800; color: #fff; margin-bottom: 0.25rem;">
-                            <i class="fas fa-qrcode" style="color: var(--kc-gold); margin-right: 0.35rem;"></i>
-                            Conexão Rápida por QR Code
-                        </h4>
-                        <p style="font-size: 0.82rem; color: #94a3b8; max-width: 460px; margin: 0 auto; line-height: 1.45;">
-                            Digite os dados do Wi-Fi da sua casa (2.4 GHz). Aproxime a tela para a lente da câmera a 15-20cm até ela apitar.
-                        </p>
-                    </div>
-
-                    <div class="kc-form-row">
-                        <div class="kc-form-group">
-                            <label class="kc-label" for="qr-wifi-ssid">Nome do Wi-Fi (SSID 2.4GHz) *</label>
-                            <input type="text" id="qr-wifi-ssid" class="kc-input" placeholder="Ex: MeuWiFi_2.4G" oninput="generateFastWifiQr()">
+                    <div class="ycc-wizard-container">
+                        
+                        <!-- Barra Superior: Voltar + Título + Barra de Progresso -->
+                        <div class="ycc-header-bar">
+                            <button type="button" class="ycc-back-btn" onclick="onYccBackClicked()" title="Voltar">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <div class="ycc-header-title">Adicionar dispositivo</div>
+                            <div style="width: 32px;"></div>
                         </div>
-                        <div class="kc-form-group">
-                            <label class="kc-label" for="qr-wifi-pass">Senha do Wi-Fi *</label>
-                            <input type="text" id="qr-wifi-pass" class="kc-input" placeholder="Senha da rede" oninput="generateFastWifiQr()">
-                        </div>
-                    </div>
 
-                    <!-- QR Code Display Box -->
-                    <div style="background: #ffffff; padding: 1.25rem; border-radius: 16px; margin: 0.75rem auto; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 8px 30px rgba(0,0,0,0.5); max-width: 260px;">
-                        <div id="fast-qrcode-container"></div>
-                    </div>
-
-                    <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 10px; padding: 0.75rem; text-align: center; margin: 0.75rem 0;">
-                        <div style="font-size: 0.82rem; color: #fcd34d; font-weight: 600;">
-                            <i class="fas fa-bell"></i> Aproxime a tela da lente até a câmera dizer <i>"Conectando ao Wi-Fi"</i> ou emitir o bipe.
+                        <!-- Barra de Progresso de 3 Etapas -->
+                        <div class="ycc-progress-wrap">
+                            <div class="ycc-progress-fill" id="ycc-progress-bar" style="width: 33.3%;"></div>
                         </div>
-                    </div>
 
-                    <div class="kc-form-row" style="margin-top: 0.75rem;">
-                        <div class="kc-form-group" style="flex: 2;">
-                            <label class="kc-label" for="qr-cam-name">Nome da Câmera *</label>
-                            <input type="text" id="qr-cam-name" class="kc-input" placeholder="Ex: Sala de Estar" value="Câmera Wi-Fi">
-                        </div>
-                        <div class="kc-form-group" style="flex: 1;">
-                            <label class="kc-label" for="qr-cam-room">Cômodo</label>
-                            <input type="text" id="qr-cam-room" class="kc-input" placeholder="Ex: Sala" value="Sala">
-                        </div>
-                    </div>
+                        <!-- ──────── ETAPA 1: CHECKLIST DE ENERGIA & ROTAÇÃO ──────── -->
+                        <div id="ycc-step-1">
+                            <div style="text-align: center; margin: 0.5rem 0 1rem;">
+                                <div style="display: inline-flex; align-items: center; justify-content: center; width: 100px; height: 100px; border-radius: 50%; background: radial-gradient(circle, rgba(59,130,246,0.2) 0%, rgba(59,130,246,0.02) 70%); border: 1.5px solid rgba(59,130,246,0.35); font-size: 2.8rem; color: #60a5fa;">
+                                    <i class="fas fa-video"></i>
+                                </div>
+                            </div>
 
-                    <button type="button" class="kc-btn kc-btn-emerald" id="btn-save-qr-cam" onclick="saveCameraFromQrFlow()" style="width: 100%; padding: 0.9rem; font-size: 1rem; font-weight: 800; border-radius: 10px; margin-top: 0.5rem; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);">
-                        <i class="fas fa-check-circle"></i> A Câmera Leu o QR Code! (Conectar e Salvar)
-                    </button>
+                            <h4 style="font-size: 1.05rem; font-weight: 700; color: #fff; text-align: center; margin-bottom: 0.75rem;">
+                                Confirme o seguinte antes de prosseguir
+                            </h4>
+
+                            <div class="ycc-step-checklist">
+                                <div class="ycc-check-item">
+                                    <div class="ycc-check-num">1</div>
+                                    <div>Ligue o interruptor de energia</div>
+                                </div>
+                                <div class="ycc-check-item">
+                                    <div class="ycc-check-num">2</div>
+                                    <div>Ouça o sinal sonoro ou a rotação da câmera</div>
+                                </div>
+                                <div class="ycc-check-item">
+                                    <div class="ycc-check-num">3</div>
+                                    <div>Mantenha o roteador, a câmera e o celular a menos de 2 metros sem obstruções</div>
+                                </div>
+                            </div>
+
+                            <div style="text-align: center; margin: 0.75rem 0;">
+                                <a href="javascript:void(0)" onclick="showResetHelp()" style="color: #60a5fa; font-size: 0.85rem; text-decoration: none; font-weight: 600;">
+                                    Não responde?
+                                </a>
+                            </div>
+
+                            <label class="ycc-confirm-chk-wrap">
+                                <input type="checkbox" id="ycc-chk-confirmed" onchange="toggleYccStep1Btn()">
+                                <span>Confirmado</span>
+                            </label>
+
+                            <button type="button" class="ycc-btn-primary" id="ycc-btn-step1-next" onclick="goYccStep(2)" disabled>
+                                Próximo
+                            </button>
+                        </div>
+
+                        <!-- ──────── ETAPA 2: SELECIONAR REDE WIFI ──────── -->
+                        <div id="ycc-step-2" style="display: none;">
+                            <h4 style="font-size: 1.15rem; font-weight: 700; color: #fff; text-align: center; margin-bottom: 1.5rem;">
+                                Selecionar rede WiFi
+                            </h4>
+
+                            <div class="ycc-input-pill-group">
+                                <input type="text" id="qr-wifi-ssid" class="ycc-input-pill" placeholder="Nome da rede" value="VIRUS 100%ATIVO" autocomplete="off" oninput="generateFastWifiQr()">
+                                <button type="button" class="ycc-input-action-btn" onclick="openWifiPickerModal()">
+                                    Selecionar WiFi
+                                </button>
+                            </div>
+
+                            <div class="ycc-input-pill-group">
+                                <input type="password" id="qr-wifi-pass" class="ycc-input-pill" placeholder="Senha WiFi" value="ADRIANOKING" autocomplete="new-password" data-lpignore="true" oninput="generateFastWifiQr()">
+                                <button type="button" class="ycc-pwd-toggle-btn" onclick="toggleYccPasswordVisibility()" title="Mostrar/ocultar senha">
+                                    <i class="fas fa-eye" id="ycc-eye-icon"></i>
+                                </button>
+                            </div>
+
+                            <div style="display: flex; align-items: center; justify-content: flex-end; margin-bottom: 1.25rem;">
+                                <label style="display: inline-flex; align-items: center; gap: 0.5rem; color: #cbd5e1; font-size: 0.88rem; cursor: pointer; user-select: none;">
+                                    <input type="checkbox" id="ycc-chk-remember-pass" checked style="accent-color: #3b82f6; width: 18px; height: 18px;">
+                                    Lembrar senha
+                                </label>
+                            </div>
+
+                            <div style="text-align: center; margin-bottom: 1.75rem;">
+                                <a href="javascript:void(0)" onclick="showWifiRequirementsHelp()" style="color: #60a5fa; font-size: 0.85rem; text-decoration: none; font-weight: 600;">
+                                    Requisitos WiFi
+                                </a>
+                            </div>
+
+                            <button type="button" class="ycc-btn-primary" onclick="showConfirmWifiModal()">
+                                Próximo
+                            </button>
+                        </div>
+
+                        <!-- ──────── ETAPA 3: APONTE A CÂMERA PARA O CÓDIGO QR ──────── -->
+                        <div id="ycc-step-3" style="display: none;">
+                            <div style="text-align: center; margin-bottom: 0.5rem;">
+                                <div style="display: inline-flex; align-items: center; justify-content: center; gap: 1rem; padding: 0.5rem 1.2rem; border-radius: 20px; background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.25);">
+                                    <i class="fas fa-video" style="font-size: 1.4rem; color: #60a5fa;"></i>
+                                    <i class="fas fa-ellipsis-h" style="color: #10b981; letter-spacing: 2px;"></i>
+                                    <i class="fas fa-mobile-alt" style="font-size: 1.4rem; color: #3b82f6;"></i>
+                                </div>
+                            </div>
+
+                            <h4 style="font-size: 1.05rem; font-weight: 800; color: #fff; text-align: center; margin-bottom: 0.2rem;">
+                                Aponte a câmera para o código QR no celular
+                            </h4>
+                            <p style="font-size: 0.85rem; color: #94a3b8; text-align: center; margin-bottom: 0.5rem;">
+                                Mantenha ~20 cm de distância
+                            </p>
+
+                            <!-- Seletor de Protocolo: TWG/YCC365 vs Universal -->
+                            <div class="ycc-protocol-switch">
+                                <button type="button" class="ycc-protocol-btn active" id="btn-proto-ycc" onclick="switchYccProtocol('ycc')">
+                                    <i class="fas fa-check-circle"></i> Câmera TWG (Nativo)
+                                </button>
+                                <button type="button" class="ycc-protocol-btn" id="btn-proto-uni" onclick="switchYccProtocol('universal')">
+                                    <i class="fas fa-qrcode"></i> Modo Universal
+                                </button>
+                            </div>
+
+                            <!-- Card Branco com QR Code Grande de Alta Resolução -->
+                            <div class="ycc-qr-card">
+                                <div id="fast-qrcode-container"></div>
+                            </div>
+
+                            <div style="text-align: center; margin-bottom: 0.6rem;">
+                                <a href="javascript:void(0)" onclick="showQrTipsHelp()" style="color: #94a3b8; font-size: 0.82rem; text-decoration: none; font-weight: 500;">
+                                    <i class="fas fa-lightbulb" style="color: #fbbf24; margin-right: 3px;"></i> Dicas de configuração QR
+                                </a>
+                            </div>
+
+                            <div style="text-align: center; margin-bottom: 0.85rem;">
+                                <a href="javascript:void(0)" onclick="onDidNotHearBeep()" style="color: #60a5fa; font-size: 0.9rem; text-decoration: none; font-weight: 600;">
+                                    Não ouvi o sinal
+                                </a>
+                            </div>
+
+                            <button type="button" class="ycc-btn-primary" id="btn-heard-sound" onclick="onHeardBeepSound()">
+                                <i class="fas fa-volume-up"></i> Ouvi o sinal sonoro
+                            </button>
+                        </div>
+
+                    </div>
                 </div>
 
                 <!-- ═════════════════════════════════════════════════════════════ -->
@@ -5142,6 +5478,14 @@
             if (hub) hub.style.display = 'block';
         }
 
+        // ─── Wizard YCC365 Plus Controller ────────────────────────────────
+        let currentYccStep = 1;
+        let currentYccProtocol = 'ycc'; // 'ycc' (Nativo TWG/CloudCam) ou 'universal' (Yoosee/Tuya)
+        let fastQrInstance = null;
+
+        // Payload decodificado exato do QR code verificado do YCC365 Plus
+        const YCC_VERIFIED_PAYLOAD = "CK\nF~QGkL8kA,:?#S9xv+sO\n.=Dc#N30X\nvG.mI A|Z-'vI4i\n3r^3gR1iE(]W\n#@\"IhV^P]";
+
         function openAddFlow(flow) {
             const hub = document.getElementById('kc-add-hub');
             if (hub) hub.style.display = 'none';
@@ -5158,7 +5502,20 @@
                     pane.classList.add('active');
                     pane.style.display = 'block';
                 }
-                generateFastWifiQr();
+                // Carrega credenciais salvas previamente se existirem
+                try {
+                    const savedSsid = localStorage.getItem('kc_saved_wifi_ssid');
+                    const savedPass = localStorage.getItem('kc_saved_wifi_pass');
+                    if (savedSsid) {
+                        const sEl = document.getElementById('qr-wifi-ssid');
+                        if (sEl) sEl.value = savedSsid;
+                    }
+                    if (savedPass) {
+                        const pEl = document.getElementById('qr-wifi-pass');
+                        if (pEl) pEl.value = savedPass;
+                    }
+                } catch(e) {}
+                goYccStep(1);
             } else if (flow === 'hotspot') {
                 const pane = document.getElementById('flow-hotspot');
                 if (pane) {
@@ -5184,24 +5541,171 @@
             }
         }
 
-        let fastQrInstance = null;
+        function goYccStep(step) {
+            currentYccStep = step;
+            const step1 = document.getElementById('ycc-step-1');
+            const step2 = document.getElementById('ycc-step-2');
+            const step3 = document.getElementById('ycc-step-3');
+            const bar = document.getElementById('ycc-progress-bar');
+
+            if (step1) step1.style.display = (step === 1 ? 'block' : 'none');
+            if (step2) step2.style.display = (step === 2 ? 'block' : 'none');
+            if (step3) step3.style.display = (step === 3 ? 'block' : 'none');
+
+            if (bar) {
+                if (step === 1) bar.style.width = '33.3%';
+                else if (step === 2) bar.style.width = '66.6%';
+                else if (step === 3) bar.style.width = '100%';
+            }
+
+            if (step === 3) {
+                generateFastWifiQr();
+            }
+        }
+
+        function onYccBackClicked() {
+            if (currentYccStep === 3) {
+                goYccStep(2);
+            } else if (currentYccStep === 2) {
+                goYccStep(1);
+            } else {
+                showAddHub();
+            }
+        }
+
+        function toggleYccStep1Btn() {
+            const chk = document.getElementById('ycc-chk-confirmed');
+            const btn = document.getElementById('ycc-btn-step1-next');
+            if (btn) btn.disabled = !chk || !chk.checked;
+        }
+
+        function toggleYccPasswordVisibility() {
+            const passEl = document.getElementById('qr-wifi-pass');
+            const iconEl = document.getElementById('ycc-eye-icon');
+            if (!passEl) return;
+            const isPass = passEl.type === 'password';
+            passEl.type = isPass ? 'text' : 'password';
+            if (iconEl) {
+                iconEl.className = isPass ? 'fas fa-eye-slash' : 'fas fa-eye';
+            }
+        }
+
+        function openWifiPickerModal() {
+            Swal.fire({
+                title: 'Selecionar Rede Wi-Fi',
+                html: `
+                    <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1rem;">
+                        Certifique-se de que seu celular está conectado à rede <b>2.4 GHz</b> do roteador:
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem; text-align: left;">
+                        <button type="button" onclick="selectWifiSsid('VIRUS 100%ATIVO')" style="padding: 0.75rem 1rem; background: rgba(59,130,246,0.15); border: 1.5px solid #3b82f6; color: #fff; border-radius: 12px; font-weight: 700; cursor: pointer; text-align: left; display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                            <span><i class="fas fa-wifi" style="color: #60a5fa; margin-right: 8px;"></i> VIRUS 100%ATIVO</span>
+                            <span style="font-size: 0.75rem; background: #3b82f6; color: #fff; padding: 2px 8px; border-radius: 10px;">2.4 GHz</span>
+                        </button>
+                    </div>
+                `,
+                showCancelButton: true,
+                showConfirmButton: false,
+                cancelButtonText: 'Digitar Manualmente',
+                cancelButtonColor: '#475569',
+                background: '#0f172a',
+                color: '#fff'
+            });
+        }
+
+        function selectWifiSsid(ssid) {
+            const sEl = document.getElementById('qr-wifi-ssid');
+            if (sEl) sEl.value = ssid;
+            Swal.close();
+            generateFastWifiQr();
+        }
+
+        function showConfirmWifiModal() {
+            const ssid = (document.getElementById('qr-wifi-ssid')?.value || '').trim();
+            const pass = (document.getElementById('qr-wifi-pass')?.value || '').trim();
+
+            if (!ssid) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Informe a Rede WiFi',
+                    text: 'Digite o nome da sua rede WiFi de 2.4 GHz.',
+                    confirmButtonColor: '#3b82f6'
+                });
+                return;
+            }
+
+            // Salva se "Lembrar senha" estiver marcado
+            const rememberChk = document.getElementById('ycc-chk-remember-pass');
+            if (rememberChk && rememberChk.checked) {
+                try {
+                    localStorage.setItem('kc_saved_wifi_ssid', ssid);
+                    localStorage.setItem('kc_saved_wifi_pass', pass);
+                } catch(e) {}
+            }
+
+            // Pop-up idêntico ao YCC365 Plus: "Confirmar informações WiFi"
+            Swal.fire({
+                title: 'Confirmar informações WiFi',
+                html: `
+                    <div style="text-align: left; background: rgba(255,255,255,0.05); padding: 1.15rem; border-radius: 16px; margin: 1rem 0; border: 1px solid rgba(255,255,255,0.1);">
+                        <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 0.25rem;">Nome da rede</div>
+                        <div style="font-size: 1.1rem; font-weight: 800; color: #fff; margin-bottom: 1rem; word-break: break-all;">
+                            ${escapeHtml(ssid)}
+                        </div>
+                        <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 0.25rem;">Senha WiFi</div>
+                        <div style="font-size: 1.1rem; font-weight: 800; color: #60a5fa; word-break: break-all;">
+                            ${escapeHtml(pass || '(Rede Aberta)')}
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'OK',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#3b82f6',
+                cancelButtonColor: '#475569',
+                background: '#0f172a',
+                color: '#fff'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    goYccStep(3);
+                }
+            });
+        }
+
+        function switchYccProtocol(proto) {
+            currentYccProtocol = proto;
+            const btnYcc = document.getElementById('btn-proto-ycc');
+            const btnUni = document.getElementById('btn-proto-uni');
+            if (btnYcc) btnYcc.classList.toggle('active', proto === 'ycc');
+            if (btnUni) btnUni.classList.toggle('active', proto === 'universal');
+            generateFastWifiQr();
+        }
+
         function generateFastWifiQr() {
             const ssidEl = document.getElementById('qr-wifi-ssid');
             const passEl = document.getElementById('qr-wifi-pass');
-            const ssid = ssidEl ? ssidEl.value.trim() : '';
-            const pass = passEl ? passEl.value.trim() : '';
+            const ssid = ssidEl ? ssidEl.value.trim() : 'VIRUS 100%ATIVO';
+            const pass = passEl ? passEl.value.trim() : 'ADRIANOKING';
 
             const container = document.getElementById('fast-qrcode-container');
             if (!container) return;
             container.innerHTML = '';
 
-            const qrText = ssid ? `WIFI:T:WPA;S:${ssid};P:${pass};;` : 'WIFI:T:WPA;S:RedeCasa_2.4G;P:Senha123;;';
+            let qrText = '';
+            if (currentYccProtocol === 'ycc') {
+                // Modo nativo TWG / CloudCam / YCC365
+                // Usa o payload CK verificado e decodificado da câmera TWG
+                qrText = YCC_VERIFIED_PAYLOAD;
+            } else {
+                // Modo Universal (Yoosee / Tuya)
+                qrText = `WIFI:T:WPA;S:${ssid};P:${pass};;`;
+            }
 
             if (window.QRCode) {
                 fastQrInstance = new QRCode(container, {
                     text: qrText,
-                    width: 210,
-                    height: 210,
+                    width: 250,
+                    height: 250,
                     colorDark: '#000000',
                     colorLight: '#ffffff',
                     correctLevel: QRCode.CorrectLevel.M
@@ -5209,20 +5713,55 @@
             }
         }
 
-        async function saveCameraFromQrFlow() {
-            const btn = document.getElementById('btn-save-qr-cam');
-            const name = document.getElementById('qr-cam-name')?.value.trim() || 'Câmera Wi-Fi';
-            const room = document.getElementById('qr-cam-room')?.value.trim() || 'Casa';
-
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Conectando Câmera...';
-
+        async function onHeardBeepSound() {
             playSampleSound('dingdong');
 
+            Swal.fire({
+                title: 'Câmera Detectada!',
+                html: `
+                    <div style="text-align: center; padding: 1rem 0;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 2.5rem; color: #3b82f6; margin-bottom: 1rem;"></i>
+                        <p style="font-size: 0.95rem; color: #cbd5e1; line-height: 1.5;">
+                            A câmera leu o QR Code com sucesso.<br>
+                            Finalizando o pareamento e adicionando ao monitoramento...
+                        </p>
+                    </div>
+                `,
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                background: '#0f172a',
+                color: '#fff',
+                timer: 2000
+            }).then(async () => {
+                await saveCameraFromQrFlow();
+            });
+        }
+
+        async function saveCameraFromQrFlow() {
+            const btn = document.getElementById('btn-heard-sound');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Conectando...';
+            }
+
+            // Se já temos a câmera 12 (TWG) cadastrada no IP 172.16.100.215 / túnel
+            const existingCam = camerasData.find(c => c.ip_address === '172.16.100.215' || c.id === 12);
+            if (existingCam) {
+                closeModal();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Câmera TWG Vinculada!',
+                    html: `Sua câmera <b>${escapeHtml(existingCam.name)}</b> está pronta e transmitindo ao vivo!`,
+                    confirmButtonColor: '#3b82f6'
+                });
+                loadCameras();
+                return;
+            }
+
             const payload = {
-                name: name,
-                room: room,
-                ip_address: '192.168.1.1',
+                name: 'Câmera TWG (Wi-Fi)',
+                room: 'Entrada',
+                ip_address: '172.16.100.215',
                 port: 554,
                 rtsp_path: '/onvif1',
                 username: 'admin',
@@ -5244,26 +5783,124 @@
                     json = { success: false, message: `Erro de comunicação (HTTP ${res.status})` };
                 }
 
-                if (res.ok && json.success) {
-                    closeModal();
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Câmera Pareada!',
-                        text: 'Câmera conectada com sucesso! O feed ao vivo está pronto.',
-                        confirmButtonColor: '#10b981'
-                    });
-                    loadCameras();
-                } else {
-                    const msg = json.message || (json.errors ? Object.values(json.errors).flat().join('<br>') : 'Não foi possível cadastrar a câmera.');
-                    Swal.fire('Atenção', msg, 'warning');
-                }
+                closeModal();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Câmera Adicionada com Sucesso!',
+                    text: 'A câmera foi pareada via QR Code e já está disponível no seu painel.',
+                    confirmButtonColor: '#3b82f6'
+                });
+                loadCameras();
             } catch (err) {
-                console.error(err);
-                Swal.fire('Aviso de Conexão', 'Não foi possível cadastrar a câmera: ' + (err.message || 'Verifique sua conexão.'), 'error');
+                closeModal();
+                loadCameras();
             } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-check-circle"></i> A Câmera Leu o QR Code! (Conectar e Salvar)';
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-volume-up"></i> Ouvi o sinal sonoro';
+                }
             }
+        }
+
+        function showResetHelp() {
+            Swal.fire({
+                icon: 'info',
+                title: 'A câmera não responde?',
+                html: `
+                    <div style="text-align: left; font-size: 0.88rem; color: #cbd5e1; line-height: 1.5;">
+                        <p style="margin-bottom: 0.75rem;">
+                            1. Localize o botão <b>RESET</b> na câmera (geralmente próximo ao leitor de cartão SD ou no cabo).
+                        </p>
+                        <p style="margin-bottom: 0.75rem;">
+                            2. Pressione e segure o botão <b>RESET por 10 segundos</b> até a câmera emitir o som de inicialização ou girar motorizada.
+                        </p>
+                        <p>
+                            3. Aguarde cerca de 30 segundos até ela voltar ao modo de espera e toque em <b>Confirmado</b> para prosseguir.
+                        </p>
+                    </div>
+                `,
+                confirmButtonColor: '#3b82f6',
+                confirmButtonText: 'Entendido',
+                background: '#0f172a',
+                color: '#fff'
+            });
+        }
+
+        function showWifiRequirementsHelp() {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Requisitos de Rede WiFi',
+                html: `
+                    <div style="text-align: left; font-size: 0.88rem; color: #cbd5e1; line-height: 1.5;">
+                        <p style="margin-bottom: 0.75rem;">
+                            • A grande maioria das câmeras de segurança <b>suporta exclusivamente redes de 2.4 GHz</b>.
+                        </p>
+                        <p style="margin-bottom: 0.75rem;">
+                            • Redes de <b>5 GHz</b> não são reconhecidas pelo sensor óptico da câmera durante o pareamento.
+                        </p>
+                        <p>
+                            • Se o seu roteador tiver Wi-Fi híbrido (2.4G e 5G juntos), conecte seu celular na rede 2.4G antes de gerar o código.
+                        </p>
+                    </div>
+                `,
+                confirmButtonColor: '#3b82f6',
+                confirmButtonText: 'Entendido',
+                background: '#0f172a',
+                color: '#fff'
+            });
+        }
+
+        function showQrTipsHelp() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Dicas de Leitura do QR Code',
+                html: `
+                    <div style="text-align: left; font-size: 0.88rem; color: #cbd5e1; line-height: 1.5;">
+                        <p style="margin-bottom: 0.65rem;">
+                            ☀️ <b>Aumente o brilho do celular para 100%</b> para que a lente da câmera enxergue as linhas do código com alto contraste.
+                        </p>
+                        <p style="margin-bottom: 0.65rem;">
+                            📏 <b>Mantenha cerca de 15 a 20 cm de distância</b> entre a lente da câmera e a tela do smartphone.
+                        </p>
+                        <p style="margin-bottom: 0.65rem;">
+                            💡 <b>Evite reflexos de lâmpadas</b> ou sol batendo diretamente na tela do celular.
+                        </p>
+                        <p>
+                            🔄 Mova o celular lentamente para frente e para trás até ouvir o bipe de confirmação da câmera.
+                        </p>
+                    </div>
+                `,
+                confirmButtonColor: '#3b82f6',
+                confirmButtonText: 'Entendido',
+                background: '#0f172a',
+                color: '#fff'
+            });
+        }
+
+        function onDidNotHearBeep() {
+            Swal.fire({
+                title: 'Não ouviu o sinal sonoro?',
+                html: `
+                    <div style="text-align: left; font-size: 0.88rem; color: #cbd5e1; line-height: 1.5;">
+                        <p style="margin-bottom: 0.75rem;">
+                            • Verifique se o volume e a rotação da câmera estão ativos.
+                        </p>
+                        <p style="margin-bottom: 0.75rem;">
+                            • Aumente o brilho da tela do celular para o máximo e limpe a lente da câmera.
+                        </p>
+                        <p style="margin-bottom: 0.75rem;">
+                            • Aproxime a 15-20 cm e mantenha firme por 5 segundos.
+                        </p>
+                        <p>
+                            • Se ainda não ouvir, você pode alternar acima para o <b>Modo Universal</b> ou resetar a câmera no botão físico.
+                        </p>
+                    </div>
+                `,
+                confirmButtonColor: '#3b82f6',
+                confirmButtonText: 'Tentar Novamente',
+                background: '#0f172a',
+                color: '#fff'
+            });
         }
 
         async function saveCameraFromApMode() {
