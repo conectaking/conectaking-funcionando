@@ -96,15 +96,23 @@ class KingCameraService
      */
     public function getSnapshot(KingCamera $camera): ?string
     {
+        $cacheKey = "camera_snap_fail_{$camera->id}";
+        if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+            return null;
+        }
+
         $goUrl = $this->getGo2RtcUrl();
         try {
-            $res = Http::timeout(6)->get("{$goUrl}/api/frame.jpeg?src=" . urlencode($camera->stream_id));
+            $res = Http::timeout(1.5)->get("{$goUrl}/api/frame.jpeg?src=" . urlencode($camera->stream_id));
             if ($res->successful() && ! empty($res->body())) {
                 return $res->body();
             }
         } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Cache::put($cacheKey, 1, 5);
             Log::warning('ks.camera.getSnapshot', ['streamId' => $camera->stream_id, 'error' => $e->getMessage()]);
+            return null;
         }
+        \Illuminate\Support\Facades\Cache::put($cacheKey, 1, 3);
         return null;
     }
 
