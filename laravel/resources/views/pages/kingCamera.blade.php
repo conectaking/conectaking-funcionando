@@ -14,7 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     @vite(['resources/css/fontawesome.css'])
 
     <style>
@@ -2901,7 +2901,7 @@
                         </div>
                         <div class="kc-form-group">
                             <label class="kc-label" for="ap-cam-pass">Senha da Câmera (RTSP)</label>
-                            <input type="password" id="ap-cam-pass" class="kc-input" placeholder="Ex: 123456, admin ou Playadryan22*" value="Playadryan22*">
+                            <input type="password" id="ap-cam-pass" class="kc-input" placeholder="Ex: 123456, admin ou Playadryan22*" value="Playadryan22*" autocomplete="new-password" data-lpignore="true">
                             <div class="kc-form-help">Se não configurou senha ainda, o padrão de fábrica é <code>admin</code> ou <code>Playadryan22*</code>.</div>
                         </div>
                         <button type="button" class="kc-btn kc-btn-primary" id="btn-save-ap-cam" onclick="saveCameraFromApMode()" style="width: 100%; padding: 0.85rem; font-size: 0.95rem; font-weight: 700; border-radius: 10px; margin-top: 0.5rem;">
@@ -3000,22 +3000,22 @@
                         </div>
 
                         <!-- Formulário Wi-Fi para transmissão BLE -->
-                        <div id="bt-wifi-creds" style="display: none; margin-top: 1.25rem; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--kc-border); border-radius: 12px; padding: 1.2rem;">
+                        <form id="bt-wifi-creds" onsubmit="return false;" style="display: none; margin-top: 1.25rem; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--kc-border); border-radius: 12px; padding: 1.2rem;">
                             <h5 style="font-size: 0.9rem; color: #fff; margin-bottom: 0.75rem;">
                                 <i class="fas fa-wifi" style="color: var(--kc-gold);"></i> Dados do Wi-Fi para transferir à câmera:
                             </h5>
                             <div class="kc-form-group">
                                 <label class="kc-label" for="bt-wifi-ssid">Nome do Wi-Fi (SSID 2.4GHz) *</label>
-                                <input type="text" id="bt-wifi-ssid" class="kc-input" placeholder="Ex: MinhaCasa_2.4G">
+                                <input type="text" id="bt-wifi-ssid" class="kc-input" placeholder="Ex: MinhaCasa_2.4G" autocomplete="off">
                             </div>
                             <div class="kc-form-group">
                                 <label class="kc-label" for="bt-wifi-pass">Senha do Wi-Fi *</label>
-                                <input type="password" id="bt-wifi-pass" class="kc-input" placeholder="Senha da rede" autocomplete="current-password">
+                                <input type="password" id="bt-wifi-pass" class="kc-input" placeholder="Senha da rede" autocomplete="off" data-lpignore="true">
                             </div>
                             <button type="button" class="kc-btn kc-btn-primary" onclick="sendWifiViaBluetooth()" style="width: 100%; margin-top: 0.5rem;">
                                 <i class="fas fa-paper-plane"></i> Enviar Configuração à Câmera
                             </button>
-                        </div>
+                        </form>
                     </div>
                 </div>
 
@@ -3122,11 +3122,17 @@
                         <div class="kc-form-row">
                             <div class="kc-form-group">
                                 <label class="kc-label" for="cam-user">Usuário RTSP</label>
-                                <input type="text" id="cam-user" class="kc-input" placeholder="admin" value="admin">
+                                <input type="text" id="cam-user" class="kc-input" placeholder="admin" value="admin" autocomplete="off">
                             </div>
                             <div class="kc-form-group">
-                                <label class="kc-label" for="cam-pass">Senha RTSP</label>
-                                <input type="password" id="cam-pass" class="kc-input" placeholder="Playadryan22*" value="Playadryan22*">
+                                <label class="kc-label" for="cam-pass">Senha RTSP (Definida no app Yoosee)</label>
+                                <div style="position: relative; display: flex; align-items: center;">
+                                    <input type="password" id="cam-pass" class="kc-input" placeholder="Digite a senha RTSP da câmera" autocomplete="new-password" data-lpignore="true" style="padding-right: 42px;">
+                                    <button type="button" onclick="togglePasswordVisibility('cam-pass', this)" style="position: absolute; right: 8px; background: none; border: none; color: #94a3b8; cursor: pointer; padding: 6px; font-size: 0.95rem; display: flex; align-items: center; justify-content: center;" title="Mostrar/Ocultar Senha">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="kc-form-help">No app Yoosee: <b>Configurações &gt; Conexão NVR / RTSP</b>.</div>
                             </div>
                         </div>
 
@@ -4997,11 +5003,15 @@
         const btnAddCamera = document.getElementById('btn-add-camera');
         const btnTelegramInfo = document.getElementById('btn-telegram-info');
 
-        if (btnAddCamera) {
-            btnAddCamera.addEventListener('click', () => openModal('add'));
-        }
-        if (btnTelegramInfo) {
-            btnTelegramInfo.addEventListener('click', () => openTelegramFlow());
+        function togglePasswordVisibility(inputId, btn) {
+            const el = document.getElementById(inputId);
+            if (!el) return;
+            const isPass = el.type === 'password';
+            el.type = isPass ? 'text' : 'password';
+            const icon = btn.querySelector('i');
+            if (icon) {
+                icon.className = isPass ? 'fas fa-eye-slash' : 'fas fa-eye';
+            }
         }
 
         function openTelegramFlow() {
@@ -5034,6 +5044,11 @@
             setVal('cam-path', cam ? (cam.rtsp_path || '/onvif1') : '/onvif1');
             setVal('cam-user', cam ? (cam.username || 'admin') : 'admin');
             setVal('cam-pass', '');
+            const passEl = document.getElementById('cam-pass');
+            if (passEl) {
+                passEl.placeholder = cam ? '•••••••• (senha já gravada - deixe em branco se não for mudar)' : 'Digite a senha RTSP da câmera';
+                passEl.type = 'password';
+            }
             setChk('cam-telegram-alerts', cam ? cam.telegram_alerts_enabled : true);
             setVal('cam-telegram-chat-id', cam ? (cam.telegram_chat_id || '') : '');
             setVal('cam-telegram-phone', cam ? (cam.telegram_phone || '') : '');
