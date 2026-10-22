@@ -1460,6 +1460,43 @@
             color: #10b981 !important;
         }
 
+        .kc-floating-unmute-btn {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            z-index: 8;
+            background: rgba(15, 23, 42, 0.88);
+            border: 1px solid rgba(245, 158, 11, 0.55);
+            color: #f8fafc;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            pointer-events: auto;
+        }
+
+        .kc-floating-unmute-btn:hover {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #0f172a;
+            border-color: #f59e0b;
+            transform: translateY(-1px) scale(1.03);
+            box-shadow: 0 6px 18px rgba(245, 158, 11, 0.4);
+        }
+
+        .kc-floating-unmute-btn.unmuted {
+            background: rgba(16, 185, 129, 0.25);
+            border-color: #10b981;
+            color: #10b981;
+        }
+
         .kc-btn-share-highlight {
             color: var(--kc-gold) !important;
             background: rgba(245, 158, 11, 0.15) !important;
@@ -4926,6 +4963,11 @@
                         <video id="video-${cam.id}" autoplay playsinline muted></video>
                         <canvas class="kc-crib-canvas" id="crib-canvas-${cam.id}"></canvas>
 
+                        <!-- Botão Flutuante de Áudio Ao Vivo (Toque para Ouvir) -->
+                        <button type="button" class="kc-floating-unmute-btn" id="unmute-badge-${cam.id}" onclick="toggleAudioMute(${cam.id})" title="Ativar Som Ao Vivo">
+                            <i class="fas fa-volume-mute" style="color: #f87171;"></i> <span>Toque para Ouvir Som</span>
+                        </button>
+
                         <div class="kc-state-box" id="loader-${cam.id}">
                             <div class="kc-spinner"></div>
                             <div style="font-size: 0.85rem; font-weight: 500;">Conectando WebRTC...</div>
@@ -5265,6 +5307,7 @@
                 pc.addTransceiver('audio', { direction: 'recvonly' });
 
                 let hasReceivedVideo = false;
+                let initialMuteHandled = false;
 
                 pc.ontrack = (event) => {
                     if (event.streams && event.streams[0]) {
@@ -5273,10 +5316,15 @@
                         if (!videoEl.srcObject) {
                             videoEl.srcObject = new MediaStream();
                         }
-                        videoEl.srcObject.addTrack(event.track);
+                        if (!videoEl.srcObject.getTracks().includes(event.track)) {
+                            videoEl.srcObject.addTrack(event.track);
+                        }
                     }
-                    videoEl.muted = true;
-                    updateAudioMuteUI(cam.id, true);
+                    if (!initialMuteHandled) {
+                        videoEl.muted = true;
+                        updateAudioMuteUI(cam.id, true);
+                        initialMuteHandled = true;
+                    }
                     videoEl.play().catch(e => console.warn('Autoplay prevented:', e));
                     if (loaderEl) loaderEl.style.display = 'none';
                 };
@@ -5484,6 +5532,17 @@
         function updateAudioMuteUI(camId, isMuted) {
             const btnOv = document.getElementById(`ov-audio-${camId}`);
             const btnPill = document.getElementById(`btn-mute-${camId}`);
+            const badge = document.getElementById(`unmute-badge-${camId}`);
+
+            if (badge) {
+                if (isMuted) {
+                    badge.classList.remove('unmuted');
+                    badge.innerHTML = '<i class="fas fa-volume-mute" style="color: #f87171;"></i> <span>Toque para Ouvir Som</span>';
+                } else {
+                    badge.classList.add('unmuted');
+                    badge.innerHTML = '<i class="fas fa-volume-up" style="color: #10b981;"></i> <span>Som Ao Vivo Ligado</span>';
+                }
+            }
 
             if (btnOv) {
                 btnOv.innerHTML = isMuted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
@@ -5500,7 +5559,7 @@
             }
         }
 
-        function toggleAudioMute(camId) {
+        async function toggleAudioMute(camId) {
             const v = document.getElementById(`video-${camId}`);
             if (!v) return;
 
@@ -5508,8 +5567,43 @@
             const isMuted = v.muted;
 
             if (!isMuted) {
+                v.removeAttribute('muted');
                 v.volume = 1.0;
-                v.play().catch(() => {});
+                try { await v.play(); } catch (e) {}
+
+                // Inicia AudioContext do navegador para garantir ganho limpo em streams G.711 / WebRTC
+                try {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) {
+                        if (!audioBoosters[camId]) {
+                            const ctx = new AudioCtx();
+                            if (ctx.state === 'suspended') await ctx.resume();
+                            const stream = v.captureStream ? v.captureStream() : v.srcObject;
+                            if (stream && stream.getAudioTracks().length > 0) {
+                                const source = ctx.createMediaStreamSource(stream);
+                                const gain = ctx.createGain();
+                                gain.gain.value = 2.8;
+                                source.connect(gain);
+                                gain.connect(ctx.destination);
+                                audioBoosters[camId] = { ctx, gain, active: true };
+                            }
+                        } else {
+                            if (audioBoosters[camId].ctx && audioBoosters[camId].ctx.state === 'suspended') {
+                                await audioBoosters[camId].ctx.resume();
+                            }
+                            if (audioBoosters[camId].gain) {
+                                audioBoosters[camId].gain.gain.value = 2.8;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn('AudioBooster error:', e);
+                }
+            } else {
+                v.setAttribute('muted', '');
+                if (audioBoosters[camId] && audioBoosters[camId].gain) {
+                    audioBoosters[camId].gain.gain.value = 0;
+                }
             }
 
             updateAudioMuteUI(camId, isMuted);
@@ -5519,7 +5613,7 @@
                 position: 'top-end',
                 icon: isMuted ? 'info' : 'success',
                 title: isMuted ? '🔇 Áudio Silenciado' : '🔊 Áudio Ao Vivo Ligado',
-                text: isMuted ? 'Microfone mudo no seu celular.' : 'Ouvindo o som do quarto em tempo real.',
+                text: isMuted ? 'Áudio da câmera silenciado no dispositivo.' : 'Ouvindo o áudio da câmera em tempo real.',
                 showConfirmButton: false,
                 timer: 1600
             });
