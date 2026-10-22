@@ -5149,7 +5149,7 @@
                                 <div class="kc-playback-grid" id="playback-grid-${cam.id}">
                                     <div class="kc-clip-card" onclick="openClipPlayer(${cam.id}, '11:40')">
                                         <div class="kc-clip-thumb">
-                                            <img src="/api/cameras/${cam.id}/snapshot?t=1" onerror="this.src='https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=300&q=80'">
+                                            <img src="https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=300&q=80">
                                             <span class="kc-clip-time">11:40</span>
                                             <i class="fas fa-play-circle kc-clip-play-icon"></i>
                                         </div>
@@ -5160,7 +5160,7 @@
                                     </div>
                                     <div class="kc-clip-card" onclick="openClipPlayer(${cam.id}, '11:35')">
                                         <div class="kc-clip-thumb">
-                                            <img src="/api/cameras/${cam.id}/snapshot?t=2" onerror="this.src='https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=300&q=80'">
+                                            <img src="https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=300&q=80">
                                             <span class="kc-clip-time">11:35</span>
                                             <i class="fas fa-play-circle kc-clip-play-icon"></i>
                                         </div>
@@ -5171,7 +5171,7 @@
                                     </div>
                                     <div class="kc-clip-card" onclick="openClipPlayer(${cam.id}, '11:32')">
                                         <div class="kc-clip-thumb">
-                                            <img src="/api/cameras/${cam.id}/snapshot?t=3" onerror="this.src='https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=300&q=80'">
+                                            <img src="https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=300&q=80">
                                             <span class="kc-clip-time">11:32</span>
                                             <i class="fas fa-play-circle kc-clip-play-icon"></i>
                                         </div>
@@ -5292,9 +5292,6 @@
                     const img = document.getElementById(`fallback-img-${cam.id}`);
                     if (img) img.style.display = 'none';
                 });
-
-                // Carrega 1º frame snapshot imediatamente em background para pré-visualização instantânea sem atraso
-                activateLiveSnapshotFallback(cam.id, true);
 
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);

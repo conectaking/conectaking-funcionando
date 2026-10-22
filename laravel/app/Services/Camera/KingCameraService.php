@@ -3,6 +3,7 @@
 namespace App\Services\Camera;
 
 use App\Models\KingCamera;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -106,17 +107,32 @@ class KingCameraService
      */
     public function getSnapshot(KingCamera $camera): ?string
     {
+        $cacheKey = "cam_snap_{$camera->id}";
+        $cached = Cache::get($cacheKey);
+        if ($cached) {
+            return $cached;
+        }
+
         $goUrl = $this->getGo2RtcUrl();
         try {
-            $res = Http::timeout(10.0)->get("{$goUrl}/api/frame.jpeg?src=" . urlencode($camera->stream_id));
-            if ($res->successful() && ! empty($res->body())) {
-                return $res->body();
-            }
+            return Cache::lock("cam_snap_lock_{$camera->id}", 6)->block(4, function () use ($cacheKey, $camera, $goUrl) {
+                $cached = Cache::get($cacheKey);
+                if ($cached) {
+                    return $cached;
+                }
+
+                $res = Http::timeout(8.0)->get("{$goUrl}/api/frame.jpeg?src=" . urlencode($camera->stream_id));
+                if ($res->successful() && ! empty($res->body())) {
+                    $body = $res->body();
+                    Cache::put($cacheKey, $body, 3);
+                    return $body;
+                }
+                return null;
+            });
         } catch (\Throwable $e) {
             Log::warning('ks.camera.getSnapshot', ['streamId' => $camera->stream_id, 'error' => $e->getMessage()]);
             return null;
         }
-        return null;
     }
 
     /**
