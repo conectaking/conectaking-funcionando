@@ -6,7 +6,7 @@ $app = require_once "bootstrap/app.php";
 $app->make("Illuminate\\Contracts\\Console\\Kernel")->bootstrap();
 $svc = app(App\\Services\\Camera\\KingCameraTelegramAgentService::class);
 $c1 = App\\Models\\KingCamera::find(1);
-$ok = $svc->sendAlert($c1, "test", "Teste de inicializacao dos alertas das cameras!");
+$ok = $svc->sendAlert($c1, "crib_fence", "Bebê saiu do cerco / braço ou mão fora da área segura detectada!");
 echo "Alert Cam 1 result: " . ($ok ? "SUCESSO" : "FALHOU") . PHP_EOL;
 """
 

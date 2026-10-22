@@ -2,7 +2,8 @@ import subprocess
 
 files = [
     ("laravel/resources/views/pages/kingCamera.blade.php", "/opt/conectaking/laravel/resources/views/pages/kingCamera.blade.php"),
-    ("laravel/app/Http/Controllers/Camera/KingCameraController.php", "/opt/conectaking/laravel/app/Http/Controllers/Camera/KingCameraController.php")
+    ("laravel/app/Http/Controllers/Camera/KingCameraController.php", "/opt/conectaking/laravel/app/Http/Controllers/Camera/KingCameraController.php"),
+    ("laravel/app/Services/Camera/KingCameraTelegramAgentService.php", "/opt/conectaking/laravel/app/Services/Camera/KingCameraTelegramAgentService.php")
 ]
 
 for local, remote in files:

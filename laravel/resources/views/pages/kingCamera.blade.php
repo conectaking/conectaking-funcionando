@@ -6150,22 +6150,6 @@
                 }
             }
         }
-                if (btnPill) {
-                    btnPill.classList.toggle('active', b.active);
-                    btnPill.innerHTML = b.active 
-                        ? '<i class="fas fa-volume-up" style="color: #06b6d4;"></i> <span>Turbo 300% ON</span>'
-                        : '<i class="fas fa-volume-up" style="color: #06b6d4;"></i> <span>Áudio Turbo</span>';
-                }
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: b.active ? 'success' : 'info',
-                    title: b.active ? '🔊 Áudio Turbo 300% Ativado' : 'Áudio Turbo Normalizado',
-                    timer: 1600,
-                    showConfirmButton: false
-                });
-            }
-        }
 
         // ─── GRAVADOR DE VÍDEO (MANUAL & TRECHOS COM MOVIMENTO) ──────────────
         const activeRecorders = {}; // camId -> { recorder, chunks, timer, startTime }
@@ -9489,6 +9473,61 @@
             ctx.fillText('👶 ÁREA SEGURA DO BERÇO (Arraste cantos ou centro)', bx + 8, Math.max(16, by - 8));
         }
 
+        function restoreCribFenceOnLoad(camId, savedRoi) {
+            const canvas = document.getElementById(`crib-canvas-${camId}`);
+            const btn = document.getElementById(`btn-fence-${camId}`);
+            if (!canvas) return;
+
+            let roi = { x: 20, y: 25, w: 60, h: 50 };
+            if (savedRoi) {
+                try {
+                    const parsed = typeof savedRoi === 'string' ? JSON.parse(savedRoi) : savedRoi;
+                    roi = {
+                        x: Number(parsed.x ?? 20),
+                        y: Number(parsed.y ?? 25),
+                        w: Number(parsed.w ?? parsed.width ?? 60),
+                        h: Number(parsed.h ?? parsed.height ?? 50)
+                    };
+                } catch(e) {}
+            }
+
+            cribFenceState[camId] = {
+                enabled: true,
+                roi: roi,
+                activeHandle: null,
+                dragOffset: { x: 0, y: 0 }
+            };
+
+            canvas.style.display = 'block';
+            canvas.style.pointerEvents = 'auto';
+            canvas.classList.add('editing');
+            canvas.style.zIndex = '25';
+            canvas.style.touchAction = 'none';
+
+            if (btn) btn.classList.add('active');
+
+            setTimeout(() => {
+                initCribCanvas(camId);
+                drawCribBox(camId);
+            }, 600);
+
+            startFenceMonitor(camId);
+        }
+
+        // Responsividade entre Desktop e Mobile: redimensiona canvas proporcionalmente à tela
+        window.addEventListener('resize', () => {
+            Object.keys(cribFenceState).forEach(camId => {
+                if (cribFenceState[camId] && cribFenceState[camId].enabled) {
+                    const canvas = document.getElementById(`crib-canvas-${camId}`);
+                    if (canvas && canvas.parentElement) {
+                        canvas.width = canvas.parentElement.clientWidth;
+                        canvas.height = canvas.parentElement.clientHeight;
+                        drawCribBox(camId);
+                    }
+                }
+            });
+        });
+
         // ── ALERTA DE MOVIMENTO COM FOTO INSTANTÂNEA E VÍDEO DE 10 SEGUNDOS ───────
         window.babyMotionAlerts = {};
         window.babyMotionIntervals = {};
@@ -9680,13 +9719,28 @@
         async function startIntercomTalk(camId) {
             const btn = document.getElementById(`intercom-talk-btn-${camId}`);
             const waves = document.getElementById(`voice-waves-${camId}`);
-            if (btn) btn.classList.add('active');
+            if (btn) btn.classList.add('talking');
             if (waves) waves.style.display = 'flex';
 
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+                });
                 intercomStreams[camId] = stream;
                 playToneSound(880, 0.1);
+
+                // Envia o áudio capturado do microfone diretamente para a câmera via WebRTC
+                const pc = peerConnections[camId];
+                const audioTrack = stream.getAudioTracks()[0];
+                if (pc && audioTrack) {
+                    const senders = pc.getSenders ? pc.getSenders() : [];
+                    const audioSender = senders.find(s => s.track && s.track.kind === 'audio') || senders.find(s => !s.track);
+                    if (audioSender) {
+                        await audioSender.replaceTrack(audioTrack);
+                    } else if (typeof pc.addTrack === 'function') {
+                        pc.addTrack(audioTrack, stream);
+                    }
+                }
             } catch (err) {
                 console.warn('Microfone não concedido:', err);
                 Swal.fire({
@@ -9729,8 +9783,17 @@
         function stopIntercomTalk(camId) {
             const btn = document.getElementById(`intercom-talk-btn-${camId}`);
             const waves = document.getElementById(`voice-waves-${camId}`);
-            if (btn) btn.classList.remove('active');
+            if (btn) btn.classList.remove('talking');
             if (waves) waves.style.display = 'none';
+
+            // Desliga envio de áudio no WebRTC
+            const pc = peerConnections[camId];
+            if (pc && pc.getSenders) {
+                const audioSender = pc.getSenders().find(s => s.track && s.track.kind === 'audio');
+                if (audioSender) {
+                    audioSender.replaceTrack(null);
+                }
+            }
 
             if (intercomStreams[camId]) {
                 intercomStreams[camId].getTracks().forEach(t => t.stop());

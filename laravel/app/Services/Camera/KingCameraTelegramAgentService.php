@@ -42,11 +42,24 @@ class KingCameraTelegramAgentService
         }
 
         $nowStr = now()->setTimezone('America/Sao_Paulo')->format('d/m/Y H:i:s');
-        $caption = "⚠️ <b>ALERTA KING CÂMERA</b>\n"
+        $header = "⚠️ <b>ALERTA DE SEGURANÇA KING CÂMERA</b>";
+        if ($eventType === 'baby_cry') {
+            $header = "😭 <b>ALERTA: CHORO DE BEBÊ DETECTADO!</b>";
+        } elseif ($eventType === 'crib_fence' || $eventType === 'fence_breach') {
+            $header = "🚨 <b>ALERTA: BEBÊ SAIU DO CERCO!</b>\n<i>(Mão, braço ou corpo fora da área segura)</i>";
+        } elseif ($eventType === 'motion') {
+            $header = "🏃 <b>ALERTA: MOVIMENTO DETECTADO!</b>";
+        } elseif ($eventType === 'siren' || $eventType === 'siren_triggered') {
+            $header = "🚨 <b>SIRENE DE PÂNICO DISPARADA!</b>";
+        } elseif ($eventType === 'person') {
+            $header = "👤 <b>PESSOA IDENTIFICADA NO AMBIENTE!</b>";
+        }
+
+        $caption = "{$header}\n\n"
                  . "📹 <b>Câmera:</b> {$camera->name}\n"
                  . "📍 <b>Cômodo:</b> " . ($camera->room ?: 'Geral') . "\n"
                  . "🕒 <b>Horário:</b> {$nowStr}\n"
-                 . "🔍 <b>Evento:</b> {$description}\n";
+                 . "🔍 <b>Detalhes:</b> {$description}\n";
 
         $webUrl = "https://www.conectaking.com.br/kingCamera";
         $keyboard = [
