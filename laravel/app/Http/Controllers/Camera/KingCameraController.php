@@ -1078,7 +1078,7 @@ class KingCameraController extends Controller
 
         $camera->update(['last_event_at' => now()]);
 
-        if ($camera->telegram_alerts_enabled && $camera->telegram_chat_id && in_array($eventType, ['baby_cry', 'crib_fence', 'siren', 'motion'])) {
+        if ($camera->telegram_alerts_enabled && $camera->telegram_chat_id && in_array($eventType, ['baby_cry', 'crib_fence', 'fence_breach', 'siren', 'motion', 'person', 'test'])) {
             try {
                 $this->telegramAgent->sendAlert($camera, $eventType, $description);
                 $event->update(['notified_telegram' => true]);

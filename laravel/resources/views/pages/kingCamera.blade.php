@@ -9064,6 +9064,83 @@
         // ── 3. CERCA VIRTUAL DO BERÇO (SAFE ZONE INTERATIVA E REDIMENSIONÁVEL) ─────
         const cribFenceState = {};
 
+        function startFenceMonitor(camId) {
+            const s = cribFenceState[camId];
+            if (!s) return;
+            if (s.interval) clearInterval(s.interval);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 160;
+            canvas.height = 90;
+            const ctx = canvas.getContext('2d');
+            let prevData = null;
+            let breachCooldown = 0;
+
+            s.interval = setInterval(() => {
+                const video = document.getElementById(`video-${camId}`);
+                if (!video || video.readyState < 2 || !s.enabled) return;
+
+                ctx.drawImage(video, 0, 0, 160, 90);
+                const currentData = ctx.getImageData(0, 0, 160, 90).data;
+
+                if (prevData) {
+                    const r = s.roi || { x: 20, y: 25, w: 60, h: 50 };
+                    const rx = (r.x / 100) * 160;
+                    const ry = (r.y / 100) * 90;
+                    const rw = (r.w / 100) * 160;
+                    const rh = (r.h / 100) * 90;
+
+                    let motionOutsideFence = 0;
+
+                    for (let y = 0; y < 90; y += 3) {
+                        for (let x = 0; x < 160; x += 3) {
+                            const isInside = (x >= rx && x <= rx + rw && y >= ry && y <= ry + rh);
+                            if (!isInside) {
+                                const idx = (y * 160 + x) * 4;
+                                const diff = Math.abs(currentData[idx] - prevData[idx]) +
+                                             Math.abs(currentData[idx+1] - prevData[idx+1]) +
+                                             Math.abs(currentData[idx+2] - prevData[idx+2]);
+                                if (diff > 70) {
+                                    motionOutsideFence++;
+                                }
+                            }
+                        }
+                    }
+
+                    if (motionOutsideFence > 28) {
+                        const now = Date.now();
+                        if (now - breachCooldown > 18000) {
+                            breachCooldown = now;
+                            triggerFenceBreachAlert(camId);
+                        }
+                    }
+                }
+                prevData = currentData;
+            }, 1200);
+        }
+
+        function triggerFenceBreachAlert(camId) {
+            const alertEl = document.getElementById(`fence-alert-${camId}`);
+            if (alertEl) {
+                alertEl.style.display = 'flex';
+                setTimeout(() => { if (alertEl) alertEl.style.display = 'none'; }, 8000);
+            }
+            playToneSound(800, 0.25);
+
+            captureAutoSnapshot(camId);
+            try {
+                fetch(`/api/cameras/${camId}/events`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({
+                        event_type: 'crib_fence',
+                        description: '🚨 Criança fora da área segura do berço detectada!'
+                    })
+                }).catch(e => console.warn(e));
+            } catch(e) {}
+        }
+
         function toggleCribFence(camId) {
             const canvas = document.getElementById(`crib-canvas-${camId}`);
             const btn = document.getElementById(`btn-fence-${camId}`);
