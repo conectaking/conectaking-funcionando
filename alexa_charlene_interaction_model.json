@@ -1,0 +1,118 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "charlene",
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": [
+            "cancelar",
+            "cancela",
+            "não quero mais"
+          ]
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": [
+            "ajuda",
+            "o que você faz",
+            "como funciona"
+          ]
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": [
+            "parar",
+            "para",
+            "para a música",
+            "tchau",
+            "chega"
+          ]
+        },
+        {
+          "name": "AMAZON.PauseIntent",
+          "samples": [
+            "pausa",
+            "pausar",
+            "espera um pouco"
+          ]
+        },
+        {
+          "name": "AMAZON.ResumeIntent",
+          "samples": [
+            "continua",
+            "continuar",
+            "voltar a tocar",
+            "despausar"
+          ]
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        },
+        {
+          "name": "ContarHistoriaBiblicaIntent",
+          "slots": [
+            {
+              "name": "tema",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "conte uma história da bíblia",
+            "me conta uma história da bíblia",
+            "conta uma história",
+            "conta uma historinha",
+            "história para dormir",
+            "história bíblica",
+            "quero ouvir uma história da bíblia",
+            "me conte a história de {tema}",
+            "conta a história de {tema}",
+            "história de {tema}"
+          ]
+        },
+        {
+          "name": "OracaoDormirIntent",
+          "slots": [],
+          "samples": [
+            "vamos orar",
+            "faz uma oração",
+            "oração para dormir",
+            "orar comigo",
+            "quero orar",
+            "reza comigo",
+            "oração"
+          ]
+        },
+        {
+          "name": "TocarMusicaIntent",
+          "slots": [],
+          "samples": [
+            "toque minhas músicas",
+            "tocar minhas músicas",
+            "tocar música da sara",
+            "tocar louvor",
+            "tocar louvores",
+            "música",
+            "coloca minhas músicas",
+            "tocar musiquinhas",
+            "minha playlist"
+          ]
+        },
+        {
+          "name": "TocarDevocionalIntent",
+          "slots": [],
+          "samples": [
+            "tocar o devocional",
+            "devocional de hoje",
+            "devocional do papai",
+            "palavra de hoje",
+            "ouvir o devocional",
+            "palavra do dia"
+          ]
+        }
+      ],
+      "types": []
+    }
+  }
+}

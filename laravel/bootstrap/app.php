@@ -60,6 +60,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/subscription/*',
             'api/cameras',
             'api/cameras/*',
+            'api/alexa/*',
+            'api/alexa',
             'api/public/camera-share/*',
             'api/public/camera-share',
             // Stubs 410
