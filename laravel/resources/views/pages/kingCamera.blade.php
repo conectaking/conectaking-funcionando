@@ -1518,6 +1518,13 @@
             box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
         }
 
+        .kc-btn-stand.active {
+            background: rgba(245, 158, 11, 0.28) !important;
+            border-color: #f59e0b !important;
+            color: #fbbf24 !important;
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+        }
+
         .kc-btn-cry.active {
             background: rgba(245, 158, 11, 0.28) !important;
             border-color: #f59e0b !important;
@@ -5163,11 +5170,14 @@
                                     <button type="button" class="kc-pill-btn kc-btn-track ${cam.auto_tracking_enabled ? 'active' : ''}" id="btn-track-baby-${cam.id}" onclick="toggleBabyTracking(${cam.id})" title="Rastrear e Seguir Bebê no Berço / Quarto">
                                         <i class="fas fa-baby" style="color: #f59e0b;"></i> <span>Seguir Bebê</span>
                                     </button>
-                                    <button type="button" class="kc-pill-btn kc-btn-cry ${cam.baby_cry_enabled ? 'active' : ''}" id="btn-cry-${cam.id}" onclick="toggleBabyCryDetector(${cam.id})" title="Alerta Sonoro quando a criança chorar">
-                                        <i class="fas fa-volume-up" style="color: #ec4899;"></i> <span>Monitor Choro</span>
-                                    </button>
                                     <button type="button" class="kc-pill-btn kc-btn-fence ${cam.crib_fence_enabled ? 'active' : ''}" id="btn-fence-${cam.id}" onclick="toggleCribFence(${cam.id})" title="Desenhar e Ativar Cerca de Proteção do Berço">
                                         <i class="fas fa-vector-square" style="color: #06b6d4;"></i> <span>Cerca do Berço</span>
+                                    </button>
+                                    <button type="button" class="kc-pill-btn kc-btn-stand ${cam.baby_stand_enabled ? 'active' : ''}" id="btn-stand-${cam.id}" onclick="toggleBabyStandDetector(${cam.id})" title="Alerta Imediato se a Criança Ficar em Pé ou se Apoiar na Grade">
+                                        <i class="fas fa-child" style="color: #fbbf24;"></i> <span>Bebê em Pé</span>
+                                    </button>
+                                    <button type="button" class="kc-pill-btn kc-btn-cry ${cam.baby_cry_enabled ? 'active' : ''}" id="btn-cry-${cam.id}" onclick="toggleBabyCryDetector(${cam.id})" title="Alerta Sonoro quando a criança chorar">
+                                        <i class="fas fa-volume-up" style="color: #ec4899;"></i> <span>Monitor Choro</span>
                                     </button>
                                     <button type="button" class="kc-pill-btn kc-btn-motion active" id="btn-motion-alert-${cam.id}" onclick="toggleBabyMotionAlert(${cam.id})" title="Detectar Movimento com Foto Automática e Gravação de 10s">
                                         <i class="fas fa-running" style="color: #10b981;"></i> <span>Movimento (Foto + 10s)</span>
@@ -5269,11 +5279,21 @@
                 startWebRtcStream(cam);
                 startClock(cam.id);
 
-                // Restaura estado ativo salvo no banco (Cerca do Berço, Rastreamento, Choro)
+                // Restaura estado ativo salvo no banco e no localStorage (Cerca do Berço, Bebê em Pé, Rastreamento, Choro)
                 setTimeout(() => {
-                    if (cam.crib_fence_enabled) {
-                        restoreCribFenceOnLoad(cam.id, cam.crib_roi_json);
+                    const localFenceEnabled = localStorage.getItem(`kc_fence_enabled_${cam.id}`);
+                    const isFenceActive = localFenceEnabled !== null ? localFenceEnabled === '1' : Boolean(cam.crib_fence_enabled);
+                    const savedRoi = localStorage.getItem(`kc_fence_${cam.id}`) || cam.crib_roi_json;
+                    if (isFenceActive) {
+                        restoreCribFenceOnLoad(cam.id, savedRoi);
                     }
+
+                    const localStandEnabled = localStorage.getItem(`kc_stand_enabled_${cam.id}`);
+                    const isStandActive = localStandEnabled !== null ? localStandEnabled === '1' : Boolean(cam.baby_stand_enabled);
+                    if (isStandActive) {
+                        toggleBabyStandDetector(cam.id);
+                    }
+
                     if (cam.auto_tracking_enabled) {
                         cameraTracking[cam.id] = true;
                         updateTrackingPills(cam.id);

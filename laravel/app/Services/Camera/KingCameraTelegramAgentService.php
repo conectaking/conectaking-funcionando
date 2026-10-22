@@ -45,6 +45,8 @@ class KingCameraTelegramAgentService
         $header = "⚠️ <b>ALERTA DE SEGURANÇA KING CÂMERA</b>";
         if ($eventType === 'baby_cry') {
             $header = "😭 <b>ALERTA: CHORO DE BEBÊ DETECTADO!</b>";
+        } elseif ($eventType === 'baby_stand') {
+            $header = "🚨 <b>ALERTA: BEBÊ FICOU EM PÉ NO BERÇO!</b>\n<i>(Criança se levantou ou está apoiada nas grades)</i>";
         } elseif ($eventType === 'crib_fence' || $eventType === 'fence_breach') {
             $header = "🚨 <b>ALERTA: BEBÊ SAIU DO CERCO!</b>\n<i>(Mão, braço ou corpo fora da área segura)</i>";
         } elseif ($eventType === 'motion') {

@@ -4,10 +4,18 @@ code = """
 require "vendor/autoload.php";
 $app = require_once "bootstrap/app.php";
 $app->make("Illuminate\\Contracts\\Console\\Kernel")->bootstrap();
-$cols = Illuminate\Support\Facades\Schema::getColumnListing("king_cameras");
-echo "Cols: " . json_encode($cols) . PHP_EOL;
-$c1 = App\Models\KingCamera::find(1);
-echo "Cam 1 raw: " . json_encode($c1->toArray()) . PHP_EOL;
+$cam = App\Models\KingCamera::find(1);
+$req = Illuminate\Http\Request::create("/api/cameras/1/tracking", "POST", [], [], [], [], json_encode([
+    "crib_fence_enabled" => 1,
+    "crib_roi_json" => ["x" => 35, "y" => 30, "w" => 50, "h" => 45]
+]));
+$req->headers->set("Content-Type", "application/json");
+$req->attributes->set("auth_user_id", $cam->user_id);
+$ctrl = app(App\Http\Controllers\Camera\KingCameraController::class);
+$res = $ctrl->toggleAutoTracking($req, 1);
+echo "Response: " . $res->getContent() . PHP_EOL;
+$fresh = $cam->fresh();
+echo "Fresh: Fence=" . ($fresh->crib_fence_enabled ? "1" : "0") . " | ROI=" . json_encode($fresh->crib_roi_json) . PHP_EOL;
 
 """
 
