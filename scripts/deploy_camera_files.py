@@ -1,20 +1,29 @@
 import subprocess
 
 files = [
-    ("laravel/resources/views/pages/kingCamera.blade.php", "/opt/conectaking/laravel/resources/views/pages/kingCamera.blade.php"),
-    ("laravel/app/Http/Controllers/Camera/KingCameraController.php", "/opt/conectaking/laravel/app/Http/Controllers/Camera/KingCameraController.php"),
-    ("laravel/app/Services/Camera/KingCameraTelegramAgentService.php", "/opt/conectaking/laravel/app/Services/Camera/KingCameraTelegramAgentService.php")
+    ("laravel/resources/views/pages/kingCamera.blade.php", "/app/resources/views/pages/kingCamera.blade.php", "/tmp/kingCamera.blade.php"),
+    ("laravel/app/Http/Controllers/Camera/KingCameraController.php", "/app/app/Http/Controllers/Camera/KingCameraController.php", "/tmp/KingCameraController.php"),
+    ("laravel/app/Services/Camera/KingCameraTelegramAgentService.php", "/app/app/Services/Camera/KingCameraTelegramAgentService.php", "/tmp/KingCameraTelegramAgentService.php")
 ]
 
-for local, remote in files:
-    print(f"Enviando {local} -> {remote}...")
-    res = subprocess.run(["scp", "-o", "StrictHostKeyChecking=no", local, f"root@46.225.100.64:{remote}"], capture_output=True, text=True)
+for local, container_path, tmp_remote in files:
+    print(f"Enviando {local} -> root@46.225.100.64:{tmp_remote}...")
+    res = subprocess.run(["scp", "-o", "StrictHostKeyChecking=no", local, f"root@46.225.100.64:{tmp_remote}"], capture_output=True, text=True)
     if res.returncode == 0:
-        print("  OK")
+        print("  SCP OK, copiando para dentro do container conectaking-laravel...")
+        cmd_cp = f"docker cp {tmp_remote} conectaking-laravel:{container_path}"
+        res_docker = subprocess.run(["ssh", "-o", "StrictHostKeyChecking=no", "root@46.225.100.64", cmd_cp], capture_output=True, text=True)
+        if res_docker.returncode == 0:
+            print(f"  docker cp OK -> {container_path}")
+        else:
+            print("  Erro docker cp:", res_docker.stderr)
     else:
-        print("  Erro:", res.stderr)
+        print("  Erro SCP:", res.stderr)
 
 print("Limpando cache do Laravel e views...")
-res_cache = subprocess.run(["ssh", "-o", "StrictHostKeyChecking=no", "root@46.225.100.64", "docker exec conectaking-laravel php artisan view:clear && docker exec conectaking-laravel php artisan optimize:clear"], capture_output=True, text=True)
+res_cache = subprocess.run([
+    "ssh", "-o", "StrictHostKeyChecking=no", "root@46.225.100.64",
+    "docker exec conectaking-laravel php artisan view:clear && docker exec conectaking-laravel php artisan optimize:clear"
+], capture_output=True, text=True)
 print(res_cache.stdout)
-print("Deploy concluído!")
+print("Deploy concluído com sucesso!")

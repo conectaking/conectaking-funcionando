@@ -4991,6 +4991,10 @@
                             <i class="fas fa-exclamation-triangle" style="font-size: 1.1rem; animation: pulse 0.5s infinite;"></i>
                             <span>⚠️ <b>SAÍDA DO BERÇO!</b> O bebê saiu da área segura!</span>
                         </div>
+                        <div class="kc-alert-banner" id="stand-alert-${cam.id}" style="display: none; background: rgba(245, 158, 11, 0.95); border: 1.5px solid #fbbf24; color: #fff;">
+                            <i class="fas fa-child" style="font-size: 1.1rem; animation: bounce 0.6s infinite alternate;"></i>
+                            <span>🚨 <b>BEBÊ EM PÉ!</b> A criança se levantou ou está na grade do berço!</span>
+                        </div>
                         <div class="kc-alert-banner" id="motion-alert-${cam.id}" style="display: none; background: rgba(16, 185, 129, 0.95); border: 1.5px solid #10b981;">
                             <i class="fas fa-running" style="font-size: 1.1rem;"></i>
                             <span>🏃 <b>MOVIMENTO DETECTADO!</b> A neném se mexeu!</span>
@@ -9224,9 +9228,22 @@
             if (!canvas || !btn) return;
 
             if (!cribFenceState[camId] || !cribFenceState[camId].enabled) {
-                const cam = camerasData.find(c => c.id === camId);
+                const cam = (typeof camerasData !== 'undefined' ? camerasData : []).find(c => c.id === camId);
                 let roi = { x: 20, y: 25, w: 60, h: 50 };
-                if (cam && cam.crib_roi_json) {
+                
+                // 1. Prioriza coordenadas salvas no localStorage (mantém retângulo desenhado pelo usuário)
+                const localRoi = localStorage.getItem(`kc_fence_${camId}`);
+                if (localRoi) {
+                    try {
+                        const parsed = JSON.parse(localRoi);
+                        roi = {
+                            x: Number(parsed.x ?? 20),
+                            y: Number(parsed.y ?? 25),
+                            w: Number(parsed.w ?? parsed.width ?? 60),
+                            h: Number(parsed.h ?? parsed.height ?? 50)
+                        };
+                    } catch(e) {}
+                } else if (cam && cam.crib_roi_json) {
                     try {
                         const parsed = typeof cam.crib_roi_json === 'string' ? JSON.parse(cam.crib_roi_json) : cam.crib_roi_json;
                         roi = {
@@ -9237,6 +9254,7 @@
                         };
                     } catch(e) {}
                 }
+
                 cribFenceState[camId] = {
                     enabled: true,
                     roi: roi,
@@ -9495,13 +9513,14 @@
 
         function restoreCribFenceOnLoad(camId, savedRoi) {
             const canvas = document.getElementById(`crib-canvas-${camId}`);
-            const btn = document.getElementById(`btn-fence-${camId}`);
             if (!canvas) return;
 
             let roi = { x: 20, y: 25, w: 60, h: 50 };
-            if (savedRoi) {
+            const localSaved = localStorage.getItem(`kc_fence_${camId}`);
+            const sourceRoi = localSaved || savedRoi;
+            if (sourceRoi) {
                 try {
-                    const parsed = typeof savedRoi === 'string' ? JSON.parse(savedRoi) : savedRoi;
+                    const parsed = typeof sourceRoi === 'string' ? JSON.parse(sourceRoi) : sourceRoi;
                     roi = {
                         x: Number(parsed.x ?? 20),
                         y: Number(parsed.y ?? 25),
@@ -9524,12 +9543,26 @@
             canvas.style.zIndex = '25';
             canvas.style.touchAction = 'none';
 
+            const btn = document.getElementById(`btn-fence-${camId}`);
             if (btn) btn.classList.add('active');
 
-            setTimeout(() => {
+            const applyCanvas = () => {
                 initCribCanvas(camId);
                 drawCribBox(camId);
-            }, 600);
+                const b = document.getElementById(`btn-fence-${camId}`);
+                if (b) b.classList.add('active');
+            };
+
+            applyCanvas();
+            setTimeout(applyCanvas, 200);
+            setTimeout(applyCanvas, 600);
+            setTimeout(applyCanvas, 1200);
+
+            const v = document.getElementById(`video-${camId}`);
+            if (v) {
+                v.addEventListener('loadedmetadata', applyCanvas, { once: true });
+                v.addEventListener('playing', applyCanvas, { once: true });
+            }
 
             startFenceMonitor(camId);
         }
@@ -9712,6 +9745,17 @@
 
         async function saveCameraFenceConfig(camId, enabled, roi) {
             try {
+                // Persistência Imediata no LocalStorage e no Objeto em Memória
+                localStorage.setItem(`kc_fence_enabled_${camId}`, enabled ? '1' : '0');
+                if (roi) {
+                    localStorage.setItem(`kc_fence_${camId}`, JSON.stringify(roi));
+                }
+                const c = (typeof camerasData !== 'undefined' ? camerasData : []).find(x => x.id === camId);
+                if (c) {
+                    c.crib_fence_enabled = enabled ? 1 : 0;
+                    if (roi) c.crib_roi_json = roi;
+                }
+
                 await fetch(`/api/cameras/${camId}/tracking`, {
                     method: 'POST',
                     credentials: 'include',
@@ -9724,6 +9768,145 @@
             } catch(e) {
                 console.warn('Erro ao salvar cerca:', e);
             }
+        }
+
+        // ── 3.1. DETECTOR INTELIGENTE DE BEBÊ EM PÉ / NA GRADE (BABY STAND AI) ───
+        window.babyStandAlerts = {};
+        window.babyStandIntervals = {};
+
+        function toggleBabyStandDetector(camId) {
+            const isNowActive = !window.babyStandAlerts[camId];
+            window.babyStandAlerts[camId] = isNowActive;
+
+            const btn = document.getElementById(`btn-stand-${camId}`);
+            if (btn) btn.classList.toggle('active', isNowActive);
+
+            localStorage.setItem(`kc_stand_enabled_${camId}`, isNowActive ? '1' : '0');
+            const c = (typeof camerasData !== 'undefined' ? camerasData : []).find(x => x.id === camId);
+            if (c) c.baby_stand_enabled = isNowActive ? 1 : 0;
+
+            saveCameraBabyStandConfig(camId, isNowActive);
+
+            if (isNowActive) {
+                startBabyStandWatcher(camId);
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: '👶 Monitor "Bebê em Pé" Ativado!',
+                    text: 'Você e seu Telegram serão alertados se a criança ficar em pé ou se apoiar na grade!',
+                    showConfirmButton: false,
+                    timer: 3500
+                });
+            } else {
+                stopBabyStandWatcher(camId);
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'info',
+                    title: 'Monitor "Bebê em Pé" Desativado',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            }
+        }
+
+        async function saveCameraBabyStandConfig(camId, enabled) {
+            try {
+                await fetch(`/api/cameras/${camId}/tracking`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({
+                        baby_stand_enabled: enabled ? 1 : 0
+                    })
+                });
+            } catch(e) {
+                console.warn('Erro ao salvar config bebê em pé:', e);
+            }
+        }
+
+        function startBabyStandWatcher(camId) {
+            if (window.babyStandIntervals[camId]) clearInterval(window.babyStandIntervals[camId]);
+            const canvas = document.createElement('canvas');
+            canvas.width = 160;
+            canvas.height = 90;
+            const ctx = canvas.getContext('2d');
+            let prevData = null;
+            let standCooldown = 0;
+
+            window.babyStandIntervals[camId] = setInterval(() => {
+                const video = document.getElementById(`video-${camId}`);
+                if (!video || video.readyState < 2 || !window.babyStandAlerts[camId]) return;
+
+                ctx.drawImage(video, 0, 0, 160, 90);
+                const currentData = ctx.getImageData(0, 0, 160, 90).data;
+
+                if (prevData) {
+                    const s = cribFenceState[camId];
+                    const r = (s && s.roi) ? s.roi : { x: 20, y: 20, w: 60, h: 55 };
+                    
+                    // Terço superior do berço onde o bebê aparece ao ficar em pé ou subir na grade
+                    const topY = (r.y / 100) * 90;
+                    const standH = ((r.h * 0.45) / 100) * 90;
+                    const startX = (r.x / 100) * 160;
+                    const endX = ((r.x + r.w) / 100) * 160;
+
+                    let standDiffCount = 0;
+                    for (let y = Math.max(0, Math.floor(topY)); y < Math.min(90, Math.floor(topY + standH)); y += 2) {
+                        for (let x = Math.max(0, Math.floor(startX)); x < Math.min(160, Math.floor(endX)); x += 2) {
+                            const idx = (y * 160 + x) * 4;
+                            const diff = Math.abs(currentData[idx] - prevData[idx]) +
+                                         Math.abs(currentData[idx+1] - prevData[idx+1]) +
+                                         Math.abs(currentData[idx+2] - prevData[idx+2]);
+                            if (diff > 65) {
+                                standDiffCount++;
+                            }
+                        }
+                    }
+
+                    if (standDiffCount > 32) {
+                        const now = Date.now();
+                        if (now - standCooldown > 20000) {
+                            standCooldown = now;
+                            triggerBabyStandAlert(camId);
+                        }
+                    }
+                }
+                prevData = currentData;
+            }, 1200);
+        }
+
+        function stopBabyStandWatcher(camId) {
+            if (window.babyStandIntervals[camId]) {
+                clearInterval(window.babyStandIntervals[camId]);
+                delete window.babyStandIntervals[camId];
+            }
+            const banner = document.getElementById(`stand-alert-${camId}`);
+            if (banner) banner.style.display = 'none';
+        }
+
+        function triggerBabyStandAlert(camId) {
+            const banner = document.getElementById(`stand-alert-${camId}`);
+            if (banner) {
+                banner.style.display = 'flex';
+                setTimeout(() => { if (banner) banner.style.display = 'none'; }, 8000);
+            }
+            playToneSound(750, 0.35);
+
+            captureAutoSnapshot(camId);
+
+            try {
+                fetch(`/api/cameras/${camId}/events`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({
+                        event_type: 'baby_stand',
+                        description: '🚨 ALERTA: Bebê ficou em pé ou se apoiou na grade do berço!'
+                    })
+                }).catch(e => console.warn(e));
+            } catch(e) {}
         }
 
         // ── 4. Interfone / Walkie-Talkie ("Pressione para Falar") ─────────────────
@@ -10158,7 +10341,12 @@
                             iconBg = 'rgba(236, 72, 153, 0.2)';
                             iconColor = '#ec4899';
                             title = 'Choro de Bebê Detectado';
-                        } else if (evt.event_type === 'crib_fence_breach') {
+                        } else if (evt.event_type === 'baby_stand') {
+                            iconClass = 'fa-child';
+                            iconBg = 'rgba(251, 191, 36, 0.2)';
+                            iconColor = '#fbbf24';
+                            title = 'Bebê em Pé no Berço';
+                        } else if (evt.event_type === 'crib_fence' || evt.event_type === 'crib_fence_breach') {
                             iconClass = 'fa-vector-square';
                             iconBg = 'rgba(6, 182, 212, 0.2)';
                             iconColor = '#06b6d4';
