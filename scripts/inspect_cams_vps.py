@@ -4,9 +4,11 @@ code = """
 require "vendor/autoload.php";
 $app = require_once "bootstrap/app.php";
 $app->make("Illuminate\\Contracts\\Console\\Kernel")->bootstrap();
-foreach (App\\Models\\KingCamera::all() as $c) {
-    echo "ID: " . $c->id . " | Nome: " . $c->name . " | Fence: " . ($c->crib_fence_enabled ? "1" : "0") . " | ROI: " . json_encode($c->crib_roi_json) . " | Cry: " . ($c->baby_cry_enabled ? "1" : "0") . " | Tracking: " . ($c->auto_tracking_enabled ? "1" : "0") . PHP_EOL;
-}
+$cols = Illuminate\Support\Facades\Schema::getColumnListing("king_cameras");
+echo "Cols: " . json_encode($cols) . PHP_EOL;
+$c1 = App\Models\KingCamera::find(1);
+echo "Cam 1 raw: " . json_encode($c1->toArray()) . PHP_EOL;
+
 """
 
 cmd = ["ssh", "-o", "StrictHostKeyChecking=no", "root@46.225.100.64", f'docker exec conectaking-laravel php -r \'{code}\'']
