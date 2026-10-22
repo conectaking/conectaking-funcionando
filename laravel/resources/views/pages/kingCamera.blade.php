@@ -5268,6 +5268,21 @@
                 // Inicia streaming WebRTC para a câmera
                 startWebRtcStream(cam);
                 startClock(cam.id);
+
+                // Restaura estado ativo salvo no banco (Cerca do Berço, Rastreamento, Choro)
+                setTimeout(() => {
+                    if (cam.crib_fence_enabled) {
+                        restoreCribFenceOnLoad(cam.id, cam.crib_roi_json);
+                    }
+                    if (cam.auto_tracking_enabled) {
+                        cameraTracking[cam.id] = true;
+                        updateTrackingPills(cam.id);
+                        startAutoTrackingLoop(cam.id);
+                    }
+                    if (cam.baby_cry_enabled) {
+                        toggleBabyCryDetector(cam.id);
+                    }
+                }, 500);
             });
         }
 
@@ -5304,7 +5319,7 @@
                 peerConnections[cam.id] = pc;
 
                 pc.addTransceiver('video', { direction: 'recvonly' });
-                pc.addTransceiver('audio', { direction: 'recvonly' });
+                pc.addTransceiver('audio', { direction: 'sendrecv' });
 
                 let hasReceivedVideo = false;
                 let initialMuteHandled = false;
@@ -5770,6 +5785,11 @@
                 if (res.ok && json.success) {
                     cameraLights[camId] = newState;
 
+                    const video = document.getElementById(`video-${camId}`);
+                    if (video) {
+                        video.style.filter = newState ? 'brightness(1.5) contrast(1.2) saturate(1.1)' : '';
+                    }
+
                     if (btnPill) {
                         btnPill.disabled = false;
                         btnPill.classList.toggle('active', newState);
@@ -5791,9 +5811,10 @@
                         toast: true,
                         position: 'top-end',
                         icon: 'success',
-                        title: newState ? '💡 Lâmpada LED Ligada' : '💡 Lâmpada LED Apagada',
+                        title: newState ? '💡 Lâmpada e Realce Ligados' : '💡 Lâmpada Apagada',
+                        text: newState ? 'Iluminação noturna e claridade da imagem ativadas.' : 'Câmera em modo noturno padrão.',
                         showConfirmButton: false,
-                        timer: 1800
+                        timer: 2000
                     });
                 } else {
                     throw new Error(json.message || 'Falha ao acionar lâmpada');
@@ -5944,9 +5965,13 @@
             const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
             let prevData = null;
             let isMoving = false;
+            let lastPtzTime = 0;
 
             const intervalId = setInterval(async () => {
                 if (isMoving || !video || video.paused || video.ended || video.readyState < 2) return;
+
+                const now = Date.now();
+                if (now - lastPtzTime < 1400) return;
 
                 try {
                     offCtx.drawImage(video, 0, 0, 160, 120);
@@ -5959,48 +5984,68 @@
 
                     let motionPixels = 0;
                     let sumX = 0;
+                    let sumY = 0;
                     const len = currentData.length;
 
-                    // Amostra a cada 4 pixels para máxima velocidade sem travar a interface
-                    for (let i = 0; i < len; i += 16) {
+                    for (let i = 0; i < len; i += 8) {
                         const rDiff = Math.abs(currentData[i] - prevData[i]);
                         const gDiff = Math.abs(currentData[i + 1] - prevData[i + 1]);
                         const bDiff = Math.abs(currentData[i + 2] - prevData[i + 2]);
-                        if (rDiff + gDiff + bDiff > 70) {
+                        if (rDiff + gDiff + bDiff > 55) {
                             const pixelIndex = i / 4;
                             const x = pixelIndex % 160;
+                            const y = Math.floor(pixelIndex / 160);
                             sumX += x;
+                            sumY += y;
                             motionPixels++;
                         }
                     }
 
                     prevData = currentData;
 
-                    // Se detectou movimento significativo no enquadramento
-                    if (motionPixels > 40) {
+                    // Se detectou movimento no ambiente
+                    if (motionPixels > 20) {
                         const avgX = sumX / motionPixels;
-                        // Se a pessoa/movimento está no terço esquerdo (< 55px)
-                        if (avgX < 55) {
+                        const avgY = sumY / motionPixels;
+
+                        if (avgX < 58) {
                             isMoving = true;
+                            lastPtzTime = Date.now();
                             await ptzStart(camId, 'left', 0.5);
                             setTimeout(async () => {
                                 await ptzStop(camId);
                                 setTimeout(() => { isMoving = false; prevData = null; }, 400);
-                            }, 300);
-                        } else if (avgX > 105) {
-                            // Se a pessoa/movimento está no terço direito (> 105px)
+                            }, 450);
+                        } else if (avgX > 102) {
                             isMoving = true;
+                            lastPtzTime = Date.now();
                             await ptzStart(camId, 'right', 0.5);
                             setTimeout(async () => {
                                 await ptzStop(camId);
                                 setTimeout(() => { isMoving = false; prevData = null; }, 400);
-                            }, 300);
+                            }, 450);
+                        } else if (avgY < 35) {
+                            isMoving = true;
+                            lastPtzTime = Date.now();
+                            await ptzStart(camId, 'up', 0.5);
+                            setTimeout(async () => {
+                                await ptzStop(camId);
+                                setTimeout(() => { isMoving = false; prevData = null; }, 350);
+                            }, 350);
+                        } else if (avgY > 85) {
+                            isMoving = true;
+                            lastPtzTime = Date.now();
+                            await ptzStart(camId, 'down', 0.5);
+                            setTimeout(async () => {
+                                await ptzStop(camId);
+                                setTimeout(() => { isMoving = false; prevData = null; }, 350);
+                            }, 350);
                         }
                     }
                 } catch (err) {
                     console.debug('Tracking loop tick:', err);
                 }
-            }, 1200);
+            }, 1000);
 
             autoTrackingLoops[camId] = intervalId;
         }
@@ -6018,23 +6063,26 @@
             const btnPill = document.getElementById(`btn-turbo-audio-${camId}`);
             if (!videoEl) return;
 
-            videoEl.muted = false;
-            videoEl.volume = 1.0;
-            try { await videoEl.play(); } catch (e) {}
-            updateAudioMuteUI(camId, false);
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) {
+                videoEl.muted = false;
+                videoEl.volume = 1.0;
+                updateAudioMuteUI(camId, false);
+                return;
+            }
 
             if (!audioBoosters[camId]) {
                 try {
-                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                    if (!AudioCtx) {
-                        return;
-                    }
                     const ctx = new AudioCtx();
                     if (ctx.state === 'suspended') await ctx.resume();
 
-                    const stream = videoEl.captureStream ? videoEl.captureStream() : videoEl.srcObject;
+                    const stream = videoEl.srcObject || (videoEl.captureStream ? videoEl.captureStream() : null);
                     if (!stream || stream.getAudioTracks().length === 0) {
-                        Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Áudio ligado (Modo Direto)', timer: 1800, showConfirmButton: false });
+                        videoEl.muted = false;
+                        videoEl.volume = 1.0;
+                        try { await videoEl.play(); } catch(e) {}
+                        updateAudioMuteUI(camId, false);
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Áudio ligado no máximo', timer: 1800, showConfirmButton: false });
                         return;
                     }
 
@@ -6044,7 +6092,7 @@
                     filter.frequency.value = 160;
 
                     const gain = ctx.createGain();
-                    gain.gain.value = 2.8;
+                    gain.gain.value = 3.5;
 
                     const compressor = ctx.createDynamicsCompressor();
                     compressor.threshold.setValueAtTime(-24, ctx.currentTime);
@@ -6056,27 +6104,52 @@
                     gain.connect(compressor);
                     compressor.connect(ctx.destination);
 
+                    videoEl.muted = true;
                     audioBoosters[camId] = { ctx, gain, filter, active: true };
                     if (btnPill) {
                         btnPill.classList.add('active');
-                        btnPill.innerHTML = '<i class="fas fa-volume-up" style="color: #06b6d4;"></i> <span>Turbo 300% ON</span>';
+                        btnPill.innerHTML = '<i class="fas fa-volume-up" style="color: #06b6d4;"></i> <span>Turbo 350% ON</span>';
                     }
+                    updateAudioMuteUI(camId, false);
 
                     Swal.fire({
                         toast: true,
                         position: 'top-end',
                         icon: 'success',
-                        title: '🔊 Áudio Turbo 300% Ativado!',
+                        title: '🔊 Áudio Turbo 350% Ativado!',
                         text: 'Volume amplificado e ruídos de fundo filtrados.',
                         timer: 2000,
                         showConfirmButton: false
                     });
                 } catch (err) {
                     console.warn('Erro booster:', err);
+                    videoEl.muted = false;
+                    videoEl.volume = 1.0;
+                    updateAudioMuteUI(camId, false);
                 }
             } else {
                 const b = audioBoosters[camId];
                 b.active = !b.active;
+                if (b.active) {
+                    if (b.ctx && b.ctx.state === 'suspended') await b.ctx.resume();
+                    b.gain.gain.value = 3.5;
+                    videoEl.muted = true;
+                    if (btnPill) {
+                        btnPill.classList.add('active');
+                        btnPill.innerHTML = '<i class="fas fa-volume-up" style="color: #06b6d4;"></i> <span>Turbo 350% ON</span>';
+                    }
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: '🔊 Áudio Turbo Ativado', timer: 1500, showConfirmButton: false });
+                } else {
+                    b.gain.gain.value = 1.0;
+                    videoEl.muted = false;
+                    if (btnPill) {
+                        btnPill.classList.remove('active');
+                        btnPill.innerHTML = '<i class="fas fa-volume-up" style="color: #06b6d4;"></i> <span>Áudio Turbo</span>';
+                    }
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Áudio Normalizado', timer: 1500, showConfirmButton: false });
+                }
+            }
+        }
                 if (btnPill) {
                     btnPill.classList.toggle('active', b.active);
                     btnPill.innerHTML = b.active 
