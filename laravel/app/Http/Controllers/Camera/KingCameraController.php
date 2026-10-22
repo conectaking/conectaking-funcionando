@@ -1007,13 +1007,38 @@ class KingCameraController extends Controller
             return response()->json(['success' => false, 'message' => 'Câmera não encontrada.'], 404);
         }
 
-        $enabled = $request->has('enabled')
-            ? (bool) $request->input('enabled')
-            : ! $camera->auto_tracking_enabled;
+        $updates = [];
+        if ($request->has('crib_fence_enabled')) {
+            $updates['crib_fence_enabled'] = (bool) $request->input('crib_fence_enabled');
+        }
+        if ($request->has('crib_roi_json')) {
+            $roi = $request->input('crib_roi_json');
+            $updates['crib_roi_json'] = is_string($roi) ? json_decode($roi, true) : $roi;
+        }
+        if ($request->has('baby_cry_enabled')) {
+            $updates['baby_cry_enabled'] = (bool) $request->input('baby_cry_enabled');
+        }
+        if ($request->has('baby_stand_enabled')) {
+            $updates['baby_stand_enabled'] = (bool) $request->input('baby_stand_enabled');
+        }
+        if ($request->has('motion_detection_enabled')) {
+            $updates['motion_detection_enabled'] = (bool) $request->input('motion_detection_enabled');
+        }
+        if ($request->has('enabled') || $request->has('auto_tracking_enabled')) {
+            $enabled = (bool) ($request->input('enabled') ?? $request->input('auto_tracking_enabled'));
+            $updates['auto_tracking_enabled'] = $enabled;
+            $this->cameraService->setAutoTracking($camera, $enabled);
+        }
 
-        $result = $this->cameraService->setAutoTracking($camera, $enabled);
+        if (! empty($updates)) {
+            $camera->update($updates);
+        }
 
-        return response()->json($result);
+        return response()->json([
+            'success' => true,
+            'message' => 'Configurações de rastreamento e proteção atualizadas com sucesso.',
+            'camera' => $camera->fresh(),
+        ]);
     }
 
     /**
