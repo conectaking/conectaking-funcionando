@@ -29,32 +29,15 @@ class KingCameraService
         if (! str_contains($rtspUrl, '#transport=')) {
             $rtspUrl .= '#transport=tcp';
         }
-        $transcodeProducer = "ffmpeg:{$streamId}#video=h264#audio=opus";
-
-        $sources = [];
-
-        // Para câmeras na porta 1554 (Quarto Bebê), usa exclusivamente o canal /onvif2
-        // que é H.264 nativo, ultra rápido e não necessita de transcodificação ffmpeg
-        if ($camera->rtsp_port === 1554 || str_contains($rtspUrl, ':1554/')) {
-            $url2 = str_replace(['/onvif1', '/onvif2'], '/onvif2', $rtspUrl);
-            $sources[] = $url2;
-        } else {
-            $sources[] = $rtspUrl;
-            $sources[] = $transcodeProducer;
-        }
-
         try {
-            // Remove stream anterior para garantir produtores limpos sem looping
+
+            // 2. Remove stream anterior para garantir produtores limpos sem looping
             @file_get_contents("{$goUrl}/api/streams?src=" . urlencode($streamId), false, stream_context_create([
                 'http' => ['method' => 'DELETE', 'timeout' => 2]
             ]));
 
-            $query = 'name=' . urlencode($streamId);
-            foreach ($sources as $s) {
-                $encodedSrc = str_replace(['%2A', '%2a'], '*', urlencode($s));
-                $query .= '&src=' . $encodedSrc;
-            }
-            $endpoint = "{$goUrl}/api/streams?{$query}";
+            $encodedSrc = str_replace(['%2A', '%2a'], '*', urlencode($rtspUrl));
+            $endpoint = "{$goUrl}/api/streams?name=" . urlencode($streamId) . "&src=" . $encodedSrc;
 
             $ch = curl_init($endpoint);
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');

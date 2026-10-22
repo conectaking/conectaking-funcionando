@@ -5281,13 +5281,20 @@
                     if (loaderEl) loaderEl.style.display = 'none';
                 };
 
-
                 videoEl.addEventListener('playing', () => {
                     hasReceivedVideo = true;
-                    // Se o fallback por snapshot estiver ativo, remove ele
+                    if (loaderEl) loaderEl.style.display = 'none';
+                    // Se o fallback por snapshot estiver ativo, limpa e oculta
+                    if (window[`snapInterval_${cam.id}`]) {
+                        clearInterval(window[`snapInterval_${cam.id}`]);
+                        delete window[`snapInterval_${cam.id}`];
+                    }
                     const img = document.getElementById(`fallback-img-${cam.id}`);
                     if (img) img.style.display = 'none';
-                }, { once: true });
+                });
+
+                // Carrega 1º frame snapshot imediatamente em background para pré-visualização instantânea sem atraso
+                activateLiveSnapshotFallback(cam.id, true);
 
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
@@ -5323,24 +5330,24 @@
                         sdp: answerSdp
                     }));
 
-                    // Fallback de segurança: se após 3.5 segundos o vídeo WebRTC não estiver renderizando quadros, ativa o Live Snapshot
+                    // Fallback de segurança: se após 2.5s o vídeo WebRTC ainda não renderizar quadros, ativa o Live Snapshot contínuo
                     setTimeout(() => {
                         if (!hasReceivedVideo || videoEl.videoWidth === 0) {
-                            activateLiveSnapshotFallback(cam.id);
+                            activateLiveSnapshotFallback(cam.id, false);
                         }
-                    }, 3500);
+                    }, 2500);
                 } else {
-                    // Se WebRTC falhar por rede/túnel, tenta o Live Snapshot direto
-                    activateLiveSnapshotFallback(cam.id);
+                    // Se WebRTC falhar na negociação, ativa o Live Snapshot contínuo
+                    activateLiveSnapshotFallback(cam.id, false);
                 }
             } catch (err) {
                 console.warn(`WebRTC error for camera ${cam.id}:`, err);
-                activateLiveSnapshotFallback(cam.id);
+                activateLiveSnapshotFallback(cam.id, false);
             }
         }
 
         // Fallback de exibição contínua via Snapshot ao vivo (garante imagem em tempo real mesmo em navegadores sem H.265)
-        function activateLiveSnapshotFallback(camId) {
+        function activateLiveSnapshotFallback(camId, firstShotOnly = false) {
             const wrap = document.querySelector(`#card-cam-${camId} .kc-video-wrap`);
             if (!wrap) return;
 
@@ -5354,11 +5361,11 @@
                 img.style.width = '100%';
                 img.style.height = '100%';
                 img.style.objectFit = 'cover';
-                img.style.zIndex = '3';
+                img.style.zIndex = '6'; // Acima do loader (z-index 5)
                 img.style.borderRadius = '0';
                 wrap.appendChild(img);
             }
-            img.style.display = 'block';
+            img.style.zIndex = '6';
 
             let failCount = 0;
             const refreshFrame = async () => {
@@ -5369,6 +5376,9 @@
                     }
                     return;
                 }
+                if (window[`snapPending_${camId}`]) return;
+                window[`snapPending_${camId}`] = true;
+
                 try {
                     const res = await fetch(`/api/cameras/${camId}/snapshot?_t=${Date.now()}`, {
                         credentials: 'include',
@@ -5382,11 +5392,12 @@
                             URL.revokeObjectURL(img.src);
                         }
                         img.src = newUrl;
+                        img.style.display = 'block';
                         const loaderEl = document.getElementById(`loader-${camId}`);
                         if (loaderEl) loaderEl.style.display = 'none';
                     } else {
                         failCount++;
-                        if (failCount >= 10) {
+                        if (failCount >= 10 && !firstShotOnly) {
                             if (window[`snapInterval_${camId}`]) {
                                 clearInterval(window[`snapInterval_${camId}`]);
                                 delete window[`snapInterval_${camId}`];
@@ -5396,19 +5407,21 @@
                     }
                 } catch (e) {
                     failCount++;
-                    if (failCount >= 10) {
+                    if (failCount >= 10 && !firstShotOnly) {
                         if (window[`snapInterval_${camId}`]) {
                             clearInterval(window[`snapInterval_${camId}`]);
                             delete window[`snapInterval_${camId}`];
                         }
                         showCameraStreamOffline(camId, 'Falha ao conectar ao fluxo de vídeo da câmera.');
                     }
+                } finally {
+                    window[`snapPending_${camId}`] = false;
                 }
             };
 
             refreshFrame();
-            if (!window[`snapInterval_${camId}`]) {
-                window[`snapInterval_${camId}`] = setInterval(refreshFrame, 2500);
+            if (!firstShotOnly && !window[`snapInterval_${camId}`]) {
+                window[`snapInterval_${camId}`] = setInterval(refreshFrame, 2000);
             }
         }
 
