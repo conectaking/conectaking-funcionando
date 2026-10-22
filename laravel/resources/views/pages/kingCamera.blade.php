@@ -1546,6 +1546,17 @@
             animation: kc-pulse-red 0.8s infinite;
         }
 
+        .kc-btn-light.active {
+            background: rgba(251, 191, 36, 0.32) !important;
+            border-color: #fbbf24 !important;
+            color: #fbbf24 !important;
+            box-shadow: 0 0 16px rgba(251, 191, 36, 0.55);
+        }
+
+        video.light-boost {
+            filter: brightness(1.35) contrast(1.18) saturate(1.1) !important;
+        }
+
         @keyframes kc-pulse-red {
             0% { box-shadow: 0 0 4px rgba(239, 68, 68, 0.4); }
             50% { box-shadow: 0 0 18px rgba(239, 68, 68, 0.8); }
@@ -9014,8 +9025,10 @@
                     panel.classList.toggle('active', t === tabName);
                 }
             });
-            if (tabName === 'crib' && cribFenceState[camId] && cribFenceState[camId].enabled) {
-                setTimeout(() => initCribCanvas(camId), 100);
+            if (tabName === 'crib') {
+                ensureCribFenceVisible(camId);
+                setTimeout(() => ensureCribFenceVisible(camId), 80);
+                setTimeout(() => ensureCribFenceVisible(camId), 300);
             }
         }
 
@@ -9458,6 +9471,16 @@
         function drawCribBox(camId) {
             const canvas = document.getElementById(`crib-canvas-${camId}`);
             if (!canvas) return;
+            const wrap = canvas.parentElement;
+            if (wrap) {
+                const w = wrap.clientWidth || wrap.offsetWidth;
+                const h = wrap.clientHeight || wrap.offsetHeight;
+                if (w > 50 && h > 50 && (canvas.width !== w || canvas.height !== h)) {
+                    canvas.width = w;
+                    canvas.height = h;
+                }
+            }
+            canvas.style.display = 'block';
             const ctx = canvas.getContext('2d');
             const s = cribFenceState[camId];
             if (!s || !s.enabled) return;
@@ -9511,13 +9534,27 @@
             ctx.fillText('👶 ÁREA SEGURA DO BERÇO (Arraste cantos ou centro)', bx + 8, Math.max(16, by - 8));
         }
 
-        function restoreCribFenceOnLoad(camId, savedRoi) {
+        function ensureCribFenceVisible(camId) {
+            const cam = (typeof camerasData !== 'undefined' ? camerasData : []).find(c => c.id === camId) || {};
+            const localFenceEnabled = localStorage.getItem(`kc_fence_enabled_${camId}`);
+            const isFenceActive = localFenceEnabled !== null ? (localFenceEnabled === '1') : Boolean(cam.crib_fence_enabled);
+
+            const btn = document.getElementById(`btn-fence-${camId}`);
+            if (btn) btn.classList.toggle('active', isFenceActive);
+
             const canvas = document.getElementById(`crib-canvas-${camId}`);
             if (!canvas) return;
 
+            if (!isFenceActive) {
+                canvas.style.display = 'none';
+                canvas.style.pointerEvents = 'none';
+                if (cribFenceState[camId]) cribFenceState[camId].enabled = false;
+                return;
+            }
+
             let roi = { x: 20, y: 25, w: 60, h: 50 };
-            const localSaved = localStorage.getItem(`kc_fence_${camId}`);
-            const sourceRoi = localSaved || savedRoi;
+            const localRoi = localStorage.getItem(`kc_fence_${camId}`);
+            const sourceRoi = localRoi || cam.crib_roi_json;
             if (sourceRoi) {
                 try {
                     const parsed = typeof sourceRoi === 'string' ? JSON.parse(sourceRoi) : sourceRoi;
@@ -9543,28 +9580,32 @@
             canvas.style.zIndex = '25';
             canvas.style.touchAction = 'none';
 
-            const btn = document.getElementById(`btn-fence-${camId}`);
-            if (btn) btn.classList.add('active');
+            const wrap = canvas.parentElement;
+            if (wrap) {
+                const w = wrap.clientWidth || wrap.offsetWidth;
+                const h = wrap.clientHeight || wrap.offsetHeight;
+                if (w > 50 && h > 50) {
+                    canvas.width = w;
+                    canvas.height = h;
+                }
+            }
 
-            const applyCanvas = () => {
-                initCribCanvas(camId);
-                drawCribBox(camId);
-                const b = document.getElementById(`btn-fence-${camId}`);
-                if (b) b.classList.add('active');
-            };
+            initCribCanvas(camId);
+            drawCribBox(camId);
+            startFenceMonitor(camId);
+        }
 
-            applyCanvas();
-            setTimeout(applyCanvas, 200);
-            setTimeout(applyCanvas, 600);
-            setTimeout(applyCanvas, 1200);
+        function restoreCribFenceOnLoad(camId, savedRoi) {
+            ensureCribFenceVisible(camId);
+            setTimeout(() => ensureCribFenceVisible(camId), 150);
+            setTimeout(() => ensureCribFenceVisible(camId), 500);
+            setTimeout(() => ensureCribFenceVisible(camId), 1200);
 
             const v = document.getElementById(`video-${camId}`);
             if (v) {
-                v.addEventListener('loadedmetadata', applyCanvas, { once: true });
-                v.addEventListener('playing', applyCanvas, { once: true });
+                v.addEventListener('loadedmetadata', () => ensureCribFenceVisible(camId), { once: true });
+                v.addEventListener('playing', () => ensureCribFenceVisible(camId), { once: true });
             }
-
-            startFenceMonitor(camId);
         }
 
         // Responsividade entre Desktop e Mobile: redimensiona canvas proporcionalmente à tela
@@ -9907,6 +9948,54 @@
                     })
                 }).catch(e => console.warn(e));
             } catch(e) {}
+        }
+
+        // ── CONTROLE DE LÂMPADA / HOLOFOTE LED & REALÇADOR VISUAL ─────────────────
+        window.cameraLightState = {};
+
+        async function toggleCameraLight(camId) {
+            const isNowOn = !window.cameraLightState[camId];
+            window.cameraLightState[camId] = isNowOn;
+
+            const btn = document.getElementById(`btn-light-${camId}`);
+            if (btn) btn.classList.toggle('active', isNowOn);
+
+            const video = document.getElementById(`video-${camId}`);
+            if (video) video.classList.toggle('light-boost', isNowOn);
+
+            playToneSound(isNowOn ? 880 : 440, 0.12);
+
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: isNowOn ? 'success' : 'info',
+                title: isNowOn ? '💡 Lâmpada Ligada!' : '💡 Lâmpada Desligada',
+                text: isNowOn ? 'Luz auxiliar e realçador da imagem ativados.' : 'Iluminação auxiliar desativada.',
+                showConfirmButton: false,
+                timer: 2500
+            });
+
+            try {
+                await fetch(`/api/cameras/${camId}/light`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ state: isNowOn ? 'on' : 'off' })
+                });
+            } catch(e) {
+                console.warn('Erro ao acionar lâmpada:', e);
+            }
+        }
+
+        // Aliases para funções rápidas da barra de ferramentas
+        function toggleAiNightVision(camId) {
+            if (typeof toggleAiVideoNight === 'function') toggleAiVideoNight(camId);
+        }
+        function toggleAiSharpness(camId) {
+            if (typeof toggleAiVideoSharp === 'function') toggleAiVideoSharp(camId);
+        }
+        function toggleAudioBooster(camId) {
+            if (typeof toggleAiAudio === 'function') toggleAiAudio(camId);
         }
 
         // ── 4. Interfone / Walkie-Talkie ("Pressione para Falar") ─────────────────

@@ -3,6 +3,7 @@ import subprocess
 files = [
     ("laravel/resources/views/pages/kingCamera.blade.php", "/app/resources/views/pages/kingCamera.blade.php", "/tmp/kingCamera.blade.php"),
     ("laravel/app/Http/Controllers/Camera/KingCameraController.php", "/app/app/Http/Controllers/Camera/KingCameraController.php", "/tmp/KingCameraController.php"),
+    ("laravel/app/Services/Camera/KingCameraService.php", "/app/app/Services/Camera/KingCameraService.php", "/tmp/KingCameraService.php"),
     ("laravel/app/Services/Camera/KingCameraTelegramAgentService.php", "/app/app/Services/Camera/KingCameraTelegramAgentService.php", "/tmp/KingCameraTelegramAgentService.php")
 ]
 
@@ -20,10 +21,14 @@ for local, container_path, tmp_remote in files:
     else:
         print("  Erro SCP:", res.stderr)
 
-print("Limpando cache do Laravel e views...")
-res_cache = subprocess.run([
-    "ssh", "-o", "StrictHostKeyChecking=no", "root@46.225.100.64",
-    "docker exec conectaking-laravel php artisan view:clear && docker exec conectaking-laravel php artisan optimize:clear"
+print("Limpando cache do Laravel, views e reiniciando FrankenPHP...")
+cmd_refresh = (
+    "docker exec conectaking-laravel php artisan view:clear && "
+    "docker exec conectaking-laravel php artisan optimize:clear && "
+    "docker restart conectaking-laravel"
+)
+res_refresh = subprocess.run([
+    "ssh", "-o", "StrictHostKeyChecking=no", "root@46.225.100.64", cmd_refresh
 ], capture_output=True, text=True)
-print(res_cache.stdout)
-print("Deploy concluído com sucesso!")
+print(res_refresh.stdout)
+print("Deploy concluído com sucesso e FrankenPHP recarregado!")

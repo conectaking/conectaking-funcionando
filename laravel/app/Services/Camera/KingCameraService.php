@@ -162,16 +162,36 @@ class KingCameraService
     }
 
     /**
+     * Resolve o host e porta corretos da câmera (lidando com túnel SSH reverso e LAN local)
+     */
+    public function getCameraNetworkTarget(KingCamera $camera): array
+    {
+        $host = $camera->ip_address;
+        $isLocalLan = str_starts_with($host, '172.') || str_starts_with($host, '192.168.') || str_starts_with($host, '10.');
+
+        if ($isLocalLan) {
+            $targetHost = '172.18.0.1';
+            // Túnel SSH: Câmera 1 (Quarto Bebê / 215) mapeada na porta 1557 (ONVIF 5000)
+            // Câmera 2 (Sala / 43) mapeada na porta 1556 (HTTP 80)
+            if ($camera->id === 1 || str_contains($camera->ip_address, '215') || str_contains((string) $camera->device_id, '7045951545')) {
+                $onvifPort = 1557;
+            } else {
+                $onvifPort = 1556;
+            }
+        } else {
+            $targetHost = $host;
+            $onvifPort = $camera->onvif_port ?: 80;
+        }
+
+        return [$targetHost, $onvifPort];
+    }
+
+    /**
      * Envia comandos ONVIF PTZ de movimentação contínua ou parada para a câmera.
      */
     public function ptzMove(KingCamera $camera, string $direction, float $speed = 0.5): array
     {
-        $host = $camera->ip_address;
-        $onvifPort = $camera->onvif_port ?: 80;
-
-        $targetHost = ($host === '172.18.0.1' || str_starts_with($host, '172.'))
-            ? '172.18.0.1'
-            : $host;
+        [$targetHost, $onvifPort] = $this->getCameraNetworkTarget($camera);
 
         $direction = strtolower(trim($direction));
 
@@ -322,15 +342,38 @@ XML
     }
 
     /**
+     * Gera cabeçalho WS-Security com autenticação PasswordDigest para ONVIF
+     */
+    public function buildWsSecurityHeader(?string $user, ?string $pass): string
+    {
+        if (! $user || ! $pass) {
+            return '<s:Header/>';
+        }
+        $created = gmdate('Y-m-d\TH:i:s\Z');
+        $nonce = random_bytes(16);
+        $nonceB64 = base64_encode($nonce);
+        $passDigest = base64_encode(sha1($nonce . $created . $pass, true));
+
+        return <<<XML
+<s:Header>
+  <Security s:mustUnderstand="1" xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+    <UsernameToken>
+      <Username>{$user}</Username>
+      <Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest">{$passDigest}</Password>
+      <Nonce EncodingType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary">{$nonceB64}</Nonce>
+      <Created xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">{$created}</Created>
+    </UsernameToken>
+  </Security>
+</s:Header>
+XML;
+    }
+
+    /**
      * Liga/desliga o holofote LED / lâmpada auxiliar da câmera via ONVIF Auxiliary e CGI
      */
     public function setLight(KingCamera $camera, string|bool|null $state = null): array
     {
-        $host = $camera->ip_address;
-        $onvifPort = $camera->onvif_port ?: 80;
-        $targetHost = ($host === '172.18.0.1' || str_starts_with($host, '172.'))
-            ? '172.18.0.1'
-            : $host;
+        [$targetHost, $onvifPort] = $this->getCameraNetworkTarget($camera);
         $targetUrl = "http://{$targetHost}:{$onvifPort}/onvif/ptz_service";
 
         // Determina se deve ligar ou desligar (toggle caso null)
@@ -340,13 +383,17 @@ XML
         }
 
         $cmd = $turnOn ? 'LightOn' : 'LightOff';
+        $user = $camera->username ?: 'admin';
+        $pass = $camera->password ?: '';
+        $sec = $this->buildWsSecurityHeader($user, $pass);
 
         $soap = <<<XML
 <?xml version="1.0" encoding="utf-8"?>
 <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
+  {$sec}
   <s:Body>
     <SendAuxiliaryCommand xmlns="http://www.onvif.org/ver20/ptz/wsdl">
-      <ProfileToken>Profile_1</ProfileToken>
+      <ProfileToken>IPCProfilesToken0</ProfileToken>
       <AuxiliaryData>{$cmd}</AuxiliaryData>
     </SendAuxiliaryCommand>
   </s:Body>
@@ -367,10 +414,18 @@ XML;
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
 
-            // CGI fallback para câmeras Xiongmai / Tuya / V380 / IPC
+            // CGI fallback para câmeras Yoosee, Xiongmai, Tuya, V380 e IPC
             $val = $turnOn ? '1' : '0';
-            $cgiUrl = "http://{$targetHost}:{$onvifPort}/cgi-bin/hi3510/param.cgi?cmd=setlightattr&-light_mode={$val}";
-            @file_get_contents($cgiUrl, false, stream_context_create(['http' => ['timeout' => 1]]));
+            $valMode = $turnOn ? 'open' : 'close';
+            $cgiUrls = [
+                "http://{$targetHost}:{$onvifPort}/cgi-bin/hi3510/param.cgi?cmd=setlightattr&-light_mode={$val}",
+                "http://{$targetHost}:{$onvifPort}/cgi-bin/hi3510/param.cgi?cmd=setinfraredattr&-infrared_mode={$val}",
+                "http://{$targetHost}:{$onvifPort}/cgi-bin/param.cgi?cmd=setwhiteled&-state={$val}",
+                "http://{$targetHost}:{$onvifPort}/web/cgi-bin/hi3510/param.cgi?cmd=setlightmode&-mode={$valMode}",
+            ];
+            foreach ($cgiUrls as $cgi) {
+                @file_get_contents($cgi, false, stream_context_create(['http' => ['timeout' => 1]]));
+            }
 
             return [
                 'success' => true,
