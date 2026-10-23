@@ -29,6 +29,14 @@ class CharleneController extends Controller
      */
     public function handle(Request $request): JsonResponse
     {
+        if ($request->isMethod('GET') || $request->isMethod('HEAD') || $request->isMethod('OPTIONS')) {
+            return response()->json([
+                'status' => 'ok',
+                'service' => 'Charlene Alexa Skill',
+                'version' => '1.0'
+            ]);
+        }
+
         $payload = $request->all();
         $reqType = $payload['request']['type'] ?? 'LaunchRequest';
         $intentName = $payload['request']['intent']['name'] ?? '';
