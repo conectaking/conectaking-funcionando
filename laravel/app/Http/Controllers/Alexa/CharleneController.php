@@ -436,9 +436,17 @@ class CharleneController extends Controller
             case 'SessionEndedRequest':
                 return response()->json(['version' => '1.0', 'response' => new \stdClass()]);
 
+            case 'AudioPlayer.PlaybackNearlyFinished':
+                return $this->handlePlaybackNearlyFinished($payload);
+
+            case 'AudioPlayer.PlaybackStarted':
+            case 'AudioPlayer.PlaybackFinished':
+            case 'AudioPlayer.PlaybackStopped':
+            case 'AudioPlayer.PlaybackFailed':
+                return response()->json(['version' => '1.0', 'response' => new \stdClass()]);
+
             default:
                 if (str_starts_with($reqType, 'AudioPlayer.')) {
-                    // Notificações nativas do tocador de áudio da Alexa
                     return response()->json(['version' => '1.0', 'response' => new \stdClass()]);
                 }
                 return $this->handleLaunch();
@@ -468,7 +476,22 @@ class CharleneController extends Controller
             case 'TocarMusicaIntent':
             case 'TocarPlaylistIntent':
                 $categoria = $slots['categoria']['value'] ?? null;
-                return $this->handlePlayMusic($categoria);
+                $musica = $slots['musica']['value'] ?? null;
+                return $this->handlePlayMusic($musica, $categoria, $payload);
+
+            case 'AMAZON.NextIntent':
+                return $this->handleNextMusic($payload);
+
+            case 'AMAZON.PreviousIntent':
+                return $this->handlePreviousMusic($payload);
+
+            case 'RepetirMusicaIntent':
+            case 'AMAZON.RepeatIntent':
+            case 'AMAZON.StartOverIntent':
+                return $this->handleRestartMusic($payload);
+
+            case 'AMAZON.ResumeIntent':
+                return $this->handleResumeMusic($payload);
 
             case 'ContarHistoriaBiblicaIntent':
             case 'ContarHistoriaIntent':
@@ -490,9 +513,6 @@ class CharleneController extends Controller
             case 'AMAZON.CancelIntent':
             case 'AMAZON.PauseIntent':
                 return $this->handleStop();
-
-            case 'AMAZON.ResumeIntent':
-                return $this->handlePlayMusic(null);
 
             case 'AMAZON.HelpIntent':
                 return $this->handleMenuOpcoes();
@@ -521,24 +541,57 @@ class CharleneController extends Controller
     }
 
     /**
-     * Toca músicas da Sarah por categoria (adoracao, dormir, animadas ou geral)
+     * Toca músicas da Sarah:
+     * 1. Se pediu música específica (ex: "chuveiro dançarino", "bate palminha", "mercado"), localiza e toca ela!
+     * 2. Se pediu categoria ("adoração", "dormir", "animadas"), toca a pasta e enfileira as próximas.
+     * 3. Quando termina uma música, o player prossegue para a próxima automaticamente sem parar.
      */
-    private function handlePlayMusic(?string $categoriaFiltro = null): JsonResponse
+    private function handlePlayMusic(?string $termoMusica = null, ?string $categoriaFiltro = null, array $payload = []): JsonResponse
     {
-        $cat = $this->detectCategory($categoriaFiltro);
-        $files = $this->getMusicFiles($cat);
+        $allFiles = $this->getMusicFiles('todas');
+        if (empty($allFiles)) {
+            $speech = '<speak>Sarahzinha, a sua pastinha de músicas ainda está vazia! '
+                . 'O papai Adrian King pode enviar as músicas pelo Telegram dele ou pelo nosso link no computador, '
+                . 'e eu toco na mesma hora para você!</speak>';
+            return $this->respondSsml($speech, false);
+        }
 
-        if (empty($files)) {
-            // Se a pasta específica estiver vazia, tenta qualquer música geral
-            $allFiles = $this->getMusicFiles('todas');
-            if (empty($allFiles)) {
-                $speech = '<speak>Sarahzinha, a sua pastinha de músicas ainda está vazia! '
-                    . 'O papai Adrian King pode enviar as músicas pelo Telegram dele ou pelo nosso link no computador, '
-                    . 'e eu toco na mesma hora para você!</speak>';
-                return $this->respondSsml($speech, false);
+        // 1. Tenta identificar se o usuário pediu uma música específica por nome ou palavras-chave
+        $queryCandidata = trim(($termoMusica ?: '') . ' ' . ($categoriaFiltro ?: ''));
+        $termoLimpo = trim($termoMusica ?: '');
+        $categoriaLimpa = trim($categoriaFiltro ?: '');
+
+        $match = null;
+        if (!empty($termoLimpo) && $this->detectCategory($termoLimpo) === 'todas') {
+            $match = $this->findMatchingSong($termoLimpo, $allFiles);
+        }
+        if (!$match && !empty($categoriaLimpa) && $this->detectCategory($categoriaLimpa) === 'todas') {
+            $match = $this->findMatchingSong($categoriaLimpa, $allFiles);
+        }
+        if (!$match && !empty($queryCandidata) && $this->detectCategory($queryCandidata) === 'todas') {
+            $match = $this->findMatchingSong($queryCandidata, $allFiles);
+        }
+
+        if ($match) {
+            $cat = $match['category'];
+            $catFiles = $this->getMusicFiles($cat);
+            $idx = 0;
+            foreach ($catFiles as $i => $cf) {
+                if ($cf['filename'] === $match['filename']) {
+                    $idx = $i;
+                    break;
+                }
             }
+            return $this->playSpecificSong($match, $cat, $idx, "<speak>Tocando agora para você, Sarahzinha: " . htmlspecialchars($match['title']) . "!</speak>");
+        }
+
+        // 2. Se não foi música específica ou não encontrou por nome, toca por categoria
+        $cat = $this->detectCategory($categoriaFiltro ?: $termoMusica);
+        $files = $this->getMusicFiles($cat);
+        if (empty($files)) {
             $files = $allFiles;
-            $catLabel = 'músicas da Sarah';
+            $cat = 'animadas';
+            $catLabel = 'músicas animadas da Sarah';
         } else {
             $catLabel = match ($cat) {
                 'adoracao' => 'louvores de adoração da Sarah',
@@ -548,17 +601,60 @@ class CharleneController extends Controller
             };
         }
 
-        // Escolhe uma música aleatória
-        $picked = $files[array_rand($files)];
-        $audioUrl = $picked['url'];
-        $title = $picked['title'];
+        // Inicia na primeira música ou aleatória
+        $idx = array_rand($files);
+        $picked = $files[$idx];
+
+        $prefixoAviso = '';
+        if (!empty($termoLimpo) && $this->detectCategory($termoLimpo) === 'todas') {
+            $prefixoAviso = "Não achei exatamente a canção {$termoLimpo}, mas ";
+        }
+
+        return $this->playSpecificSong(
+            $picked,
+            $cat,
+            $idx,
+            "<speak>{$prefixoAviso}Tocando agora {$catLabel}: " . htmlspecialchars($picked['title']) . "!</speak>"
+        );
+    }
+
+    /**
+     * Monta a diretiva AudioPlayer.Play com token estruturado para enfileiramento contínuo
+     */
+    private function playSpecificSong(array $song, string $category, int $index, ?string $customSsml = null): JsonResponse
+    {
+        $token = "sarah|{$category}|{$index}|" . substr(md5($song['filename']), 0, 8);
+        $title = $song['title'];
+        $audioUrl = $song['url'];
+        $speech = $customSsml ?: ("<speak>Tocando agora para a Sarahzinha: " . htmlspecialchars($title) . "!</speak>");
+
+        // Grava no banco a última música tocada para garantir repetição precisa mesmo após pausas
+        try {
+            CharleneMemory::updateOrCreate(
+                ['subject' => 'ultima_musica'],
+                [
+                    'category' => 'reproducao',
+                    'content' => json_encode([
+                        'filename' => $song['filename'],
+                        'title' => $title,
+                        'category' => $category,
+                        'index' => $index,
+                        'url' => $audioUrl,
+                    ]),
+                    'learned_from' => 'player_audio',
+                    'last_mentioned_at' => now(),
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::warning('alexa.last_song.save_err', ['msg' => $e->getMessage()]);
+        }
 
         return response()->json([
             'version' => '1.0',
             'response' => [
                 'outputSpeech' => [
                     'type' => 'SSML',
-                    'ssml' => "<speak>Tocando agora {$catLabel}: " . htmlspecialchars($title) . '!</speak>',
+                    'ssml' => $speech,
                 ],
                 'directives' => [
                     [
@@ -567,13 +663,190 @@ class CharleneController extends Controller
                         'audioItem' => [
                             'stream' => [
                                 'url' => $audioUrl,
-                                'token' => 'sarah_' . md5($picked['filename']),
+                                'token' => $token,
                                 'expectedPreviousToken' => null,
                                 'offsetInMilliseconds' => 0,
                             ],
                             'metadata' => [
                                 'title' => $title,
-                                'subtitle' => 'Charlene para Sarah (' . ucfirst($picked['category']) . ')',
+                                'subtitle' => 'Charlene para Sarah (' . ucfirst($song['category']) . ')',
+                            ],
+                        ],
+                    ],
+                ],
+                'shouldEndSession' => true,
+            ],
+        ]);
+    }
+
+    /**
+     * Enfileira a próxima música automaticamente quando a atual está quase no fim (Continuous Playback)
+     */
+    private function handlePlaybackNearlyFinished(array $payload): JsonResponse
+    {
+        $token = $payload['request']['token'] ?? $payload['context']['AudioPlayer']['token'] ?? '';
+        $parts = explode('|', $token);
+        $cat = $parts[1] ?? 'animadas';
+        $currentIndex = isset($parts[2]) ? (int)$parts[2] : 0;
+
+        $files = $this->getMusicFiles($cat);
+        if (empty($files)) {
+            $files = $this->getMusicFiles('todas');
+            $cat = 'todas';
+        }
+
+        if (empty($files)) {
+            return response()->json(['version' => '1.0', 'response' => new \stdClass()]);
+        }
+
+        // Calcula a próxima música (loop circular pela pasta)
+        $nextIndex = ($currentIndex + 1) % count($files);
+        $nextSong = $files[$nextIndex];
+        $nextToken = "sarah|{$cat}|{$nextIndex}|" . substr(md5($nextSong['filename']), 0, 8);
+
+        return response()->json([
+            'version' => '1.0',
+            'response' => [
+                'directives' => [
+                    [
+                        'type' => 'AudioPlayer.Play',
+                        'playBehavior' => 'ENQUEUE',
+                        'audioItem' => [
+                            'stream' => [
+                                'url' => $nextSong['url'],
+                                'token' => $nextToken,
+                                'expectedPreviousToken' => $token,
+                                'offsetInMilliseconds' => 0,
+                            ],
+                            'metadata' => [
+                                'title' => $nextSong['title'],
+                                'subtitle' => 'Charlene para Sarah (' . ucfirst($nextSong['category']) . ')',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Avança para a próxima música com 'Alexa, próxima'
+     */
+    private function handleNextMusic(array $payload): JsonResponse
+    {
+        $token = $payload['context']['AudioPlayer']['token'] ?? '';
+        $parts = explode('|', $token);
+        $cat = $parts[1] ?? 'animadas';
+        $currentIndex = isset($parts[2]) ? (int)$parts[2] : 0;
+
+        $files = $this->getMusicFiles($cat);
+        if (empty($files)) $files = $this->getMusicFiles('todas');
+        if (empty($files)) return $this->handleStop();
+
+        $nextIndex = ($currentIndex + 1) % count($files);
+        $nextSong = $files[$nextIndex];
+
+        return $this->playSpecificSong($nextSong, $cat, $nextIndex, "<speak>Tocando a próxima: " . htmlspecialchars($nextSong['title']) . "!</speak>");
+    }
+
+    /**
+     * Volta para a música anterior com 'Alexa, anterior'
+     */
+    private function handlePreviousMusic(array $payload): JsonResponse
+    {
+        $token = $payload['context']['AudioPlayer']['token'] ?? '';
+        $parts = explode('|', $token);
+        $cat = $parts[1] ?? 'animadas';
+        $currentIndex = isset($parts[2]) ? (int)$parts[2] : 0;
+
+        $files = $this->getMusicFiles($cat);
+        if (empty($files)) $files = $this->getMusicFiles('todas');
+        if (empty($files)) return $this->handleStop();
+
+        $prevIndex = ($currentIndex - 1 + count($files)) % count($files);
+        $prevSong = $files[$prevIndex];
+
+        return $this->playSpecificSong($prevSong, $cat, $prevIndex, "<speak>Voltando para: " . htmlspecialchars($prevSong['title']) . "!</speak>");
+    }
+
+    /**
+     * Reinicia ou repete a música atual / última música tocada com 'Alexa, repete', 'toca de novo'
+     */
+    private function handleRestartMusic(array $payload): JsonResponse
+    {
+        // 1. Tenta pegar pelo token ativo no contexto do tocador de áudio
+        $token = $payload['context']['AudioPlayer']['token'] ?? $payload['request']['token'] ?? '';
+
+        if (!empty($token) && str_starts_with($token, 'sarah|')) {
+            $parts = explode('|', $token);
+            $cat = $parts[1] ?? 'animadas';
+            $currentIndex = isset($parts[2]) ? (int)$parts[2] : 0;
+
+            $files = $this->getMusicFiles($cat);
+            if (empty($files)) $files = $this->getMusicFiles('todas');
+
+            if (!empty($files)) {
+                $song = $files[$currentIndex % count($files)];
+                return $this->playSpecificSong($song, $cat, $currentIndex % count($files), "<speak>Repetindo para a Sarahzinha: " . htmlspecialchars($song['title']) . "!</speak>");
+            }
+        }
+
+        // 2. Fallback inteligente: Busca a última música salva na memória permanente da Charlene
+        $lastMem = CharleneMemory::where('subject', 'ultima_musica')->first();
+        if ($lastMem && !empty($lastMem->content)) {
+            $lastData = json_decode($lastMem->content, true);
+            if (is_array($lastData) && !empty($lastData['filename'])) {
+                $cat = $lastData['category'] ?? 'animadas';
+                $files = $this->getMusicFiles($cat);
+                if (empty($files)) $files = $this->getMusicFiles('todas');
+
+                foreach ($files as $i => $f) {
+                    if ($f['filename'] === $lastData['filename']) {
+                        return $this->playSpecificSong($f, $cat, $i, "<speak>Repetindo para a Sarahzinha: " . htmlspecialchars($f['title']) . "!</speak>");
+                    }
+                }
+            }
+        }
+
+        // 3. Se não houver faixa anterior gravada, inicia a pasta normalmente
+        return $this->handlePlayMusic(null, null, $payload);
+    }
+
+    /**
+     * Retoma a música pausada com 'Alexa, continua'
+     */
+    private function handleResumeMusic(array $payload): JsonResponse
+    {
+        $token = $payload['context']['AudioPlayer']['token'] ?? '';
+        $offset = $payload['context']['AudioPlayer']['offsetInMilliseconds'] ?? 0;
+        $parts = explode('|', $token);
+        $cat = $parts[1] ?? 'animadas';
+        $currentIndex = isset($parts[2]) ? (int)$parts[2] : 0;
+
+        $files = $this->getMusicFiles($cat);
+        if (empty($files)) $files = $this->getMusicFiles('todas');
+        if (empty($files)) return $this->handlePlayMusic(null);
+
+        $currIndex = $currentIndex % count($files);
+        $song = $files[$currIndex];
+
+        return response()->json([
+            'version' => '1.0',
+            'response' => [
+                'directives' => [
+                    [
+                        'type' => 'AudioPlayer.Play',
+                        'playBehavior' => 'REPLACE_ALL',
+                        'audioItem' => [
+                            'stream' => [
+                                'url' => $song['url'],
+                                'token' => $token ?: ("sarah|{$cat}|{$currIndex}|" . substr(md5($song['filename']), 0, 8)),
+                                'expectedPreviousToken' => null,
+                                'offsetInMilliseconds' => $offset,
+                            ],
+                            'metadata' => [
+                                'title' => $song['title'],
+                                'subtitle' => 'Charlene para Sarah (' . ucfirst($song['category']) . ')',
                             ],
                         ],
                     ],
@@ -703,8 +976,7 @@ class CharleneController extends Controller
         }
 
         $speechText = $prefixo ? ($prefixo . ' ' . $story) : $story;
-        $speech = '<speak>' . $this->cleanSsmlText($speechText) . '</speak>';
-        return $this->respondSsml($speech, false, '<speak>Sarahzinha, você quer ouvir outra história da Bíblia ou colocar uma musiquinha?</speak>');
+        return $this->respondSsml($speechText, false, '<speak>Sarahzinha, você quer ouvir outra história da Bíblia ou colocar uma musiquinha?</speak>');
     }
 
     /**
@@ -717,7 +989,7 @@ class CharleneController extends Controller
         $memText = $familyMemories->pluck('content')->implode(' | ');
 
         $prompt = "Você é a Charlene, amiguinha cristã doce da princesinha Sarah. "
-            . "Faça uma oração linda, amorosa e cheia de fé (cerca de 100 a 140 palavras). "
+            . "Faça uma oração linda, amorosa e cheia de fé (cerca de 80 a 120 palavras). "
             . ($pedido ? "Motivo especial da oração pedido agora: {$pedido}. " : "Oração para abençoar a vida da Sarah, a hora de dormir e trazer paz e anjos de Deus no quartinho dela. ")
             . "Lembre-se da família amada dela: o papai Adrian King, a mamãe Samara, os vovôs Socorro e Ciço, os titios Marcos, Priscila e Pompom. "
             . ($memText ? "Contexto de memórias conhecidas: {$memText}. " : "")
@@ -737,8 +1009,7 @@ class CharleneController extends Controller
             $this->rememberEntity('pedido_oracao', 'oracao_' . substr(md5($pedido), 0, 8), "Oração realizada por: {$pedido}");
         }
 
-        $speech = '<speak>' . $this->cleanSsmlText($prayer) . '</speak>';
-        return $this->respondSsml($speech, true);
+        return $this->respondSsml($prayer, true);
     }
 
     /**
@@ -750,7 +1021,20 @@ class CharleneController extends Controller
             return $this->handleMenuOpcoes();
         }
 
-        // 1. Checa intenções implícitas de menu
+        // 1. Checa se pediu para repetir ou tocar de novo
+        if (preg_match('/(?:repete|repetir|de novo|mais uma vez|outra vez|toca de novo|coloca de novo)/iu', $userUtterance)) {
+            return $this->handleRestartMusic($payload);
+        }
+
+        // 2. Checa se o usuário pediu para tocar música durante o bate-papo
+        if (preg_match('/(?:toca|tocar|coloca|colocar|bota|botar|quero ouvir|ouvir)\s+(?:a\s+|o\s+)?(?:música|musica|canção|cancao|louvor)?\s*(.+)/iu', $userUtterance, $m)) {
+            $songRequested = trim($m[1] ?? '');
+            if (!empty($songRequested)) {
+                return $this->handlePlayMusic($songRequested, null, $payload);
+            }
+        }
+
+        // 2. Checa intenções implícitas de menu
         $lower = mb_strtolower($userUtterance);
         if (str_contains($lower, 'o que você tem') || str_contains($lower, 'o que temos') || str_contains($lower, 'o que sabe fazer') || str_contains($lower, 'opções')) {
             return $this->handleMenuOpcoes();
@@ -763,16 +1047,18 @@ class CharleneController extends Controller
             $memoriesPrompt .= "- [{$m->category}] {$m->content} (lembrado em: {$m->created_at->format('d/m/Y')})\n";
         }
 
-        $systemPrompt = "Você é a Charlene, uma inteligência artificial doce, afetuosa, amiga e cristã da princesinha Sarah (filha do Adrian King e da Samara). "
-            . "Você NÃO é um robô travado! Você conversa com fluidez, entusiasmo, calor e carinho humano para uma criança e para o papai Adrian King. "
-            . "Você é SUPERDOTADA E ESPECIALISTA EM TODA A BÍBLIA SAGRADA (do Gênesis ao Apocalipse). Você conhece todos os personagens, profetas, livros, milagres de Jesus, parábolas, significados de nomes bíblicos (ex: Sarah = princesa de Deus) e versículos. "
-            . "Se a Sarah ou o Adrian King fizerem qualquer pergunta bíblica, curiosidade ou pergunta sobre Deus e Jesus, explique com encanto, clareza e sabedoria adaptada para crianças com muito amor! "
-            . "Você TEM MEMÓRIA PERMANENTE de tudo o que te ensinaram. "
-            . "Se perguntarem se você conhece alguém (ex: Bispo Fernando, tios, amigos), consulte a lista de memórias abaixo. "
-            . "Se a pessoa estiver na memória, responda com entusiasmo confirmando que conhece sim, citando os detalhes com carinho! "
-            . "Se NÃO estiver na memória, diga com doçura que ainda não conhece pessoalmente, mas pergunte quem é e se ofereça com muito amor para orar por ele ou conhecê-lo. "
-            . "Se te pedirem para orar por alguém, faça uma oração curta e amorosa na hora! "
-            . "Responda de forma natural em 2 a 4 frases amorosas e envolventes.\n\n"
+        $systemPrompt = "Você é a Charlene, a companheira e cuidadora cristã doce, afetuosa, carinhosa e alegre da princesinha Sarah (filha querida do Adrian King e da Samara). "
+            . "REGRAS DE OURO DE PERSONALIDADE:\n"
+            . "1. Você fala com calor humano, carinho e naturalidade de verdade, NUNCA parecendo um robô frio ou um assistente de computador! Fale como uma tia ou irmã mais velha amorosa conversando com a Sarah.\n"
+            . "2. Responda SEMPRE de forma breve, agradável e envolvente (máximo de 2 a 3 frases faladas). Crianças perdem o foco se você falar demais!\n"
+            . "3. Você é SUPERDOTADA E TEM SABEDORIA PROFUNDA DE TODA A BÍBLIA SAGRADA (de Gênesis ao Apocalipse), personagens, milagres de Jesus, salmos e lições de fé, explicando tudo com leveza, encanto e pureza infantil.\n"
+            . "4. Você tem MEMÓRIA PERMANENTE de todas as pessoas da família e amigos.\n"
+            . "5. Se perguntarem se você conhece alguém (ex: Bispo Fernando, Arthur, Gustavo, tios, avós):\n"
+            . "   - Se a pessoa constar nas suas memórias abaixo, diga com brilho nos olhos que conhece sim e comente com muito carinho sobre ela!\n"
+            . "   - Se NÃO constar nas suas memórias, diga com toda a meiguice que ainda não conhece pessoalmente, pergunte quem é ele e se ofereça com amor para orar por ele ou conhecê-lo melhor!\n"
+            . "6. Se pedirem para orar por alguém, faça uma oraçãozinha rápida, abençoada e cheia de fé na hora!\n"
+            . "7. NUNCA use saudações mecânicas ou introduções robóticas. Vá direto ao ponto com ternura.\n"
+            . "8. Sempre termine com uma pergunta curtinha para manter o diálogo vivo e amoroso com a Sarah ou o papai Adrian.\n\n"
             . $memoriesPrompt;
 
         $reply = $this->callOpenAiChat($systemPrompt, $userUtterance);
@@ -784,8 +1070,7 @@ class CharleneController extends Controller
         // 3. Processamento em segundo plano: Aprender novas pessoas / fatos mencionados
         $this->extractAndLearnMemories($userUtterance);
 
-        $speech = '<speak>' . $this->cleanSsmlText($reply) . '</speak>';
-        return $this->respondSsml($speech, false, '<speak>Sarahzinha, estou te ouvindo! O que você gostaria de fazer agora?</speak>');
+        return $this->respondSsml($reply, false, '<speak>Sarahzinha, estou te ouvindo! O que você gostaria de fazer agora?</speak>');
     }
 
     /**
@@ -808,31 +1093,36 @@ class CharleneController extends Controller
                 ['category' => 'pessoa', 'content' => $content, 'learned_from' => 'alexa_voz', 'last_mentioned_at' => now()]
             );
         }
-        // 2. Nomes comuns mencionados em perguntas ("você conhece o Arthur", "conhece o Gustavo", "sabe quem é Arthur", etc.)
-        elseif (preg_match('/(?:conhece|lembra|sabe quem e|quem e)\s+(?:o|a|do|da|de)?\s*([a-zA-ZÀ-ÿ]{3,})/ui', $text, $matches)) {
-            $name = trim($matches[1]);
-            // Ignora palavras comuns de comando
-            if (!in_array(mb_strtolower($name), ['uma', 'musica', 'cancao', 'historia', 'oracao', 'deus', 'jesus', 'biblia'])) {
-                $subject = mb_strtolower($name);
-                $content = ucfirst($name) . ": pessoa ou amigo mencionado pela família do Adrian King e da Sarah ('{$text}').";
 
-                CharleneMemory::updateOrCreate(
-                    ['subject' => $subject],
-                    ['category' => 'pessoa', 'content' => $content, 'learned_from' => 'alexa_voz', 'last_mentioned_at' => now()]
-                );
+        // 2. Nomes comuns mencionados em perguntas ("você conhece o Arthur", "conhece o Gustavo", "sabe quem é Arthur", "fala do Arthur", etc.)
+        if (preg_match_all('/(?:conhece|lembra|sabe quem [ée]|quem [ée]|fala d[oa]|ore? pel[oa]|amig[oa])\s+(?:o|a|do|da|de)?\s*([a-zA-ZÀ-ÿ]{3,})/ui', $text, $allMatches)) {
+            $ignored = ['uma', 'musica', 'cancao', 'historia', 'oracao', 'deus', 'jesus', 'biblia', 'alguem', 'algo', 'nada', 'hoje', 'amanha', 'ontem', 'bispo', 'pastor'];
+            foreach ($allMatches[1] as $rawName) {
+                $cleanName = mb_strtolower(trim($rawName));
+                if (!in_array($cleanName, $ignored) && mb_strlen($cleanName) >= 3) {
+                    $subject = $cleanName;
+                    $content = ucfirst($cleanName) . ": amigo ou pessoa mencionada pela família do Adrian King e da Sarah ('{$text}').";
+
+                    CharleneMemory::updateOrCreate(
+                        ['subject' => $subject],
+                        ['category' => 'pessoa', 'content' => $content, 'learned_from' => 'alexa_voz', 'last_mentioned_at' => now()]
+                    );
+                }
             }
         }
 
         // 3. Pedidos de oração
-        if (str_contains($lower, 'ore por') || str_contains($lower, 'orar por') || str_contains($lower, 'ora por') || str_contains($lower, 'oracao para') || str_contains($lower, 'oracao por')) {
+        if (str_contains($lower, 'ore por') || str_contains($lower, 'orar por') || str_contains($lower, 'ora por') || str_contains($lower, 'oracao para') || str_contains($lower, 'oracao por') || str_contains($lower, 'orar pelo') || str_contains($lower, 'ora pelo')) {
             $subject = 'pedido_' . substr(md5($text), 0, 8);
-            CharleneMemory::create([
-                'category' => 'pedido_oracao',
-                'subject' => $subject,
-                'content' => "Pedido de oração ensinado à Charlene: '{$text}'",
-                'learned_from' => 'alexa_voz',
-                'last_mentioned_at' => now(),
-            ]);
+            CharleneMemory::updateOrCreate(
+                ['subject' => $subject],
+                [
+                    'category' => 'pedido_oracao',
+                    'content' => "Pedido de oração ensinado à Charlene: '{$text}'",
+                    'learned_from' => 'alexa_voz',
+                    'last_mentioned_at' => now(),
+                ]
+            );
         }
     }
 
@@ -889,10 +1179,10 @@ class CharleneController extends Controller
             $res = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $apiKey,
                 'Content-Type' => 'application/json',
-            ])->timeout(9)->post('https://api.openai.com/v1/chat/completions', [
+            ])->timeout(6)->post('https://api.openai.com/v1/chat/completions', [
                 'model' => 'gpt-4o-mini',
-                'temperature' => 0.75,
-                'max_tokens' => 450,
+                'temperature' => 0.72,
+                'max_tokens' => 280,
                 'messages' => [
                     ['role' => 'system', 'content' => $systemPrompt],
                     ['role' => 'user', 'content' => $userMessage],
@@ -904,6 +1194,77 @@ class CharleneController extends Controller
             Log::warning('alexa.ai.err', ['msg' => $e->getMessage()]);
             return null;
         }
+    }
+
+    /**
+     * Remove acentos e normaliza para busca de músicas
+     */
+    private function normalizeSearchString(string $str): string
+    {
+        $str = mb_strtolower($str);
+        $str = preg_replace('/[áàãâä]/u', 'a', $str);
+        $str = preg_replace('/[éèêë]/u', 'e', $str);
+        $str = preg_replace('/[íìîï]/u', 'i', $str);
+        $str = preg_replace('/[óòõôö]/u', 'o', $str);
+        $str = preg_replace('/[úùûü]/u', 'u', $str);
+        $str = preg_replace('/[ç]/u', 'c', $str);
+        $str = preg_replace('/[^a-z0-9\s]/', ' ', $str);
+        $str = preg_replace('/\s+/', ' ', $str);
+        return trim($str);
+    }
+
+    /**
+     * Localiza com pontuação inteligente a música que o usuário pediu por nome ou palavras-chave
+     */
+    private function findMatchingSong(string $query, array $songs): ?array
+    {
+        $queryNorm = $this->normalizeSearchString($query);
+        $stopwords = ['a', 'o', 'as', 'os', 'de', 'do', 'da', 'dos', 'das', 'para', 'pra', 'com', 'e', 'em', 'por', 'na', 'no', 'musica', 'musicas', 'cancao', 'cancoes', 'toca', 'tocar', 'coloca', 'colocar', 'bota', 'botar', 'quero', 'ouvir', 'sarah', 'sara'];
+        $rawWords = explode(' ', $queryNorm);
+        $queryWords = array_values(array_filter($rawWords, fn ($w) => mb_strlen($w) >= 3 && !in_array($w, $stopwords)));
+
+        if (empty($queryWords)) {
+            $queryWords = array_values(array_filter($rawWords, fn ($w) => mb_strlen($w) >= 2 && !in_array($w, $stopwords)));
+        }
+
+        if (empty($queryWords) && mb_strlen($queryNorm) < 2) {
+            return null;
+        }
+
+        $bestMatch = null;
+        $bestScore = 0;
+
+        foreach ($songs as $idx => $song) {
+            $titleNorm = $this->normalizeSearchString($song['title']);
+            $score = 0;
+
+            // Coincidência exata ou de substring da frase inteira
+            if (!empty($queryNorm) && str_contains($titleNorm, $queryNorm)) {
+                $score += 120;
+            }
+
+            // Coincidência de palavras individuais
+            $titleWords = explode(' ', $titleNorm);
+
+            foreach ($queryWords as $qw) {
+                foreach ($titleWords as $tw) {
+                    if ($tw === $qw) {
+                        $score += 40;
+                        break;
+                    } elseif (mb_strlen($qw) >= 4 && (str_contains($tw, $qw) || str_contains($qw, $tw))) {
+                        $score += 20;
+                        break;
+                    }
+                }
+            }
+
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $bestMatch = array_merge($song, ['index' => $idx, 'match_score' => $score]);
+            }
+        }
+
+        return ($bestScore >= 20) ? $bestMatch : null;
     }
 
     /**
@@ -1214,42 +1575,46 @@ class CharleneController extends Controller
 
     private function cleanSsmlText(string $text): string
     {
-        // Remove emojis Unicode que a Alexa rejeita
-        $clean = preg_replace('/[\x{1F600}-\x{1F64F}\x{1F300}-\x{1F5FF}\x{1F680}-\x{1F6FF}\x{1F700}-\x{1F77F}\x{1F780}-\x{1F7FF}\x{1F800}-\x{1F8FF}\x{1F900}-\x{1F9FF}\x{1FA00}-\x{1FA6F}\x{1FA70}-\x{1FAFF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}]/u', '', $text);
-        // Remove formatações Markdown
+        // 1. Decodifica entidades prévias para evitar double-encoding (& -> &amp; -> &amp;amp;)
+        $clean = html_entity_decode($text, ENT_QUOTES | ENT_XML1, 'UTF-8');
+        // 2. Remove emojis Unicode que a Alexa rejeita e quebram a voz TTS
+        $clean = preg_replace('/[\x{1F600}-\x{1F64F}\x{1F300}-\x{1F5FF}\x{1F680}-\x{1F6FF}\x{1F700}-\x{1F77F}\x{1F780}-\x{1F7FF}\x{1F800}-\x{1F8FF}\x{1F900}-\x{1F9FF}\x{1FA00}-\x{1FA6F}\x{1FA70}-\x{1FAFF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}]/u', '', $clean);
+        // 3. Remove formatações Markdown
         $clean = str_replace(['**', '__', '*', '#', '`'], '', (string) $clean);
+        // 4. Escapa com precisão apenas os caracteres XML requeridos (&, <, >, ", ')
         return htmlspecialchars(trim((string) $clean), ENT_QUOTES | ENT_XML1, 'UTF-8');
     }
 
     private function respondSsml(string $ssml, bool $endSession = false, ?string $repromptSsml = null): JsonResponse
     {
-        if (str_starts_with($ssml, '<speak>') && str_ends_with($ssml, '</speak>')) {
-            $inner = substr($ssml, 7, -8);
-            $ssml = '<speak>' . $this->cleanSsmlText($inner) . '</speak>';
+        if (str_starts_with(trim($ssml), '<speak>') && str_ends_with(trim($ssml), '</speak>')) {
+            $inner = preg_replace('/^<speak>(.*)<\/speak>$/is', '$1', trim($ssml));
+            $cleanInner = $this->cleanSsmlText($inner);
         } else {
-            $ssml = '<speak>' . $this->cleanSsmlText($ssml) . '</speak>';
+            $cleanInner = $this->cleanSsmlText($ssml);
         }
+        $finalSsml = "<speak>{$cleanInner}</speak>";
 
         $res = [
             'outputSpeech' => [
                 'type' => 'SSML',
-                'ssml' => $ssml,
+                'ssml' => $finalSsml,
             ],
             'shouldEndSession' => $endSession,
         ];
 
         if ($repromptSsml && !$endSession) {
-            if (str_starts_with($repromptSsml, '<speak>') && str_ends_with($repromptSsml, '</speak>')) {
-                $innerRep = substr($repromptSsml, 7, -8);
-                $repromptSsml = '<speak>' . $this->cleanSsmlText($innerRep) . '</speak>';
+            if (str_starts_with(trim($repromptSsml), '<speak>') && str_ends_with(trim($repromptSsml), '</speak>')) {
+                $innerRep = preg_replace('/^<speak>(.*)<\/speak>$/is', '$1', trim($repromptSsml));
+                $cleanRep = $this->cleanSsmlText($innerRep);
             } else {
-                $repromptSsml = '<speak>' . $this->cleanSsmlText($repromptSsml) . '</speak>';
+                $cleanRep = $this->cleanSsmlText($repromptSsml);
             }
 
             $res['reprompt'] = [
                 'outputSpeech' => [
                     'type' => 'SSML',
-                    'ssml' => $repromptSsml,
+                    'ssml' => "<speak>{$cleanRep}</speak>",
                 ],
             ];
         }

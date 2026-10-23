@@ -24,6 +24,52 @@
           "samples": []
         },
         {
+          "name": "AMAZON.NextIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.PreviousIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.RepeatIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StartOverIntent",
+          "samples": []
+        },
+        {
+          "name": "RepetirMusicaIntent",
+          "slots": [],
+          "samples": [
+            "repete",
+            "repetir",
+            "repete a música",
+            "repetir a música",
+            "repete essa música",
+            "repetir essa música",
+            "repete essa",
+            "repetir essa",
+            "repete a canção",
+            "repetir a canção",
+            "repete o louvor",
+            "toca de novo",
+            "tocar de novo",
+            "coloca de novo",
+            "colocar de novo",
+            "toca essa música de novo",
+            "toca essa de novo",
+            "mais uma vez",
+            "toca mais uma vez",
+            "quero ouvir de novo",
+            "ouvir de novo",
+            "toca a última música",
+            "repete a última música",
+            "repete para mim"
+          ]
+        },
+        {
           "name": "MenuOpcoesIntent",
           "slots": [],
           "samples": [
@@ -45,9 +91,35 @@
             {
               "name": "categoria",
               "type": "AMAZON.SearchQuery"
+            },
+            {
+              "name": "musica",
+              "type": "AMAZON.SearchQuery"
             }
           ],
           "samples": [
+            "tocar a música {musica}",
+            "toca a música {musica}",
+            "tocar música {musica}",
+            "toca música {musica}",
+            "tocar a canção {musica}",
+            "toca a canção {musica}",
+            "tocar canção {musica}",
+            "toca canção {musica}",
+            "tocar o louvor {musica}",
+            "toca o louvor {musica}",
+            "colocar a música {musica}",
+            "coloca a música {musica}",
+            "coloca a canção {musica}",
+            "coloca o louvor {musica}",
+            "coloca {musica}",
+            "colocar {musica}",
+            "toca {musica}",
+            "tocar {musica}",
+            "quero ouvir a música {musica}",
+            "quero ouvir a canção {musica}",
+            "quero ouvir o louvor {musica}",
+            "quero ouvir {musica}",
             "tocar músicas de {categoria}",
             "toca músicas de {categoria}",
             "tocar {categoria}",
@@ -134,12 +206,14 @@
           "slots": [],
           "samples": [
             "tocar o devocional",
+            "tocar devocional",
+            "toca o devocional",
+            "toca devocional",
             "devocional de hoje",
             "devocional do papai",
             "devocional do adrian",
-            "palavra de hoje",
             "ouvir o devocional",
-            "palavra do dia"
+            "quero ouvir o devocional"
           ]
         },
         {
