@@ -1046,8 +1046,10 @@ Route::middleware(['jwt', 'module:king_camera'])->group(function () {
 
 // Alexa Skill — Agente Charlene (Sara & Família)
 Route::match(['get', 'post', 'options', 'head'], '/api/alexa/charlene', [\App\Http\Controllers\Alexa\CharleneController::class, 'handle']);
+Route::get('/charlene/musicas', [\App\Http\Controllers\Alexa\CharleneController::class, 'managerPage']);
 Route::get('/api/alexa/charlene/playlist', [\App\Http\Controllers\Alexa\CharleneController::class, 'listPlaylist']);
 Route::post('/api/alexa/charlene/upload', [\App\Http\Controllers\Alexa\CharleneController::class, 'uploadMusic']);
+Route::post('/api/alexa/charlene/delete', [\App\Http\Controllers\Alexa\CharleneController::class, 'deleteMusic']);
 
 // checkoutConfig / PagBank / Mercado Pago — fora de escopo
 Route::get('/checkoutConfig', fn () => response('Checkout/pagamento online não está disponível.', 410));

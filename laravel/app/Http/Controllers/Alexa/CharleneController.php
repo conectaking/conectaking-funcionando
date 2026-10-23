@@ -322,6 +322,32 @@ class CharleneController extends Controller
         ]);
     }
 
+    /**
+     * Página visual de gerenciamento de músicas
+     */
+    public function managerPage()
+    {
+        $files = $this->getMusicFiles();
+        return view('pages.charleneMusicas', [
+            'musicas' => $files,
+            'baseUrl' => $this->baseUrl . '/storage/sara/musicas/'
+        ]);
+    }
+
+    /**
+     * Remover música
+     */
+    public function deleteMusic(Request $request): JsonResponse
+    {
+        $file = basename($request->input('filename', ''));
+        $target = $this->storageDir . '/' . $file;
+        if ($file && File::exists($target)) {
+            File::delete($target);
+            return response()->json(['success' => true, 'message' => 'Música removida!']);
+        }
+        return response()->json(['success' => false, 'message' => 'Arquivo não encontrado.'], 404);
+    }
+
     private function getMusicFiles(): array
     {
         if (!File::isDirectory($this->storageDir)) {
