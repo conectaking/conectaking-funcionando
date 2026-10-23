@@ -151,6 +151,9 @@ class RequireCookieCsrf
             // King Câmera API (WebRTC SDP, shares, discovery)
             'api/cameras/',
             'api/public/camera-share/',
+            // Alexa & Charlene APIs
+            'api/alexa/',
+            'api/alexa',
         ];
         foreach ($prefixes as $prefix) {
             if (str_starts_with($path, $prefix)) {

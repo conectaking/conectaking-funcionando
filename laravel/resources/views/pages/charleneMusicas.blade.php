@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel da Charlene • Sarah & Família King</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -684,14 +685,23 @@
                 progressText.innerText = `Enviando (${i+1}/${files.length}) para ${currentUploadCategory}: ${f.name}`;
                 progressFill.style.width = `${Math.round(((i+1)/files.length)*100)}%`;
 
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
                 const fd = new FormData();
+                fd.append('_token', csrfToken);
                 fd.append('audio', f);
                 fd.append('category', currentUploadCategory);
 
                 try {
-                    const res = await fetch('/api/alexa/charlene/upload', { method: 'POST', body: fd });
+                    const res = await fetch('/api/alexa/charlene/upload', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-CK-CSRF': getCkCsrfCookie()
+                        },
+                        body: fd
+                    });
                     const j = await res.json();
-                    if (!j.success) alert(`Erro ao enviar ${f.name}: ` + j.message);
+                    if (!j.success) alert(`Erro ao enviar ${f.name}: ` + (j.message || 'Erro desconhecido'));
                 } catch (e) {
                     alert('Erro de conexão ao enviar: ' + f.name);
                 }
@@ -700,17 +710,27 @@
             setTimeout(() => location.reload(), 800);
         }
 
+        function getCkCsrfCookie() {
+            const match = document.cookie.match(new RegExp('(^| )ck_csrf=([^;]+)'));
+            return match ? match[2] : '';
+        }
+
         async function deleteSong(filename, cat) {
             if (!confirm(`Excluir "${filename}" da pasta ${cat}?`)) return;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
             try {
                 const res = await fetch('/api/alexa/charlene/delete', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filename, category: cat })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-CK-CSRF': getCkCsrfCookie()
+                    },
+                    body: JSON.stringify({ filename, category: cat, _token: csrfToken })
                 });
                 const j = await res.json();
                 if (j.success) location.reload();
-                else alert('Erro: ' + j.message);
+                else alert('Erro: ' + (j.message || 'Erro desconhecido'));
             } catch (e) {
                 alert('Erro de conexão.');
             }
@@ -721,19 +741,24 @@
             const subject = document.getElementById('memSubject').value.trim();
             const category = document.getElementById('memCategory').value;
             const content = document.getElementById('memContent').value.trim();
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
 
             try {
                 const res = await fetch('/api/alexa/charlene/memory/save', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ subject, category, content })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-CK-CSRF': getCkCsrfCookie()
+                    },
+                    body: JSON.stringify({ subject, category, content, _token: csrfToken })
                 });
                 const j = await res.json();
                 if (j.success) {
                     alert('Memória gravada no cérebro da Charlene com sucesso!');
                     location.reload();
                 } else {
-                    alert('Erro: ' + j.message);
+                    alert('Erro: ' + (j.message || 'Erro desconhecido'));
                 }
             } catch (err) {
                 alert('Erro de conexão.');
@@ -742,18 +767,23 @@
 
         async function deleteMemory(id) {
             if (!confirm('Deseja que a Charlene esqueça essa informação?')) return;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
             try {
                 const res = await fetch('/api/alexa/charlene/memory/delete', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-CK-CSRF': getCkCsrfCookie()
+                    },
+                    body: JSON.stringify({ id, _token: csrfToken })
                 });
                 const j = await res.json();
                 if (j.success) {
                     const card = document.getElementById('mem-' + id);
                     if (card) card.remove();
                 } else {
-                    alert('Erro: ' + j.message);
+                    alert('Erro: ' + (j.message || 'Erro desconhecido'));
                 }
             } catch (err) {
                 alert('Erro de conexão.');
