@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Músicas da Sara • Charlene Alexa</title>
+    <title>Painel da Charlene • Sarah & Família King</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #0b0f19;
@@ -18,6 +18,8 @@
             --text-muted: #94a3b8;
             --danger: #ef4444;
             --success: #10b981;
+            --amber: #f59e0b;
+            --blue: #3b82f6;
         }
 
         * {
@@ -39,12 +41,12 @@
 
         .container {
             width: 100%;
-            max-width: 680px;
+            max-width: 860px;
         }
 
         .header {
             text-align: center;
-            margin-bottom: 28px;
+            margin-bottom: 24px;
         }
 
         .badge {
@@ -54,15 +56,15 @@
             background: rgba(139, 92, 246, 0.15);
             color: #c4b5fd;
             border: 1px solid rgba(139, 92, 246, 0.3);
-            padding: 4px 12px;
+            padding: 4px 14px;
             border-radius: 9999px;
             font-size: 0.85rem;
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 12px;
         }
 
         h1 {
-            font-size: 2rem;
+            font-size: 2.2rem;
             font-weight: 800;
             background: linear-gradient(135deg, #f472b6, #c084fc, #60a5fa);
             -webkit-background-clip: text;
@@ -75,24 +77,92 @@
             font-size: 0.95rem;
         }
 
-        .alexa-hint {
-            background: rgba(236, 72, 153, 0.08);
-            border: 1px solid rgba(236, 72, 153, 0.2);
-            border-radius: 12px;
-            padding: 12px 16px;
-            margin-bottom: 24px;
-            font-size: 0.9rem;
+        /* Top Navigation Tabs */
+        .main-nav {
             display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #fbcfe8;
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 4px;
+            margin-bottom: 24px;
+            gap: 4px;
         }
 
+        .main-tab {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.95rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .main-tab.active {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .section-panel {
+            display: none;
+        }
+
+        .section-panel.active {
+            display: block;
+        }
+
+        /* Alexa Voice Hints Card */
+        .voice-hints {
+            background: rgba(139, 92, 246, 0.08);
+            border: 1px solid rgba(139, 92, 246, 0.25);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+
+        .voice-hints-title {
+            font-weight: 800;
+            color: #c4b5fd;
+            font-size: 0.95rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hints-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 8px;
+        }
+
+        .hint-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: #f1f5f9;
+        }
+
+        .hint-item strong {
+            color: #f472b6;
+        }
+
+        /* Upload Card */
         .upload-card {
             background: var(--card);
             border: 2px dashed var(--card-border);
             border-radius: 16px;
-            padding: 32px 20px;
+            padding: 28px 20px;
             text-align: center;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -104,43 +174,74 @@
             background: rgba(139, 92, 246, 0.05);
         }
 
-        .upload-icon {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
+        .category-selector {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .cat-btn {
+            background: #1c2438;
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cat-btn.active {
+            background: rgba(139, 92, 246, 0.25);
+            border-color: var(--primary);
+            color: #c4b5fd;
         }
 
         .upload-btn {
             background: linear-gradient(135deg, var(--primary), var(--accent));
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 10px 22px;
             border-radius: 10px;
             font-weight: 700;
             cursor: pointer;
             margin-top: 14px;
             display: inline-block;
-            transition: transform 0.15s ease;
         }
 
-        .upload-btn:active {
-            transform: scale(0.98);
-        }
-
-        .playlist-header {
+        /* Filter Tabs */
+        .filter-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 14px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
-        .playlist-header h2 {
-            font-size: 1.25rem;
-            font-weight: 700;
+        .filter-pills {
+            display: flex;
+            gap: 6px;
         }
 
-        .playlist-count {
+        .pill {
+            background: var(--card);
+            border: 1px solid var(--card-border);
             color: var(--text-muted);
-            font-size: 0.85rem;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .pill.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
         }
 
         .song-list {
@@ -158,64 +259,53 @@
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            transition: border-color 0.2s;
         }
 
         .song-item:hover {
             border-color: #3b4866;
         }
 
-        .song-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            min-width: 0;
-            flex: 1;
+        .song-tag {
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
         }
 
-        .song-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
+        .tag-adoracao {
             background: rgba(139, 92, 246, 0.2);
             color: #c4b5fd;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-            flex-shrink: 0;
+            border: 1px solid rgba(139, 92, 246, 0.4);
         }
 
-        .song-name {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: var(--text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        .tag-dormir {
+            background: rgba(59, 130, 246, 0.2);
+            color: #93c5fd;
+            border: 1px solid rgba(59, 130, 246, 0.4);
         }
 
-        .song-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-shrink: 0;
+        .tag-animadas {
+            background: rgba(236, 72, 153, 0.2);
+            color: #fbcfe8;
+            border: 1px solid rgba(236, 72, 153, 0.4);
         }
 
-        audio {
-            height: 32px;
-            max-width: 200px;
+        .tag-geral {
+            background: rgba(148, 163, 184, 0.15);
+            color: #cbd5e1;
+            border: 1px solid rgba(148, 163, 184, 0.3);
         }
 
         .del-btn {
             background: rgba(239, 68, 68, 0.15);
             color: #fca5a5;
             border: 1px solid rgba(239, 68, 68, 0.3);
-            padding: 6px 10px;
+            padding: 6px 12px;
             border-radius: 8px;
             font-size: 0.8rem;
             cursor: pointer;
-            transition: all 0.2s;
         }
 
         .del-btn:hover {
@@ -223,9 +313,93 @@
             color: white;
         }
 
+        /* Memories Card */
+        .memory-form-card {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        input, select, textarea {
+            width: 100%;
+            background: #0e1320;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 12px;
+        }
+
+        .memory-card {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .memory-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .memory-cat {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(139, 92, 246, 0.15);
+            color: #c4b5fd;
+        }
+
+        .memory-subject {
+            font-weight: 800;
+            font-size: 0.95rem;
+            color: #f8fafc;
+            margin-bottom: 6px;
+        }
+
+        .memory-content {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+
         .empty-state {
             text-align: center;
-            padding: 40px 20px;
+            padding: 36px 20px;
             color: var(--text-muted);
             background: var(--card);
             border-radius: 12px;
@@ -249,137 +423,337 @@
             height: 100%;
             background: linear-gradient(90deg, var(--primary), var(--accent));
             width: 0%;
-            transition: width 0.2s;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <div class="badge">👑 Conecta King • Alexa Skill Charlene</div>
-            <h1>Músicas da Sarah</h1>
-            <p class="subtitle">Adicione ou remova louvores e canções que tocam na Alexa da Sarah</p>
+            <div class="badge">👑 Conecta King • Agente Charlene IA</div>
+            <h1>Charlene & Princesinha Sarah</h1>
+            <p class="subtitle">Gerenciador de Músicas, Cérebro de Memórias e Histórias Bíblicas da Alexa</p>
         </div>
 
-        <div class="alexa-hint">
-            <span>🗣️</span>
-            <div><strong>Comando de Voz na Alexa:</strong> Diga <em>"Alexa, chama a Charlene e toca as músicas da Sarah"</em>.</div>
+        <!-- Top Navigation -->
+        <div class="main-nav">
+            <button class="main-tab active" onclick="switchSection('musicas', this)">
+                <span>🎵</span> Músicas da Sarah
+            </button>
+            <button class="main-tab" onclick="switchSection('memorias', this)">
+                <span>🧠</span> Cérebro & Memória IA
+            </button>
+            <button class="main-tab" onclick="switchSection('comandos', this)">
+                <span>🗣️</span> Comandos de Voz
+            </button>
         </div>
 
-        <div class="upload-card" id="dropZone" onclick="document.getElementById('fileInput').click()">
-            <div class="upload-icon">🎵</div>
-            <p style="font-weight: 700; font-size: 1.05rem;">Arraste arquivos de música (MP3) aqui</p>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">ou clique para selecionar do computador/celular</p>
-            <input type="file" id="fileInput" accept="audio/*" multiple style="display: none;">
-            <button class="upload-btn" type="button">Escolher Músicas</button>
-            <div id="progressContainer">
-                <p id="progressText" style="font-size: 0.85rem; color: #c4b5fd; margin-bottom: 6px;">Enviando...</p>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
+        <!-- ================= SEÇÃO 1: MÚSICAS ================= -->
+        <div id="section-musicas" class="section-panel active">
+            <!-- Hints Bar -->
+            <div class="voice-hints">
+                <div class="voice-hints-title">✨ Comandos Rápidos na Alexa:</div>
+                <div class="hints-grid">
+                    <div class="hint-item">🗣️ <em>"Alexa, fala com a Charlene e toca <strong>músicas de adoração</strong>"</em></div>
+                    <div class="hint-item">🗣️ <em>"Alexa, fala com a Charlene e toca <strong>músicas para dormir</strong>"</em></div>
+                    <div class="hint-item">🗣️ <em>"Alexa, fala com a Charlene e toca <strong>músicas animadas</strong>"</em></div>
+                    <div class="hint-item">🗣️ <em>"Alexa, fala com a Charlene: <strong>o que você tem para mim?</strong>"</em></div>
                 </div>
+            </div>
+
+            <!-- Upload Card -->
+            <div class="upload-card" id="dropZone">
+                <div style="font-size: 2.2rem; margin-bottom: 8px;">📂</div>
+                <p style="font-weight: 800; font-size: 1.1rem; margin-bottom: 6px;">Enviar Novas Músicas para a Sarah</p>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 14px;">Escolha em qual pasta deseja salvar antes de arrastar:</p>
+                
+                <div class="category-selector" onclick="event.stopPropagation()">
+                    <button type="button" class="cat-btn active" onclick="selectUploadCategory('adoracao', this)">🙏 Adoração</button>
+                    <button type="button" class="cat-btn" onclick="selectUploadCategory('dormir', this)">🌙 Hora de Dormir</button>
+                    <button type="button" class="cat-btn" onclick="selectUploadCategory('animadas', this)">⚡ Animadas</button>
+                    <button type="button" class="cat-btn" onclick="selectUploadCategory('geral', this)">🌟 Geral</button>
+                </div>
+
+                <input type="file" id="fileInput" accept="audio/*" multiple style="display: none;">
+                <button class="upload-btn" type="button" onclick="document.getElementById('fileInput').click()">Escolher Arquivos MP3</button>
+                
+                <div id="progressContainer">
+                    <p id="progressText" style="font-size: 0.85rem; color: #c4b5fd; margin-bottom: 6px;">Enviando...</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Bar -->
+            <div class="filter-bar">
+                <div class="filter-pills">
+                    <button class="pill active" onclick="filterCategory('todas', this)">Todas (<span id="count-todas">{{ count($musicas) }}</span>)</button>
+                    <button class="pill" onclick="filterCategory('adoracao', this)">🙏 Adoração</button>
+                    <button class="pill" onclick="filterCategory('dormir', this)">🌙 Dormir</button>
+                    <button class="pill" onclick="filterCategory('animadas', this)">⚡ Animadas</button>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">
+                    📱 <em>Você também pode enviar MP3 direto no Telegram do Agente King!</em>
+                </div>
+            </div>
+
+            <!-- Song List -->
+            <div class="song-list" id="songList">
+                @forelse($musicas as $song)
+                    <div class="song-item" data-category="{{ $song['category'] }}">
+                        <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+                            <div class="song-tag tag-{{ $song['category'] }}">{{ $song['category'] }}</div>
+                            <div style="font-size: 0.95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ $song['title'] }}">
+                                {{ $song['title'] }}
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                            <audio controls preload="none" style="height: 32px; max-width: 180px;">
+                                <source src="{{ $song['url'] }}" type="audio/mpeg">
+                            </audio>
+                            <button class="del-btn" onclick="deleteSong('{{ addslashes($song['filename']) }}', '{{ $song['category'] }}')">Excluir</button>
+                        </div>
+                    </div>
+                @empty
+                    <div class="empty-state" id="emptyState">
+                        Nenhuma música adicionada ainda. Selecione uma pasta e envie seus arquivos MP3 acima!
+                    </div>
+                @endforelse
             </div>
         </div>
 
-        <div class="playlist-header">
-            <h2>Playlist Atual</h2>
-            <span class="playlist-count" id="songCount">{{ count($musicas) }} música(s)</span>
+        <!-- ================= SEÇÃO 2: CÉREBRO & MEMÓRIA ================= -->
+        <div id="section-memorias" class="section-panel">
+            <div class="voice-hints" style="background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.25);">
+                <div class="voice-hints-title" style="color: #fcd34d;">
+                    💡 Memória Inteligente da Charlene:
+                </div>
+                <p style="font-size: 0.88rem; color: #fef3c7; line-height: 1.4;">
+                    Tudo que você ou a Sarah contarem para a Charlene na Alexa (pessoas, bispos, parentes, pedidos de oração), <strong>ela salva automaticamente aqui</strong>! Daqui a 1 semana ou 6 meses, se alguém perguntar <em>"Você conhece o Bispo Fernando?"</em>, ela vai responder na hora que conhece e lembrar com muito carinho!
+                </p>
+            </div>
+
+            <!-- Form Adicionar Memória Manualmente -->
+            <div class="memory-form-card">
+                <h3 style="font-size: 1.05rem; margin-bottom: 12px; font-weight: 800;">Adicionar / Ensinar Algo Novo à Charlene</h3>
+                <form id="memoryForm" onsubmit="saveMemory(event)">
+                    <div class="form-row">
+                        <div>
+                            <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Pessoa ou Assunto:</label>
+                            <input type="text" id="memSubject" placeholder="Ex: Bispo Fernando, Titia Maria, etc." required>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Categoria:</label>
+                            <select id="memCategory">
+                                <option value="pessoa">Pessoa / Amigo</option>
+                                <option value="familia">Família King</option>
+                                <option value="pedido_oracao">Pedido de Oração</option>
+                                <option value="fato">Fato / Gosto da Sarah</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Detalhes que a Charlene deve lembrar:</label>
+                        <textarea id="memContent" rows="2" placeholder="Ex: É o Bispo Fernando, muito querido e amigo da família do Adrian King e da Sarah. Sempre oramos por ele." required></textarea>
+                    </div>
+                    <button type="submit" class="upload-btn" style="margin-top: 0;">Gravar na Memória da Charlene</button>
+                </form>
+            </div>
+
+            <!-- Lista de Memórias -->
+            <h3 style="font-size: 1.1rem; margin-bottom: 14px; font-weight: 800;">Memórias Gravadas ({{ count($memorias) }})</h3>
+            <div class="memory-grid" id="memoryGrid">
+                @foreach($memorias as $mem)
+                    <div class="memory-card" id="mem-{{ $mem->id }}">
+                        <div>
+                            <div class="memory-top">
+                                <span class="memory-cat">{{ $mem->category }}</span>
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">{{ $mem->created_at->format('d/m/Y') }}</span>
+                            </div>
+                            <div class="memory-subject">{{ ucwords(str_replace('_', ' ', $mem->subject)) }}</div>
+                            <div class="memory-content">{{ $mem->content }}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <button class="del-btn" style="padding: 4px 8px; font-size: 0.75rem;" onclick="deleteMemory({{ $mem->id }})">Esquecer</button>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
         </div>
 
-        <div class="song-list" id="songList">
-            @forelse($musicas as $song)
-                <div class="song-item" id="song-{{ md5($song) }}">
-                    <div class="song-info">
-                        <div class="song-icon">🎶</div>
-                        <div class="song-name" title="{{ $song }}">{{ $song }}</div>
+        <!-- ================= SEÇÃO 3: COMANDOS DE VOZ ================= -->
+        <div id="section-comandos" class="section-panel">
+            <div class="memory-form-card">
+                <h3 style="font-size: 1.2rem; margin-bottom: 16px; font-weight: 800; color: #c4b5fd;">🗣️ Guia de Voz da Charlene para a Sarah</h3>
+                
+                <div style="display: flex; flex-direction: column; gap: 14px; font-size: 0.92rem;">
+                    <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
+                        <strong style="color: #f472b6;">🌟 Iniciar conversa carinhosa:</strong>
+                        <p style="margin-top: 4px; color: var(--text-muted);"><em>"Alexa, fala com a Charlene"</em></p>
                     </div>
-                    <div class="song-actions">
-                        <audio controls preload="none">
-                            <source src="{{ $baseUrl . rawurlencode($song) }}" type="audio/mpeg">
-                        </audio>
-                        <button class="del-btn" onclick="deleteSong('{{ addslashes($song) }}')">Remover</button>
+
+                    <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
+                        <strong style="color: #c084fc;">❓ Saber o que tem para fazer:</strong>
+                        <p style="margin-top: 4px; color: var(--text-muted);"><em>"Alexa, fala com a Charlene: o que você tem para me oferecer?"</em> ou <em>"O que temos para hoje?"</em></p>
+                    </div>
+
+                    <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
+                        <strong style="color: #60a5fa;">🎵 Tocar músicas por pasta:</strong>
+                        <p style="margin-top: 4px; color: var(--text-muted);">• <em>"Alexa, fala com a Charlene e toca louvores de adoração"</em></p>
+                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Alexa, fala com a Charlene e toca músicas para dormir"</em></p>
+                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Alexa, fala com a Charlene e toca músicas animadas"</em></p>
+                    </div>
+
+                    <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
+                        <strong style="color: #34d399;">📖 Histórias da Bíblia Dinâmicas (Mais de 20 histórias):</strong>
+                        <p style="margin-top: 4px; color: var(--text-muted);">• <em>"Alexa, pede para a Charlene contar uma história da Bíblia"</em> (ela escolhe uma história emocionante)</p>
+                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Alexa, pede para a Charlene contar a história de Davi e Golias"</em></p>
+                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Alexa, pede para a Charlene contar a história da Arca de Noé / Daniel / Ester / Jesus"</em></p>
+                    </div>
+
+                    <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
+                        <strong style="color: #fbbf24;">🙏 Orações e Pessoas Especiais (Memória):</strong>
+                        <p style="margin-top: 4px; color: var(--text-muted);">• <em>"Alexa, fala com a Charlene: você conhece o Bispo Fernando?"</em></p>
+                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Alexa, fala com a Charlene para orar pelo Bispo Fernando"</em></p>
+                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Alexa, fala com a Charlene para orar pela minha família / dormir"</em></p>
+                    </div>
+
+                    <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
+                        <strong style="color: #a78bfa;">📜 Devocional do Papai Adrian King:</strong>
+                        <p style="margin-top: 4px; color: var(--text-muted);"><em>"Alexa, pede para a Charlene tocar o devocional de hoje"</em></p>
                     </div>
                 </div>
-            @empty
-                <div class="empty-state" id="emptyState">
-                    Nenhuma música adicionada ainda. Arraste arquivos MP3 acima para começar!
-                </div>
-            @endforelse
+            </div>
         </div>
     </div>
 
     <script>
+        let currentUploadCategory = 'adoracao';
+
+        function switchSection(name, btn) {
+            document.querySelectorAll('.main-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('section-' + name).classList.add('active');
+        }
+
+        function selectUploadCategory(cat, btn) {
+            currentUploadCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function filterCategory(cat, btn) {
+            document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+
+            const items = document.querySelectorAll('.song-item');
+            items.forEach(item => {
+                if (cat === 'todas' || item.getAttribute('data-category') === cat) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // Drag and drop upload
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
         const progressContainer = document.getElementById('progressContainer');
         const progressFill = document.getElementById('progressFill');
         const progressText = document.getElementById('progressText');
 
-        ['dragenter', 'dragover'].forEach(name => {
-            dropZone.addEventListener(name, (e) => {
-                e.preventDefault();
-                dropZone.classList.add('dragover');
-            });
+        ['dragenter', 'dragover'].forEach(n => {
+            dropZone.addEventListener(n, e => { e.preventDefault(); dropZone.classList.add('dragover'); });
         });
-
-        ['dragleave', 'drop'].forEach(name => {
-            dropZone.addEventListener(name, (e) => {
-                e.preventDefault();
-                dropZone.classList.remove('dragover');
-            });
+        ['dragleave', 'drop'].forEach(n => {
+            dropZone.addEventListener(n, e => { e.preventDefault(); dropZone.classList.remove('dragover'); });
         });
-
-        dropZone.addEventListener('drop', (e) => {
-            const files = e.dataTransfer.files;
-            if (files.length) uploadFiles(files);
+        dropZone.addEventListener('drop', e => {
+            if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
         });
-
-        fileInput.addEventListener('change', (e) => {
+        fileInput.addEventListener('change', () => {
             if (fileInput.files.length) uploadFiles(fileInput.files);
         });
 
         async function uploadFiles(files) {
             progressContainer.style.display = 'block';
             for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                progressText.innerText = `Enviando (${i + 1}/${files.length}): ${file.name}`;
-                progressFill.style.width = `${Math.round(((i + 1) / files.length) * 100)}%`;
+                const f = files[i];
+                progressText.innerText = `Enviando (${i+1}/${files.length}) para ${currentUploadCategory}: ${f.name}`;
+                progressFill.style.width = `${Math.round(((i+1)/files.length)*100)}%`;
 
-                const formData = new FormData();
-                formData.append('audio', file);
+                const fd = new FormData();
+                fd.append('audio', f);
+                fd.append('category', currentUploadCategory);
 
                 try {
-                    const res = await fetch('/api/alexa/charlene/upload', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    const json = await res.json();
-                    if (!json.success) {
-                        alert(`Erro ao enviar ${file.name}: ` + json.message);
-                    }
-                } catch (err) {
-                    alert('Erro de conexão ao enviar: ' + file.name);
+                    const res = await fetch('/api/alexa/charlene/upload', { method: 'POST', body: fd });
+                    const j = await res.json();
+                    if (!j.success) alert(`Erro ao enviar ${f.name}: ` + j.message);
+                } catch (e) {
+                    alert('Erro de conexão ao enviar: ' + f.name);
                 }
             }
             progressText.innerText = 'Upload concluído com sucesso!';
-            setTimeout(() => {
-                location.reload();
-            }, 800);
+            setTimeout(() => location.reload(), 800);
         }
 
-        async function deleteSong(filename) {
-            if (!confirm(`Deseja remover "${filename}" da playlist da Sara?`)) return;
-
+        async function deleteSong(filename, cat) {
+            if (!confirm(`Excluir "${filename}" da pasta ${cat}?`)) return;
             try {
                 const res = await fetch('/api/alexa/charlene/delete', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filename })
+                    body: JSON.stringify({ filename, category: cat })
                 });
-                const json = await res.json();
-                if (json.success) {
+                const j = await res.json();
+                if (j.success) location.reload();
+                else alert('Erro: ' + j.message);
+            } catch (e) {
+                alert('Erro de conexão.');
+            }
+        }
+
+        async function saveMemory(e) {
+            e.preventDefault();
+            const subject = document.getElementById('memSubject').value.trim();
+            const category = document.getElementById('memCategory').value;
+            const content = document.getElementById('memContent').value.trim();
+
+            try {
+                const res = await fetch('/api/alexa/charlene/memory/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ subject, category, content })
+                });
+                const j = await res.json();
+                if (j.success) {
+                    alert('Memória gravada no cérebro da Charlene com sucesso!');
                     location.reload();
                 } else {
-                    alert('Erro: ' + json.message);
+                    alert('Erro: ' + j.message);
+                }
+            } catch (err) {
+                alert('Erro de conexão.');
+            }
+        }
+
+        async function deleteMemory(id) {
+            if (!confirm('Deseja que a Charlene esqueça essa informação?')) return;
+            try {
+                const res = await fetch('/api/alexa/charlene/memory/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                const j = await res.json();
+                if (j.success) {
+                    const card = document.getElementById('mem-' + id);
+                    if (card) card.remove();
+                } else {
+                    alert('Erro: ' + j.message);
                 }
             } catch (err) {
                 alert('Erro de conexão.');

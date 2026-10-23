@@ -5,50 +5,72 @@
       "intents": [
         {
           "name": "AMAZON.CancelIntent",
-          "samples": [
-            "cancelar",
-            "cancela",
-            "não quero mais"
-          ]
+          "samples": []
         },
         {
           "name": "AMAZON.HelpIntent",
-          "samples": [
-            "ajuda",
-            "o que você faz",
-            "como funciona"
-          ]
+          "samples": []
         },
         {
           "name": "AMAZON.StopIntent",
-          "samples": [
-            "parar",
-            "para",
-            "para a música",
-            "tchau",
-            "chega"
-          ]
+          "samples": []
         },
         {
           "name": "AMAZON.PauseIntent",
-          "samples": [
-            "pausa",
-            "pausar",
-            "espera um pouco"
-          ]
+          "samples": []
         },
         {
           "name": "AMAZON.ResumeIntent",
+          "samples": []
+        },
+        {
+          "name": "MenuOpcoesIntent",
+          "slots": [],
           "samples": [
-            "continua",
-            "continuar",
-            "voltar a tocar",
-            "despausar"
+            "o que você tem para me oferecer",
+            "o que você tem para oferecer",
+            "o que você tem aí",
+            "o que temos para hoje",
+            "o que você sabe fazer",
+            "o que podemos fazer",
+            "quais as opções",
+            "o que tem para nós aí",
+            "o que tem para nós",
+            "o que tem hoje"
           ]
         },
         {
-          "name": "AMAZON.FallbackIntent",
-          "samples": []
+          "name": "TocarMusicaIntent",
+          "slots": [
+            {
+              "name": "categoria",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "tocar músicas de {categoria}",
+            "toca músicas de {categoria}",
+            "tocar {categoria}",
+            "toca {categoria}",
+            "música de {categoria}",
+            "músicas de {categoria}",
+            "tocar louvores de {categoria}",
+            "tocar as músicas da sarah",
+            "tocar música da sarah",
+            "toca as músicas da sarah",
+            "tocar minhas músicas",
+            "tocar louvores",
+            "tocar adoração",
+            "tocar músicas de adoração",
+            "músicas de adoração",
+            "tocar músicas para dormir",
+            "músicas para dormir",
+            "hora de dormir",
+            "músicas animadas",
+            "tocar músicas animadas",
+            "minha playlist",
+            "coloca minhas músicas"
+          ]
         },
         {
           "name": "ContarHistoriaBiblicaIntent",
@@ -59,21 +81,31 @@
             }
           ],
           "samples": [
-            "conte uma história da bíblia",
             "me conta uma história da bíblia",
-            "conta uma história",
-            "conta uma historinha",
-            "história para dormir",
-            "história bíblica",
-            "quero ouvir uma história da bíblia",
-            "me conte a história de {tema}",
+            "conta uma historinha da bíblia",
+            "história da bíblia",
             "conta a história de {tema}",
-            "história de {tema}"
+            "me conte a história de {tema}",
+            "história sobre {tema}",
+            "quero ouvir uma história da bíblia",
+            "conta uma historinha para mim",
+            "historinha de jesus",
+            "historinha de davi",
+            "historinha da arca de noé",
+            "historinha de daniel",
+            "historinha de moisés",
+            "historinha da rainha ester",
+            "historinha de jonas"
           ]
         },
         {
           "name": "OracaoDormirIntent",
-          "slots": [],
+          "slots": [
+            {
+              "name": "motivo",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
           "samples": [
             "vamos orar",
             "faz uma oração",
@@ -81,22 +113,11 @@
             "orar comigo",
             "quero orar",
             "reza comigo",
-            "oração"
-          ]
-        },
-        {
-          "name": "TocarMusicaIntent",
-          "slots": [],
-          "samples": [
-            "toque minhas músicas",
-            "tocar minhas músicas",
-            "tocar música da sara",
-            "tocar louvor",
-            "tocar louvores",
-            "música",
-            "coloca minhas músicas",
-            "tocar musiquinhas",
-            "minha playlist"
+            "oração",
+            "orar pelo {motivo}",
+            "ora pelo {motivo}",
+            "faz uma oração pelo {motivo}",
+            "vamos orar pelo {motivo}"
           ]
         },
         {
@@ -106,9 +127,33 @@
             "tocar o devocional",
             "devocional de hoje",
             "devocional do papai",
+            "devocional do adrian",
             "palavra de hoje",
             "ouvir o devocional",
             "palavra do dia"
+          ]
+        },
+        {
+          "name": "ConversarIntent",
+          "slots": [
+            {
+              "name": "mensagem",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "você conhece o {mensagem}",
+            "você conhece a {mensagem}",
+            "você sabe quem é o {mensagem}",
+            "você sabe quem é a {mensagem}",
+            "o que você acha de {mensagem}",
+            "como é {mensagem}",
+            "falar sobre {mensagem}",
+            "eu quero falar sobre {mensagem}",
+            "me diz sobre {mensagem}",
+            "o que significa {mensagem}",
+            "responde sobre {mensagem}",
+            "eu queria te contar sobre {mensagem}"
           ]
         }
       ],

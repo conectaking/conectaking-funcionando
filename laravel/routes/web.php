@@ -1051,6 +1051,8 @@ Route::get('/api/alexa/charlene/playlist', [\App\Http\Controllers\Alexa\Charlene
 Route::post('/api/alexa/charlene/upload', [\App\Http\Controllers\Alexa\CharleneController::class, 'uploadMusic']);
 Route::post('/api/alexa/charlene/upload-telegram', [\App\Http\Controllers\Alexa\CharleneController::class, 'uploadFromTelegram']);
 Route::post('/api/alexa/charlene/delete', [\App\Http\Controllers\Alexa\CharleneController::class, 'deleteMusic']);
+Route::post('/api/alexa/charlene/memory/save', [\App\Http\Controllers\Alexa\CharleneController::class, 'saveMemory']);
+Route::post('/api/alexa/charlene/memory/delete', [\App\Http\Controllers\Alexa\CharleneController::class, 'deleteMemory']);
 
 // checkoutConfig / PagBank / Mercado Pago — fora de escopo
 Route::get('/checkoutConfig', fn () => response('Checkout/pagamento online não está disponível.', 410));
