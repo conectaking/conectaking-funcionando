@@ -257,13 +257,13 @@
     <div class="container">
         <div class="header">
             <div class="badge">👑 Conecta King • Alexa Skill Charlene</div>
-            <h1>Músicas da Sara</h1>
-            <p class="subtitle">Adicione ou remova louvores e canções que tocam na Alexa da Sara</p>
+            <h1>Músicas da Sarah</h1>
+            <p class="subtitle">Adicione ou remova louvores e canções que tocam na Alexa da Sarah</p>
         </div>
 
         <div class="alexa-hint">
             <span>🗣️</span>
-            <div><strong>Comando de Voz na Alexa:</strong> Diga <em>"Alexa, abre a Charlene e toca as músicas da Sara"</em>.</div>
+            <div><strong>Comando de Voz na Alexa:</strong> Diga <em>"Alexa, chama a Charlene e toca as músicas da Sarah"</em>.</div>
         </div>
 
         <div class="upload-card" id="dropZone" onclick="document.getElementById('fileInput').click()">

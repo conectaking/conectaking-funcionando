@@ -1049,6 +1049,7 @@ Route::match(['get', 'post', 'options', 'head'], '/api/alexa/charlene', [\App\Ht
 Route::get('/charlene/musicas', [\App\Http\Controllers\Alexa\CharleneController::class, 'managerPage']);
 Route::get('/api/alexa/charlene/playlist', [\App\Http\Controllers\Alexa\CharleneController::class, 'listPlaylist']);
 Route::post('/api/alexa/charlene/upload', [\App\Http\Controllers\Alexa\CharleneController::class, 'uploadMusic']);
+Route::post('/api/alexa/charlene/upload-telegram', [\App\Http\Controllers\Alexa\CharleneController::class, 'uploadFromTelegram']);
 Route::post('/api/alexa/charlene/delete', [\App\Http\Controllers\Alexa\CharleneController::class, 'deleteMusic']);
 
 // checkoutConfig / PagBank / Mercado Pago — fora de escopo

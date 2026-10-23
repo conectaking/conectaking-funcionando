@@ -58,18 +58,18 @@ class CharleneController extends Controller
                     // Notificações de reprodução de áudio
                     return response()->json(['version' => '1.0', 'response' => new \stdClass()]);
                 }
-                return $this->respondSpeech('Oi Sara! Eu sou a Charlene. Como posso te ajudar hoje?', false);
+                return $this->respondSpeech('Oi Sarah! Eu sou a Charlene. Como posso te ajudar hoje?', false);
         }
     }
 
     private function handleLaunch(): JsonResponse
     {
-        $speech = '<speak>Oi, princesinha Sara! A paz do Senhor! '
+        $speech = '<speak>Oi, princesinha Sarah! A paz do Senhor! '
             . 'Eu sou a Charlene, sua amiguinha. '
             . 'O que nós vamos fazer hoje? Você quer ouvir suas musiquinhas, '
             . 'ouvir uma linda história da Bíblia, fazer uma oração ou ouvir o devocional do papai?</speak>';
 
-        $reprompt = '<speak>Sarinha, você quer ouvir suas músicas ou uma historinha da Bíblia?</speak>';
+        $reprompt = '<speak>Sarahzinha, você quer ouvir suas músicas ou uma historinha da Bíblia?</speak>';
 
         return $this->respondSsml($speech, false, $reprompt);
     }
@@ -106,26 +106,26 @@ class CharleneController extends Controller
 
             case 'AMAZON.HelpIntent':
                 return $this->respondSpeech(
-                    'Você pode dizer: Charlene, toque minhas músicas. Ou: Charlene, conte uma história da Bíblia. Ou: Charlene, vamos orar. O que você gostaria de fazer, Sarinha?',
+                    'Você pode dizer: Charlene, toque minhas músicas. Ou: Charlene, conte uma história da Bíblia. Ou: Charlene, vamos orar. O que você gostaria de fazer, Sarahzinha?',
                     false
                 );
 
             default:
-                // Conversa livre da Sara com a Charlene
+                // Conversa livre da Sarah com a Charlene
                 $query = $slots['pergunta']['value'] ?? $slots['frase']['value'] ?? null;
                 return $this->handleChatWithSara($query);
         }
     }
 
     /**
-     * Toca as músicas da pasta da Sara
+     * Toca as músicas da pasta da Sarah
      */
     private function handlePlayMusic(): JsonResponse
     {
         $files = $this->getMusicFiles();
 
         if (empty($files)) {
-            $speech = '<speak>Sarinha, a sua pastinha de músicas ainda está vazia! '
+            $speech = '<speak>Sarahzinha, a sua pastinha de músicas ainda está vazia! '
                 . 'Pede para o papai Adriano colocar suas músicas no sistema, que eu toco na mesma hora para você!</speak>';
             return $this->respondSsml($speech, false);
         }
@@ -140,7 +140,7 @@ class CharleneController extends Controller
             'response' => [
                 'outputSpeech' => [
                     'type' => 'SSML',
-                    'ssml' => '<speak>Tocando agora a música da Sara: ' . htmlspecialchars($title) . '!</speak>',
+                    'ssml' => '<speak>Tocando agora a música da Sarah: ' . htmlspecialchars($title) . '!</speak>',
                 ],
                 'directives' => [
                     [
@@ -155,7 +155,7 @@ class CharleneController extends Controller
                             ],
                             'metadata' => [
                                 'title' => $title,
-                                'subtitle' => 'Charlene para Sara',
+                                'subtitle' => 'Charlene para Sarah',
                             ],
                         ],
                     ],
@@ -166,14 +166,14 @@ class CharleneController extends Controller
     }
 
     /**
-     * Conta histórias da Bíblia para a Sara
+     * Conta histórias da Bíblia para a Sarah
      */
     private function handleBibleStory(?string $tema): JsonResponse
     {
-        $prompt = "Você é a Charlene, uma amiga e contadora de histórias cristã doce, alegre, amorosa e calorosa para a princesinha Sara (filha do Adriano King). "
+        $prompt = "Você é a Charlene, uma amiga e contadora de histórias cristã doce, alegre, amorosa e calorosa para a princesinha Sarah (filha do Adriano King). "
             . "Conte uma linda história bíblica para crianças (com 180 a 230 palavras). "
             . ($tema ? "Tema solicitado: {$tema}. " : "Escolha uma história maravilhosa como Davi e Golias, A Arca de Noé, Daniel na Cova dos Leões, O Nascimento de Jesus, Jesus Acalma a Tempestade, etc. ")
-            . "Fale com muita doçura, entusiasmo e encanto. Termine com uma lição de fé, coragem e o amor de Jesus para a Sarinha, e pergunte se ela quer ouvir outra história ou uma musiquinha.";
+            . "Fale com muita doçura, entusiasmo e encanto. Termine com uma lição de fé, coragem e o amor de Jesus para a Sarahzinha, e pergunte se ela quer ouvir outra história ou uma musiquinha.";
 
         $story = $this->callAi($prompt);
 
@@ -181,11 +181,11 @@ class CharleneController extends Controller
             $story = "Era uma vez um jovem pastorzinho chamado Davi. Ele cuidava das ovelhinhas do seu pai com muito amor e fé em Deus! "
                 . "Um dia, um gigante muito grande e bravo chamado Golias apareceu e queria assustar todo mundo. "
                 . "Mas Davi não teve medo, porque ele sabia que o Senhor Deus estava com ele! Com apenas uma pedrinha e a sua funda, Davi venceu o gigante e mostrou que quem confia no Papai do Céu nunca precisa ter medo de nada! "
-                . "Você também é muito corajosa e amada por Deus, Sarinha! Gostou da historinha?";
+                . "Você também é muito corajosa e amada por Deus, Sarahzinha! Gostou da historinha?";
         }
 
         $speech = '<speak>' . htmlspecialchars($story) . '</speak>';
-        return $this->respondSsml($speech, false, '<speak>Sarinha, você quer ouvir outra história da Bíblia ou suas músicas?</speak>');
+        return $this->respondSsml($speech, false, '<speak>Sarahzinha, você quer ouvir outra história da Bíblia ou suas músicas?</speak>');
     }
 
     /**
@@ -193,12 +193,12 @@ class CharleneController extends Controller
      */
     private function handlePrayer(): JsonResponse
     {
-        $speech = '<speak>Vamos orar juntas, princesinha Sara! Feche os olhinhos: '
+        $speech = '<speak>Vamos orar juntas, princesinha Sarah! Feche os olhinhos: '
             . 'Querido Papai do Céu, muito obrigada por esse dia tão lindo e abençoado! '
-            . 'Abençoe a princesinha Sara, o papai Adriano e toda a nossa família. '
-            . 'Envia Teus anjos de luz para guardarem o quartinho da Sara, trazendo muita paz, proteção e sonhos lindos. '
-            . 'Que a Sara durma em paz e acorde cheia de alegria. Em nome de Jesus, amém! '
-            . 'Durma com os anjinhos, Sarinha! A Charlene te ama muito!</speak>';
+            . 'Abençoe a princesinha Sarah, o papai Adriano e toda a nossa família. '
+            . 'Envia Teus anjos de luz para guardarem o quartinho da Sarah, trazendo muita paz, proteção e sonhos lindos. '
+            . 'Que a Sarah durma em paz e acorde cheia de alegria. Em nome de Jesus, amém! '
+            . 'Durma com os anjinhos, Sarahzinha! A Charlene te ama muito!</speak>';
 
         return $this->respondSsml($speech, true);
     }
@@ -217,13 +217,13 @@ class CharleneController extends Controller
                 $versiculo = $dev['versiculo_texto'] ?? $dev['versiculo_ref'] ?? '';
                 $reflexao = mb_substr(strip_tags($dev['reflexao']), 0, 350);
 
-                $speech = '<speak>Aqui está o devocional de hoje, Sarinha! '
+                $speech = '<speak>Aqui está o devocional de hoje, Sarahzinha! '
                     . htmlspecialchars($titulo) . '. '
                     . ($versiculo ? 'A palavra diz: ' . htmlspecialchars($versiculo) . '. ' : '')
                     . htmlspecialchars($reflexao) . ' '
                     . 'Que linda palavra de Deus para abençoar o nosso dia!</speak>';
 
-                return $this->respondSsml($speech, false, '<speak>Quer ouvir uma música da Sara agora?</speak>');
+                return $this->respondSsml($speech, false, '<speak>Quer ouvir uma música da Sarah agora?</speak>');
             }
         } catch (\Throwable $e) {
             Log::warning('alexa.devocional.err', ['msg' => $e->getMessage()]);
@@ -242,7 +242,7 @@ class CharleneController extends Controller
             'response' => [
                 'outputSpeech' => [
                     'type' => 'PlainText',
-                    'text' => 'Tudo bem, Sarinha! Parando a música. Até logo!',
+                    'text' => 'Tudo bem, Sarahzinha! Parando a música. Até logo!',
                 ],
                 'directives' => [
                     [
@@ -255,19 +255,19 @@ class CharleneController extends Controller
     }
 
     /**
-     * Conversa livre carinhosa com a Sara
+     * Conversa livre carinhosa com a Sarah
      */
     private function handleChatWithSara(?string $query): JsonResponse
     {
         if (!$query) {
-            return $this->respondSpeech('Oi Sarinha! Pode falar comigo, eu estou aqui te ouvindo!', false);
+            return $this->respondSpeech('Oi Sarahzinha! Pode falar comigo, eu estou aqui te ouvindo!', false);
         }
 
-        $prompt = "Você é a Charlene, a assistente e amiga cristã doce da princesinha Sara (filha do Adriano King). "
-            . "A Sara acabou de dizer: '{$query}'. "
+        $prompt = "Você é a Charlene, a assistente e amiga cristã doce da princesinha Sarah (filha do Adriano King). "
+            . "A Sarah acabou de dizer: '{$query}'. "
             . "Responda de forma curta, carinhosa, alegre e edificante para uma criança em 2 a 3 frases. Termine perguntando algo fofo ou se ela quer ouvir música ou história da Bíblia.";
 
-        $reply = $this->callAi($prompt) ?: 'Que legal, Sarinha! Eu adoro conversar com você. Quer que eu te conte uma história da Bíblia ou toque suas musiquinhas?';
+        $reply = $this->callAi($prompt) ?: 'Que legal, Sarahzinha! Eu adoro conversar com você. Quer que eu te conte uma história da Bíblia ou toque suas musiquinhas?';
 
         return $this->respondSpeech($reply, false);
     }
@@ -298,7 +298,7 @@ class CharleneController extends Controller
     }
 
     /**
-     * Upload de nova música para a Sara
+     * Upload de nova música para a Sarah via formulário web
      */
     public function uploadMusic(Request $request): JsonResponse
     {
@@ -317,9 +317,56 @@ class CharleneController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Música adicionada com sucesso à playlist da Sara!',
+            'message' => 'Música adicionada com sucesso à playlist da Sarah!',
             'url' => $this->baseUrl . '/storage/sara/musicas/' . rawurlencode($filename),
         ]);
+    }
+
+    /**
+     * Upload de música enviado pelo Telegram do Papai Adriano
+     */
+    public function uploadFromTelegram(Request $request): JsonResponse
+    {
+        $fileId = $request->input('file_id');
+        $fileName = $request->input('file_name');
+        $token = env('TELEGRAM_BOT_TOKEN') ?: '8871691156:AAGir9vNUOeukdbtFctvLbi8u2BCe95FgJw';
+
+        if (!$fileId) {
+            return response()->json(['success' => false, 'message' => 'file_id ausente.'], 400);
+        }
+
+        try {
+            $infoRes = Http::timeout(10)->get("https://api.telegram.org/bot{$token}/getFile?file_id={$fileId}");
+            $filePath = $infoRes->json('result.file_path');
+
+            if (!$filePath) {
+                return response()->json(['success' => false, 'message' => 'Arquivo não localizado nos servidores do Telegram.'], 404);
+            }
+
+            $fileContent = Http::timeout(60)->get("https://api.telegram.org/file/bot{$token}/{$filePath}")->body();
+
+            if (empty($fileContent)) {
+                return response()->json(['success' => false, 'message' => 'Não foi possível baixar o áudio do Telegram.'], 500);
+            }
+
+            $name = $fileName ?: basename($filePath);
+            $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+            if (!in_array($ext, ['mp3', 'm4a', 'aac', 'wav', 'ogg'])) {
+                $name .= '.mp3';
+            }
+
+            File::put($this->storageDir . '/' . $name, $fileContent);
+
+            return response()->json([
+                'success' => true,
+                'filename' => $name,
+                'message' => "Música '{$name}' adicionada com sucesso à playlist da Sarah na Alexa!",
+                'url' => $this->baseUrl . '/storage/sara/musicas/' . rawurlencode($name),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('alexa.telegram_upload.err', ['msg' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Erro interno ao processar áudio: ' . $e->getMessage()], 500);
+        }
     }
 
     /**
