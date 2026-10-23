@@ -19,28 +19,368 @@ class CharleneController extends Controller
     // Categorias de músicas suportadas
     public const CATEGORIAS = ['adoracao', 'dormir', 'animadas', 'geral'];
 
-    // Catálogo rico com mais de 20 histórias bíblicas infantis
-    private const HISTORIAS_CATALOGO = [
-        ['tema' => 'Davi e o Gigante Golias', 'personagem' => 'Davi', 'licoes' => 'coragem, fé e que quem confia em Deus vence qualquer gigante'],
-        ['tema' => 'A Arca de Noé e o Arco-Íris', 'personagem' => 'Noé', 'licoes' => 'obediência, proteção de Deus aos animais e a promessa do arco-íris'],
-        ['tema' => 'Daniel na Cova dos Leões Famintos', 'personagem' => 'Daniel', 'licoes' => 'oração fiel diária e como o anjo do Senhor fechou a boca dos leões'],
-        ['tema' => 'Moisés e a Grande Travessia do Mar Vermelho', 'personagem' => 'Moisés', 'licoes' => 'o poder de Deus abrindo caminhos onde parecia não ter saída'],
-        ['tema' => 'Jonas e o Grande Peixe', 'personagem' => 'Jonas', 'licoes' => 'obedecer a voz do Senhor e a segunda chance que Deus nos dá'],
-        ['tema' => 'A Multiplicação dos Pães e Peixinhos', 'personagem' => 'Jesus e o menino dos pães', 'licoes' => 'generosidade, partilha e como Jesus faz o milagre com o pouco que temos'],
-        ['tema' => 'Jesus Acalma a Tempestade no Barco', 'personagem' => 'Jesus', 'licoes' => 'paz, segurança e que mesmo quando o vento sopra forte, Jesus está no nosso barquinho'],
-        ['tema' => 'O Nascimento do Bebê Jesus em Belém', 'personagem' => 'Jesus, Maria e José', 'licoes' => 'o maior presente de amor que o Papai do Céu deu ao mundo'],
-        ['tema' => 'A Rainha Ester, Cheia de Coragem', 'personagem' => 'Rainha Ester', 'licoes' => 'coragem de uma princesa de Deus para salvar o seu povo com oração e jejum'],
-        ['tema' => 'Zaqueu, o Homem Pequenino na Árvore', 'personagem' => 'Zaqueu', 'licoes' => 'Jesus enxerga a todos com amor e transforma o coração de quem O recebe'],
-        ['tema' => 'José do Egito e a Túnica Colorida', 'personagem' => 'José', 'licoes' => 'perdão, fidelidade nos sonhos e como Deus transforma o mal em grande bênção'],
-        ['tema' => 'A Cura do Cego Bartimeu', 'personagem' => 'Bartimeu', 'licoes' => 'clamar a Jesus com perseverança e receber a luz do Senhor'],
-        ['tema' => 'O Bom Samaritano', 'personagem' => 'O Bom Samaritano', 'licoes' => 'amor ao próximo, cuidar de quem precisa e ter um coração bom'],
-        ['tema' => 'Sansão e a Força que Vem do Espírito de Deus', 'personagem' => 'Sansão', 'licoes' => 'nossa verdadeira força vem de Deus quando somos fiéis a Ele'],
-        ['tema' => 'Rute e a Amizade Fiel', 'personagem' => 'Rute e Noemi', 'licoes' => 'lealdade, companheirismo e cuidado com a família'],
-        ['tema' => 'A Pescaria Milagrosa de Pedro', 'personagem' => 'Pedro e Jesus', 'licoes' => 'confiar na palavra de Jesus mesmo quando parecia que nada daria certo'],
-        ['tema' => 'A Ressurreição e o Amor Vivo de Jesus', 'personagem' => 'Jesus Ressuscitado', 'licoes' => 'Jesus está vivo para sempre, nos ama e cuida de nós todos os dias'],
-        ['tema' => 'Paulo e Silas Cantando Louvores na Prisão', 'personagem' => 'Paulo e Silas', 'licoes' => 'o poder do louvor e da oração que quebra qualquer corrente e abre portas'],
-        ['tema' => 'A Criação do Mundo e das Flores', 'personagem' => 'Deus Criador', 'licoes' => 'o carinho com que Deus fez as estrelas, as borboletas e cada um de nós'],
-        ['tema' => 'Elias e a Carruagem de Fogo no Céu', 'personagem' => 'Profeta Elias', 'licoes' => 'o Deus dos milagres que responde com fogo e cuida dos seus profetas'],
+    // Catálogo mestre com 45 histórias da Bíblia Sagrada (Antigo e Novo Testamento)
+    public const HISTORIAS_CATALOGO = [
+        [
+            'slug' => 'davi_golias',
+            'titulo' => 'Davi e o Gigante Golias',
+            'personagem' => 'Davi',
+            'tema' => 'Davi e o Gigante Golias',
+            'licoes' => 'coragem, fé e que quem confia em Deus vence qualquer gigante',
+            'historia_base' => 'Era uma vez um jovem pastorzinho chamado Davi que cuidava das ovelhinhas cantando louvores ao Papai do Céu! Quando o gigante Golias tentou assustar todo o povo com uma voz muito brava, Davi não teve medo, porque sabia que o Deus Todo-Poderoso estava ao seu lado! Davi pegou a sua fundinha e uma pedrinha lisa no riacho. Girou, girou, zun! A pedrinha voou e venceu o gigante na hora! Todo mundo comemorou e aprendeu que quem confia em Deus nunca precisa ter medo de nada! Sarahzinha, você também é uma princesinha corajosa e protegida por Jesus! Quer ouvir outra historinha ou uma musiquinha agora?'
+        ],
+        [
+            'slug' => 'arca_noe',
+            'titulo' => 'A Arca de Noé, os Animais e o Arco-Íris',
+            'personagem' => 'Noé',
+            'tema' => 'A Arca de Noé e o Arco-Íris',
+            'licoes' => 'obediência, proteção de Deus aos animais e a promessa do arco-íris',
+            'historia_base' => 'Noé era um homem muito obediente a Deus. O Papai do Céu pediu para ele construir uma arca gigante de madeira, ploc, ploc, ploc! Depois, vieram os leõezinhos, os elefantes, os coelhinhos e as girafas, entrando de dois em dois! A chuva caiu, chuá, chuá, mas dentro da arca todos estavam quentinhos e protegidos por Deus! Quando a chuva passou, uma pombinha trouxe um raminho de oliveira e Deus colocou no céu um arco-íris lindo e colorido como promessa de amor! Sarahzinha, o Papai do Céu sempre cumpre as Suas promessas de amor com você e sua família! Quer ouvir outra historinha agora?'
+        ],
+        [
+            'slug' => 'daniel_leoes',
+            'titulo' => 'Daniel na Cova dos Leões Famintos',
+            'personagem' => 'Daniel',
+            'tema' => 'Daniel na Cova dos Leões Famintos',
+            'licoes' => 'oração fiel diária e como o anjo do Senhor fechou a boca dos leões',
+            'historia_base' => 'Daniel amava orar a Deus três vezes ao dia, de joelhinhos perto da janela aberta. Homens maus tiveram inveja e jogaram Daniel numa cova funda cheia de leões com fome! Mas Daniel continuou orando e confiando no Papai do Céu. E sabe o que aconteceu? Deus enviou um anjo resplandecente que fechou a boca de todos os leões! No dia seguinte, o rei chamou: "Daniel, o seu Deus te salvou?" E Daniel respondeu com alegria: "O meu Deus enviou o Seu anjo e os leões não me tocaram!" Que Deus maravilhoso nós servimos, Sarahzinha! Nada pode tocar em você quando você ora com fé!'
+        ],
+        [
+            'slug' => 'moises_mar_vermelho',
+            'titulo' => 'Moisés e a Grande Travessia do Mar Vermelho',
+            'personagem' => 'Moisés',
+            'tema' => 'Moisés e a Travessia do Mar Vermelho',
+            'licoes' => 'o poder de Deus abrindo caminhos onde parecia não ter saída',
+            'historia_base' => 'O povo de Deus estava caminhando no deserto e chegou diante de um mar imenso de água azul: o Mar Vermelho! Atrás vinham os soldados do Faraó em carruagens, pocotó, pocotó! O povo ficou com medo, mas Moisés disse: "Não tenham medo, vejam a salvação do Senhor!" Moisés estendeu o seu cajado sobre as águas e Deus mandou um vento forte que abriu o mar ao meio! O povo atravessou a pé enxuto com paredes de água dos dois lados! Deus sempre abre caminhos para você, Sarahzinha, onde parece impossível!'
+        ],
+        [
+            'slug' => 'jonas_grande_peixe',
+            'titulo' => 'Jonas e o Grande Peixe',
+            'personagem' => 'Jonas',
+            'tema' => 'Jonas e o Grande Peixe',
+            'licoes' => 'obedecer a voz do Senhor e a segunda chance que Deus nos dá',
+            'historia_base' => 'Deus chamou Jonas para levar uma mensagem de amor a Nínive, mas Jonas tentou fugir num barquinho. Uma grande tempestade balançou o mar, e quando Jonas caiu na água, tchibum! Deus preparou um peixe bem grandão que engoliu Jonas! Lá dentro da barriguinha do peixe, Jonas orou com todo o coração e pediu perdão. Deus ouviu a oração e o grande peixe levou Jonas até a praia e o colocou na areia sã e salvo! Jonas foi a Nínive e todo mundo se converteu! Deus sempre nos ouve onde quer que a gente esteja, Sarahzinha!'
+        ],
+        [
+            'slug' => 'multiplicacao_paes',
+            'titulo' => 'A Multiplicação dos Pães e Peixinhos',
+            'personagem' => 'Jesus e o menino dos pães',
+            'tema' => 'A Multiplicação dos Pães e Peixinhos',
+            'licoes' => 'generosidade, partilha e como Jesus faz o milagre com o pouco que temos',
+            'historia_base' => 'Mais de cinco mil pessoas estavam ouvindo Jesus ensinar sobre o amor de Deus, e quando a tarde chegou, todos estavam com muita fome! Os discípulos disseram que não havia comida, mas um garotinho generoso ofereceu o seu lanchinho: cinco pães pequenininhos e dois peixinhos. Jesus pegou o lanchinho, olhou para o Céu e deu graças ao Pai. Quando começou a repartir, a comida foi se multiplicando sem parar! Todos comeram até ficarem satisfeitos e ainda sobraram doze cestos cheios! Jesus abençoa e multiplica tudo que entregamos com carinho em Suas mãos!'
+        ],
+        [
+            'slug' => 'jesus_acalma_tempestade',
+            'titulo' => 'Jesus Acalma a Tempestade no Mar',
+            'personagem' => 'Jesus',
+            'tema' => 'Jesus Acalma a Tempestade no Mar',
+            'licoes' => 'paz, segurança e que mesmo quando o vento sopra forte, Jesus está no nosso barquinho',
+            'historia_base' => 'Jesus e os discípulos entraram num barquinho para atravessar o mar da Galileia. Jesus estava dormindo com a cabecinha num travesseiro. De repente, começou a chover forte, o vento uivava e as ondas começaram a encher o barco de água! Os discípulos ficaram apavorados e acordaram o Mestre: "Senhor, nós vamos afundar!" Jesus levantou-se com calma, olhou para o vento e para o mar e disse: "Acalma-te! Emudece!" Na mesma hora o vento parou e houve uma grande bonança e calmaria! Sarahzinha, Jesus está sempre no barquinho da sua vida trazendo muita paz!'
+        ],
+        [
+            'slug' => 'nascimento_jesus',
+            'titulo' => 'O Nascimento do Bebê Jesus em Belém',
+            'personagem' => 'Jesus, Maria e José',
+            'tema' => 'O Nascimento do Bebê Jesus em Belém',
+            'licoes' => 'o maior presente de amor que o Papai do Céu deu ao mundo',
+            'historia_base' => 'Numa noite cheia de estrelas brilhantes, Maria e José chegaram a Belém. Como não havia lugar na hospedaria, eles ficaram num estábulo aconchegante cercado de ovelhinhas e vaquinhas mansas. E foi ali que o bebê Jesus nasceu, embrulhadinho em panos e deitado numa manjedoura! No céu, um coral de anjos cantou louvores lindos: "Glória a Deus nas maiores alturas e paz na terra!" Pastores vieram adorar o Salvador do mundo. Jesus é a maior luz e o melhor amigo que podemos ter em nosso coração, Sarahzinha!'
+        ],
+        [
+            'slug' => 'rainha_ester',
+            'titulo' => 'A Corajosa Rainha Ester',
+            'personagem' => 'Rainha Ester',
+            'tema' => 'A Rainha Ester, Cheia de Coragem',
+            'licoes' => 'coragem de uma princesa de Deus para salvar o seu povo com oração e jejum',
+            'historia_base' => 'Ester era uma jovem judia muito virtuosa, linda e temente a Deus que foi escolhida para ser a rainha. Quando um homem mau tentou fazer mal ao povo de Deus, o tio Mordecai lembrou Ester: "Quem sabe se não foi para um momento como este que você chegou ao palácio?" Ester pediu a todo o povo que orasse junto com ela por três dias. Cheia da graça e do Espírito de Deus, Ester foi diante do rei, que estendeu o seu cetro de ouro para ela! O povo foi salvo com honra e vitória! Sarahzinha, você também é uma linda princesinha de Deus com um propósito abençoado!'
+        ],
+        [
+            'slug' => 'zaqueu_arvore',
+            'titulo' => 'Zaqueu, o Homem Pequenino na Árvore',
+            'personagem' => 'Zaqueu',
+            'tema' => 'Zaqueu, o Homem Pequenino na Árvore',
+            'licoes' => 'Jesus enxerga a todos com amor e transforma o coração de quem O recebe',
+            'historia_base' => 'Zaqueu era um homem de baixa estatura que queria muito ver Jesus passando pelas ruas de Jericó. Como a multidão era alta e ele não conseguia enxergar, ele correu na frente e subiu nos galhos de uma árvore sicômoro! Quando Jesus passou bem por ali, olhou para cima com um sorriso amoroso e disse: "Zaqueu, desce depressa, pois hoje me convém pousar em sua casa!" Zaqueu desceu correndo e alegre recebeu Jesus. Seu coração mudou para sempre e ele se tornou generoso e bom! Jesus sempre enxerga você onde você estiver, Sarahzinha!'
+        ],
+        [
+            'slug' => 'jose_egito',
+            'titulo' => 'José do Egito e a Túnica Colorida',
+            'personagem' => 'José',
+            'tema' => 'José do Egito e a Túnica Colorida',
+            'licoes' => 'perdão, fidelidade nos sonhos e como Deus transforma o mal em grande bênção',
+            'historia_base' => 'José ganhou do papai Jacó uma túnica cheia de cores lindas! Ele teve sonhos proféticos dados por Deus, mas seus irmãos tiveram inveja e o venderam como escravo para o Egito. Mesmo passando por momentos difíceis, José nunca deixou de ser fiel e justo com Deus. Deus deu a José sabedoria para interpretar os sonhos do Faraó e José se tornou o governador de todo o Egito! Quando seus irmãos vieram com fome, José os perdoou com lágrimas de alegria e cuidou de toda a sua família! O amor e o perdão sempre vencem, Sarahzinha!'
+        ],
+        [
+            'slug' => 'cura_cego_bartimeu',
+            'titulo' => 'A Cura do Cego Bartimeu',
+            'personagem' => 'Bartimeu',
+            'tema' => 'A Cura do Cego Bartimeu',
+            'licoes' => 'clamar a Jesus com perseverança e receber a luz do Senhor',
+            'historia_base' => 'À beira do caminho de Jericó, um homem chamado Bartimeu não enxergava as cores do dia nem o brilho do sol. Quando ouviu que Jesus de Nazaré estava passando, ele começou a gritar com muita fé: "Jesus, Filho de Davi, tem misericórdia de mim!" As pessoas mandavam ele se calar, mas ele gritava ainda mais alto! Jesus parou a caminhada e mandou chamá-lo: "O que você quer que eu te faça?" Bartimeu respondeu: "Senhor, que eu possa enxergar!" Jesus tocou seus olhos e disse: "Vai, a tua fé te salvou!" E na mesma hora ele começou a ver tudo perfeitamente e seguiu a Jesus pelo caminho com louvores!'
+        ],
+        [
+            'slug' => 'o_bom_samaritano',
+            'titulo' => 'O Bom Samaritano',
+            'personagem' => 'O Bom Samaritano',
+            'tema' => 'O Bom Samaritano',
+            'licoes' => 'amor ao próximo, cuidar de quem precisa e ter um coração bondoso',
+            'historia_base' => 'Jesus contou uma história de um viajante que foi atacado na estrada e ficou caído e machucado. Passou um sacerdote e não ajudou; passou um levita e também desviou o caminho. Mas quando passou um samaritano, o coração dele se encheu de profunda compaixão! Ele limpou as feridinhas com azeite, colocou o homem em seu próprio animalzinho e o levou para uma hospedaria, pagando todo o cuidado dele com muito carinho! Jesus nos ensinou que amar a Deus é cuidar com ternura de qualquer pessoa que precise de ajuda!'
+        ],
+        [
+            'slug' => 'sansao_forca',
+            'titulo' => 'Sansão e a Grande Força que Vem de Deus',
+            'personagem' => 'Sansão',
+            'tema' => 'Sansão e a Força que Vem de Deus',
+            'licoes' => 'nossa verdadeira força vem do Espírito de Deus quando somos fiéis a Ele',
+            'historia_base' => 'Sansão foi consagrado a Deus desde pequenino. Quando o Espírito do Senhor vinha sobre ele, ele tinha uma força extraordinária! Certa vez, um leão rugiu feroz no caminho, mas Sansão o venceu apenas com as mãos vazias! Quando os inimigos o cercaram com cordas novas, ele arrebentou tudo como se fossem fios queimados! Sansão nos ensina que a nossa verdadeira força não está em músculos ou cabelos, mas em obedecer e estar perto do Papai do Céu com fidelidade!'
+        ],
+        [
+            'slug' => 'rute_noemi',
+            'titulo' => 'Rute e Noemi: A Amizade Fiel',
+            'personagem' => 'Rute e Noemi',
+            'tema' => 'Rute e a Amizade Fiel',
+            'licoes' => 'lealdade, companheirismo e cuidado amoroso com a família',
+            'historia_base' => 'Noemi estava muito triste em uma terra distante, mas sua nora Rute deu um abraço caloroso nela e fez uma promessa eterna: "Onde você for, eu irei; o seu povo será o meu povo e o seu Deus será o meu Deus!" Elas foram juntas para Belém, e Rute colhia espigas nos campos para alimentar Noemi. Boaz, um homem bondoso, viu a dedicação de Rute e cuidou delas com toda a generosidade! Rute se casou com Boaz e fez parte da genealogia do rei Davi e de Jesus! A amizade e a lealdade na família são preciosas aos olhos do Senhor!'
+        ],
+        [
+            'slug' => 'pescaria_maravilhosa',
+            'titulo' => 'A Pescaria Maravilhosa de Pedro',
+            'personagem' => 'Pedro e Jesus',
+            'tema' => 'A Pescaria Milagrosa de Pedro',
+            'licoes' => 'confiar na palavra de Jesus mesmo quando parecia que nada daria certo',
+            'historia_base' => 'Pedro e os outros pescadores passaram a noite inteira no mar jogando as redes na água, mas não pescaram nenhum peixinho sequer. De manhã, cansados e lavando as redes, Jesus chegou e disse a Pedro: "Vá para as águas mais profundas e lancem as redes para pescar!" Pedro disse: "Mestre, trabalhamos a noite inteira e nada pegamos; mas, sob a Tua palavra, lançarei as redes!" Quando puxaram, tchibum! Havia tantos peixes que as redes começaram a se romper e dois barcos ficaram cheinhos quase afundando de tanta bênção! A palavra de Jesus faz milagres acontecerem!'
+        ],
+        [
+            'slug' => 'ressurreicao_jesus',
+            'titulo' => 'A Ressurreição de Jesus: Ele Vive!',
+            'personagem' => 'Jesus Ressuscitado',
+            'tema' => 'A Ressurreição e o Amor Vivo de Jesus',
+            'licoes' => 'Jesus está vivo para sempre, nos ama e cuida de nós todos os dias',
+            'historia_base' => 'Bem cedinho no domingo de manhã, enquanto o sol ainda estava nascendo, Maria Madalena e outras mulheres foram até o jardim onde Jesus havia sido sepultado. Quando chegaram lá, viram que a pedra enorme havia sido rolada da entrada! Um anjo com vestes brancas brilhantes como relâmpago apareceu e disse: "Não tenham medo! Ele não está aqui, porque ressuscitou, como havia dito!" Que alegria indescritível! Jesus venceu a morte e vive para sempre ao nosso lado! Ele cuida de você em todo momento, Sarahzinha!'
+        ],
+        [
+            'slug' => 'paulo_silas_prisao',
+            'titulo' => 'Paulo e Silas Cantando Louvores na Prisão',
+            'personagem' => 'Paulo e Silas',
+            'tema' => 'Paulo e Silas Cantando Louvores na Prisão',
+            'licoes' => 'o poder do louvor e da oração que quebra qualquer corrente e abre portas',
+            'historia_base' => 'Paulo e Silas foram presos injustamente e colocados no porão mais escuro de uma prisão com os pés presos no tronco. Mas em vez de reclamarem, por volta da meia-noite eles começaram a orar e a cantar hinos de louvor a Deus bem alto! Os outros presos escutavam com admiração. De repente, cabum! Um terremoto balançou os alicerces da prisão, todas as portas se abriram e as correntes caíram dos braços de todos! O carcereiro e toda a sua família aceitaram a Jesus e foram batizados com muita festa! O louvor liberta corações!'
+        ],
+        [
+            'slug' => 'criacao_mundo',
+            'titulo' => 'A Criação do Mundo, dos Mares e das Estrelas',
+            'personagem' => 'Deus Criador',
+            'tema' => 'A Criação do Mundo e das Flores',
+            'licoes' => 'o carinho com que Deus fez as estrelas, as borboletas e cada um de nós',
+            'historia_base' => 'No princípio, Deus falou: "Haja luz!", e a luz surgiu brilhando forte! Ele separou o dia da noite, fez o céu azul com nuvenzinhas brancas, ajuntou as águas nos mares e fez brotar a terra com graminha verde, árvores cheias de maçãs e florzinhas perfumadas de todas as cores! Criou o sol dourado, a lua prateada e milhões de estrelinhas brilhando no céu. Fez os peixinhos nadando e os passarinhos voando cantando. E no final, fez as pessoas com muito carinho para serem Seus filhos amados! Tudo o que Deus faz é perfeito e lindo, Sarahzinha!'
+        ],
+        [
+            'slug' => 'elias_carro_fogo',
+            'titulo' => 'O Profeta Elias e a Carruagem de Fogo no Céu',
+            'personagem' => 'Profeta Elias',
+            'tema' => 'Elias e a Carruagem de Fogo no Céu',
+            'licoes' => 'o Deus dos milagres que responde com fogo e cuida dos seus profetas',
+            'historia_base' => 'Elias foi um profeta muito corajoso que orava e o fogo do Senhor descia do Céu para provar que só o Senhor é Deus! Quando chegou o momento de Deus recolher Elias para o Céu, ele estava caminhando junto com o seu discípulo Eliseu perto do rio Jordão. De repente, surgiu no meio deles uma carruagem de fogo com cavalos de fogo resplandecentes, e Elias subiu ao Céu num redemoinho glorioso! Eliseu pegou a capa de Elias e continuou fazendo milagres em nome do Senhor. O nosso Deus é o Deus do extraordinário!'
+        ],
+        [
+            'slug' => 'samuel_chamado',
+            'titulo' => 'O Menino Samuel Ouvindo a Doce Voz de Deus',
+            'personagem' => 'Samuel e Deus',
+            'tema' => 'O Chamado do Menino Samuel',
+            'licoes' => 'ter um coração sensível para escutar e obedecer a voz de Deus desde criança',
+            'historia_base' => 'A mamãe Ana orou com muita fé pedindo um filhinho e Deus deu o pequeno Samuel. Quando cresceu um pouquinho, Samuel foi servir no tabernáculo do Senhor com o sacerdote Eli. Uma noite, deitado no seu quartinho aconchegante, ele ouviu uma voz suave chamando: "Samuel! Samuel!" Ele correu até Eli: "Eis-me aqui!" Eli disse que não tinha chamado. Isso aconteceu três vezes! Então Eli percebeu que era Deus falando e ensinou: "Se te chamar outra vez, diga: Fala, Senhor, que o Teu servo ouve!" Samuel obedeceu e Deus falou grandes coisas com ele! Sarahzinha, Deus fala ao coração dos pequeninos com muito amor!'
+        ],
+        [
+            'slug' => 'abraao_estrelas',
+            'titulo' => 'Abraão e a Promessa das Estrelas do Céu',
+            'personagem' => 'Abraão e Sara',
+            'tema' => 'A Fé de Abraão e as Estrelas',
+            'licoes' => 'confiar nas promessas do Senhor mesmo quando parecem impossíveis aos olhos humanos',
+            'historia_base' => 'Numa noite escura no deserto, Deus chamou Abraão para fora da tenda e disse: "Olhe para os céus e conte as estrelas se puder! Assim de numerosa será a sua descendência!" Abraão já era velhinho e não tinha filhos, mas ele creu no Senhor de todo o coração. E Deus cumpriu a promessa! No tempo certo, nasceu Isaque, trazendo sorrisos e festa para o lar! Deus é sempre fiel para cumprir cada promessa que Ele faz!'
+        ],
+        [
+            'slug' => 'gideao_trezentos',
+            'titulo' => 'Gideão e o Exército dos Trezentos com Tochas e Cântaros',
+            'personagem' => 'Gideão',
+            'tema' => 'A Vitória de Gideão e os Trezentos',
+            'licoes' => 'a vitória não depende da quantidade de pessoas, mas do poder de Deus ao nosso lado',
+            'historia_base' => 'Gideão achava que era o menor de sua família, mas um anjo apareceu e o chamou: "O Senhor é com você, homem valente!" Para enfrentar um exército gigantesco, Deus escolheu apenas trezentos guerreiros que beberam água vigilantes na margem do rio. À noite, cada guerreiro pegou uma tocha acesa dentro de um vaso de barro e uma buzina. No sinal de Gideão, todos tocaram as trombetas, pluft! Quebraram os vasos e gritaram: "Espada pelo Senhor e por Gideão!" Os inimigos fugiram correndo e o povo teve paz! Com Deus, você sempre é vitoriosa!'
+        ],
+        [
+            'slug' => 'muralhas_jerico',
+            'titulo' => 'As Muralhas de Jericó Caindo com Som de Louvor',
+            'personagem' => 'Josué e o Povo',
+            'tema' => 'A Queda das Muralhas de Jericó',
+            'licoes' => 'obedecer às instruções do Senhor e o poder do louvor coletivo',
+            'historia_base' => 'A cidade de Jericó tinha muralhas de pedra tão grossas que passavam carruagens por cima delas! Mas Deus deu uma estratégia especial a Josué: marchar em volta da cidade uma vez por dia durante seis dias em silêncio. No sétimo dia, marcharam sete vezes. E na sétima volta, os sacerdotes tocaram forte as trombetas e todo o povo deu um brado de júbilo bem alto: "Aleluia!" E cabum! As muralhas gigantes caíram rente ao chão e o povo tomou a cidade! Não há obstáculo que fique de pé diante do poder de Deus!'
+        ],
+        [
+            'slug' => 'magos_oriente',
+            'titulo' => 'Os Três Reis Magos e a Estrela Guia',
+            'personagem' => 'Os Reis Magos e o Menino Jesus',
+            'tema' => 'A Visita dos Reis Magos',
+            'licoes' => 'adorar a Jesus de coração e entregar o melhor que temos a Ele',
+            'historia_base' => 'No Oriente distante, sábios que estudavam o céu viram uma estrela nova e brilhante que nunca tinham visto antes! Eles souberam que o Rei dos Reis havia nascido. Montaram em seus camelos e viajaram semanas seguindo a luz radiante da estrela! Quando a estrela parou exatamente sobre a casinha onde estava o menino Jesus com Maria, eles se ajoelharam no chão em profunda adoração. Abriram seus tesouros e entregaram presentes reais: ouro cintilante, incenso aromático e mirra preciosa! Jesus merece a nossa mais pura adoração todos os dias!'
+        ],
+        [
+            'slug' => 'menino_jesus_templo',
+            'titulo' => 'O Menino Jesus aos Doze Anos no Templo',
+            'personagem' => 'Menino Jesus, Maria e José',
+            'tema' => 'O Menino Jesus no Templo',
+            'licoes' => 'amor pela casa de Deus, estudo da Palavra e obediência aos pais',
+            'historia_base' => 'Quando Jesus tinha doze anos, foi com Maria e José para a festa da Páscoa em Jerusalém. Na volta, Maria e José pensaram que Jesus estava na caravana com os parentes, mas quando procuraram, não o acharam! Voltaram correndo a Jerusalém e depois de três dias o encontraram dentro do templo sagrado, sentado no meio dos doutores da lei, ouvindo e fazendo perguntas sábias que deixavam todos maravilhados! Jesus disse: "Vocês não sabiam que eu tinha que cuidar das coisas do meu Pai?" Jesus crescia em sabedoria, estatura e graça diante de Deus e dos homens!'
+        ],
+        [
+            'slug' => 'batismo_jesus',
+            'titulo' => 'O Batismo de Jesus no Rio Jordão',
+            'personagem' => 'Jesus e João Batista',
+            'tema' => 'O Batismo de Jesus',
+            'licoes' => 'humildade, obediência e o Espírito Santo como pomba de paz',
+            'historia_base' => 'João Batista pregava no deserto convidando as pessoas a se arrependerem. Jesus foi até as margens do rio Jordão para ser batizado por João. João disse: "Eu é que preciso ser batizado por Ti!" Mas Jesus respondeu que era bom cumprir toda a justiça. Quando Jesus saiu da água, tchibum! Os céus se abriram em glória e o Espírito de Deus desceu suave como uma pombinha branca e pousou sobre Ele. E ouviu-se uma voz do Céu dizendo: "Este é o meu Filho amado, em quem me comprazo!" Jesus é o Filho amado de Deus!'
+        ],
+        [
+            'slug' => 'bodas_cana',
+            'titulo' => 'O Primeiro Milagre: A Água Transformada em Vinho',
+            'personagem' => 'Jesus e Maria',
+            'tema' => 'O Milagre nas Bodas de Caná',
+            'licoes' => 'fazer tudo o que Jesus mandar traz o melhor sabor para a nossa vida',
+            'historia_base' => 'Houve uma festa de casamento muito alegre na cidade de Caná da Galileia. No meio da festa, acabou a bebida dos convidados! Maria foi até Jesus e disse: "Eles não têm mais nada para servir." Depois disse aos servos: "Façam tudo o que Ele vos disser." Jesus apontou para seis potes de pedra grandes e mandou: "Encham os potes de água até a borda!" Os servos encheram com água limpinha. Quando o mestre de cerimônias provou, aquela água havia se transformado na bebida mais deliciosa de toda a festa! Jesus sempre guarda o melhor para quem Nele confia!'
+        ],
+        [
+            'slug' => 'jesus_anda_aguas',
+            'titulo' => 'Jesus Anda Sobre as Águas do Mar',
+            'personagem' => 'Jesus e Pedro',
+            'tema' => 'Jesus Anda Sobre o Mar',
+            'licoes' => 'manter os olhos fixos em Jesus para nunca afundar no medo',
+            'historia_base' => 'De madrugada, enquanto o barquinho dos discípulos lutava contra ondas fortes no mar, eles viram alguém caminhando calmamente por cima das águas! Ficaram assustados achando que era um fantasma, mas Jesus falou: "Tenham bom ânimo! Sou Eu, não tenham medo!" Pedro disse: "Senhor, se é Você, manda-me ir ter com Você por cima das águas!" Jesus disse: "Vem!" Pedro desceu do barco e começou a andar sobre as águas! Mas quando olhou para o vento forte, começou a afundar e gritou: "Senhor, salva-me!" Imediatamente Jesus estendeu a mão, segurou Pedro e o colocou no barco seguro! Jesus nunca te deixa afundar, Sarahzinha!'
+        ],
+        [
+            'slug' => 'ressurreicao_filha_jairo',
+            'titulo' => 'Menina, Levanta-te! A Filha de Jairo',
+            'personagem' => 'Jesus e a Menina',
+            'tema' => 'A Ressurreição da Filha de Jairo',
+            'licoes' => 'a autoridade de Jesus sobre a doença e a vida, e a importância de crer',
+            'historia_base' => 'Jairo, um líder do templo, foi correndo até Jesus e caiu aos Seus pés suplicando: "A minha filhinha de doze anos está muito doentinha! Vem e põe as mãos sobre ela para que viva!" No caminho, chegaram pessoas dizendo que a menininha havia falecido. Mas Jesus olhou nos olhos do pai e disse: "Não temas, crê somente!" Chegando à casa, Jesus entrou no quartinho, segurou a mãozinha gelada da menina com carinho e disse: "Talita cumi!", que quer dizer: "Menina, levanta-te!" Na mesma hora a menininha se levantou sorrindo e começou a andar! Todos pularam de alegria!'
+        ],
+        [
+            'slug' => 'o_filho_prodigo',
+            'titulo' => 'O Filho Pródigo e o Abraço do Pai Amoroso',
+            'personagem' => 'O Pai Amoroso e o Filho',
+            'tema' => 'A Parábola do Filho Pródigo',
+            'licoes' => 'o perdão incondicional do Pai Celestial para quando nos arrependemos',
+            'historia_base' => 'Um rapaz jovem pediu toda a sua parte da herança e foi para uma terra bem distante gastar tudo em festas. Quando o dinheiro acabou e veio uma fome terrível, ele teve que trabalhar cuidando de porquinhos e sentiu tanta fome que desejava comer a comidinha deles! Ele pensou: "Quantos empregados do meu pai têm pão com fartura! Vou voltar para o meu pai e pedir perdão." Quando ele ainda vinha longe, o pai o avistou, encheu-se de compaixão, correu, abraçou o filho no pescoço e o beijou com lágrimas de alegria! Deu-lhe roupas novas, sapatos e um anel! Deus nos ama com um abraço infinito!'
+        ],
+        [
+            'slug' => 'ressurreicao_lazaro',
+            'titulo' => 'Lázaro, Vem Para Fora!',
+            'personagem' => 'Jesus, Marta, Maria e Lázaro',
+            'tema' => 'A Ressurreição de Lázaro',
+            'licoes' => 'Jesus é a ressurreição e a vida; nada é tarde demais para Ele',
+            'historia_base' => 'Lázaro, amigo querido de Jesus, ficou doente e partiu, sendo sepultado em Betânia numa caverna com uma pedra na entrada. Quatro dias depois, Jesus chegou e viu Maria e Marta chorando. Jesus também chorou de profunda compaixão e amor. Depois, foi até o túmulo e ordenou: "Tirem a pedra!" Marta disse: "Senhor, já faz quatro dias!" Jesus respondeu: "Não te disse que, se creres, verás a glória de Deus?" Tiraram a pedra. Jesus orou ao Pai e clamou em alta voz: "Lázaro, vem para fora!" E o homem que estava morto saiu de dentro da caverna vivo e com saúde! Que milagre glorioso!'
+        ],
+        [
+            'slug' => 'entrada_triunfal',
+            'titulo' => 'A Entrada Triunfal: Hosana ao Rei!',
+            'personagem' => 'Jesus no Jumentinho',
+            'tema' => 'A Entrada Triunfal em Jerusalém',
+            'licoes' => 'louvar a Jesus como nosso Rei e Salvador com alegria sincera',
+            'historia_base' => 'Jesus estava chegando a Jerusalém e pediu aos discípulos que trouxessem um jumentinho novo no qual ninguém jamais havia montado. Jesus montou no animalzinho com muita mansidão e humildade. Uma multidão imensa começou a estender suas capas na estrada e cortar ramos verdes de palmeiras, balançando no ar e cantando em festa: "Hosana ao Filho de Davi! Bendito o que vem em nome do Senhor! Hosana nas alturas!" Até as crianças cantavam com alegria contagiante no templo! Nós também levantamos a nossa voz para louvar a Jesus todos os dias!'
+        ],
+        [
+            'slug' => 'ascensao_jesus',
+            'titulo' => 'A Subida Triunfante de Jesus ao Céu',
+            'personagem' => 'Jesus e os Discípulos',
+            'tema' => 'A Ascensão de Jesus ao Céu',
+            'licoes' => 'Jesus está no Céu intercedendo por nós e prometeu que voltará',
+            'historia_base' => 'Depois de ressuscitar e passar quarenta dias ensinando e abençoando os Seus amigos, Jesus os levou ao monte das Oliveiras. Ele levantou as mãos e os abençoou com muito amor. E enquanto os abençoava, foi se elevando suavemente para o alto, e uma nuvem luminosa o envolveu e o escondeu de seus olhos! Enquanto eles olhavam maravilhados para o Céu, dois anjos vestidos de branco apareceram e disseram: "Esse mesmo Jesus que vocês viram subir ao Céu, assim virá do mesmo modo como o viram subir!" Jesus está no Céu cuidando de cada detalhe da nossa vida!'
+        ],
+        [
+            'slug' => 'pentecostes',
+            'titulo' => 'O Dia de Pentecostes e o Fogo do Espírito Santo',
+            'personagem' => 'Os Apóstolos e Maria',
+            'tema' => 'O Derramamento do Espírito Santo',
+            'licoes' => 'o poder, a alegria e a coragem que o Espírito Santo coloca no nosso coração',
+            'historia_base' => 'Cerca de cento e vinte discípulos estavam reunidos em um cenáculo em Jerusalém, orando juntos com um só coração. De repente, veio do Céu um som como de um vento impetuoso e forte, vuush! Que encheu toda a casa onde estavam assentados! E apareceram línguas como de fogo pousando suavemente sobre cada um deles! Todos ficaram cheios do Espírito Santo e começaram a falar as maravilhas de Deus com grande alegria e coragem! O mesmo Espírito Santo mora no seu coraçãozinho para te guiar sempre no caminho do bem, Sarahzinha!'
+        ],
+        [
+            'slug' => 'pedro_liberto_prisao',
+            'titulo' => 'O Anjo que Tirou Pedro da Prisão de Noite',
+            'personagem' => 'Pedro e o Anjo',
+            'tema' => 'A Libertação de Pedro da Prisão',
+            'licoes' => 'o poder da igreja que ora unida e como os anjos de Deus nos guardam',
+            'historia_base' => 'O rei mandou prender Pedro e o amarrou com duas correntes pesadas entre dois soldados sentinelas dentro de uma prisão com portas de ferro trancadas. Mas a igreja não parava de orar fervorosamente a Deus por ele dia e noite! No meio da noite, uma luz resplandeceu na prisão e um anjo tocou o lado de Pedro, acordando-o: "Levanta-te depressa!" Na mesma hora as correntes caíram das mãos de Pedro! O anjo guiou Pedro passando pelos guardas e o grande portão de ferro se abriu sozinho diante deles! Pedro foi até a casa dos irmãos que oravam e todos se alegraram sem limites!'
+        ],
+        [
+            'slug' => 'paulo_estrada_damasco',
+            'titulo' => 'A Grande Luz na Estrada de Damasco',
+            'personagem' => 'Saulo / Paulo',
+            'tema' => 'A Conversão do Apóstolo Paulo',
+            'licoes' => 'o poder transformador de Jesus que perdoa e dá um coração novo a qualquer pessoa',
+            'historia_base' => 'Saulo era um homem que não entendia o amor de Jesus e perseguia os cristãos. Enquanto viajava na estrada para a cidade de Damasco, de repente uma luz brilhante vinda do Céu, mais reluzente que o próprio sol do meio-dia, resplandeceu ao redor dele! Ele caiu no chão e ouviu uma voz amorosa: "Saulo, Saulo, por que você me persegue?" Ele perguntou: "Quem és Tu, Senhor?" E a voz respondeu: "Eu sou Jesus, a quem você persegue." Saulo levantou-se com o coração totalmente transformado, foi curado e se tornou o apóstolo Paulo, viajando o mundo para pregar que Jesus é amor e vida!'
+        ],
+        [
+            'slug' => 'joao_nova_jerusalem',
+            'titulo' => 'A Linda Cidade Celestial: A Nova Jerusalém',
+            'personagem' => 'Apóstolo João no Apocalipse',
+            'tema' => 'A Visão da Nova Jerusalém',
+            'licoes' => 'a maravilhosa esperança do Céu onde não há choro, tristeza ou dor',
+            'historia_base' => 'O apóstolo João teve uma visão maravilhosa do lar eterno que Deus preparou para os Seus filhos. Ele viu a Nova Jerusalém descendo do Céu, resplandecendo como uma joia raríssima de jaspe cristalino! A cidade tem muros adornados com pedras preciosas de todas as cores: esmeraldas, safiras e ametistas! Suas ruas são de ouro puro e transparente como vidro. Há um rio cristalino da água da vida e a árvore da vida que dá frutos deliciosos todos os meses! Ali nunca haverá noite, nem choro, nem dor, porque a glória do Cordeiro ilumina tudo para sempre!'
+        ],
+        [
+            'slug' => 'eliseu_machado',
+            'titulo' => 'O Profeta Eliseu e o Machado que Boiou',
+            'personagem' => 'Eliseu e o Jovem Discípulo',
+            'tema' => 'O Machado Flutuante',
+            'licoes' => 'Deus se importa com os pequenos detalhes do nosso dia a dia e responde com carinho',
+            'historia_base' => 'Os discípulos dos profetas estavam construindo uma cabana maior perto do rio Jordão para caber todo mundo. Enquanto um jovem cortava uma árvore com força, o ferro pesado do machado escapou do cabo de madeira e caiu no fundo escuro do rio, tchibum! O jovem gritou aflito para Eliseu: "Ai, meu senhor! O machado era emprestado!" Eliseu perguntou onde tinha caído. Eliseu cortou um pedaço de pau, jogou exatamente naquele lugar na água e fez o ferro pesado boiar como se fosse uma folhinha leve de flor! O jovem estendeu a mão e pegou o machado! Deus se importa com cada coisinha da sua vida!'
+        ],
+        [
+            'slug' => 'naama_mergulhos',
+            'titulo' => 'Naamã e os Sete Mergulhos no Rio Jordão',
+            'personagem' => 'Naamã e a Menininha de Israel',
+            'tema' => 'A Cura de Naamã',
+            'licoes' => 'a humildade de obedecer e como a fé de uma criancinha pode ajudar os adultos',
+            'historia_base' => 'Naamã era um comandante muito importante, mas sofria de lepra na pele. Na casa dele morava uma menininha israelita cativa que amava a Deus. Ela disse com doçura à esposa de Naamã: "Se meu senhor fosse ao profeta que está em Samaria, ele o curaria da lepra!" Naamã viajou até Eliseu. Eliseu mandou dizer: "Vá e lave-se sete vezes no rio Jordão!" Naamã achou simples demais, mas seus servos o convenceram. Naamã desceu e mergulhou uma, duas, três... na sétima vez que saiu da água, sua pele estava completamente limpa e lisinha como a pele de um bebezinho recém-nascido!'
+        ],
+        [
+            'slug' => 'menina_cativa',
+            'titulo' => 'A Menininha Cativa que Teve Grande Fé',
+            'personagem' => 'A Pequena Menina Israelita',
+            'tema' => 'A Fé da Menina Cativa',
+            'licoes' => 'mesmo sendo pequenina, você pode fazer uma enorme diferença e falar do amor de Deus',
+            'historia_base' => 'Longe da sua terra natal, morava uma menininha israelita na casa do general Naamã. Mesmo estando longe de casa, ela nunca esqueceu o amor e o poder do Deus de Israel. Quando viu seu senhor Naamã sofrendo doente, ela não guardou rancor nem medo. Com um coração bondoso e cheio de fé, falou que o Deus de Israel podia curá-lo através do profeta Eliseu! O general ouviu o conselho daquela garotinha e foi curado! Sarahzinha, você também é uma princesinha especial que o Papai do Céu usa para abençoar todos ao seu redor!'
+        ],
+        [
+            'slug' => 'sadraque_mesaque',
+            'titulo' => 'Os Três Amigos na Fornalha Ardente e o Quarto Homem',
+            'personagem' => 'Sadraque, Mesaque e Abednego',
+            'tema' => 'A Fornalha Ardente',
+            'licoes' => 'fidelidade inabalável a Deus e a presença protetora de Jesus no meio do fogo',
+            'historia_base' => 'O rei da Babilônia mandou fazer uma estátua de ouro gigante e ordenou que todos se curvassem quando tocasse a música. Três jovens tementes a Deus — Sadraque, Mesaque e Abednego — ficaram de pé e disseram com coragem: "Nós só nos curvamos diante do Deus do Céu!" O rei ficou furioso e mandou jogá-los numa fornalha sete vezes mais quente! Quando o rei olhou para dentro do fogo, assustou-se e disse: "Nós não jogamos três homens amarrados? Eu vejo quatro homens soltos passeando no meio das chamas sem se queimar, e o quarto é semelhante ao Filho de Deus!" Deus livra os que Nele confiam!'
+        ],
+        [
+            'slug' => 'neemias_muralhas',
+            'titulo' => 'Neemias e a Reconstrução dos Muros com Louvor',
+            'personagem' => 'Neemias',
+            'tema' => 'A Reconstrução das Muralhas por Neemias',
+            'licoes' => 'oração, trabalho conjunto com a família e a alegria do Senhor é a nossa força',
+            'historia_base' => 'Neemias estava trabalhando no palácio quando soube que os muros da santa cidade de Jerusalém estavam caídos e as portas queimadas a fogo. Neemias orou e jejuou ao Senhor. O rei deu autorização para ele ir reconstruir. Quando os inimigos tentaram desanimá-lo com zombaria, Neemias disse: "O Deus dos Céus é quem nos dará bom êxito! E a alegria do Senhor é a nossa força!" As famílias trabalharam unidas segurando a ferramenta numa mão e cantando ao Senhor. Em apenas cinquenta e dois dias os muros estavam todos em pé e restaurados para a glória de Deus!'
+        ],
+        [
+            'slug' => 'josias_pequeno_rei',
+            'titulo' => 'O Jovem Rei Josias que Amava a Palavra de Deus',
+            'personagem' => 'Rei Josias',
+            'tema' => 'O Jovem Rei Josias',
+            'licoes' => 'amar e guardar os mandamentos de Deus desde bem pequenino',
+            'historia_base' => 'Josias tinha apenas oito aninhos quando se tornou rei de Judá! Ele não seguiu os caminhos ruins de outros homens, mas desde cedo buscou o Deus de Davi de todo o coração. Quando tinha dezesseis anos, mandou limpar e reformar a casa do Senhor. Enquanto limpavam o templo, o sacerdote achou o livro sagrado da Lei de Deus! Quando leram a Palavra para o rei Josias, ele chorou de emoção e reuniu todo o povo para fazer uma aliança de amor com o Senhor! Josias provou que mesmo sendo criança podemos ser líderes de muita fé e obediência!'
+        ],
+        [
+            'slug' => 'viuva_sarepta',
+            'titulo' => 'A Viúva de Sarepta e o Azeite que Nunca Acabava',
+            'personagem' => 'Elias e a Viúva',
+            'tema' => 'O Milagre da Farinha e do Azeite',
+            'licoes' => 'confiança na provisão de Deus e que Ele nunca deixa faltar nada na nossa mesa',
+            'historia_base' => 'Durante uma grande seca, Deus mandou o profeta Elias ir até a cidade de Sarepta. Chegando lá, viu uma mulher apanhando gravetos para fazer a última porção de comida para ela e para o seu filhinho. Elias disse com fé: "Não temas! Faça primeiro um bolinho pequenino para mim e depois faça para você e seu filho, porque assim diz o Senhor: A farinha da panela não se acabará e o azeite da botija não faltará até o dia em que o Senhor der chuva sobre a terra!" A mulher confiou e obedeceu. E sabe o que aconteceu? Todos os dias ela pegava farinha e azeite fresquinhos e nunca mais faltou nada em sua casa!'
+        ],
     ];
 
     public function __construct()
@@ -73,7 +413,14 @@ class CharleneController extends Controller
             ]);
         }
 
-        $payload = $request->all();
+        $payload = $request->json()->all();
+        if (empty($payload)) {
+            $raw = $request->getContent();
+            $payload = !empty($raw) ? json_decode($raw, true) : $request->all();
+        }
+        if (!is_array($payload)) {
+            $payload = [];
+        }
         $reqType = $payload['request']['type'] ?? 'LaunchRequest';
         $intentName = $payload['request']['intent']['name'] ?? '';
 
@@ -99,18 +446,12 @@ class CharleneController extends Controller
     }
 
     /**
-     * Boas-vindas acolhedora ao abrir a Skill
+     * Boas-vindas rápida, humana e doce ao abrir a Skill (abre o microfone imediatamente)
      */
     private function handleLaunch(): JsonResponse
     {
-        $speech = '<speak>Oi, princesinha Sarah! A paz do Senhor! '
-            . 'Eu sou a Charlene, sua amiguinha. '
-            . 'Como é bom estar aqui com você e com a sua família! '
-            . 'Hoje nós podemos: ouvir suas músicas na pasta de Adoração, Animadas ou Hora de Dormir; '
-            . 'ouvir uma linda história da Bíblia; orar juntas; ou ouvir o devocional do papai Adrian King! '
-            . 'O que você quer fazer agora, Sarahzinha?</speak>';
-
-        $reprompt = '<speak>Sarahzinha, você quer ouvir suas músicas, uma historinha da Bíblia ou fazer uma oração?</speak>';
+        $speech = '<speak>Oi Sarahzinha! Oi Adrian! A paz do Senhor! Sou a Charlene. O que nós vamos fazer agora?</speak>';
+        $reprompt = '<speak>Estou te ouvindo! Quer uma música, uma historinha da Bíblia ou orar?</speak>';
 
         return $this->respondSsml($speech, false, $reprompt);
     }
@@ -243,36 +584,127 @@ class CharleneController extends Controller
     }
 
     /**
-     * Conta histórias da Bíblia dinâmicas com rotação e IA de verdade
+     * Conta histórias da Bíblia dinâmicas com rotação inteligente,
+     * memória de ciclo anti-repetição e IA superdotada na Bíblia Sagrada.
      */
     private function handleBibleStory(?string $tema): JsonResponse
     {
-        // Se não pediu um tema específico, sorteia uma do catálogo rico
-        if (!$tema) {
-            $item = self::HISTORIAS_CATALOGO[array_rand(self::HISTORIAS_CATALOGO)];
-            $temaPrompt = "História bíblica sobre {$item['tema']} (personagem principal: {$item['personagem']}). Enfatize lições de: {$item['licoes']}.";
-        } else {
-            $temaPrompt = "História bíblica sobre: {$tema}.";
+        $ouvidasMem = CharleneMemory::where('category', 'historia_ouvida')->get();
+        $ouvidasSlugs = $ouvidasMem->pluck('subject')->toArray();
+
+        // 1. Pedido específico de história (ex: "conta a história de Davi", "de Jonas", "de Noé")
+        // Se a Sarah ou Adrian pedirem especificamente, conta na hora mesmo se já ouvida!
+        if (!empty($tema) && trim($tema) !== '') {
+            $temaBusca = mb_strtolower(trim($tema));
+            $encontrada = null;
+            foreach (self::HISTORIAS_CATALOGO as $item) {
+                if (str_contains(mb_strtolower($item['titulo']), $temaBusca)
+                    || str_contains(mb_strtolower($item['personagem']), $temaBusca)
+                    || str_contains(mb_strtolower($item['slug']), $temaBusca)
+                    || str_contains($temaBusca, mb_strtolower($item['personagem']))) {
+                    $encontrada = $item;
+                    break;
+                }
+            }
+
+            if ($encontrada) {
+                $this->rememberEntity('historia_ouvida', $encontrada['slug'], $encontrada['titulo']);
+                return $this->narrarHistoria($encontrada, "Sarahzinha pediu expressamente para ouvir a história de: {$encontrada['titulo']}.");
+            }
+
+            // Não está no catálogo prévio -> IA Superdotada na Bíblia gera do texto bíblico
+            $customItem = [
+                'slug' => 'custom_' . Str::slug($tema, '_'),
+                'titulo' => "História Bíblica de " . ucfirst($tema),
+                'personagem' => ucfirst($tema),
+                'tema' => $tema,
+                'licoes' => "fé, obediência e o amor de Deus",
+                'historia_base' => null,
+            ];
+            $this->rememberEntity('historia_ouvida', $customItem['slug'], $customItem['titulo']);
+            return $this->narrarHistoria($customItem, "Sarahzinha pediu expressamente a história bíblica sobre: {$tema}. Extraia com maestria direto da Bíblia Sagrada para crianças.");
         }
 
-        $prompt = "Você é a Charlene, uma amiga e contadora de histórias cristã doce, entusiasmada, alegre, amorosa e cativante para a princesinha Sarah (filha do Adrian King e da Samara). "
-            . "Conte uma linda história bíblica para crianças (com 180 a 240 palavras). "
-            . "{$temaPrompt} "
-            . "Use onomatopeias suaves e divertidas (ex: 'tchibum', 'toc toc', 'uau'). Fale com muito encanto e doçura. "
-            . "Termine com uma lição prática e emocionante de fé, coragem e o amor de Jesus para a vida da Sarahzinha. "
-            . "Pergunte carinhosamente no final se ela quer ouvir outra história ou colocar uma musiquinha.";
+        // 2. Pedido geral ("me conta uma história da bíblia", "outra história", etc.)
+        // Filtra histórias do catálogo que A SARAH AINDA NÃO OUVIU neste ciclo!
+        $naoOuvidas = array_filter(self::HISTORIAS_CATALOGO, function ($item) use ($ouvidasSlugs) {
+            return !in_array($item['slug'], $ouvidasSlugs, true);
+        });
+
+        // Caso A: Ainda existem histórias não ouvidas no catálogo de 45 histórias!
+        if (!empty($naoOuvidas)) {
+            $naoOuvidas = array_values($naoOuvidas);
+            $escolhida = $naoOuvidas[array_rand($naoOuvidas)];
+
+            // Registra que a Sarah ouviu essa história
+            $this->rememberEntity('historia_ouvida', $escolhida['slug'], $escolhida['titulo']);
+
+            return $this->narrarHistoria($escolhida, "História bíblica sobre {$escolhida['tema']} (personagem principal: {$escolhida['personagem']}). Enfatize lições de: {$escolhida['licoes']}.");
+        }
+
+        // Caso B: Todas as 45 histórias do catálogo já foram ouvidas!
+        // A Charlene busca passagens bíblicas profundas e menos comuns via IA
+        $totalOuvidas = count($ouvidasSlugs);
+        if ($totalOuvidas < (count(self::HISTORIAS_CATALOGO) + 35)) {
+            $promptInedita = "Você é a Charlene, especialista e superdotada em toda a Bíblia Sagrada (do Gênesis ao Apocalipse). "
+                . "A princesinha Sarah já ouviu todas as histórias tradicionais da Bíblia (Davi, Noé, Jonas, Moisés, etc.). "
+                . "Agora, escolha uma NOVA passagem bíblica linda, inspiradora e menos contada (ex: O jovem rei Josias, a menina cativa de Naamã, Dorcas a costureira bondosa de Jope, a viúva de Sarepta, o cântico de Ana, o profeta Habacuque, o jovem Timóteo e sua vovó Lóide, a generosa Sunamita, o centurião de grande fé, etc.). "
+                . "Não repita histórias comuns. "
+                . "Conte de forma doce, infantil e encantadora com 180 a 240 palavras. "
+                . "Comece dizendo: 'Sarahzinha, como você já conhece tantas histórias lindas, hoje o Espírito Santo me inspirou uma passagem muito especial e preciosa da Bíblia Sagrada para você!' "
+                . "Termine com uma lição prática de fé e amor para a Sarahzinha e sua família (papai Adrian King e mamãe Samara). "
+                . "Pergunte no final se ela quer ouvir outra história ou colocar uma musiquinha.";
+
+            $novaHistoria = $this->callAiWithMemory($promptInedita, 'historia_inedita');
+            if ($novaHistoria) {
+                $slugInedita = 'inedita_' . substr(md5($novaHistoria), 0, 8);
+                $this->rememberEntity('historia_ouvida', $slugInedita, "História Inédita da Bíblia");
+                $speech = '<speak>' . $this->cleanSsmlText($novaHistoria) . '</speak>';
+                return $this->respondSsml($speech, false, '<speak>Sarahzinha, você quer ouvir outra história da Bíblia ou uma musiquinha agora?</speak>');
+            }
+        }
+
+        // Caso C: Sarah zerou todo o ciclo bíblico! Reinicia o ciclo e celebra a vitória dela!
+        CharleneMemory::where('category', 'historia_ouvida')->delete();
+
+        $primeira = self::HISTORIAS_CATALOGO[array_rand(self::HISTORIAS_CATALOGO)];
+        $this->rememberEntity('historia_ouvida', $primeira['slug'], $primeira['titulo']);
+
+        $introReinicio = "Sarahzinha, que vitória grandiosa! Você é uma verdadeira princesinha doutora na Bíblia Sagrada! "
+            . "Nós já viajamos por todas as histórias do nosso livro sagrado! "
+            . "Agora vamos abrir um novo ciclo abençoado de histórias com novas revelações para você! ";
+
+        return $this->narrarHistoria($primeira, "História bíblica sobre {$primeira['tema']}.", $introReinicio);
+    }
+
+    /**
+     * Narra uma história bíblica usando IA com fallback para a história base
+     */
+    private function narrarHistoria(array $item, string $instrucaoExtra, string $prefixo = ''): JsonResponse
+    {
+        $prompt = "Você é a Charlene, uma contadora de histórias cristã doce, entusiasmada, alegre, amorosa e cativante para a princesinha Sarah (filha do Adrian King e da Samara). "
+            . "Você é superdotada e especialista em toda a Bíblia Sagrada. "
+            . "Conte a seguinte história bíblica com encanto infantil: {$item['titulo']} (Personagem: {$item['personagem']}). "
+            . "{$instrucaoExtra} "
+            . "Use onomatopeias suaves e divertidas (ex: 'tchibum', 'toc toc', 'glup', 'uau'). Fale com muita doçura, entusiasmo e calor humano. "
+            . "Tamanho: de 180 a 240 palavras. "
+            . "Termine com uma lição prática e emocionante de fé, coragem e o amor de Jesus para o coraçãozinho da Sarahzinha. "
+            . "Pergunte carinhosamente no final se ela quer ouvir outra história da Bíblia ou colocar uma de suas músicas.";
 
         $story = $this->callAiWithMemory($prompt, 'historia_biblica');
 
         if (!$story) {
-            $story = "Era uma vez um jovem pastorzinho chamado Davi que cuidava das ovelhinhas com muita fé no Papai do Céu! "
-                . "Quando o gigante Golias tentou assustar a todos, Davi não teve medo porque sabia que o Senhor dos Exércitos estava com ele. "
-                . "Com apenas uma pedrinha e a sua funda, Davi venceu o gigante e provou que quem confia em Deus nunca precisa ter medo de nada! "
-                . "Você também é muito corajosa e amada por Jesus, Sarahzinha! Quer ouvir outra historinha agora?";
+            $story = $item['historia_base'] ?? (
+                "Era uma vez na Bíblia Sagrada uma história linda sobre {$item['personagem']}! "
+                . "O Papai do Céu fez grandes maravilhas para mostrar que Ele sempre cuida com amor de quem confia Nele. "
+                . "Sarahzinha, o mesmo Deus de poder que cuidou de {$item['personagem']} é quem cuida de você, do papai Adrian King e da mamãe Samara todos os dias! "
+                . "Você é uma princesa muito preciosa para Jesus! Quer ouvir mais uma historinha linda agora?"
+            );
         }
 
-        $speech = '<speak>' . $this->cleanSsmlText($story) . '</speak>';
-        return $this->respondSsml($speech, false, '<speak>Sarahzinha, você quer ouvir outra história da Bíblia ou uma musiquinha?</speak>');
+        $speechText = $prefixo ? ($prefixo . ' ' . $story) : $story;
+        $speech = '<speak>' . $this->cleanSsmlText($speechText) . '</speak>';
+        return $this->respondSsml($speech, false, '<speak>Sarahzinha, você quer ouvir outra história da Bíblia ou colocar uma musiquinha?</speak>');
     }
 
     /**
@@ -310,7 +742,7 @@ class CharleneController extends Controller
     }
 
     /**
-     * Conversa inteligente com Long-Term Memory (Memória Permanente)
+     * Conversa inteligente com Long-Term Memory (Memória Permanente) e Superdotada na Bíblia
      */
     private function handleIntelligentChat(?string $userUtterance, array $payload): JsonResponse
     {
@@ -325,7 +757,7 @@ class CharleneController extends Controller
         }
 
         // 2. Busca na memória permanente fatos relevantes
-        $memories = CharleneMemory::orderBy('updated_at', 'desc')->take(25)->get();
+        $memories = CharleneMemory::where('category', '!=', 'historia_ouvida')->orderBy('updated_at', 'desc')->take(25)->get();
         $memoriesPrompt = "MEMÓRIAS QUE VOCÊ JÁ CONHECE E LEMBRA:\n";
         foreach ($memories as $m) {
             $memoriesPrompt .= "- [{$m->category}] {$m->content} (lembrado em: {$m->created_at->format('d/m/Y')})\n";
@@ -333,6 +765,8 @@ class CharleneController extends Controller
 
         $systemPrompt = "Você é a Charlene, uma inteligência artificial doce, afetuosa, amiga e cristã da princesinha Sarah (filha do Adrian King e da Samara). "
             . "Você NÃO é um robô travado! Você conversa com fluidez, entusiasmo, calor e carinho humano para uma criança e para o papai Adrian King. "
+            . "Você é SUPERDOTADA E ESPECIALISTA EM TODA A BÍBLIA SAGRADA (do Gênesis ao Apocalipse). Você conhece todos os personagens, profetas, livros, milagres de Jesus, parábolas, significados de nomes bíblicos (ex: Sarah = princesa de Deus) e versículos. "
+            . "Se a Sarah ou o Adrian King fizerem qualquer pergunta bíblica, curiosidade ou pergunta sobre Deus e Jesus, explique com encanto, clareza e sabedoria adaptada para crianças com muito amor! "
             . "Você TEM MEMÓRIA PERMANENTE de tudo o que te ensinaram. "
             . "Se perguntarem se você conhece alguém (ex: Bispo Fernando, tios, amigos), consulte a lista de memórias abaixo. "
             . "Se a pessoa estiver na memória, responda com entusiasmo confirmando que conhece sim, citando os detalhes com carinho! "
@@ -359,20 +793,38 @@ class CharleneController extends Controller
      */
     private function extractAndLearnMemories(string $text): void
     {
-        $lower = mb_strtolower($text);
+        $lower = mb_strtolower(trim($text));
 
-        // Se mencionou alguém para orar ou conhecer (ex: Bispo Fernando, pastor, amigo, etc.)
-        if (preg_match('/(bispo|pastor|pastora|amigo|amiga|tia|tio|irmao|irma|pr\.|dra?\.)\s+([a-zA-ZÀ-ÿ]+)/ui', $text, $matches)) {
-            $title = $matches[1];
-            $name = $matches[2];
-            $subject = mb_strtolower("{$title}_{$name}");
-            $content = "{$title} {$name}: pessoa mencionada pela família do Adrian King e da Sarah ('{$text}').";
+        // 1. Pessoas com títulos ou prefixos (ex: Bispo Fernando, Bispo, Pastor Carlos, Titia Maria, etc.)
+        if (preg_match('/(bispo|pastor|pastora|amigo|amiga|tia|tio|irmao|irma|pr\.|dra?\.?)\s*([a-zA-ZÀ-ÿ]+)?/ui', $text, $matches)) {
+            $title = trim($matches[1]);
+            $name = trim($matches[2] ?? '');
+            $full = $name ? "{$title} {$name}" : $title;
+            $subject = mb_strtolower(str_replace(' ', '_', $full));
+            $content = "{$full}: pessoa mencionada pela família do Adrian King e da Sarah ('{$text}').";
 
             CharleneMemory::updateOrCreate(
                 ['subject' => $subject],
                 ['category' => 'pessoa', 'content' => $content, 'learned_from' => 'alexa_voz', 'last_mentioned_at' => now()]
             );
-        } elseif (str_contains($lower, 'ore por') || str_contains($lower, 'orar por') || str_contains($lower, 'ora por')) {
+        }
+        // 2. Nomes comuns mencionados em perguntas ("você conhece o Arthur", "conhece o Gustavo", "sabe quem é Arthur", etc.)
+        elseif (preg_match('/(?:conhece|lembra|sabe quem e|quem e)\s+(?:o|a|do|da|de)?\s*([a-zA-ZÀ-ÿ]{3,})/ui', $text, $matches)) {
+            $name = trim($matches[1]);
+            // Ignora palavras comuns de comando
+            if (!in_array(mb_strtolower($name), ['uma', 'musica', 'cancao', 'historia', 'oracao', 'deus', 'jesus', 'biblia'])) {
+                $subject = mb_strtolower($name);
+                $content = ucfirst($name) . ": pessoa ou amigo mencionado pela família do Adrian King e da Sarah ('{$text}').";
+
+                CharleneMemory::updateOrCreate(
+                    ['subject' => $subject],
+                    ['category' => 'pessoa', 'content' => $content, 'learned_from' => 'alexa_voz', 'last_mentioned_at' => now()]
+                );
+            }
+        }
+
+        // 3. Pedidos de oração
+        if (str_contains($lower, 'ore por') || str_contains($lower, 'orar por') || str_contains($lower, 'ora por') || str_contains($lower, 'oracao para') || str_contains($lower, 'oracao por')) {
             $subject = 'pedido_' . substr(md5($text), 0, 8);
             CharleneMemory::create([
                 'category' => 'pedido_oracao',
@@ -537,7 +989,7 @@ class CharleneController extends Controller
     }
 
     /**
-     * Para a reprodução de música
+     * Para qualquer fala, música ou encerra a conversa na hora
      */
     private function handleStop(): JsonResponse
     {
@@ -546,7 +998,7 @@ class CharleneController extends Controller
             'response' => [
                 'outputSpeech' => [
                     'type' => 'PlainText',
-                    'text' => 'Tudo bem, Sarahzinha! Parando a música. Até logo!',
+                    'text' => 'Tudo bem! Até logo, que Jesus abençoe!',
                 ],
                 'directives' => [
                     [
@@ -694,12 +1146,29 @@ class CharleneController extends Controller
     public function managerPage()
     {
         $musicas = $this->getMusicFiles('todas');
-        $memorias = CharleneMemory::orderBy('updated_at', 'desc')->get();
+        $memorias = CharleneMemory::where('category', '!=', 'historia_ouvida')->orderBy('updated_at', 'desc')->get();
+        $historiasOuvidas = CharleneMemory::where('category', 'historia_ouvida')->orderBy('updated_at', 'desc')->get();
+        $totalCatalogo = count(self::HISTORIAS_CATALOGO);
 
         return view('pages.charleneMusicas', [
             'musicas' => $musicas,
             'memorias' => $memorias,
+            'historiasOuvidas' => $historiasOuvidas,
+            'totalCatalogo' => $totalCatalogo,
+            'historiasCatalogo' => self::HISTORIAS_CATALOGO,
             'baseUrl' => $this->baseUrl . '/storage/sara/musicas/',
+        ]);
+    }
+
+    /**
+     * API: Reinicia o ciclo de histórias bíblicas ouvidas pela Sarah
+     */
+    public function resetHistoriasProgresso(Request $request): JsonResponse
+    {
+        CharleneMemory::where('category', 'historia_ouvida')->delete();
+        return response()->json([
+            'success' => true,
+            'message' => 'Ciclo de histórias da Bíblia reiniciado com sucesso! A Sarah poderá ouvir todas as histórias novamente sem repetição.',
         ]);
     }
 

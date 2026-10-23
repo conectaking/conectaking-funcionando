@@ -425,6 +425,107 @@
             background: linear-gradient(90deg, var(--primary), var(--accent));
             width: 0%;
         }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 12px 10px;
+            }
+            .header h1 {
+                font-size: 1.4rem;
+            }
+            .header .subtitle {
+                font-size: 0.85rem;
+            }
+            .main-nav {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 8px;
+                gap: 6px;
+                margin-bottom: 16px;
+            }
+            .main-tab {
+                flex-shrink: 0;
+                padding: 8px 14px;
+                font-size: 0.82rem;
+                white-space: nowrap;
+            }
+            .upload-card {
+                padding: 20px 12px;
+                margin-bottom: 18px;
+            }
+            .category-selector {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                width: 100%;
+            }
+            .cat-btn {
+                min-height: 44px;
+                padding: 10px 8px;
+                font-size: 0.85rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                touch-action: manipulation;
+            }
+            .upload-btn {
+                width: 100%;
+                max-width: 100%;
+                padding: 14px 16px;
+                font-size: 0.95rem;
+            }
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            .filter-pills {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 6px;
+            }
+            .pill {
+                flex-shrink: 0;
+                min-height: 38px;
+                padding: 8px 12px;
+                font-size: 0.8rem;
+                touch-action: manipulation;
+            }
+            .song-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+                padding: 14px;
+            }
+            .song-item-controls {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                width: 100%;
+            }
+            .song-item-controls audio {
+                flex: 1;
+                max-width: calc(100% - 85px);
+            }
+            .del-btn {
+                min-height: 38px;
+                padding: 8px 14px;
+                font-size: 0.85rem;
+                touch-action: manipulation;
+            }
+            .memory-grid {
+                grid-template-columns: 1fr;
+            }
+            .hints-grid {
+                grid-template-columns: 1fr;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -442,6 +543,9 @@
             </button>
             <button class="main-tab" onclick="switchSection('memorias', this)">
                 <span>🧠</span> Cérebro & Memória IA
+            </button>
+            <button class="main-tab" onclick="switchSection('historias', this)">
+                <span>📖</span> Jornada Bíblica ({{ count($historiasOuvidas ?? []) }}/{{ $totalCatalogo ?? 45 }})
             </button>
             <button class="main-tab" onclick="switchSection('comandos', this)">
                 <span>🗣️</span> Comandos de Voz
@@ -463,9 +567,9 @@
 
             <!-- Upload Card -->
             <div class="upload-card" id="dropZone">
-                <div style="font-size: 2.2rem; margin-bottom: 8px;">📂</div>
-                <p style="font-weight: 800; font-size: 1.1rem; margin-bottom: 6px;">Enviar Novas Músicas para a Sarah</p>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 14px;">Escolha em qual pasta deseja salvar antes de arrastar:</p>
+                <div style="font-size: 2.2rem; margin-bottom: 6px;">📂</div>
+                <p style="font-weight: 800; font-size: 1.15rem; margin-bottom: 4px;">Enviar Músicas para a Sarah</p>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">Toque na pasta de destino desejada e escolha os arquivos:</p>
                 
                 <div class="category-selector" onclick="event.stopPropagation()">
                     <button type="button" class="cat-btn active" onclick="selectUploadCategory('adoracao', this)">🙏 Adoração</button>
@@ -474,8 +578,16 @@
                     <button type="button" class="cat-btn" onclick="selectUploadCategory('geral', this)">🌟 Geral</button>
                 </div>
 
-                <input type="file" id="fileInput" accept="audio/*" multiple style="display: none;">
-                <button class="upload-btn" type="button" onclick="document.getElementById('fileInput').click()">Escolher Arquivos MP3</button>
+                <div style="margin: 8px 0 16px 0; font-size: 0.88rem; color: #c4b5fd; font-weight: 700;">
+                    Pasta ativa de destino: <span id="activeCategoryBadge" style="background: rgba(139, 92, 246, 0.35); border: 1px solid var(--primary); padding: 4px 12px; border-radius: 999px; color: #fff;">🙏 Adoração</span>
+                </div>
+
+                <!-- Input com Label nativo (abre direto no celular iOS/Android e PC) -->
+                <input type="file" id="fileInput" name="audio" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,audio/mpeg,audio/mp3,application/octet-stream" multiple style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0;">
+                
+                <label for="fileInput" class="upload-btn" style="cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px;">
+                    <span>📱</span> Escolher Músicas no Celular / PC
+                </label>
                 
                 <div id="progressContainer">
                     <p id="progressText" style="font-size: 0.85rem; color: #c4b5fd; margin-bottom: 6px;">Enviando...</p>
@@ -508,8 +620,8 @@
                                 {{ $song['title'] }}
                             </div>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-                            <audio controls preload="none" style="height: 32px; max-width: 180px;">
+                        <div class="song-item-controls">
+                            <audio controls preload="none" style="height: 34px;">
                                 <source src="{{ $song['url'] }}" type="audio/mpeg">
                             </audio>
                             <button class="del-btn" onclick="deleteSong('{{ addslashes($song['filename']) }}', '{{ $song['category'] }}')">Excluir</button>
@@ -579,6 +691,77 @@
                         </div>
                     </div>
                 @endforeach
+        </div>
+
+        <!-- ================= SEÇÃO: JORNADA BÍBLICA & HISTÓRIAS ================= -->
+        <div id="section-historias" class="section-panel">
+            <div class="voice-hints" style="background: rgba(139, 92, 246, 0.1); border-color: rgba(139, 92, 246, 0.3);">
+                <div class="voice-hints-title" style="color: #c4b5fd;">
+                    ✨ Charlene Superdotada na Bíblia • Rastreamento Anti-Repetição:
+                </div>
+                <p style="font-size: 0.88rem; color: #e2e8f0; line-height: 1.4;">
+                    A Charlene conhece a Bíblia inteira de Gênesis ao Apocalipse e <strong>nunca repete uma história</strong> para a Sarah antes de contar todas as 45 histórias sagradas! Quando o catálogo terminar, a IA da Charlene busca novas passagens bíblicas profundas e inéditas. Ela <strong>só repete</strong> se a Sarah ou você pedirem expressamente por ela (ex: <em>"Alexa, pede para a Charlene contar a história de Davi e Golias"</em>).
+                </p>
+            </div>
+
+            <!-- Stats Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px;">
+                <div style="background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; text-align: center;">
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">Histórias no Catálogo Mestre</div>
+                    <div style="font-size: 1.8rem; font-weight: 800; color: #a78bfa;">{{ $totalCatalogo ?? 45 }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Antigo & Novo Testamento</div>
+                </div>
+
+                <div style="background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; text-align: center;">
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">Histórias Já Ouvidas pela Sarah</div>
+                    <div style="font-size: 1.8rem; font-weight: 800; color: #10b981;">{{ count($historiasOuvidas ?? []) }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">No ciclo atual de leitura</div>
+                </div>
+
+                <div style="background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; text-align: center;">
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">Histórias Restantes no Ciclo</div>
+                    <div style="font-size: 1.8rem; font-weight: 800; color: #f59e0b;">{{ max(0, ($totalCatalogo ?? 45) - count($historiasOuvidas ?? [])) }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Sem repetição para a Sarah</div>
+                </div>
+
+                <div style="background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                    <button type="button" class="del-btn" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 10px 16px; font-size: 0.85rem; font-weight: 700; border-radius: 8px;" onclick="resetStoryProgress()">
+                        🔄 Reiniciar Ciclo Bíblico
+                    </button>
+                    <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 6px;">Permite que a Sarah ouça tudo do zero</span>
+                </div>
+            </div>
+
+            <!-- Lista de Histórias do Catálogo Mestre -->
+            <h3 style="font-size: 1.1rem; margin-bottom: 14px; font-weight: 800;">Catálogo de Histórias Bíblicas da Sarah</h3>
+            <div class="memory-grid">
+                @php
+                    $ouvidasMap = ($historiasOuvidas ?? collect())->keyBy('subject');
+                @endphp
+                @foreach(($historiasCatalogo ?? []) as $h)
+                    @php
+                        $foiOuvida = isset($ouvidasMap[$h['slug']]);
+                    @endphp
+                    <div class="memory-card" style="{{ $foiOuvida ? 'border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.04);' : '' }}">
+                        <div>
+                            <div class="memory-top">
+                                @if($foiOuvida)
+                                    <span class="memory-cat" style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);">
+                                        ✅ Já ouvida
+                                    </span>
+                                    <span style="font-size: 0.75rem; color: #6ee7b7;">{{ $ouvidasMap[$h['slug']]->created_at->format('d/m H:i') }}</span>
+                                @else
+                                    <span class="memory-cat" style="background: rgba(148, 163, 184, 0.1); color: var(--text-muted); border-color: var(--card-border);">
+                                        ⏳ Próxima
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="memory-subject" style="margin-top: 8px;">{{ $h['titulo'] }}</div>
+                            <div style="font-size: 0.8rem; color: #c4b5fd; margin-bottom: 4px;"><strong>Personagem:</strong> {{ $h['personagem'] }}</div>
+                            <div class="memory-content"><strong>Lição:</strong> {{ $h['licoes'] }}</div>
+                        </div>
+                    </div>
+                @endforeach
             </div>
         </div>
 
@@ -638,10 +821,21 @@
             document.getElementById('section-' + name).classList.add('active');
         }
 
+        const categoryLabels = {
+            'adoracao': '🙏 Adoração',
+            'dormir': '🌙 Hora de Dormir',
+            'animadas': '⚡ Animadas',
+            'geral': '🌟 Geral'
+        };
+
         function selectUploadCategory(cat, btn) {
             currentUploadCategory = cat;
             document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            const badge = document.getElementById('activeCategoryBadge');
+            if (badge && categoryLabels[cat]) {
+                badge.innerText = categoryLabels[cat];
+            }
         }
 
         function filterCategory(cat, btn) {
@@ -707,6 +901,7 @@
                 }
             }
             progressText.innerText = 'Upload concluído com sucesso!';
+            fileInput.value = '';
             setTimeout(() => location.reload(), 800);
         }
 
@@ -787,6 +982,31 @@
                 }
             } catch (err) {
                 alert('Erro de conexão.');
+            }
+        }
+
+        async function resetStoryProgress() {
+            if (!confirm('Deseja reiniciar o progresso das histórias bíblicas? A Sarah poderá ouvir todas as 45 histórias da Bíblia novamente desde o começo sem repetições!')) return;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+            try {
+                const res = await fetch('/api/alexa/charlene/historias/reset', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-CK-CSRF': getCkCsrfCookie()
+                    },
+                    body: JSON.stringify({ _token: csrfToken })
+                });
+                const j = await res.json();
+                if (j.success) {
+                    alert(j.message);
+                    location.reload();
+                } else {
+                    alert('Erro: ' + (j.message || 'Erro desconhecido'));
+                }
+            } catch (err) {
+                alert('Erro de conexão ao reiniciar ciclo.');
             }
         }
     </script>
