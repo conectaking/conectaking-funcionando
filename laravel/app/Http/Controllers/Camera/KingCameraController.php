@@ -1132,13 +1132,10 @@ class KingCameraController extends Controller
                             $shouldSend = false;
                         }
                     }
-                    // 3º alerta em diante: só envia se o bebê continuar fora por mais de 2 minutos (120s)
+                    // Atingiu 2 alertas: NÃO envia mais nenhum lembrete (limite máximo de 2 avisos por ocorrência).
+                    // Evita disparar alertas quando os pais já retiraram o bebê do berço e o quarto está vazio.
                     else {
-                        if ($diffSec >= 120) {
-                            \Illuminate\Support\Facades\Cache::put($cacheKey, ['count' => 3, 'last_sent' => $nowTs], 600);
-                        } else {
-                            $shouldSend = false; // Não spamma! Aguarda os 2 minutos
-                        }
+                        $shouldSend = false;
                     }
                 }
 

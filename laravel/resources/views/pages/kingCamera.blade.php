@@ -9204,61 +9204,44 @@
                     const rh = (r.h / 100) * 90;
 
                     let motionOutsideFence = 0;
+                    let motionInsideFence = 0;
+                    let totalMotion = 0;
 
                     for (let y = 0; y < 90; y += 3) {
                         for (let x = 0; x < 160; x += 3) {
-                            const isInside = (x >= rx && x <= rx + rw && y >= ry && y <= ry + rh);
-                            if (!isInside) {
-                                const idx = (y * 160 + x) * 4;
-                                const diff = Math.abs(currentData[idx] - prevData[idx]) +
-                                             Math.abs(currentData[idx+1] - prevData[idx+1]) +
-                                             Math.abs(currentData[idx+2] - prevData[idx+2]);
-                                // Limiar de 32 para capturar movimentos suaves no escuro / visão noturna
-                                if (diff > 32) {
+                            const idx = (y * 160 + x) * 4;
+                            const diff = Math.abs(currentData[idx] - prevData[idx]) +
+                                         Math.abs(currentData[idx+1] - prevData[idx+1]) +
+                                         Math.abs(currentData[idx+2] - prevData[idx+2]);
+                            // Limiar de 48 filtra ruídos e compressão de vídeo
+                            if (diff > 48) {
+                                totalMotion++;
+                                const isInside = (x >= rx && x <= rx + rw && y >= ry && y <= ry + rh);
+                                if (isInside) {
+                                    motionInsideFence++;
+                                } else {
                                     motionOutsideFence++;
                                 }
                             }
                         }
                     }
 
-                    const isBreachingNow = (motionOutsideFence >= 8);
                     const now = Date.now();
+                    const isRoomCalm = (totalMotion < 8);
+                    const isBreachingNow = (motionOutsideFence >= 15);
+                    const isBabyInside = (motionInsideFence >= 12);
 
-                    if (isBreachingNow) {
-                        s.calmCycles = 0;
-
-                        // 1. PRIMEIRA VEZ QUE SAI DO CERCO: Alerta imediato!
-                        if (s.fenceState === 'INSIDE') {
-                            s.fenceState = 'OUTSIDE';
-                            s.alertCount = 1;
-                            s.lastAlertTime = now;
-                            triggerFenceBreachAlert(camId, 1, '🚨 Criança fora da área segura do berço detectada!');
-                        }
-                        // 2. BEBÊ CONTINUA FORA DO CERCO:
-                        else if (s.fenceState === 'OUTSIDE') {
-                            // Alerta 2 (Reforço após 25 segundos):
-                            if (s.alertCount === 1 && (now - s.lastAlertTime >= 25000)) {
-                                s.alertCount = 2;
-                                s.lastAlertTime = now;
-                                triggerFenceBreachAlert(camId, 2, '⚠️ REFORÇO: O bebê continua fora do cerco seguro!');
-                            }
-                            // Depois de 2 avisos: SILÊNCIO TOTAL por 2 minutos (120 segundos). Não spamma!
-                            else if (s.alertCount >= 2 && (now - s.lastAlertTime >= 120000)) {
-                                s.alertCount = 3;
-                                s.lastAlertTime = now;
-                                triggerFenceBreachAlert(camId, 3, '⏳ ATENÇÃO: O bebê ainda se encontra fora da área segura há mais de 2 minutos!');
-                            }
-                        }
-                    } else {
-                        // Sem violação neste quadro. Incrementa ciclos calmos
+                    // 1. O quarto está calmo/vazio OU o bebê está no berço se movendo:
+                    if (isBabyInside || isRoomCalm) {
                         s.calmCycles++;
 
-                        // Se ficou 15 ciclos calmos (~18 segundos) sem movimento fora e o estado era OUTSIDE:
-                        // O bebê retornou à área segura!
-                        if (s.calmCycles >= 15 && s.fenceState === 'OUTSIDE') {
+                        // Se o bebê voltou ao berço OU se o quarto ficou calmo/vazio por 4 ciclos (~5 segundos):
+                        // Resetamos o estado imediatamente! Se os pais tiraram o bebê, o quarto fica vazio e calmo,
+                        // logo o sistema NÃO fica acusando que o bebê está fora!
+                        if (s.fenceState === 'OUTSIDE' && (isBabyInside || s.calmCycles >= 4)) {
                             s.fenceState = 'INSIDE';
                             s.alertCount = 0;
-                            console.log(`[CribFence] Bebê retornou à área segura (câmera ${camId}). Ciclo de alertas resetado.`);
+                            console.log(`[CribFence] Quarto calmo ou bebê no berço (câmera ${camId}). Estado normalizado.`);
 
                             try {
                                 fetch(`/api/cameras/${camId}/events`, {
@@ -9267,11 +9250,31 @@
                                     headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
                                     body: JSON.stringify({
                                         event_type: 'crib_fence_cleared',
-                                        description: 'Bebê retornou ao cerco seguro.'
+                                        description: isBabyInside ? 'Bebê retornou ao berço.' : 'Quarto calmo / sem atividade.'
                                     })
                                 }).catch(() => {});
                             } catch(e) {}
                         }
+                    }
+                    // 2. Movimento humano real detectado fora do cerco seguro:
+                    else if (isBreachingNow) {
+                        s.calmCycles = 0;
+
+                        // 1º ALERTA: Imediato quando detecta saída
+                        if (s.fenceState === 'INSIDE') {
+                            s.fenceState = 'OUTSIDE';
+                            s.alertCount = 1;
+                            s.lastAlertTime = now;
+                            triggerFenceBreachAlert(camId, 1, '🚨 Criança fora da área segura do berço detectada!');
+                        }
+                        // 2º ALERTA (REFORÇO ÚNICO): Só após 25 segundos se o movimento continuar ativamente fora
+                        else if (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 25000)) {
+                            s.alertCount = 2;
+                            s.lastAlertTime = now;
+                            triggerFenceBreachAlert(camId, 2, '⚠️ REFORÇO: O bebê continua fora do cerco seguro!');
+                        }
+                        // Atingiu 2 alertas: SILÊNCIO TOTAL! Não envia mais nenhum alerta ou lembrete repetido.
+                        // Atende à solicitação: não fica louco mandando mensagens se os pais já tiraram o bebê.
                     }
                 }
                 prevData = currentData;
