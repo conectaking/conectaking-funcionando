@@ -1489,13 +1489,28 @@ class CharleneController extends Controller
     public function uploadMusic(Request $request): JsonResponse
     {
         if (!$request->hasFile('audio')) {
-            return response()->json(['success' => false, 'message' => 'Nenhum arquivo enviado.'], 400);
+            return response()->json(['success' => false, 'message' => 'Nenhum arquivo de áudio recebido.'], 400);
         }
 
         $file = $request->file('audio');
         $ext = strtolower($file->getClientOriginalExtension());
-        if (!in_array($ext, ['mp3', 'm4a', 'aac', 'wav', 'ogg'])) {
-            return response()->json(['success' => false, 'message' => 'Formato não suportado (use MP3).'], 422);
+        
+        // Se a extensão veio vazia ou diferente do esperado (comum no Android Media Picker)
+        if (!$ext || !in_array($ext, ['mp3', 'm4a', 'aac', 'wav', 'ogg'])) {
+            $guessed = strtolower($file->guessExtension() ?? '');
+            if (in_array($guessed, ['mp3', 'm4a', 'aac', 'wav', 'ogg'])) {
+                $ext = $guessed;
+            } else {
+                $mime = strtolower($file->getMimeType() ?? '');
+                if (str_starts_with($mime, 'audio/') || $mime === 'application/octet-stream') {
+                    $ext = 'mp3';
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Formato de arquivo não suportado. Por favor, selecione um arquivo de áudio (MP3).'
+                    ], 422);
+                }
+            }
         }
 
         $cat = $request->input('category', 'adoracao');
@@ -1504,15 +1519,25 @@ class CharleneController extends Controller
         }
 
         $destDir = ($cat === 'geral') ? $this->storageDir : ($this->storageDir . '/' . $cat);
-        $filename = $file->getClientOriginalName();
-        $file->move($destDir, $filename);
+        \Illuminate\Support\Facades\File::ensureDirectoryExists($destDir);
+
+        $origName = $file->getClientOriginalName() ?: ('musica_' . time());
+        // Remove caracteres que causam problemas em URLs
+        $cleanName = preg_replace('/[^\w\s\-\.\(\)]/u', '_', $origName);
+        if (!str_ends_with(strtolower($cleanName), '.' . $ext)) {
+            $cleanName .= '.' . $ext;
+        }
+
+        $file->move($destDir, $cleanName);
+
+        \Illuminate\Support\Facades\Log::info("Charlene music upload: {$cleanName} into {$cat}");
 
         $subPath = ($cat === 'geral') ? '' : ($cat . '/');
 
         return response()->json([
             'success' => true,
-            'message' => "Música adicionada à pasta '" . ucfirst($cat) . "' da Sarah!",
-            'url' => $this->baseUrl . '/storage/sara/musicas/' . $subPath . rawurlencode($filename),
+            'message' => "Música adicionada à pasta '" . ucfirst($cat) . "' da Sarah com sucesso!",
+            'url' => $this->baseUrl . '/storage/sara/musicas/' . $subPath . rawurlencode($cleanName),
         ]);
     }
 

@@ -333,6 +333,8 @@
 
         /* Botão direto dentro do card */
         .folder-direct-btn {
+            position: relative !important;
+            overflow: hidden !important;
             width: 100%;
             min-height: 44px;
             padding: 8px 10px;
@@ -351,6 +353,8 @@
             align-items: center;
             justify-content: center;
             gap: 4px;
+            box-sizing: border-box;
+            user-select: none;
         }
 
         .folder-direct-btn:active {
@@ -373,6 +377,8 @@
 
         /* Botão Grande de Upload Responsivo */
         .main-upload-touch-btn {
+            position: relative !important;
+            overflow: hidden !important;
             width: 100%;
             min-height: 64px;
             background: linear-gradient(135deg, #8b5cf6, #ec4899);
@@ -392,6 +398,22 @@
             box-shadow: 0 8px 24px rgba(139, 92, 246, 0.45);
             margin-top: 14px;
             transition: transform 0.1s ease, filter 0.15s ease;
+            box-sizing: border-box;
+        }
+
+        .file-input-inside {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            opacity: 0 !important;
+            cursor: pointer !important;
+            z-index: 10 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            font-size: 100px !important;
+            pointer-events: auto !important;
         }
 
         .main-upload-touch-btn:active {
@@ -690,7 +712,7 @@
                 width: 100%;
                 touch-action: manipulation;
             }
-            .folder-direct-btn * {
+            .folder-direct-btn *:not(.file-input-inside) {
                 pointer-events: none;
             }
             .main-upload-touch-btn {
@@ -700,8 +722,11 @@
                 box-sizing: border-box !important;
                 touch-action: manipulation;
             }
-            .main-upload-touch-btn * {
+            .main-upload-touch-btn *:not(.file-input-inside) {
                 pointer-events: none;
+            }
+            .file-input-inside {
+                pointer-events: auto !important;
             }
             .category-selector {
                 display: grid;
@@ -863,10 +888,10 @@
                         </div>
                         <div class="folder-title">Adoração</div>
                         <div class="folder-subtitle">{{ $countAdoracao }} músicas</div>
-                        <input type="file" id="input-adoracao" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files, 'adoracao')">
-                        <label for="input-adoracao" class="folder-direct-btn btn-adoracao" onclick="event.stopPropagation(); selectFolder('adoracao');">
+                        <div class="folder-direct-btn btn-adoracao" onclick="event.stopPropagation();">
                             ➕ Adicionar MP3
-                        </label>
+                            <input type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="selectFolder('adoracao'); handleAudioUpload(this.files, 'adoracao');">
+                        </div>
                     </div>
 
                     <!-- Hora de Dormir -->
@@ -877,10 +902,10 @@
                         </div>
                         <div class="folder-title">Hora de Dormir</div>
                         <div class="folder-subtitle">{{ $countDormir }} músicas</div>
-                        <input type="file" id="input-dormir" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files, 'dormir')">
-                        <label for="input-dormir" class="folder-direct-btn btn-dormir" onclick="event.stopPropagation(); selectFolder('dormir');">
+                        <div class="folder-direct-btn btn-dormir" onclick="event.stopPropagation();">
                             ➕ Adicionar MP3
-                        </label>
+                            <input type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="selectFolder('dormir'); handleAudioUpload(this.files, 'dormir');">
+                        </div>
                     </div>
 
                     <!-- Animadas -->
@@ -891,10 +916,10 @@
                         </div>
                         <div class="folder-title">Animadas</div>
                         <div class="folder-subtitle">{{ $countAnimadas }} músicas</div>
-                        <input type="file" id="input-animadas" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files, 'animadas')">
-                        <label for="input-animadas" class="folder-direct-btn btn-animadas" onclick="event.stopPropagation(); selectFolder('animadas');">
+                        <div class="folder-direct-btn btn-animadas" onclick="event.stopPropagation();">
                             ➕ Adicionar MP3
-                        </label>
+                            <input type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="selectFolder('animadas'); handleAudioUpload(this.files, 'animadas');">
+                        </div>
                     </div>
 
                     <!-- Geral -->
@@ -905,24 +930,24 @@
                         </div>
                         <div class="folder-title">Geral</div>
                         <div class="folder-subtitle">{{ $countGeral }} músicas</div>
-                        <input type="file" id="input-geral" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files, 'geral')">
-                        <label for="input-geral" class="folder-direct-btn btn-geral" onclick="event.stopPropagation(); selectFolder('geral');">
+                        <div class="folder-direct-btn btn-geral" onclick="event.stopPropagation();">
                             ➕ Adicionar MP3
-                        </label>
+                            <input type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="selectFolder('geral'); handleAudioUpload(this.files, 'geral');">
+                        </div>
                     </div>
                 </div>
 
                 <!-- Botão Geral de Escolha -->
-                <input type="file" id="input-main-upload" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files)">
-                <label for="input-main-upload" id="btnUploadMusic" class="main-upload-touch-btn">
-                    <span style="font-size: 1.8rem;">📱</span>
-                    <div>
+                <div id="btnUploadMusic" class="main-upload-touch-btn">
+                    <span style="font-size: 1.8rem; pointer-events: none;">📱</span>
+                    <div style="pointer-events: none;">
                         <div id="uploadBtnTitle" style="font-size: 1.05rem; font-weight: 800; line-height: 1.2;">Adicionar Músicas em 🙏 Adoração</div>
                         <div id="uploadBtnSubtitle" style="font-size: 0.82rem; opacity: 0.92; margin-top: 3px; font-weight: 600;">
                             Destino: <strong>🙏 Pasta Adoração da Sarah</strong>
                         </div>
                     </div>
-                </label>
+                    <input type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="handleAudioUpload(this.files)">
+                </div>
                 
                 <div id="progressContainer" style="display: none; margin-top: 14px;">
                     <p id="progressText" style="font-size: 0.88rem; color: #c4b5fd; margin-bottom: 6px; font-weight: 700;">Enviando...</p>
