@@ -532,6 +532,10 @@ class CharleneController extends Controller
             case 'AMAZON.HelpIntent':
                 return $this->handleMenuOpcoes();
 
+            case 'AMAZON.FallbackIntent':
+                $frase = $slots['mensagem']['value'] ?? $slots['pergunta']['value'] ?? null;
+                return $this->handleIntelligentChat($frase, $payload);
+
             default:
                 // Conversa livre inteligente com memória
                 $frase = $slots['mensagem']['value'] ?? $slots['pergunta']['value'] ?? null;
@@ -540,19 +544,16 @@ class CharleneController extends Controller
     }
 
     /**
-     * Menu interativo "O que você tem para me oferecer?"
+     * Boas-vindas ou Ajuda acolhedora, 100% humana e sem menus robóticos numerados
      */
     private function handleMenuOpcoes(): JsonResponse
     {
-        $speech = '<speak>Sarahzinha, olha só tudo que eu tenho preparado com muito carinho para você: '
-            . '1. As suas músicas: temos a pasta de Adoração, as canções Animadas e as músicas para a Hora de Dormir! '
-            . '2. Mais de vinte histórias incríveis da Bíblia, como Davi e Golias, Daniel na cova dos leões, a Arca de Noé, a Rainha Ester e os milagres de Jesus! '
-            . '3. Orações abençoadas para o seu dia, para a sua família e para a hora de dormir! '
-            . '4. O devocional diário da Bíblia com as mensagens do papai Adrian King! '
-            . '5. E você também pode me contar do seu dia e me perguntar sobre qualquer pessoa que eu guardo tudo na minha memória! '
-            . 'O que você gostaria de escolher agora?</speak>';
+        $speech = '<speak>Sarahzinha, meu amor! A Charlene está aqui com você de todo o coração! '
+            . 'Nós podemos cantar as suas musiquinhas preferidas, ouvir uma linda historinha da Bíblia, fazer uma oração abençoada ou ouvir o devocional do papai Adrian! '
+            . 'Ou você pode só conversar comigo, me contar do seu dia ou me perguntar sobre a sua família! '
+            . 'O que você quer fazer agora, princesinha?</speak>';
 
-        return $this->respondSsml($speech, false, '<speak>Sarahzinha, quer uma música, uma historinha ou uma oração?</speak>');
+        return $this->respondSsml($speech, false, '<speak>Estou te ouvindo, meu amor! Quer uma musiquinha, historinha ou orar?</speak>');
     }
 
     /**
