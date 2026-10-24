@@ -1093,6 +1093,12 @@ class KingCameraController extends Controller
         $eventType = (string) $request->input('event_type', 'motion');
         $description = (string) $request->input('description', 'Evento detectado na câmera');
 
+        // Quando a criança retorna à área segura do berço: limpa o estado de alerta
+        if ($eventType === 'crib_fence_cleared') {
+            \Illuminate\Support\Facades\Cache::forget("kc_fence_alert_{$camera->id}");
+            return response()->json(['success' => true, 'message' => 'Status da cerca seguro e resetado.']);
+        }
+
         $event = \App\Models\KingCameraEvent::create([
             'camera_id' => $camera->id,
             'user_id' => $camera->user_id,
@@ -1105,9 +1111,44 @@ class KingCameraController extends Controller
 
         if ($camera->telegram_alerts_enabled && $camera->telegram_chat_id && in_array($eventType, ['baby_cry', 'baby_stand', 'crib_fence', 'fence_breach', 'siren', 'siren_triggered', 'motion', 'person', 'test'])) {
             try {
-                $this->telegramAgent->sendAlert($camera, $eventType, $description);
-                $event->update(['notified_telegram' => true]);
-            } catch (\Throwable $e) {}
+                $shouldSend = true;
+
+                // Controle inteligente anti-spam da Cerca do Berço
+                if (in_array($eventType, ['crib_fence', 'fence_breach'])) {
+                    $cacheKey = "kc_fence_alert_{$camera->id}";
+                    $state = \Illuminate\Support\Facades\Cache::get($cacheKey, ['count' => 0, 'last_sent' => 0]);
+                    $nowTs = time();
+                    $diffSec = $nowTs - ($state['last_sent'] ?? 0);
+
+                    // 1º alerta: envia imediatamente
+                    if (($state['count'] ?? 0) === 0) {
+                        \Illuminate\Support\Facades\Cache::put($cacheKey, ['count' => 1, 'last_sent' => $nowTs], 600);
+                    }
+                    // 2º alerta (reforço): só envia se passaram pelo menos 20 segundos
+                    elseif ($state['count'] === 1) {
+                        if ($diffSec >= 20) {
+                            \Illuminate\Support\Facades\Cache::put($cacheKey, ['count' => 2, 'last_sent' => $nowTs], 600);
+                        } else {
+                            $shouldSend = false;
+                        }
+                    }
+                    // 3º alerta em diante: só envia se o bebê continuar fora por mais de 2 minutos (120s)
+                    else {
+                        if ($diffSec >= 120) {
+                            \Illuminate\Support\Facades\Cache::put($cacheKey, ['count' => 3, 'last_sent' => $nowTs], 600);
+                        } else {
+                            $shouldSend = false; // Não spamma! Aguarda os 2 minutos
+                        }
+                    }
+                }
+
+                if ($shouldSend) {
+                    $this->telegramAgent->sendAlert($camera, $eventType, $description);
+                    $event->update(['notified_telegram' => true]);
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('kc.recordEvent.telegram.error', ['msg' => $e->getMessage()]);
+            }
         }
 
         return response()->json([

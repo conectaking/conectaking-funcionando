@@ -9182,7 +9182,12 @@
             canvas.height = 90;
             const ctx = canvas.getContext('2d');
             let prevData = null;
-            let breachCooldown = 0;
+
+            // Máquina de estados inteligente do cerco: INSIDE (seguro) vs OUTSIDE (fora)
+            s.fenceState = s.fenceState || 'INSIDE';
+            s.alertCount = s.alertCount || 0;
+            s.lastAlertTime = s.lastAlertTime || 0;
+            s.calmCycles = 0;
 
             s.interval = setInterval(() => {
                 const video = document.getElementById(`video-${camId}`);
@@ -9208,18 +9213,64 @@
                                 const diff = Math.abs(currentData[idx] - prevData[idx]) +
                                              Math.abs(currentData[idx+1] - prevData[idx+1]) +
                                              Math.abs(currentData[idx+2] - prevData[idx+2]);
-                                if (diff > 70) {
+                                // Limiar de 32 para capturar movimentos suaves no escuro / visão noturna
+                                if (diff > 32) {
                                     motionOutsideFence++;
                                 }
                             }
                         }
                     }
 
-                    if (motionOutsideFence > 28) {
-                        const now = Date.now();
-                        if (now - breachCooldown > 18000) {
-                            breachCooldown = now;
-                            triggerFenceBreachAlert(camId);
+                    const isBreachingNow = (motionOutsideFence >= 8);
+                    const now = Date.now();
+
+                    if (isBreachingNow) {
+                        s.calmCycles = 0;
+
+                        // 1. PRIMEIRA VEZ QUE SAI DO CERCO: Alerta imediato!
+                        if (s.fenceState === 'INSIDE') {
+                            s.fenceState = 'OUTSIDE';
+                            s.alertCount = 1;
+                            s.lastAlertTime = now;
+                            triggerFenceBreachAlert(camId, 1, '🚨 Criança fora da área segura do berço detectada!');
+                        }
+                        // 2. BEBÊ CONTINUA FORA DO CERCO:
+                        else if (s.fenceState === 'OUTSIDE') {
+                            // Alerta 2 (Reforço após 25 segundos):
+                            if (s.alertCount === 1 && (now - s.lastAlertTime >= 25000)) {
+                                s.alertCount = 2;
+                                s.lastAlertTime = now;
+                                triggerFenceBreachAlert(camId, 2, '⚠️ REFORÇO: O bebê continua fora do cerco seguro!');
+                            }
+                            // Depois de 2 avisos: SILÊNCIO TOTAL por 2 minutos (120 segundos). Não spamma!
+                            else if (s.alertCount >= 2 && (now - s.lastAlertTime >= 120000)) {
+                                s.alertCount = 3;
+                                s.lastAlertTime = now;
+                                triggerFenceBreachAlert(camId, 3, '⏳ ATENÇÃO: O bebê ainda se encontra fora da área segura há mais de 2 minutos!');
+                            }
+                        }
+                    } else {
+                        // Sem violação neste quadro. Incrementa ciclos calmos
+                        s.calmCycles++;
+
+                        // Se ficou 15 ciclos calmos (~18 segundos) sem movimento fora e o estado era OUTSIDE:
+                        // O bebê retornou à área segura!
+                        if (s.calmCycles >= 15 && s.fenceState === 'OUTSIDE') {
+                            s.fenceState = 'INSIDE';
+                            s.alertCount = 0;
+                            console.log(`[CribFence] Bebê retornou à área segura (câmera ${camId}). Ciclo de alertas resetado.`);
+
+                            try {
+                                fetch(`/api/cameras/${camId}/events`, {
+                                    method: 'POST',
+                                    credentials: 'include',
+                                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                                    body: JSON.stringify({
+                                        event_type: 'crib_fence_cleared',
+                                        description: 'Bebê retornou ao cerco seguro.'
+                                    })
+                                }).catch(() => {});
+                            } catch(e) {}
                         }
                     }
                 }
@@ -9227,10 +9278,14 @@
             }, 1200);
         }
 
-        function triggerFenceBreachAlert(camId) {
+        function triggerFenceBreachAlert(camId, alertIndex, customMsg) {
             const alertEl = document.getElementById(`fence-alert-${camId}`);
             if (alertEl) {
                 alertEl.style.display = 'flex';
+                const span = alertEl.querySelector('span');
+                if (span && customMsg) {
+                    span.innerHTML = `⚠️ <b>${escapeHtml(customMsg)}</b>`;
+                }
                 setTimeout(() => { if (alertEl) alertEl.style.display = 'none'; }, 8000);
             }
             playToneSound(800, 0.25);
@@ -9243,7 +9298,7 @@
                     headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({
                         event_type: 'crib_fence',
-                        description: '🚨 Criança fora da área segura do berço detectada!'
+                        description: customMsg || '🚨 Criança fora da área segura do berço detectada!'
                     })
                 }).catch(e => console.warn(e));
             } catch(e) {}
