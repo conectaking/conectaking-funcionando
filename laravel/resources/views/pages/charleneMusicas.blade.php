@@ -619,12 +619,12 @@
                     Destino selecionado: <span id="activeCategoryBadge" style="background: linear-gradient(135deg, var(--primary), var(--accent)); padding: 6px 18px; border-radius: 999px; color: #fff; display: inline-block; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);">🙏 Pasta Adoração</span>
                 </div>
 
-                <!-- Input com Label nativo (abre direto no celular iOS/Android e PC) -->
-                <input type="file" id="fileInput" name="audio" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,audio/mpeg,audio/mp3,application/octet-stream" multiple style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0;">
+                <!-- Input de áudio nativo -->
+                <input type="file" id="fileInput" name="audio" accept=".mp3,.m4a,.aac,.wav,.ogg,audio/*" multiple style="display: none;" onchange="if(this.files.length) uploadFiles(this.files)">
                 
-                <label for="fileInput" class="upload-btn" style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px;">
+                <button type="button" class="upload-btn" onclick="openFilePicker()" style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; width: 100%; border: none;">
                     <span>📱</span> Escolher Músicas no Celular / PC
-                </label>
+                </button>
                 
                 <div id="progressContainer">
                     <p id="progressText" style="font-size: 0.88rem; color: #c4b5fd; margin-bottom: 6px; font-weight: 700;">Enviando...</p>
@@ -861,26 +861,44 @@
         };
 
         function switchSection(name, btn) {
-            document.querySelectorAll('.main-tab').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.main-tab').forEach(b => {
+                b.classList.remove('active');
+            });
+            document.querySelectorAll('.section-panel').forEach(p => {
+                p.classList.remove('active');
+                p.style.display = 'none';
+            });
             
             const targetBtn = btn || document.querySelector(`.main-tab[data-section="${name}"]`);
             if (targetBtn) targetBtn.classList.add('active');
             
             const targetSection = document.getElementById('section-' + name);
-            if (targetSection) targetSection.classList.add('active');
+            if (targetSection) {
+                targetSection.classList.add('active');
+                targetSection.style.display = 'block';
+            }
 
             try { localStorage.setItem('charlene_active_tab', name); } catch(e){}
         }
 
+        function openFilePicker() {
+            const input = document.getElementById('fileInput');
+            if (input) {
+                input.value = '';
+                input.click();
+            }
+        }
+
         // Recupera a aba ativa ao recarregar a tela
         window.addEventListener('DOMContentLoaded', () => {
+            let active = 'musicas';
             try {
                 const saved = localStorage.getItem('charlene_active_tab');
                 if (saved && ['musicas', 'memorias', 'historias', 'comandos'].includes(saved)) {
-                    switchSection(saved);
+                    active = saved;
                 }
             } catch(e){}
+            switchSection(active);
         });
 
         function syncUploadCategory(cat) {
