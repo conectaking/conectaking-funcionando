@@ -44,6 +44,14 @@
           "samples": []
         },
         {
+          "name": "AMAZON.YesIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NoIntent",
+          "samples": []
+        },
+        {
           "name": "RepetirMusicaIntent",
           "slots": [],
           "samples": [
@@ -340,7 +348,37 @@
             "o tio é {mensagem}",
             "a tia é {mensagem}",
             "o papai é {mensagem}",
-            "a mamãe é {mensagem}"
+            "a mamãe é {mensagem}",
+            "você sabe quem {mensagem}",
+            "sabe quem {mensagem}",
+            "quem matou {mensagem}",
+            "quem matou {mensagem} na bíblia",
+            "quem foi que matou {mensagem}",
+            "quem venceu {mensagem}",
+            "quem criou {mensagem}",
+            "quem escreveu {mensagem}",
+            "o que aconteceu com {mensagem}",
+            "como morreu {mensagem}",
+            "como foi {mensagem}",
+            "onde fica {mensagem}",
+            "onde está {mensagem}",
+            "por que {mensagem}",
+            "quando {mensagem}",
+            "ela tem {mensagem}",
+            "ele tem {mensagem}",
+            "ela é de {mensagem}",
+            "ele é de {mensagem}",
+            "ela nasceu {mensagem}",
+            "ele nasceu {mensagem}",
+            "a sarah tem {mensagem}",
+            "a sara tem {mensagem}",
+            "a sarah é de {mensagem}",
+            "a sara é de {mensagem}",
+            "a sarah nasceu {mensagem}",
+            "a sara nasceu {mensagem}",
+            "quantos anos {mensagem}",
+            "quantos meses {mensagem}",
+            "qual a idade {mensagem}"
           ]
         }
       ],

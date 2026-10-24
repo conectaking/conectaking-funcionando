@@ -493,9 +493,21 @@ class CharleneController extends Controller
                 return $this->handlePreviousMusic($payload);
 
             case 'RepetirMusicaIntent':
-            case 'AMAZON.RepeatIntent':
             case 'AMAZON.StartOverIntent':
                 return $this->handleRestartMusic($payload);
+
+            case 'AMAZON.RepeatIntent':
+                // Se não há música tocando agora, repete a fala ou continua a conversa
+                if (!isset($payload['context']['AudioPlayer']) && empty($payload['request']['token'])) {
+                    return $this->handleIntelligentChat('sim', $payload);
+                }
+                return $this->handleRestartMusic($payload);
+
+            case 'AMAZON.YesIntent':
+                return $this->handleAffirmation($payload);
+
+            case 'AMAZON.NoIntent':
+                return $this->handleNegation($payload);
 
             case 'AMAZON.ResumeIntent':
                 return $this->handleResumeMusic($payload);
@@ -554,6 +566,23 @@ class CharleneController extends Controller
             . 'O que você quer fazer agora, princesinha?</speak>';
 
         return $this->respondSsml($speech, false, '<speak>Estou te ouvindo, meu amor! Quer uma musiquinha, historinha ou orar?</speak>');
+    }
+
+    /**
+     * Resposta afirmativa ("sim", "quero", "pode ser", "claro")
+     */
+    private function handleAffirmation(array $payload): JsonResponse
+    {
+        return $this->handleIntelligentChat('sim, com certeza!', $payload);
+    }
+
+    /**
+     * Resposta negativa ("não", "não quero", "agora não")
+     */
+    private function handleNegation(array $payload): JsonResponse
+    {
+        $speech = '<speak>Tudo bem, Sarahzinha! O que o seu coraçãozinho está com vontade de fazer agora? Quer que eu conte uma historinha, faça uma oração ou toque uma musiquinha?</speak>';
+        return $this->respondSsml($speech, false, '<speak>Estou te ouvindo, princesinha!</speak>');
     }
 
     /**
@@ -1071,10 +1100,12 @@ class CharleneController extends Controller
             . "1. Você fala com calor humano, carinho e naturalidade de verdade, NUNCA parecendo um robô frio ou um assistente de computador! Fale como uma tia ou irmã mais velha amorosa conversando com a Sarah.\n"
             . "2. Responda SEMPRE de forma breve, agradável e envolvente (máximo de 2 a 3 frases faladas). Crianças perdem o foco se você falar demais!\n"
             . "3. EXPERTISE TOTAL NA FAMÍLIA DA SARAH:\n"
-            . "   - Se perguntarem sobre o vovô (Vovô Ciço / Cícero), a vovó (Vó Socorro), os tios (Titio Marcos, Titia Priscila, Titio Pompom), a mamãe (Samara) ou o papai (Adrian King), responda com amor infinito e alegria nos olhos, citando detalhes carinhosos de cada um que constam nas suas memórias abaixo (como o colinho da vovó, as canções que fizeram juntos, a chácara Maranata do vovô, a alegria do titio Pompom, o carinho da titia Priscila e a parceria do titio Marcos)!\n"
-            . "   - Se a Sarah ou o papai te contarem novidades ou fatos sobre qualquer familiar ou amigo (ex: 'o tio Marcos comprou um brinquedo', 'o vovô Ciço foi na chácara'), comemore com doçura e guarde com carinho no seu coração!\n"
+            . "   - A princesinha Sarah tem 10 meses de vida e nasceu no dia 12 de dezembro! Se falarem da idade, dos dentinhos, dos passinhos ou do aniversário dela, celebre com muita alegria, festa e bênçãos!\n"
+            . "   - Se perguntarem sobre o vovô (Vovô Ciço / Cícero - pai do Adrian), a vovó (Vó Socorro - mãe da Samara), os tios (Titio Marcos - irmão do Adrian, Titia Priscila, Titio Pompom), a mamãe (Samara) ou o papai (Adrian King), responda com amor infinito e alegria nos olhos, citando detalhes carinhosos de cada um que constam nas suas memórias abaixo (como o colinho da vovó, as canções que fizeram juntos, a chácara Maranata do vovô, a alegria do titio Pompom, o carinho da titia Priscila e a parceria do titio Marcos)!\n"
+            . "   - Se a Sarah ou o papai te contarem novidades ou fatos sobre qualquer familiar ou amigo (ex: 'a vovó Socorro é mãe da Samara', 'o tio Marcos comprou um brinquedo', 'o vovô Ciço foi na chácara'), comemore com doçura e guarde com carinho no seu coração!\n"
             . "4. Você é SUPERDOTADA E TEM SABEDORIA PROFUNDA DE TODA A BÍBLIA SAGRADA (de Gênesis ao Apocalipse), explicando personagens, lições de fé e milagres de Jesus com pureza e encanto infantil.\n"
-            . "5. Se perguntarem se você conhece alguém novo que ainda não está na sua memória, diga com meiguice que ainda não conhece pessoalmente, pergunte quem é e se ofereça com muito amor para orar por ele!\n"
+            . "   - Responda qualquer dúvida bíblica com exatidão (exemplo: se perguntarem quem matou Salomão, explique com meiguice que ninguém matou o Rei Salomão, pois ele reinou 40 anos e faleceu em paz na velhice, conforme 1 Reis 11:42-43; se perguntarem de Golias, foi Davi; etc.).\n"
+            . "5. Se perguntarem se você conhece alguém novo que ainda não está na sua memória (ou sobre o Bispo Fernando), fale com imenso carinho e admiração, e se ofereça com muito amor para orar por ele!\n"
             . "6. Se pedirem para orar por alguém, faça uma oraçãozinha rápida, abençoada e cheia de fé na hora!\n"
             . "7. Sempre termine com uma perguntinha curta e afetuosa para manter o diálogo vivo e amoroso com a Sarah ou o papai Adrian.\n\n"
             . $memoriesPrompt;
