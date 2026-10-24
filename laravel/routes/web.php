@@ -1047,6 +1047,8 @@ Route::middleware(['jwt', 'module:king_camera'])->group(function () {
 // Alexa Skill — Agente Charlene (Sara & Família)
 Route::match(['get', 'post', 'options', 'head'], '/api/alexa/charlene', [\App\Http\Controllers\Alexa\CharleneController::class, 'handle']);
 Route::get('/charlene/musicas', [\App\Http\Controllers\Alexa\CharleneController::class, 'managerPage']);
+Route::get('/charleneMusicas', [\App\Http\Controllers\Alexa\CharleneController::class, 'managerPage']);
+Route::get('/charlene-musicas', [\App\Http\Controllers\Alexa\CharleneController::class, 'managerPage']);
 Route::get('/api/alexa/charlene/playlist', [\App\Http\Controllers\Alexa\CharleneController::class, 'listPlaylist']);
 Route::post('/api/alexa/charlene/upload', [\App\Http\Controllers\Alexa\CharleneController::class, 'uploadMusic']);
 Route::post('/api/alexa/charlene/upload-telegram', [\App\Http\Controllers\Alexa\CharleneController::class, 'uploadFromTelegram']);

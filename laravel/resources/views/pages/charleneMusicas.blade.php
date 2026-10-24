@@ -334,7 +334,6 @@
         /* Botão direto dentro do card */
         .folder-direct-btn {
             position: relative !important;
-            overflow: hidden !important;
             width: 100%;
             min-height: 44px;
             padding: 8px 10px;
@@ -345,14 +344,14 @@
             cursor: pointer;
             border: none;
             text-align: center;
-            transition: transform 0.1s ease, filter 0.15s ease;
+            transition: transform 0.12s ease, filter 0.15s ease;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            gap: 6px;
             box-sizing: border-box;
             user-select: none;
         }
@@ -378,7 +377,6 @@
         /* Botão Grande de Upload Responsivo */
         .main-upload-touch-btn {
             position: relative !important;
-            overflow: hidden !important;
             width: 100%;
             min-height: 64px;
             background: linear-gradient(135deg, #8b5cf6, #ec4899);
@@ -397,28 +395,119 @@
             touch-action: manipulation;
             box-shadow: 0 8px 24px rgba(139, 92, 246, 0.45);
             margin-top: 14px;
-            transition: transform 0.1s ease, filter 0.15s ease;
+            transition: transform 0.12s ease, filter 0.15s ease;
             box-sizing: border-box;
-        }
-
-        .file-input-inside {
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            opacity: 0 !important;
-            cursor: pointer !important;
-            z-index: 10 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            font-size: 100px !important;
-            pointer-events: auto !important;
         }
 
         .main-upload-touch-btn:active {
             transform: scale(0.98);
             filter: brightness(1.15);
+        }
+
+        /* Input nativo invisível, acessível e 100% livre de conflito de toque em celular */
+        .native-file-input {
+            position: absolute !important;
+            width: 1px !important;
+            height: 1px !important;
+            padding: 0 !important;
+            margin: -1px !important;
+            overflow: hidden !important;
+            clip: rect(0, 0, 0, 0) !important;
+            white-space: nowrap !important;
+            border: 0 !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        /* Modal de Progresso Flutuante de Upload Ultra Visível para Celular e PC */
+        .upload-modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(11, 15, 25, 0.88);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            animation: fadeInModal 0.2s ease-out;
+        }
+        @keyframes fadeInModal {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .upload-modal-box {
+            background: #182032;
+            border: 2px solid #8b5cf6;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7), 0 0 24px rgba(139, 92, 246, 0.4);
+            border-radius: 20px;
+            padding: 24px 20px;
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            color: #f8fafc;
+            box-sizing: border-box;
+        }
+        .upload-modal-icon {
+            font-size: 2.8rem;
+            margin-bottom: 8px;
+            animation: bounceIcon 1s infinite alternate ease-in-out;
+        }
+        @keyframes bounceIcon {
+            from { transform: translateY(0); }
+            to { transform: translateY(-6px); }
+        }
+        .upload-modal-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            margin-bottom: 6px;
+            color: #ffffff;
+        }
+        .upload-modal-file {
+            font-size: 0.88rem;
+            color: #cbd5e1;
+            margin-bottom: 16px;
+            word-break: break-all;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-family: monospace;
+        }
+        .upload-modal-progress-track {
+            width: 100%;
+            height: 14px;
+            background: #0f1523;
+            border: 1px solid #334155;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .upload-modal-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #8b5cf6, #ec4899, #38bdf8);
+            background-size: 200% 100%;
+            border-radius: 999px;
+            transition: width 0.15s ease-out;
+        }
+        .upload-modal-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.82rem;
+            color: #94a3b8;
+            font-weight: 700;
+        }
+        #uploadModalPct {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #ec4899;
         }
 
         /* Filter Tabs */
@@ -706,14 +795,12 @@
                 box-sizing: border-box !important;
             }
             .folder-direct-btn {
-                min-height: 42px;
-                font-size: 0.8rem;
-                padding: 6px 8px;
+                min-height: 44px;
+                font-size: 0.82rem;
+                padding: 8px 6px;
                 width: 100%;
                 touch-action: manipulation;
-            }
-            .folder-direct-btn *:not(.file-input-inside) {
-                pointer-events: none;
+                -webkit-tap-highlight-color: transparent;
             }
             .main-upload-touch-btn {
                 min-height: 56px;
@@ -721,12 +808,7 @@
                 width: 100% !important;
                 box-sizing: border-box !important;
                 touch-action: manipulation;
-            }
-            .main-upload-touch-btn *:not(.file-input-inside) {
-                pointer-events: none;
-            }
-            .file-input-inside {
-                pointer-events: auto !important;
+                -webkit-tap-highlight-color: transparent;
             }
             .category-selector {
                 display: grid;
@@ -888,10 +970,10 @@
                         </div>
                         <div class="folder-title">Adoração</div>
                         <div class="folder-subtitle">{{ $countAdoracao }} músicas</div>
-                        <div class="folder-direct-btn btn-adoracao" onclick="event.stopPropagation();">
+                        <label for="input-adoracao" class="folder-direct-btn btn-adoracao" onclick="event.stopPropagation(); selectFolder('adoracao');">
                             ➕ Adicionar MP3
-                            <input type="file" accept="audio/*,audio/mpeg,audio/mp3,audio/x-m4a,audio/aac,audio/wav,audio/ogg,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="selectFolder('adoracao'); handleAudioUpload(this.files, 'adoracao');">
-                        </div>
+                            <input type="file" id="input-adoracao" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" multiple class="native-file-input" onchange="handleAudioUpload(this.files, 'adoracao', this);">
+                        </label>
                     </div>
 
                     <!-- Hora de Dormir -->
@@ -902,10 +984,10 @@
                         </div>
                         <div class="folder-title">Hora de Dormir</div>
                         <div class="folder-subtitle">{{ $countDormir }} músicas</div>
-                        <div class="folder-direct-btn btn-dormir" onclick="event.stopPropagation();">
+                        <label for="input-dormir" class="folder-direct-btn btn-dormir" onclick="event.stopPropagation(); selectFolder('dormir');">
                             ➕ Adicionar MP3
-                            <input type="file" accept="audio/*,audio/mpeg,audio/mp3,audio/x-m4a,audio/aac,audio/wav,audio/ogg,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="selectFolder('dormir'); handleAudioUpload(this.files, 'dormir');">
-                        </div>
+                            <input type="file" id="input-dormir" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" multiple class="native-file-input" onchange="handleAudioUpload(this.files, 'dormir', this);">
+                        </label>
                     </div>
 
                     <!-- Animadas -->
@@ -916,10 +998,10 @@
                         </div>
                         <div class="folder-title">Animadas</div>
                         <div class="folder-subtitle">{{ $countAnimadas }} músicas</div>
-                        <div class="folder-direct-btn btn-animadas" onclick="event.stopPropagation();">
+                        <label for="input-animadas" class="folder-direct-btn btn-animadas" onclick="event.stopPropagation(); selectFolder('animadas');">
                             ➕ Adicionar MP3
-                            <input type="file" accept="audio/*,audio/mpeg,audio/mp3,audio/x-m4a,audio/aac,audio/wav,audio/ogg,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="selectFolder('animadas'); handleAudioUpload(this.files, 'animadas');">
-                        </div>
+                            <input type="file" id="input-animadas" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" multiple class="native-file-input" onchange="handleAudioUpload(this.files, 'animadas', this);">
+                        </label>
                     </div>
 
                     <!-- Geral -->
@@ -930,15 +1012,15 @@
                         </div>
                         <div class="folder-title">Geral</div>
                         <div class="folder-subtitle">{{ $countGeral }} músicas</div>
-                        <div class="folder-direct-btn btn-geral" onclick="event.stopPropagation();">
+                        <label for="input-geral" class="folder-direct-btn btn-geral" onclick="event.stopPropagation(); selectFolder('geral');">
                             ➕ Adicionar MP3
-                            <input type="file" accept="audio/*,audio/mpeg,audio/mp3,audio/x-m4a,audio/aac,audio/wav,audio/ogg,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="selectFolder('geral'); handleAudioUpload(this.files, 'geral');">
-                        </div>
+                            <input type="file" id="input-geral" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" multiple class="native-file-input" onchange="handleAudioUpload(this.files, 'geral', this);">
+                        </label>
                     </div>
                 </div>
 
                 <!-- Botão Geral de Escolha -->
-                <div id="btnUploadMusic" class="main-upload-touch-btn">
+                <label id="btnUploadMusic" for="input-main-upload" class="main-upload-touch-btn" onclick="event.stopPropagation();">
                     <span style="font-size: 1.8rem; pointer-events: none;">📱</span>
                     <div style="pointer-events: none;">
                         <div id="uploadBtnTitle" style="font-size: 1.05rem; font-weight: 800; line-height: 1.2;">Adicionar Músicas em 🙏 Adoração</div>
@@ -946,13 +1028,29 @@
                             Destino: <strong>🙏 Pasta Adoração da Sarah</strong>
                         </div>
                     </div>
-                    <input type="file" accept="audio/*,audio/mpeg,audio/mp3,audio/x-m4a,audio/aac,audio/wav,audio/ogg,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="handleAudioUpload(this.files)">
-                </div>
+                    <input type="file" id="input-main-upload" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" multiple class="native-file-input" onchange="handleAudioUpload(this.files, currentFolder, this);">
+                </label>
                 
                 <div id="progressContainer" style="display: none; margin-top: 14px;">
                     <p id="progressText" style="font-size: 0.88rem; color: #c4b5fd; margin-bottom: 6px; font-weight: 700;">Enviando...</p>
                     <div class="progress-bar">
                         <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Flutuante de Upload com Barra Carregando Ultra Visível no Celular -->
+            <div id="uploadModal" class="upload-modal-backdrop" style="display: none;">
+                <div class="upload-modal-box">
+                    <div class="upload-modal-icon">🎵</div>
+                    <h3 id="uploadModalTitle" class="upload-modal-title">Enviando Música...</h3>
+                    <p id="uploadModalFile" class="upload-modal-file">Selecionando arquivo...</p>
+                    <div class="upload-modal-progress-track">
+                        <div id="uploadModalProgressBar" class="upload-modal-progress-bar"></div>
+                    </div>
+                    <div class="upload-modal-status">
+                        <span id="uploadModalPct">0%</span>
+                        <span id="uploadModalDetail">Preparando envio...</span>
                     </div>
                 </div>
             </div>
@@ -1326,91 +1424,148 @@
             }
         }
 
-        // Upload de arquivos
-        async function handleAudioUpload(files, forcedCat) {
-            if (!files || !files.length) {
-                console.log('[Charlene] Nenhum arquivo selecionado.');
+        // Upload de arquivos ultra-confiável com progresso em tempo real para Celular e PC
+        async function handleAudioUpload(files, forcedCat, inputEl) {
+            const selectedFiles = (files && files.length) ? files : (inputEl && inputEl.files && inputEl.files.length ? inputEl.files : null);
+
+            if (!selectedFiles || !selectedFiles.length) {
+                console.warn('[Charlene] Nenhum arquivo selecionado.');
+                alert('Nenhum arquivo de música foi detectado pelo celular.\n\nPor favor, toque novamente no botão e escolha o arquivo de áudio (.mp3, .m4a ou .wav).');
                 return;
             }
 
             const targetCat = forcedCat || currentFolder || 'adoracao';
-            const catName = (folderMetadata[targetCat] && folderMetadata[targetCat].label) || targetCat;
+            const catInfo = folderMetadata[targetCat] || { name: 'Adoração', emoji: '🙏', label: '🙏 Pasta Adoração', color: '#8b5cf6' };
+            const catName = catInfo.name || targetCat;
 
+            // Elementos do Modal de Progresso Flutuante (Ultra Visível no Celular)
+            const modal = document.getElementById('uploadModal');
+            const modalTitle = document.getElementById('uploadModalTitle');
+            const modalFile = document.getElementById('uploadModalFile');
+            const modalBar = document.getElementById('uploadModalProgressBar');
+            const modalPct = document.getElementById('uploadModalPct');
+            const modalDetail = document.getElementById('uploadModalDetail');
+
+            // Elementos da Barra Inline
             const progressContainer = document.getElementById('progressContainer');
             const progressFill = document.getElementById('progressFill');
             const progressText = document.getElementById('progressText');
 
+            if (modal) {
+                modal.style.display = 'flex';
+                if (modalTitle) modalTitle.innerText = `Enviando para ${catInfo.emoji} ${catName}`;
+                if (modalBar) modalBar.style.width = '0%';
+                if (modalPct) modalPct.innerText = '0%';
+                if (modalDetail) modalDetail.innerText = 'Conectando ao servidor...';
+            }
+
             if (progressContainer) {
                 progressContainer.style.display = 'block';
+                if (progressFill) progressFill.style.width = '0%';
+                if (progressText) progressText.innerText = `Iniciando envio para ${catName}...`;
                 try { progressContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch(e){}
             }
 
+            const totalFiles = selectedFiles.length;
             let successes = 0;
             let errors = 0;
             let lastErrMsg = '';
 
-            for (let i = 0; i < files.length; i++) {
-                const f = files[i];
-                console.log(`[Charlene] Enviando (${i+1}/${files.length}): ${f.name} [tamanho: ${f.size} bytes, tipo: ${f.type}] para pasta ${targetCat}`);
-                
-                if (progressText) progressText.innerText = `Enviando (${i+1}/${files.length}) para ${catName}: ${f.name}...`;
-                if (progressFill) progressFill.style.width = `${Math.round(((i+1)/files.length)*90)}%`;
+            for (let i = 0; i < totalFiles; i++) {
+                const file = selectedFiles[i];
+                const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+
+                if (modalFile) modalFile.innerText = `(${i + 1}/${totalFiles}) ${file.name} • ${fileSizeMB} MB`;
+                if (modalDetail) modalDetail.innerText = `Enviando arquivo ${i + 1} de ${totalFiles}...`;
+                if (progressText) progressText.innerText = `Enviando (${i + 1}/${totalFiles}) para ${catName}: ${file.name} (${fileSizeMB} MB)...`;
 
                 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
-                const fd = new FormData();
-                fd.append('_token', csrfToken);
-                fd.append('audio', f);
-                fd.append('category', targetCat);
+                const formData = new FormData();
+                formData.append('_token', csrfToken);
+                formData.append('audio', file);
+                formData.append('category', targetCat);
 
                 try {
-                    const res = await fetch('/api/alexa/charlene/upload', {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': csrfToken,
-                            'X-CK-CSRF': getCkCsrfCookie()
-                        },
-                        body: fd
+                    await new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('POST', '/api/alexa/charlene/upload', true);
+                        xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
+                        xhr.setRequestHeader('X-CK-CSRF', getCkCsrfCookie());
+
+                        xhr.upload.onprogress = (e) => {
+                            if (e.lengthComputable) {
+                                const filePct = Math.round((e.loaded / e.total) * 100);
+                                const overallPct = Math.round(((i / totalFiles) * 100) + (filePct / totalFiles));
+                                if (modalBar) modalBar.style.width = `${filePct}%`;
+                                if (modalPct) modalPct.innerText = `${filePct}%`;
+                                if (modalDetail) modalDetail.innerText = `${(e.loaded / (1024 * 1024)).toFixed(1)} MB de ${fileSizeMB} MB enviado`;
+                                if (progressFill) progressFill.style.width = `${overallPct}%`;
+                            }
+                        };
+
+                        xhr.onload = () => {
+                            try {
+                                const resp = JSON.parse(xhr.responseText || '{}');
+                                if (xhr.status >= 200 && xhr.status < 300 && resp.success) {
+                                    successes++;
+                                    resolve(resp);
+                                } else {
+                                    errors++;
+                                    lastErrMsg = resp.message || `Erro HTTP ${xhr.status}`;
+                                    reject(new Error(lastErrMsg));
+                                }
+                            } catch (parseErr) {
+                                errors++;
+                                lastErrMsg = `Resposta inesperada do servidor (HTTP ${xhr.status})`;
+                                reject(new Error(lastErrMsg));
+                            }
+                        };
+
+                        xhr.onerror = () => {
+                            errors++;
+                            lastErrMsg = 'Falha de conexão com a internet ou servidor.';
+                            reject(new Error(lastErrMsg));
+                        };
+
+                        xhr.ontimeout = () => {
+                            errors++;
+                            lastErrMsg = 'Tempo limite de envio esgotado (timeout).';
+                            reject(new Error(lastErrMsg));
+                        };
+
+                        xhr.send(formData);
                     });
-
-                    let j = {};
-                    try {
-                        j = await res.json();
-                    } catch(jsonErr) {
-                        j = { success: false, message: `Resposta do servidor: ${res.status} ${res.statusText}` };
-                    }
-
-                    if (res.ok && j.success) {
-                        successes++;
-                        console.log(`[Charlene] Upload com sucesso: ${f.name}`);
-                    } else {
-                        errors++;
-                        lastErrMsg = j.message || `Erro no envio (Status HTTP ${res.status})`;
-                        console.warn(`[Charlene] Falha no upload de ${f.name}:`, j);
-                    }
-                } catch (e) {
-                    errors++;
-                    lastErrMsg = 'Falha de conexão com o servidor. Verifique sua internet.';
-                    console.error('[Charlene] Exceção de rede:', e);
+                } catch (uploadErr) {
+                    console.error('[Charlene] Falha no upload:', uploadErr);
                 }
             }
 
-            // Limpa todos os inputs para permitir selecionar o mesmo arquivo novamente
-            document.querySelectorAll('.file-input-inside').forEach(inp => {
+            // Limpa todos os inputs de arquivo para permitir reenviar o mesmo arquivo
+            document.querySelectorAll('input[type="file"]').forEach(inp => {
                 try { inp.value = ''; } catch(e){}
-            });
-            ['input-adoracao', 'input-dormir', 'input-animadas', 'input-geral', 'input-main-upload'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.value = '';
             });
 
             if (successes > 0) {
-                if (progressText) progressText.innerText = `✅ ${successes} música(s) adicionada(s) à pasta ${catName} com sucesso! Atualizando...`;
+                if (modalTitle) modalTitle.innerText = `✅ Sucesso!`;
+                if (modalDetail) modalDetail.innerText = `${successes} música(s) adicionada(s) à pasta ${catName}! Atualizando lista...`;
+                if (modalBar) modalBar.style.width = '100%';
+                if (modalPct) modalPct.innerText = '100%';
                 if (progressFill) progressFill.style.width = '100%';
-                setTimeout(() => location.reload(), 1200);
+                if (progressText) progressText.innerText = `✅ ${successes} música(s) adicionada(s) com sucesso à pasta ${catName}!`;
+
+                setTimeout(() => {
+                    location.reload();
+                }, 1200);
             } else {
-                if (progressText) progressText.innerText = `❌ Falha ao enviar: ${lastErrMsg || 'Verifique o formato do arquivo'}`;
+                if (modalTitle) modalTitle.innerText = `❌ Falha no Envio`;
+                if (modalDetail) modalDetail.innerText = lastErrMsg || 'Não foi possível salvar o arquivo.';
+                if (progressText) progressText.innerText = `❌ Falha: ${lastErrMsg}`;
                 if (progressFill) progressFill.style.width = '0%';
-                alert(`Não foi possível enviar a música:\n\n${lastErrMsg || 'Verifique se o arquivo é MP3 válido.'}`);
+                
+                setTimeout(() => {
+                    if (modal) modal.style.display = 'none';
+                    alert(`Não foi possível enviar a música para a Charlene:\n\n${lastErrMsg || 'Verifique se o arquivo é MP3 válido.'}`);
+                }, 800);
             }
         }
 

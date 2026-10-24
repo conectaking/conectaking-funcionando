@@ -1489,16 +1489,22 @@ class CharleneController extends Controller
     public function uploadMusic(Request $request): JsonResponse
     {
         if (!$request->hasFile('audio')) {
-            return response()->json(['success' => false, 'message' => 'Nenhum arquivo de áudio recebido.'], 400);
+            return response()->json(['success' => false, 'message' => 'Nenhum arquivo de áudio recebido pelo servidor.'], 400);
         }
 
         $file = $request->file('audio');
+        if (!$file || !$file->isValid()) {
+            $errMsg = $file ? $file->getErrorMessage() : 'Arquivo corrompido ou excedeu o limite.';
+            return response()->json(['success' => false, 'message' => "Falha no arquivo enviado: {$errMsg}"], 400);
+        }
+
+        $allowedExts = ['mp3', 'm4a', 'aac', 'wav', 'ogg', 'flac', 'wma', 'opus', 'webm'];
         $ext = strtolower($file->getClientOriginalExtension());
         
-        // Se a extensão veio vazia ou diferente do esperado (comum no Android Media Picker)
-        if (!$ext || !in_array($ext, ['mp3', 'm4a', 'aac', 'wav', 'ogg'])) {
+        // Se a extensão veio vazia ou diferente do esperado (muito comum em mobile Android e iOS)
+        if (!$ext || !in_array($ext, $allowedExts)) {
             $guessed = strtolower($file->guessExtension() ?? '');
-            if (in_array($guessed, ['mp3', 'm4a', 'aac', 'wav', 'ogg'])) {
+            if (in_array($guessed, $allowedExts)) {
                 $ext = $guessed;
             } else {
                 $mime = strtolower($file->getMimeType() ?? '');
@@ -1507,13 +1513,17 @@ class CharleneController extends Controller
                     str_starts_with($mime, 'audio/') || 
                     str_starts_with($clientMime, 'audio/') || 
                     $mime === 'application/octet-stream' ||
-                    $clientMime === 'application/octet-stream'
+                    $clientMime === 'application/octet-stream' ||
+                    str_contains($mime, 'mp3') ||
+                    str_contains($clientMime, 'mp3') ||
+                    str_contains($mime, 'mpeg') ||
+                    str_contains($clientMime, 'mpeg')
                 ) {
                     $ext = 'mp3';
                 } else {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Formato de arquivo não suportado. Por favor, selecione um arquivo de áudio (MP3).'
+                        'message' => 'Formato não suportado. Por favor, envie um arquivo de áudio (MP3, M4A ou WAV).'
                     ], 422);
                 }
             }
@@ -1525,13 +1535,20 @@ class CharleneController extends Controller
         }
 
         $destDir = ($cat === 'geral') ? $this->storageDir : ($this->storageDir . '/' . $cat);
-        \Illuminate\Support\Facades\File::ensureDirectoryExists($destDir);
+        \Illuminate\Support\Facades\File::ensureDirectoryExists($destDir, 0777, true);
 
-        $origName = $file->getClientOriginalName() ?: ('musica_' . time());
-        // Remove caracteres que causam problemas em URLs
-        $cleanName = preg_replace('/[^\w\s\-\.\(\)]/u', '_', $origName);
-        if (!str_ends_with(strtolower($cleanName), '.' . $ext)) {
-            $cleanName .= '.' . $ext;
+        $origName = pathinfo($file->getClientOriginalName() ?: ('musica_' . time()), PATHINFO_FILENAME);
+        // Remove caracteres que causam problemas em URLs e no sistema de arquivos
+        $cleanBase = preg_replace('/[^\w\s\-\.]/u', '_', $origName);
+        $cleanBase = trim(preg_replace('/\s+/', ' ', $cleanBase));
+        if ($cleanBase === '') {
+            $cleanBase = 'musica_' . time();
+        }
+        $cleanName = $cleanBase . '.' . $ext;
+
+        // Se já existe um arquivo com esse nome, adiciona timestamp para não sobrescrever
+        if (file_exists($destDir . '/' . $cleanName)) {
+            $cleanName = $cleanBase . '_' . time() . '.' . $ext;
         }
 
         $file->move($destDir, $cleanName);
@@ -1543,6 +1560,7 @@ class CharleneController extends Controller
         return response()->json([
             'success' => true,
             'message' => "Música adicionada à pasta '" . ucfirst($cat) . "' da Sarah com sucesso!",
+            'name' => $cleanName,
             'url' => $this->baseUrl . '/storage/sara/musicas/' . $subPath . rawurlencode($cleanName),
         ]);
     }
