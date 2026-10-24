@@ -1502,7 +1502,13 @@ class CharleneController extends Controller
                 $ext = $guessed;
             } else {
                 $mime = strtolower($file->getMimeType() ?? '');
-                if (str_starts_with($mime, 'audio/') || $mime === 'application/octet-stream') {
+                $clientMime = strtolower($file->getClientMimeType() ?? '');
+                if (
+                    str_starts_with($mime, 'audio/') || 
+                    str_starts_with($clientMime, 'audio/') || 
+                    $mime === 'application/octet-stream' ||
+                    $clientMime === 'application/octet-stream'
+                ) {
                     $ext = 'mp3';
                 } else {
                     return response()->json([
