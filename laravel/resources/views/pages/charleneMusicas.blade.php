@@ -431,24 +431,33 @@
                 padding: 12px 10px;
             }
             .header h1 {
-                font-size: 1.4rem;
+                font-size: 1.45rem;
             }
             .header .subtitle {
                 font-size: 0.85rem;
             }
+            /* Grade 2x2 para abas no mobile - todas visíveis sem precisar rolar */
             .main-nav {
-                overflow-x: auto;
-                flex-wrap: nowrap;
-                -webkit-overflow-scrolling: touch;
-                padding-bottom: 8px;
-                gap: 6px;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                padding: 6px;
                 margin-bottom: 16px;
+                overflow: visible;
             }
             .main-tab {
-                flex-shrink: 0;
-                padding: 8px 14px;
-                font-size: 0.82rem;
-                white-space: nowrap;
+                min-height: 50px;
+                padding: 10px 6px;
+                font-size: 0.84rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                white-space: normal;
+                line-height: 1.25;
+                border-radius: 10px;
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: transparent;
             }
             .upload-card {
                 padding: 20px 12px;
@@ -461,19 +470,29 @@
                 width: 100%;
             }
             .cat-btn {
-                min-height: 44px;
-                padding: 10px 8px;
-                font-size: 0.85rem;
+                min-height: 48px;
+                padding: 12px 8px;
+                font-size: 0.88rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: transparent;
+                font-weight: 700;
+            }
+            .upload-btn {
+                width: 100%;
+                max-width: 100%;
+                min-height: 52px;
+                padding: 14px 16px;
+                font-size: 1rem;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 touch-action: manipulation;
             }
-            .upload-btn {
-                width: 100%;
-                max-width: 100%;
-                padding: 14px 16px;
-                font-size: 0.95rem;
+            input, select, textarea {
+                font-size: 16px !important; /* Previne zoom automático indesejado no iOS Safari */
             }
             .filter-bar {
                 flex-direction: column;
@@ -528,6 +547,12 @@
         }
     </style>
 </head>
+@php
+    $countAdoracao = collect($musicas)->where('category', 'adoracao')->count();
+    $countDormir = collect($musicas)->where('category', 'dormir')->count();
+    $countAnimadas = collect($musicas)->where('category', 'animadas')->count();
+    $countGeral = collect($musicas)->where('category', 'geral')->count();
+@endphp
 <body>
     <div class="container">
         <div class="header">
@@ -536,18 +561,18 @@
             <p class="subtitle">Gerenciador de Músicas, Cérebro de Memórias e Histórias Bíblicas da Alexa</p>
         </div>
 
-        <!-- Top Navigation -->
+        <!-- Top Navigation (Grade 2x2 no mobile) -->
         <div class="main-nav">
-            <button class="main-tab active" onclick="switchSection('musicas', this)">
+            <button class="main-tab active" data-section="musicas" onclick="switchSection('musicas', this)">
                 <span>🎵</span> Músicas da Sarah
             </button>
-            <button class="main-tab" onclick="switchSection('memorias', this)">
+            <button class="main-tab" data-section="memorias" onclick="switchSection('memorias', this)">
                 <span>🧠</span> Cérebro & Memória IA
             </button>
-            <button class="main-tab" onclick="switchSection('historias', this)">
+            <button class="main-tab" data-section="historias" onclick="switchSection('historias', this)">
                 <span>📖</span> Jornada Bíblica ({{ count($historiasOuvidas ?? []) }}/{{ $totalCatalogo ?? 45 }})
             </button>
-            <button class="main-tab" onclick="switchSection('comandos', this)">
+            <button class="main-tab" data-section="comandos" onclick="switchSection('comandos', this)">
                 <span>🗣️</span> Comandos de Voz
             </button>
         </div>
@@ -565,32 +590,44 @@
                 </div>
             </div>
 
-            <!-- Upload Card -->
+            <!-- Upload Card Ultra-Fácil para Mobile -->
             <div class="upload-card" id="dropZone">
                 <div style="font-size: 2.2rem; margin-bottom: 6px;">📂</div>
-                <p style="font-weight: 800; font-size: 1.15rem; margin-bottom: 4px;">Enviar Músicas para a Sarah</p>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">Toque na pasta de destino desejada e escolha os arquivos:</p>
+                <p style="font-weight: 800; font-size: 1.2rem; margin-bottom: 4px;">Enviar Músicas para a Sarah</p>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 14px;">Escolha a pasta de destino e toque no botão para escolher no celular:</p>
                 
-                <div class="category-selector" onclick="event.stopPropagation()">
-                    <button type="button" class="cat-btn active" onclick="selectUploadCategory('adoracao', this)">🙏 Adoração</button>
-                    <button type="button" class="cat-btn" onclick="selectUploadCategory('dormir', this)">🌙 Hora de Dormir</button>
-                    <button type="button" class="cat-btn" onclick="selectUploadCategory('animadas', this)">⚡ Animadas</button>
-                    <button type="button" class="cat-btn" onclick="selectUploadCategory('geral', this)">🌟 Geral</button>
+                <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; margin-bottom: 14px; text-align: left;">
+                    <label for="uploadCategorySelect" style="display: block; font-size: 0.88rem; font-weight: 700; color: #c4b5fd; margin-bottom: 8px;">
+                        📁 Escolha a Pasta da Sarah:
+                    </label>
+                    <select id="uploadCategorySelect" onchange="syncUploadCategory(this.value)" style="width: 100%; min-height: 48px; background: #0e1320; border: 2px solid var(--primary); border-radius: 10px; padding: 10px 14px; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; touch-action: manipulation;">
+                        <option value="adoracao" selected>🙏 Pasta Adoração ({{ $countAdoracao }} músicas)</option>
+                        <option value="dormir">🌙 Pasta Hora de Dormir ({{ $countDormir }} músicas)</option>
+                        <option value="animadas">⚡ Pasta Animadas ({{ $countAnimadas }} músicas)</option>
+                        <option value="geral">🌟 Pasta Geral ({{ $countGeral }} músicas)</option>
+                    </select>
+
+                    <div class="category-selector" style="margin-top: 10px; margin-bottom: 4px;">
+                        <button type="button" class="cat-btn active" data-cat="adoracao" onclick="selectUploadCategory('adoracao', this)">🙏 Adoração ({{ $countAdoracao }})</button>
+                        <button type="button" class="cat-btn" data-cat="dormir" onclick="selectUploadCategory('dormir', this)">🌙 Hora de Dormir ({{ $countDormir }})</button>
+                        <button type="button" class="cat-btn" data-cat="animadas" onclick="selectUploadCategory('animadas', this)">⚡ Animadas ({{ $countAnimadas }})</button>
+                        <button type="button" class="cat-btn" data-cat="geral" onclick="selectUploadCategory('geral', this)">🌟 Geral ({{ $countGeral }})</button>
+                    </div>
                 </div>
 
-                <div style="margin: 8px 0 16px 0; font-size: 0.88rem; color: #c4b5fd; font-weight: 700;">
-                    Pasta ativa de destino: <span id="activeCategoryBadge" style="background: rgba(139, 92, 246, 0.35); border: 1px solid var(--primary); padding: 4px 12px; border-radius: 999px; color: #fff;">🙏 Adoração</span>
+                <div style="margin: 6px 0 16px 0; font-size: 0.95rem; color: #f8fafc; font-weight: 700;">
+                    Destino selecionado: <span id="activeCategoryBadge" style="background: linear-gradient(135deg, var(--primary), var(--accent)); padding: 6px 18px; border-radius: 999px; color: #fff; display: inline-block; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);">🙏 Pasta Adoração</span>
                 </div>
 
                 <!-- Input com Label nativo (abre direto no celular iOS/Android e PC) -->
                 <input type="file" id="fileInput" name="audio" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,audio/mpeg,audio/mp3,application/octet-stream" multiple style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0;">
                 
-                <label for="fileInput" class="upload-btn" style="cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px;">
+                <label for="fileInput" class="upload-btn" style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px;">
                     <span>📱</span> Escolher Músicas no Celular / PC
                 </label>
                 
                 <div id="progressContainer">
-                    <p id="progressText" style="font-size: 0.85rem; color: #c4b5fd; margin-bottom: 6px;">Enviando...</p>
+                    <p id="progressText" style="font-size: 0.88rem; color: #c4b5fd; margin-bottom: 6px; font-weight: 700;">Enviando...</p>
                     <div class="progress-bar">
                         <div class="progress-fill" id="progressFill"></div>
                     </div>
@@ -600,10 +637,11 @@
             <!-- Filter Bar -->
             <div class="filter-bar">
                 <div class="filter-pills">
-                    <button class="pill active" onclick="filterCategory('todas', this)">Todas (<span id="count-todas">{{ count($musicas) }}</span>)</button>
-                    <button class="pill" onclick="filterCategory('adoracao', this)">🙏 Adoração</button>
-                    <button class="pill" onclick="filterCategory('dormir', this)">🌙 Dormir</button>
-                    <button class="pill" onclick="filterCategory('animadas', this)">⚡ Animadas</button>
+                    <button class="pill active" onclick="filterCategory('todas', this)">Todas ({{ count($musicas) }})</button>
+                    <button class="pill" onclick="filterCategory('adoracao', this)">🙏 Adoração ({{ $countAdoracao }})</button>
+                    <button class="pill" onclick="filterCategory('dormir', this)">🌙 Dormir ({{ $countDormir }})</button>
+                    <button class="pill" onclick="filterCategory('animadas', this)">⚡ Animadas ({{ $countAnimadas }})</button>
+                    <button class="pill" onclick="filterCategory('geral', this)">🌟 Geral ({{ $countGeral }})</button>
                 </div>
                 <div style="font-size: 0.85rem; color: var(--text-muted);">
                     📱 <em>Você também pode enviar MP3 direto no Telegram do Agente King!</em>
@@ -815,28 +853,54 @@
     <script>
         let currentUploadCategory = 'adoracao';
 
+        const categoryLabels = {
+            'adoracao': '🙏 Pasta Adoração',
+            'dormir': '🌙 Pasta Hora de Dormir',
+            'animadas': '⚡ Pasta Animadas',
+            'geral': '🌟 Pasta Geral'
+        };
+
         function switchSection(name, btn) {
             document.querySelectorAll('.main-tab').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById('section-' + name).classList.add('active');
+            
+            const targetBtn = btn || document.querySelector(`.main-tab[data-section="${name}"]`);
+            if (targetBtn) targetBtn.classList.add('active');
+            
+            const targetSection = document.getElementById('section-' + name);
+            if (targetSection) targetSection.classList.add('active');
+
+            try { localStorage.setItem('charlene_active_tab', name); } catch(e){}
         }
 
-        const categoryLabels = {
-            'adoracao': '🙏 Adoração',
-            'dormir': '🌙 Hora de Dormir',
-            'animadas': '⚡ Animadas',
-            'geral': '🌟 Geral'
-        };
+        // Recupera a aba ativa ao recarregar a tela
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                const saved = localStorage.getItem('charlene_active_tab');
+                if (saved && ['musicas', 'memorias', 'historias', 'comandos'].includes(saved)) {
+                    switchSection(saved);
+                }
+            } catch(e){}
+        });
 
-        function selectUploadCategory(cat, btn) {
+        function syncUploadCategory(cat) {
             currentUploadCategory = cat;
-            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+            const select = document.getElementById('uploadCategorySelect');
+            if (select && select.value !== cat) select.value = cat;
+
+            document.querySelectorAll('.cat-btn').forEach(b => {
+                if (b.getAttribute('data-cat') === cat) b.classList.add('active');
+                else b.classList.remove('active');
+            });
+
             const badge = document.getElementById('activeCategoryBadge');
             if (badge && categoryLabels[cat]) {
                 badge.innerText = categoryLabels[cat];
             }
+        }
+
+        function selectUploadCategory(cat, btn) {
+            syncUploadCategory(cat);
         }
 
         function filterCategory(cat, btn) {
@@ -851,6 +915,11 @@
                     item.style.display = 'none';
                 }
             });
+
+            // Se filtrou por uma pasta específica, já sincroniza o seletor de upload
+            if (cat !== 'todas') {
+                syncUploadCategory(cat);
+            }
         }
 
         // Drag and drop upload
@@ -874,17 +943,21 @@
         });
 
         async function uploadFiles(files) {
+            const selectEl = document.getElementById('uploadCategorySelect');
+            const targetCat = (selectEl && selectEl.value) ? selectEl.value : currentUploadCategory;
+            const catName = categoryLabels[targetCat] || targetCat;
+
             progressContainer.style.display = 'block';
             for (let i = 0; i < files.length; i++) {
                 const f = files[i];
-                progressText.innerText = `Enviando (${i+1}/${files.length}) para ${currentUploadCategory}: ${f.name}`;
+                progressText.innerText = `Enviando (${i+1}/${files.length}) para ${catName}: ${f.name}`;
                 progressFill.style.width = `${Math.round(((i+1)/files.length)*100)}%`;
 
                 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
                 const fd = new FormData();
                 fd.append('_token', csrfToken);
                 fd.append('audio', f);
-                fd.append('category', currentUploadCategory);
+                fd.append('category', targetCat);
 
                 try {
                     const res = await fetch('/api/alexa/charlene/upload', {
@@ -901,9 +974,9 @@
                     alert('Erro de conexão ao enviar: ' + f.name);
                 }
             }
-            progressText.innerText = 'Upload concluído com sucesso!';
+            progressText.innerText = `Músicas adicionadas à ${catName} com sucesso!`;
             fileInput.value = '';
-            setTimeout(() => location.reload(), 800);
+            setTimeout(() => location.reload(), 900);
         }
 
         function getCkCsrfCookie() {
