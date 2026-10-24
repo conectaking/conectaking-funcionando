@@ -4716,9 +4716,14 @@
 
                 <hr style="border: 0; border-top: 1px solid var(--kc-border); margin: 1.5rem 0;">
 
-                <h4 style="font-size: 0.88rem; font-weight: 600; margin-bottom: 0.75rem; color: #fff;">
-                    <i class="fas fa-clock-rotate-left" style="color: var(--kc-gold); margin-right: 0.35rem;"></i> Links Ativos Desta Câmera
-                </h4>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <h4 style="font-size: 0.88rem; font-weight: 600; color: #fff; margin: 0;">
+                        <i class="fas fa-clock-rotate-left" style="color: var(--kc-gold); margin-right: 0.35rem;"></i> Links Ativos Desta Câmera
+                    </h4>
+                    <button type="button" class="kc-btn kc-btn-secondary" onclick="revokeAllCameraShares()" style="padding: 0.3rem 0.65rem; font-size: 0.75rem; color: #ef4444; border-color: rgba(239,68,68,0.4);" title="Cancela todos os links compartilhados na hora">
+                        <i class="fas fa-ban"></i> Cancelar Todos
+                    </button>
+                </div>
                 <div id="shares-list-container" style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 200px; overflow-y: auto;">
                     <div style="font-size: 0.8rem; color: var(--kc-text-dim);">Nenhum link ativo no momento.</div>
                 </div>
@@ -4906,7 +4911,12 @@
                     headers: getAuthHeaders()
                 });
                 
-                if (res.status === 401 || res.status === 403) {
+                if (res.status === 401) {
+                    window.location.href = '/login?returnUrl=' + encodeURIComponent(window.location.pathname);
+                    return;
+                }
+
+                if (res.status === 403) {
                     Swal.fire({
                         icon: 'warning',
                         title: 'Módulo King Câmera',
@@ -8807,6 +8817,52 @@
                 }
             } catch (err) {
                 console.error(err);
+            }
+        }
+
+        async function revokeAllCameraShares() {
+            const camId = document.getElementById('share-cam-id')?.value;
+            if (!camId) return;
+
+            const confirm = await Swal.fire({
+                title: 'Bloquear e Cancelar Todos os Links?',
+                text: 'Isso cancelará instantaneamente todos os links compartilhados desta câmera. Ninguém mais terá acesso.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Sim, Cancelar Todos Agora',
+                cancelButtonText: 'Manter'
+            });
+
+            if (!confirm.isConfirmed) return;
+
+            try {
+                const res = await fetch(`/api/cameras/${camId}/shares`, {
+                    credentials: 'include',
+                    headers: getAuthHeaders()
+                });
+                const json = await res.json();
+                if (json.success && json.data.length > 0) {
+                    await Promise.all(json.data.map(s => 
+                        fetch(`/api/cameras/shares/${s.id}`, {
+                            method: 'DELETE',
+                            credentials: 'include',
+                            headers: getAuthHeaders()
+                        })
+                    ));
+                }
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Todos os Links Revogados!',
+                    text: 'Todos os acessos temporários foram cancelados imediatamente.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                loadCameraShares(camId);
+                loadTabSharesList();
+            } catch (err) {
+                console.error('Revoke all error:', err);
             }
         }
 

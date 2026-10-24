@@ -124,6 +124,31 @@ class KingCameraTelegramAgentService
         return false;
     }
 
+    public function getAgentSecurityPin(): string
+    {
+        return trim((string) (env('TELEGRAM_CAMERA_AGENT_PIN') ?: 'king2026'));
+    }
+
+    public function isChatAuthorized(string $chatId): bool
+    {
+        if ($chatId === '') {
+            return false;
+        }
+
+        // 1. Autorizado via PIN em cache persistente
+        if (\Illuminate\Support\Facades\Cache::get("kc_tg_auth_{$chatId}")) {
+            return true;
+        }
+
+        // 2. Ou chat_id salvo na câmera
+        return KingCamera::where('telegram_chat_id', $chatId)->exists();
+    }
+
+    public function authorizeChat(string $chatId): void
+    {
+        \Illuminate\Support\Facades\Cache::put("kc_tg_auth_{$chatId}", true, now()->addYears(2));
+    }
+
     /**
      * Processa comandos e botões enviados pelo usuário no Telegram.
      */
@@ -140,6 +165,16 @@ class KingCameraTelegramAgentService
             $cqId = $cq['id'];
             $fromId = (string) $cq['from']['id'];
             $data = $cq['data'] ?? '';
+
+            // Bloqueio rigoroso: se o usuário não digitou a senha, ignora o clique!
+            if (! $this->isChatAuthorized($fromId)) {
+                Http::timeout(3)->post("https://api.telegram.org/bot{$token}/answerCallbackQuery", [
+                    'callback_query_id' => $cqId,
+                    'text' => '⛔ Acesso Negado! Digite a senha no chat primeiro.',
+                    'show_alert' => true,
+                ]);
+                return ['status' => 'callback_unauthorized'];
+            }
 
             if (str_starts_with($data, 'snap_')) {
                 $camId = (int) substr($data, 5);
@@ -187,37 +222,64 @@ class KingCameraTelegramAgentService
         $chatId = (string) ($msg['chat']['id'] ?? '');
         $text = trim((string) ($msg['text'] ?? ''));
 
-        // Comando /start vinculando usuário
+        $securityPin = $this->getAgentSecurityPin();
+        $cleanedText = strtolower(trim($text));
+        $cleanedPin = strtolower(trim($securityPin));
+
+        // 2.1 Desbloqueio com a Senha de Segurança
+        if ($cleanedText === $cleanedPin || str_starts_with($cleanedText, '/senha ' . $cleanedPin) || str_starts_with($cleanedText, '/pin ' . $cleanedPin)) {
+            $this->authorizeChat($chatId);
+            KingCamera::query()->update(['telegram_chat_id' => $chatId, 'telegram_alerts_enabled' => true]);
+
+            $reply = "🔓 <b>SENHA CORRETA! ACESSO LIBERADO!</b>\n\n"
+                   . "Seu Telegram (Chat ID: <code>{$chatId}</code>) foi autenticado com sucesso e vinculado às suas câmeras.\n"
+                   . "Agora <b>somente você</b> tem autorização para receber alertas de segurança, fotos e comandar este robô!\n\n"
+                   . "📋 <b>Comandos Disponíveis:</b>\n"
+                   . "• <b>/foto</b> - Receber foto ao vivo da câmera\n"
+                   . "• <b>/status</b> - Ver status das câmeras\n"
+                   . "• <b>/bloquear</b> - Bloquear este dispositivo novamente";
+
+            Http::timeout(5)->post("https://api.telegram.org/bot{$token}/sendMessage", [
+                'chat_id' => $chatId,
+                'text' => $reply,
+                'parse_mode' => 'HTML',
+            ]);
+            return ['status' => 'authorized'];
+        }
+
+        // 2.2 Bloqueio para chats não autorizados
+        if (! $this->isChatAuthorized($chatId)) {
+            $reply = "🔒 <b>AGENTE PRIVADO KING CÂMERA</b>\n\n"
+                   . "⛔ <b>Acesso Restrito:</b> Este robô de segurança é estritamente pessoal e protegido por senha.\n\n"
+                   . "Para desbloquear o acesso às câmeras, digite a <b>senha de segurança</b>:";
+
+            Http::timeout(5)->post("https://api.telegram.org/bot{$token}/sendMessage", [
+                'chat_id' => $chatId,
+                'text' => $reply,
+                'parse_mode' => 'HTML',
+            ]);
+            return ['status' => 'unauthorized_blocked'];
+        }
+
+        // 2.3 Comando /bloquear
+        if ($text === '/bloquear' || $text === '/sair') {
+            \Illuminate\Support\Facades\Cache::forget("kc_tg_auth_{$chatId}");
+            KingCamera::where('telegram_chat_id', $chatId)->update(['telegram_chat_id' => null]);
+            Http::timeout(5)->post("https://api.telegram.org/bot{$token}/sendMessage", [
+                'chat_id' => $chatId,
+                'text' => "🔒 <b>Dispositivo Bloqueado com Sucesso!</b>\n\nPara voltar a usar este agente, você precisará enviar a senha de segurança novamente.",
+                'parse_mode' => 'HTML',
+            ]);
+            return ['status' => 'locked'];
+        }
+
+        // 2.4 Comando /start
         if (str_starts_with($text, '/start')) {
-            $parts = explode(' ', $text);
-            $tokenParam = $parts[1] ?? '';
-            
-            if (str_starts_with($tokenParam, 'user_')) {
-                $userId = substr($tokenParam, 5);
-                KingCamera::where('user_id', $userId)->update(['telegram_chat_id' => $chatId]);
-                
-                $reply = "👋 <b>Olá! Agente King Câmera Conectado com Sucesso!</b>\n\n"
-                       . "Seu Telegram (Chat ID: <code>{$chatId}</code>) foi vinculado a todas as suas câmeras.\n"
-                       . "Você receberá alertas em tempo real aqui com fotos instantâneas sempre que houver movimento, saída do berço ou choro do bebê.\n\n"
-                       . "Comandos disponíveis:\n"
-                       . "• /status - Ver estado das câmeras\n"
-                       . "• /foto - Receber foto em tempo real\n"
-                       . "• /id - Ver seu Chat ID";
-            } elseif (str_starts_with($tokenParam, 'cam_')) {
-                $camId = (int) substr($tokenParam, 4);
-                $cam = KingCamera::find($camId);
-                if ($cam) {
-                    $cam->update(['telegram_chat_id' => $chatId]);
-                    $reply = "👋 <b>Câmera '{$cam->name}' Conectada!</b>\n\n"
-                           . "Seu Telegram (Chat ID: <code>{$chatId}</code>) agora está configurado para receber notificações desta câmera.";
-                } else {
-                    $reply = "Câmera não encontrada.";
-                }
-            } else {
-                $reply = "👋 Olá! Sou o <b>Agente King Câmera</b>.\n\n"
-                       . "Seu Chat ID do Telegram é: <code>{$chatId}</code>\n\n"
-                       . "Você pode copiar esse número e colar no campo <b>ID / Usuário do Telegram</b> na edição da sua câmera no Conecta King!";
-            }
+            $reply = "👋 <b>Olá! Agente King Câmera Autenticado</b>\n\n"
+                   . "Seu Telegram está vinculado com segurança às suas câmeras.\n\n"
+                   . "• /foto - Receber foto em tempo real\n"
+                   . "• /status - Ver status das câmeras\n"
+                   . "• /bloquear - Bloquear o acesso deste Telegram";
 
             Http::timeout(5)->post("https://api.telegram.org/bot{$token}/sendMessage", [
                 'chat_id' => $chatId,

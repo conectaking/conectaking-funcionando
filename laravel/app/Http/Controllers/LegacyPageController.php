@@ -24,6 +24,26 @@ class LegacyPageController extends Controller
         if ($name === 'admin-prosperidade-31') {
             return redirect('/admin-devocionais-365#prosperidade', 301);
         }
+        if ($name === 'kingCamera') {
+            $token = $request->cookie('token') ?: $request->bearerToken();
+            $authenticated = false;
+            if (is_string($token) && $token !== '') {
+                try {
+                    $jwt = app(\App\Services\Auth\JwtService::class);
+                    $payload = $jwt->decode($token);
+                    $userId = $payload['userId'] ?? $payload['id'] ?? null;
+                    if (! empty($userId)) {
+                        $authenticated = true;
+                    }
+                } catch (\Throwable) {
+                    $authenticated = false;
+                }
+            }
+
+            if (! $authenticated) {
+                return redirect('/login?returnUrl=/kingCamera');
+            }
+        }
         if ($name === 'login') {
             $isExplicitLogout = $request->query('logout') === '1' || $request->query('session_expired') === '1';
             $hasReturnUrl = $request->has('returnUrl') || $request->has('redirect');
