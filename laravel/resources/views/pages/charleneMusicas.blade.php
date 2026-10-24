@@ -23,6 +23,15 @@
             --blue: #3b82f6;
         }
 
+        html {
+            overflow-x: hidden !important;
+            width: 100% !important;
+            max-width: 100vw !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-text-size-adjust: 100%;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -34,15 +43,35 @@
             background-color: var(--bg);
             color: var(--text);
             min-height: 100vh;
+            width: 100% !important;
+            max-width: 100vw !important;
+            overflow-x: hidden !important;
+            margin: 0 !important;
             padding: 24px 16px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            box-sizing: border-box !important;
         }
 
         .container {
-            width: 100%;
-            max-width: 860px;
+            width: 100% !important;
+            max-width: 860px !important;
+            box-sizing: border-box !important;
+            overflow-x: hidden !important;
+            margin: 0 auto;
+        }
+
+        .sr-hidden-file-input {
+            position: fixed !important;
+            top: -5000px !important;
+            left: -5000px !important;
+            width: 1px !important;
+            height: 1px !important;
+            opacity: 0.01 !important;
+            clip: rect(0, 0, 0, 0) !important;
+            pointer-events: none !important;
+            z-index: -9999 !important;
         }
 
         .header {
@@ -584,8 +613,17 @@
         }
 
         @media (max-width: 768px) {
+            body {
+                padding: 16px 10px !important;
+                overflow-x: hidden !important;
+                width: 100% !important;
+                max-width: 100vw !important;
+            }
             .container {
-                padding: 12px 10px;
+                padding: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                overflow-x: hidden !important;
             }
             .header h1 {
                 font-size: 1.45rem;
@@ -593,32 +631,77 @@
             .header .subtitle {
                 font-size: 0.85rem;
             }
-            /* Grade 2x2 para abas no mobile - todas visíveis sem precisar rolar */
+            /* Grade 2x2 para abas no mobile - todas visíveis sem rolagem e com toque perfeito */
             .main-nav {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 8px;
                 padding: 6px;
                 margin-bottom: 16px;
-                overflow: visible;
+                overflow: hidden;
+                width: 100% !important;
+                box-sizing: border-box !important;
             }
             .main-tab {
-                min-height: 50px;
-                padding: 10px 6px;
-                font-size: 0.84rem;
+                min-height: 48px;
+                padding: 8px 6px;
+                font-size: 0.82rem;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 text-align: center;
                 white-space: normal;
-                line-height: 1.25;
+                line-height: 1.2;
                 border-radius: 10px;
                 touch-action: manipulation;
                 -webkit-tap-highlight-color: transparent;
+                word-break: break-word;
+                cursor: pointer;
+                user-select: none;
+            }
+            .main-tab * {
+                pointer-events: none;
             }
             .upload-card {
-                padding: 20px 12px;
+                padding: 18px 12px;
                 margin-bottom: 18px;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+            }
+            .folder-cards-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                margin: 12px 0 14px 0;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .folder-card {
+                padding: 10px 6px;
+                min-height: 145px;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .folder-direct-btn {
+                min-height: 42px;
+                font-size: 0.8rem;
+                padding: 6px 8px;
+                width: 100%;
+                touch-action: manipulation;
+            }
+            .folder-direct-btn * {
+                pointer-events: none;
+            }
+            .main-upload-touch-btn {
+                min-height: 56px;
+                padding: 12px 14px;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                touch-action: manipulation;
+            }
+            .main-upload-touch-btn * {
+                pointer-events: none;
             }
             .category-selector {
                 display: grid;
@@ -649,18 +732,27 @@
                 touch-action: manipulation;
             }
             input, select, textarea {
-                font-size: 16px !important; /* Previne zoom automático indesejado no iOS Safari */
+                font-size: 16px !important; /* Previne zoom automático indesejado no mobile */
             }
             .filter-bar {
                 flex-direction: column;
                 align-items: stretch;
                 gap: 10px;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
             }
             .filter-pills {
-                overflow-x: auto;
-                flex-wrap: nowrap;
+                overflow-x: auto !important;
+                flex-wrap: nowrap !important;
                 -webkit-overflow-scrolling: touch;
                 padding-bottom: 6px;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                scrollbar-width: none;
+            }
+            .filter-pills::-webkit-scrollbar {
+                display: none;
             }
             .pill {
                 flex-shrink: 0;
@@ -668,23 +760,31 @@
                 padding: 8px 12px;
                 font-size: 0.8rem;
                 touch-action: manipulation;
+                -webkit-tap-highlight-color: transparent;
+                cursor: pointer;
             }
             .song-item {
                 flex-direction: column;
                 align-items: stretch;
                 gap: 10px;
-                padding: 14px;
+                padding: 12px;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
             }
             .song-item-controls {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                gap: 10px;
-                width: 100%;
+                gap: 8px;
+                width: 100% !important;
+                box-sizing: border-box !important;
             }
             .song-item-controls audio {
                 flex: 1;
-                max-width: calc(100% - 85px);
+                width: 0 !important;
+                min-width: 0 !important;
+                max-width: calc(100% - 85px) !important;
             }
             .del-btn {
                 min-height: 38px;
@@ -818,7 +918,7 @@
                         </div>
                     </div>
                 </button>
-                <input type="file" id="hiddenAudioInput" accept="audio/*" multiple style="display: none;" onchange="handleAudioUpload(this.files)">
+                <input type="file" id="hiddenAudioInput" accept="audio/*,audio/mpeg,audio/mp3,audio/wav,audio/aac,audio/m4a,.mp3,.wav,.m4a,.aac,.ogg" multiple class="sr-hidden-file-input" onchange="handleAudioUpload(this.files)">
                 
                 <div id="progressContainer" style="display: none; margin-top: 14px;">
                     <p id="progressText" style="font-size: 0.88rem; color: #c4b5fd; margin-bottom: 6px; font-weight: 700;">Enviando...</p>
@@ -831,17 +931,13 @@
             <!-- Filter Bar -->
             <div class="filter-bar">
                 <div class="filter-pills">
-                    <button class="pill" data-pill="todas" onclick="filterCategory('todas')">Todas ({{ count($musicas) }})</button>
-                    <button class="pill active" data-pill="adoracao" onclick="filterCategory('adoracao')">🙏 Adoração ({{ $countAdoracao }})</button>
-                    <button class="pill" data-pill="dormir" onclick="filterCategory('dormir')">🌙 Dormir ({{ $countDormir }})</button>
-                    <button class="pill" data-pill="animadas" onclick="filterCategory('animadas')">⚡ Animadas ({{ $countAnimadas }})</button>
-                    <button class="pill" data-pill="geral" onclick="filterCategory('geral')">🌟 Geral ({{ $countGeral }})</button>
+                    <button type="button" class="pill" data-pill="todas" onclick="filterCategory('todas')">Todas ({{ count($musicas) }})</button>
+                    <button type="button" class="pill active" data-pill="adoracao" onclick="filterCategory('adoracao')">🙏 Adoração ({{ $countAdoracao }})</button>
+                    <button type="button" class="pill" data-pill="dormir" onclick="filterCategory('dormir')">🌙 Dormir ({{ $countDormir }})</button>
+                    <button type="button" class="pill" data-pill="animadas" onclick="filterCategory('animadas')">⚡ Animadas ({{ $countAnimadas }})</button>
+                    <button type="button" class="pill" data-pill="geral" onclick="filterCategory('geral')">🌟 Geral ({{ $countGeral }})</button>
                 </div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">
-                    📱 <em>Você também pode enviar MP3 direto no Telegram do Agente King!</em>
-                </div>
-            </div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">
+                <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
                     📱 <em>Você também pode enviar MP3 direto no Telegram do Agente King!</em>
                 </div>
             </div>
@@ -1059,118 +1155,144 @@
         };
 
         function switchSection(name, btn) {
-            document.querySelectorAll('.main-tab').forEach(b => {
-                b.classList.remove('active');
-            });
-            document.querySelectorAll('.section-panel').forEach(p => {
-                p.classList.remove('active');
-                p.style.display = 'none';
-            });
-            
-            const targetBtn = btn || document.querySelector(`.main-tab[data-section="${name}"]`);
-            if (targetBtn) targetBtn.classList.add('active');
-            
-            const targetSection = document.getElementById('section-' + name);
-            if (targetSection) {
-                targetSection.classList.add('active');
-                targetSection.style.display = 'block';
-            }
+            try {
+                document.querySelectorAll('.main-tab').forEach(b => {
+                    b.classList.remove('active');
+                });
+                document.querySelectorAll('.section-panel').forEach(p => {
+                    p.classList.remove('active');
+                    p.style.display = 'none';
+                });
+                
+                const targetBtn = btn || document.querySelector(`.main-tab[data-section="${name}"]`);
+                if (targetBtn) targetBtn.classList.add('active');
+                
+                const targetSection = document.getElementById('section-' + name);
+                if (targetSection) {
+                    targetSection.classList.add('active');
+                    targetSection.style.display = 'block';
+                }
 
-            try { localStorage.setItem('charlene_active_tab', name); } catch(e){}
+                try { localStorage.setItem('charlene_active_tab', name); } catch(e){}
+            } catch(e) {
+                console.error('[Charlene] Erro em switchSection:', e);
+            }
         }
 
         // Abre o seletor nativo de arquivos do celular/PC
         function openFilePicker() {
-            const input = document.getElementById('hiddenAudioInput');
-            if (input) {
-                input.value = '';
-                input.click();
+            try {
+                const input = document.getElementById('hiddenAudioInput');
+                if (input) {
+                    input.value = '';
+                    input.click();
+                } else {
+                    console.error('[Charlene] hiddenAudioInput não encontrado');
+                }
+            } catch(e) {
+                console.error('[Charlene] Erro em openFilePicker:', e);
             }
         }
 
         // Ação direta pelo botão "➕ Adicionar MP3" de cada pasta
         function directUpload(cat) {
-            selectFolder(cat);
-            openFilePicker();
+            try {
+                selectFolder(cat);
+                setTimeout(() => openFilePicker(), 50);
+            } catch(e) {
+                console.error('[Charlene] Erro em directUpload:', e);
+            }
         }
 
         // Seleção de pasta unificada (Atualiza cards, botão de upload e lista)
         function selectFolder(cat) {
-            if (!folderMetadata[cat]) return;
-            currentFolder = cat;
-            try { if (navigator.vibrate) navigator.vibrate(30); } catch(e){}
+            try {
+                if (!folderMetadata[cat]) return;
+                currentFolder = cat;
+                try { if (navigator.vibrate) navigator.vibrate(30); } catch(e){}
 
-            // 1. Atualiza visual dos cards
-            ['adoracao', 'dormir', 'animadas', 'geral'].forEach(c => {
-                const card = document.getElementById('card-' + c);
-                const badge = document.getElementById('badge-' + c);
-                if (card) {
-                    if (c === cat) card.classList.add('active');
-                    else card.classList.remove('active');
-                }
-                if (badge) {
-                    badge.style.display = (c === cat) ? 'inline-block' : 'none';
-                }
-            });
+                // 1. Atualiza visual dos cards
+                ['adoracao', 'dormir', 'animadas', 'geral'].forEach(c => {
+                    const card = document.getElementById('card-' + c);
+                    const badge = document.getElementById('badge-' + c);
+                    if (card) {
+                        if (c === cat) card.classList.add('active');
+                        else card.classList.remove('active');
+                    }
+                    if (badge) {
+                        badge.style.display = (c === cat) ? 'inline-block' : 'none';
+                    }
+                });
 
-            // 2. Atualiza o botão principal de upload
-            const info = folderMetadata[cat];
-            const btnTitle = document.getElementById('uploadBtnTitle');
-            const btnSubtitle = document.getElementById('uploadBtnSubtitle');
-            const mainBtn = document.getElementById('btnUploadMusic');
-            if (btnTitle) btnTitle.innerHTML = `Adicionar Músicas em ${info.emoji} ${info.name}`;
-            if (btnSubtitle) btnSubtitle.innerHTML = `Destino: <strong>${info.label} da Sarah</strong>`;
-            if (mainBtn) {
-                if (cat === 'adoracao') mainBtn.style.background = 'linear-gradient(135deg, #8b5cf6, #7c3aed)';
-                else if (cat === 'dormir') mainBtn.style.background = 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
-                else if (cat === 'animadas') mainBtn.style.background = 'linear-gradient(135deg, #ec4899, #db2777)';
-                else mainBtn.style.background = 'linear-gradient(135deg, #0ea5e9, #0284c7)';
+                // 2. Atualiza o botão principal de upload
+                const info = folderMetadata[cat];
+                const btnTitle = document.getElementById('uploadBtnTitle');
+                const btnSubtitle = document.getElementById('uploadBtnSubtitle');
+                const mainBtn = document.getElementById('btnUploadMusic');
+                if (btnTitle) btnTitle.innerHTML = `Adicionar Músicas em ${info.emoji} ${info.name}`;
+                if (btnSubtitle) btnSubtitle.innerHTML = `Destino: <strong>${info.label} da Sarah</strong>`;
+                if (mainBtn) {
+                    if (cat === 'adoracao') mainBtn.style.background = 'linear-gradient(135deg, #8b5cf6, #7c3aed)';
+                    else if (cat === 'dormir') mainBtn.style.background = 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
+                    else if (cat === 'animadas') mainBtn.style.background = 'linear-gradient(135deg, #ec4899, #db2777)';
+                    else mainBtn.style.background = 'linear-gradient(135deg, #0ea5e9, #0284c7)';
+                }
+
+                // 3. Atualiza pills de filtro
+                document.querySelectorAll('.pill').forEach(p => {
+                    if (p.getAttribute('data-pill') === cat) p.classList.add('active');
+                    else p.classList.remove('active');
+                });
+
+                // 4. Filtra a lista de músicas
+                filterSongsList(cat);
+            } catch(e) {
+                console.error('[Charlene] Erro em selectFolder:', e);
             }
-
-            // 3. Atualiza pills de filtro
-            document.querySelectorAll('.pill').forEach(p => {
-                if (p.getAttribute('data-pill') === cat) p.classList.add('active');
-                else p.classList.remove('active');
-            });
-
-            // 4. Filtra a lista de músicas
-            filterSongsList(cat);
         }
 
         function filterCategory(cat) {
-            if (cat === 'todas') {
-                document.querySelectorAll('.pill').forEach(p => {
-                    if (p.getAttribute('data-pill') === 'todas') p.classList.add('active');
-                    else p.classList.remove('active');
-                });
-                filterSongsList('todas');
-            } else {
-                selectFolder(cat);
+            try {
+                if (cat === 'todas') {
+                    document.querySelectorAll('.pill').forEach(p => {
+                        if (p.getAttribute('data-pill') === 'todas') p.classList.add('active');
+                        else p.classList.remove('active');
+                    });
+                    filterSongsList('todas');
+                } else {
+                    selectFolder(cat);
+                }
+            } catch(e) {
+                console.error('[Charlene] Erro em filterCategory:', e);
             }
         }
 
         function filterSongsList(cat) {
-            const items = document.querySelectorAll('.song-item');
-            let visible = 0;
-            items.forEach(item => {
-                const itemCat = item.getAttribute('data-category');
-                if (cat === 'todas' || itemCat === cat) {
-                    item.style.display = 'flex';
-                    visible++;
-                } else {
-                    item.style.display = 'none';
-                }
-            });
+            try {
+                const items = document.querySelectorAll('.song-item');
+                let visible = 0;
+                items.forEach(item => {
+                    const itemCat = item.getAttribute('data-category');
+                    if (cat === 'todas' || itemCat === cat) {
+                        item.style.display = 'flex';
+                        visible++;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
 
-            const empty = document.getElementById('emptyState');
-            if (empty) {
-                if (visible === 0) {
-                    empty.style.display = 'block';
-                    const catName = folderMetadata[cat] ? folderMetadata[cat].name : 'selecionada';
-                    empty.innerHTML = `Nenhuma música encontrada na pasta <strong>${catName}</strong> da Sarah. Toque em "➕ Adicionar MP3" acima para enviar!`;
-                } else {
-                    empty.style.display = 'none';
+                const empty = document.getElementById('emptyState');
+                if (empty) {
+                    if (visible === 0) {
+                        empty.style.display = 'block';
+                        const catName = folderMetadata[cat] ? folderMetadata[cat].name : 'selecionada';
+                        empty.innerHTML = `Nenhuma música encontrada na pasta <strong>${catName}</strong> da Sarah. Toque em "➕ Adicionar MP3" acima para enviar!`;
+                    } else {
+                        empty.style.display = 'none';
+                    }
                 }
+            } catch(e) {
+                console.error('[Charlene] Erro em filterSongsList:', e);
             }
         }
 
@@ -1252,8 +1374,41 @@
             });
         }
 
-        // Recupera a aba ativa ao recarregar a tela
-        window.addEventListener('DOMContentLoaded', () => {
+        // Exposição global no window
+        window.switchSection = switchSection;
+        window.selectFolder = selectFolder;
+        window.directUpload = directUpload;
+        window.openFilePicker = openFilePicker;
+        window.filterCategory = filterCategory;
+        window.filterSongsList = filterSongsList;
+        window.handleAudioUpload = handleAudioUpload;
+        window.deleteSong = deleteSong;
+        window.saveMemory = saveMemory;
+        window.deleteMemory = deleteMemory;
+        window.resetStoryProgress = resetStoryProgress;
+
+        // Recupera a aba ativa ao recarregar a tela e adiciona listeners de toque
+        document.addEventListener('DOMContentLoaded', () => {
+            // Garante cliques diretos nas abas
+            document.querySelectorAll('.main-tab').forEach(tab => {
+                const sec = tab.getAttribute('data-section');
+                tab.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    switchSection(sec, tab);
+                });
+            });
+
+            // Garante cliques nos cards de pasta
+            ['adoracao', 'dormir', 'animadas', 'geral'].forEach(cat => {
+                const card = document.getElementById('card-' + cat);
+                if (card) {
+                    card.addEventListener('click', (e) => {
+                        if (e.target.closest('.folder-direct-btn')) return;
+                        selectFolder(cat);
+                    });
+                }
+            });
+
             let active = 'musicas';
             try {
                 const saved = localStorage.getItem('charlene_active_tab');
