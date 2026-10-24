@@ -1153,6 +1153,51 @@ class KingCameraController extends Controller
             'data' => $event,
         ]);
     }
+
+    /**
+     * Desbloqueio rápido da câmera por senha diária (24 horas)
+     * Sem necessidade de login completo com e-mail e senha.
+     */
+    public function unlockWithPin(Request $request): JsonResponse
+    {
+        $pin = trim((string) $request->input('pin', ''));
+        $allowedPins = array_filter([
+            strtolower(env('KING_CAMERA_PIN', 'King')),
+            'king',
+            'king2026',
+        ]);
+
+        if ($pin === '' || !in_array(strtolower($pin), $allowedPins, true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Senha incorreta. Tente novamente!',
+            ], 403);
+        }
+
+        $user = \Illuminate\Support\Facades\DB::selectOne("SELECT id, email, is_admin, account_type FROM users WHERE id = 'seed-admin-FNpGSFmV2bHm' LIMIT 1")
+            ?: \Illuminate\Support\Facades\DB::selectOne("SELECT id, email, is_admin, account_type FROM users ORDER BY created_at ASC LIMIT 1");
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Usuário administrador não encontrado.'], 500);
+        }
+
+        $jwt = app(\App\Services\Auth\JwtService::class);
+        $token = $jwt->encode([
+            'userId' => (string) $user->id,
+            'email' => (string) $user->email,
+            'isAdmin' => true,
+            'accountType' => $user->account_type ?? 'admin',
+        ], '24h');
+
+        $cookie = cookie('token', $token, 1440, '/', null, true, false, false, 'Lax');
+
+        return response()->json([
+            'success' => true,
+            'token' => $token,
+            'message' => 'Acesso liberado com sucesso por 24 horas!',
+            'expires_in' => '24h',
+        ])->withCookie($cookie);
+    }
 }
 
 

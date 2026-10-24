@@ -69,7 +69,8 @@ class KingCameraTelegramAgentService
                  . "🕒 <b>Horário:</b> {$nowStr}\n"
                  . "🔍 <b>Detalhes:</b> {$description}\n";
 
-        $webUrl = "https://www.conectaking.com.br/kingCamera";
+        $pin = env('KING_CAMERA_PIN', 'King');
+        $webUrl = "https://www.conectaking.com.br/kingCamera?pin={$pin}";
         $keyboard = [
             'inline_keyboard' => [
                 [

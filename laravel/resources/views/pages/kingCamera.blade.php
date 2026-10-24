@@ -4903,6 +4903,95 @@
             return headers;
         }
 
+        // Modal Elegante de Desbloqueio Diário (24h) por Senha
+        function showPinUnlockModal() {
+            if (typeof Swal === 'undefined') {
+                const pin = prompt('👑 King Câmera — Digite a senha diária de acesso:');
+                if (pin && pin.trim()) {
+                    fetch('/api/cameras/unlock', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify({ pin: pin.trim() })
+                    }).then(r => r.json()).then(j => {
+                        if (j.success && j.token) {
+                            try { localStorage.setItem('token', j.token); } catch(e){}
+                            loadCameras();
+                        } else {
+                            alert(j.message || 'Senha incorreta.');
+                        }
+                    });
+                }
+                return;
+            }
+
+            Swal.fire({
+                title: '👑 King Câmera • Acesso 24h',
+                text: 'Digite a senha de segurança para liberar o monitoramento por 24 horas:',
+                input: 'password',
+                inputPlaceholder: 'Digite a senha (ex: King)',
+                inputAttributes: {
+                    autocapitalize: 'off',
+                    autocorrect: 'off',
+                    autocomplete: 'current-password',
+                    id: 'kcPinInput'
+                },
+                showCancelButton: false,
+                confirmButtonText: '🔓 Liberar Acesso 24h',
+                confirmButtonColor: '#f59e0b',
+                background: '#0f1422',
+                color: '#f8fafc',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showLoaderOnConfirm: true,
+                preConfirm: async (pin) => {
+                    if (!pin || !pin.trim()) {
+                        Swal.showValidationMessage('Por favor, digite a senha.');
+                        return false;
+                    }
+                    try {
+                        const csrf = getCsrfToken();
+                        const res = await fetch('/api/cameras/unlock', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {})
+                            },
+                            body: JSON.stringify({ pin: pin.trim() })
+                        });
+                        const json = await res.json();
+                        if (!res.ok || !json.success) {
+                            Swal.showValidationMessage(json.message || 'Senha incorreta.');
+                            return false;
+                        }
+                        if (json.token) {
+                            try {
+                                localStorage.setItem('token', json.token);
+                            } catch(e){}
+                        }
+                        return json;
+                    } catch (err) {
+                        Swal.showValidationMessage('Falha de conexão ao validar senha.');
+                        return false;
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Acesso Liberado!',
+                        text: 'Câmeras desbloqueadas com sucesso pelas próximas 24 horas.',
+                        timer: 1400,
+                        showConfirmButton: false,
+                        background: '#0f1422',
+                        color: '#f8fafc'
+                    }).then(() => {
+                        loadCameras();
+                    });
+                }
+            });
+        }
+
         // Carrega câmeras da API
         async function loadCameras() {
             try {
@@ -4912,7 +5001,7 @@
                 });
                 
                 if (res.status === 401) {
-                    window.location.href = '/login?returnUrl=' + encodeURIComponent(window.location.pathname);
+                    showPinUnlockModal();
                     return;
                 }
 

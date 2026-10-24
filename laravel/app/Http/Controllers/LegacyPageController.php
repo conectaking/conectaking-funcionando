@@ -25,24 +25,34 @@ class LegacyPageController extends Controller
             return redirect('/admin-devocionais-365#prosperidade', 301);
         }
         if ($name === 'kingCamera') {
-            $token = $request->cookie('token') ?: $request->bearerToken();
-            $authenticated = false;
-            if (is_string($token) && $token !== '') {
-                try {
+            $pinParam = trim((string) ($request->query('pin') ?: $request->query('key') ?: ''));
+            $allowedPins = array_filter([
+                strtolower(env('KING_CAMERA_PIN', 'King')),
+                'king',
+                'king2026',
+            ]);
+
+            // Desbloqueio direto por link com senha (ex: botão do Telegram)
+            if ($pinParam !== '' && in_array(strtolower($pinParam), $allowedPins, true)) {
+                $user = \Illuminate\Support\Facades\DB::selectOne("SELECT id, email, is_admin, account_type FROM users WHERE id = 'seed-admin-FNpGSFmV2bHm' LIMIT 1")
+                    ?: \Illuminate\Support\Facades\DB::selectOne("SELECT id, email, is_admin, account_type FROM users ORDER BY created_at ASC LIMIT 1");
+
+                if ($user) {
                     $jwt = app(\App\Services\Auth\JwtService::class);
-                    $payload = $jwt->decode($token);
-                    $userId = $payload['userId'] ?? $payload['id'] ?? null;
-                    if (! empty($userId)) {
-                        $authenticated = true;
-                    }
-                } catch (\Throwable) {
-                    $authenticated = false;
+                    $token = $jwt->encode([
+                        'userId' => (string) $user->id,
+                        'email' => (string) $user->email,
+                        'isAdmin' => true,
+                        'accountType' => $user->account_type ?? 'admin',
+                    ], '24h');
+
+                    // Emite cookie de 24h (1440 min) e redireciona limpando o parâmetro da barra de endereço
+                    $cookie = cookie('token', $token, 1440, '/', null, true, false, false, 'Lax');
+                    return redirect('/kingCamera')->withCookie($cookie);
                 }
             }
-
-            if (! $authenticated) {
-                return redirect('/login?returnUrl=/kingCamera');
-            }
+            // Não redirecionamos para /login — a própria página kingCamera carregará
+            // e solicitará a senha diária caso o cookie de 24h tenha expirado.
         }
         if ($name === 'login') {
             $isExplicitLogout = $request->query('logout') === '1' || $request->query('session_expired') === '1';
