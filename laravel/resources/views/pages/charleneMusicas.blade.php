@@ -183,15 +183,15 @@
             flex-wrap: wrap;
         }
 
-        /* Grid de Pastas Mobile para Upload */
-        .target-folder-grid {
+        /* Grid das 4 Pastas Principais */
+        .folder-cards-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
-            margin: 12px 0 16px 0;
+            margin: 14px 0 16px 0;
         }
 
-        .target-folder-card {
+        .folder-card {
             background: #141a29;
             border: 2px solid #232d42;
             border-radius: 16px;
@@ -207,58 +207,56 @@
             flex-direction: column;
             align-items: center;
             justify-content: space-between;
-            min-height: 142px;
+            min-height: 155px;
         }
 
-        .target-folder-card:active {
-            transform: scale(0.98);
+        .folder-card:active {
+            transform: scale(0.97);
         }
 
-        .target-folder-card.active {
+        .folder-card.active {
             background: rgba(139, 92, 246, 0.18);
             border-color: #8b5cf6;
-            box-shadow: 0 0 0 1px #8b5cf6, 0 8px 24px rgba(139, 92, 246, 0.35);
+            box-shadow: 0 0 0 2px #8b5cf6, 0 8px 24px rgba(139, 92, 246, 0.35);
         }
 
-        .target-folder-header {
-            pointer-events: none;
+        #card-dormir.active {
+            background: rgba(59, 130, 246, 0.18);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px #3b82f6, 0 8px 24px rgba(59, 130, 246, 0.35);
+        }
+
+        #card-animadas.active {
+            background: rgba(236, 72, 153, 0.18);
+            border-color: #ec4899;
+            box-shadow: 0 0 0 2px #ec4899, 0 8px 24px rgba(236, 72, 153, 0.35);
+        }
+
+        #card-geral.active {
+            background: rgba(14, 165, 233, 0.18);
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 2px #0ea5e9, 0 8px 24px rgba(14, 165, 233, 0.35);
+        }
+
+        .folder-card-top {
             display: flex;
-            flex-direction: column;
             align-items: center;
+            justify-content: center;
             width: 100%;
+            position: relative;
+            pointer-events: none;
         }
 
-        .target-folder-card .icon {
-            font-size: 1.8rem;
+        .folder-emoji {
+            font-size: 2rem;
             margin-bottom: 2px;
         }
 
-        .target-folder-card .name {
-            font-size: 0.98rem;
-            font-weight: 800;
-            color: #f8fafc;
-            line-height: 1.2;
-        }
-
-        .target-folder-card .count {
-            font-size: 0.75rem;
-            color: #94a3b8;
-            margin-top: 3px;
-        }
-
-        .target-folder-card.active .name {
-            color: #c4b5fd;
-        }
-
-        .target-folder-card.active .count {
-            color: #e2e8f0;
-        }
-
-        .target-folder-card .active-pill {
+        .folder-badge {
             display: none;
             position: absolute;
-            top: -8px;
-            right: 8px;
+            top: -6px;
+            right: 0px;
             background: linear-gradient(135deg, #8b5cf6, #ec4899);
             color: white;
             font-size: 0.65rem;
@@ -270,91 +268,106 @@
             pointer-events: none;
         }
 
-        .target-folder-card.active .active-pill {
-            display: block;
+        .folder-card.active .folder-badge {
+            display: inline-block !important;
         }
 
-        /* Botão Direto de Ação dentro de cada pasta */
-        .card-upload-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
+        .folder-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #f8fafc;
+            line-height: 1.2;
+            margin-top: 4px;
+            pointer-events: none;
+        }
+
+        .folder-subtitle {
+            font-size: 0.78rem;
+            color: #94a3b8;
+            margin-top: 2px;
+            margin-bottom: 10px;
+            pointer-events: none;
+        }
+
+        .folder-card.active .folder-title {
+            color: #c4b5fd;
+        }
+        #card-dormir.active .folder-title {
+            color: #93c5fd;
+        }
+        #card-animadas.active .folder-title {
+            color: #fbcfe8;
+        }
+        #card-geral.active .folder-title {
+            color: #bae6fd;
+        }
+
+        /* Botão direto dentro do card */
+        .folder-direct-btn {
             width: 100%;
-            min-height: 42px;
+            min-height: 44px;
             padding: 8px 10px;
-            margin-top: 10px;
             border-radius: 10px;
             font-size: 0.85rem;
             font-weight: 800;
             color: #ffffff;
             cursor: pointer;
+            border: none;
             text-align: center;
             transition: transform 0.1s ease, filter 0.15s ease;
-            -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            pointer-events: auto !important;
-            border: none;
-            text-decoration: none;
-        }
-
-        .card-upload-btn:active {
-            transform: scale(0.96);
-            filter: brightness(1.2);
-        }
-
-        .btn-upload-adoracao {
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-        }
-        .btn-upload-dormir {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-        }
-        .btn-upload-animadas {
-            background: linear-gradient(135deg, #ec4899, #db2777);
-        }
-        .btn-upload-geral {
-            background: linear-gradient(135deg, #0ea5e9, #0284c7);
-        }
-
-        /* Barra Principal de Upload com Label Nativo */
-        .big-upload-bar {
-            width: 100%;
-            min-height: 60px;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
+            gap: 4px;
+        }
+
+        .folder-direct-btn:active {
+            transform: scale(0.95);
+            filter: brightness(1.2);
+        }
+
+        .btn-adoracao {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        }
+        .btn-dormir {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        }
+        .btn-animadas {
+            background: linear-gradient(135deg, #ec4899, #db2777);
+        }
+        .btn-geral {
+            background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        }
+
+        /* Botão Grande de Upload Responsivo */
+        .main-upload-touch-btn {
+            width: 100%;
+            min-height: 64px;
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            border-radius: 14px;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
             color: white;
             padding: 14px 18px;
-            text-align: center;
+            text-align: left;
             cursor: pointer;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
-            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.45);
             margin-top: 14px;
             transition: transform 0.1s ease, filter 0.15s ease;
         }
 
-        .big-upload-bar:active {
+        .main-upload-touch-btn:active {
             transform: scale(0.98);
             filter: brightness(1.15);
-        }
-
-        /* Inputs de arquivo fora da tela (Zero clickjacking / 100% nativo W3C) */
-        .sr-hidden-file-input {
-            position: fixed !important;
-            top: -5000px !important;
-            left: -5000px !important;
-            width: 1px !important;
-            height: 1px !important;
-            opacity: 0 !important;
-            overflow: hidden !important;
-            pointer-events: none !important;
-            z-index: -9999 !important;
         }
 
         /* Filter Tabs */
@@ -734,88 +747,80 @@
                 </div>
             </div>
 
-            <!-- Upload Card Ultra-Fácil para Mobile (100% Compatível com Xiaomi Poco X6 Pro / Android / iOS) -->
+            <!-- Upload Card Ultra-Fácil e Confiável para Celular e PC -->
             <div class="upload-card" id="dropZone" style="cursor: default;">
                 <div style="font-size: 2.2rem; margin-bottom: 6px;">📂</div>
-                <p style="font-weight: 800; font-size: 1.25rem; margin-bottom: 4px;">Enviar Músicas para a Sarah</p>
-                <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 12px;">Escolha a pasta desejada e toque em <strong>➕ Adicionar</strong> direto nela:</p>
+                <p style="font-weight: 800; font-size: 1.25rem; margin-bottom: 4px;">Pastas de Músicas da Sarah</p>
+                <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 12px;">Toque na pasta para abrir ou clique em <strong>➕ Adicionar MP3</strong>:</p>
                 
-                <!-- Grade de 4 Pastas Grandes com Ação Direta no Celular -->
-                <div class="target-folder-grid">
+                <!-- Grade das 4 Pastas Principais -->
+                <div class="folder-cards-grid">
                     <!-- Adoração -->
-                    <div class="target-folder-card active" data-cat="adoracao" onclick="setDestinationFolder('adoracao')">
-                        <div class="active-pill">✓ ATIVA</div>
-                        <div class="target-folder-header">
-                            <span class="icon">🙏</span>
-                            <span class="name">Adoração</span>
-                            <span class="count">{{ $countAdoracao }} músicas</span>
+                    <div class="folder-card active" id="card-adoracao" onclick="selectFolder('adoracao')">
+                        <div class="folder-card-top">
+                            <span class="folder-emoji">🙏</span>
+                            <span class="folder-badge" id="badge-adoracao">✓ ATIVA</span>
                         </div>
-                        <label for="fileInput-adoracao" class="card-upload-btn btn-upload-adoracao" onclick="event.stopPropagation(); setDestinationFolder('adoracao');">
-                            <span>➕ Adicionar</span>
-                        </label>
-                        <input type="file" id="fileInput-adoracao" accept="audio/*" multiple class="sr-hidden-file-input" onchange="handleDirectUpload('adoracao', this.files)">
+                        <div class="folder-title">Adoração</div>
+                        <div class="folder-subtitle">{{ $countAdoracao }} músicas</div>
+                        <button type="button" class="folder-direct-btn btn-adoracao" onclick="event.stopPropagation(); directUpload('adoracao')">
+                            ➕ Adicionar MP3
+                        </button>
                     </div>
 
                     <!-- Hora de Dormir -->
-                    <div class="target-folder-card" data-cat="dormir" onclick="setDestinationFolder('dormir')">
-                        <div class="active-pill">✓ ATIVA</div>
-                        <div class="target-folder-header">
-                            <span class="icon">🌙</span>
-                            <span class="name">Hora de Dormir</span>
-                            <span class="count">{{ $countDormir }} músicas</span>
+                    <div class="folder-card" id="card-dormir" onclick="selectFolder('dormir')">
+                        <div class="folder-card-top">
+                            <span class="folder-emoji">🌙</span>
+                            <span class="folder-badge" id="badge-dormir">✓ ATIVA</span>
                         </div>
-                        <label for="fileInput-dormir" class="card-upload-btn btn-upload-dormir" onclick="event.stopPropagation(); setDestinationFolder('dormir');">
-                            <span>➕ Adicionar</span>
-                        </label>
-                        <input type="file" id="fileInput-dormir" accept="audio/*" multiple class="sr-hidden-file-input" onchange="handleDirectUpload('dormir', this.files)">
+                        <div class="folder-title">Hora de Dormir</div>
+                        <div class="folder-subtitle">{{ $countDormir }} músicas</div>
+                        <button type="button" class="folder-direct-btn btn-dormir" onclick="event.stopPropagation(); directUpload('dormir')">
+                            ➕ Adicionar MP3
+                        </button>
                     </div>
 
                     <!-- Animadas -->
-                    <div class="target-folder-card" data-cat="animadas" onclick="setDestinationFolder('animadas')">
-                        <div class="active-pill">✓ ATIVA</div>
-                        <div class="target-folder-header">
-                            <span class="icon">⚡</span>
-                            <span class="name">Animadas</span>
-                            <span class="count">{{ $countAnimadas }} músicas</span>
+                    <div class="folder-card" id="card-animadas" onclick="selectFolder('animadas')">
+                        <div class="folder-card-top">
+                            <span class="folder-emoji">⚡</span>
+                            <span class="folder-badge" id="badge-animadas">✓ ATIVA</span>
                         </div>
-                        <label for="fileInput-animadas" class="card-upload-btn btn-upload-animadas" onclick="event.stopPropagation(); setDestinationFolder('animadas');">
-                            <span>➕ Adicionar</span>
-                        </label>
-                        <input type="file" id="fileInput-animadas" accept="audio/*" multiple class="sr-hidden-file-input" onchange="handleDirectUpload('animadas', this.files)">
+                        <div class="folder-title">Animadas</div>
+                        <div class="folder-subtitle">{{ $countAnimadas }} músicas</div>
+                        <button type="button" class="folder-direct-btn btn-animadas" onclick="event.stopPropagation(); directUpload('animadas')">
+                            ➕ Adicionar MP3
+                        </button>
                     </div>
 
                     <!-- Geral -->
-                    <div class="target-folder-card" data-cat="geral" onclick="setDestinationFolder('geral')">
-                        <div class="active-pill">✓ ATIVA</div>
-                        <div class="target-folder-header">
-                            <span class="icon">🌟</span>
-                            <span class="name">Geral</span>
-                            <span class="count">{{ $countGeral }} músicas</span>
+                    <div class="folder-card" id="card-geral" onclick="selectFolder('geral')">
+                        <div class="folder-card-top">
+                            <span class="folder-emoji">🌟</span>
+                            <span class="folder-badge" id="badge-geral">✓ ATIVA</span>
                         </div>
-                        <label for="fileInput-geral" class="card-upload-btn btn-upload-geral" onclick="event.stopPropagation(); setDestinationFolder('geral');">
-                            <span>➕ Adicionar</span>
-                        </label>
-                        <input type="file" id="fileInput-geral" accept="audio/*" multiple class="sr-hidden-file-input" onchange="handleDirectUpload('geral', this.files)">
+                        <div class="folder-title">Geral</div>
+                        <div class="folder-subtitle">{{ $countGeral }} músicas</div>
+                        <button type="button" class="folder-direct-btn btn-geral" onclick="event.stopPropagation(); directUpload('geral')">
+                            ➕ Adicionar MP3
+                        </button>
                     </div>
                 </div>
 
-                <div style="margin: 10px 0 6px 0; font-size: 0.95rem; color: #f8fafc; font-weight: 700;">
-                    Destino selecionado: <span id="activeCategoryBadge" style="background: linear-gradient(135deg, var(--primary), var(--accent)); padding: 6px 18px; border-radius: 999px; color: #fff; display: inline-block; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);">🙏 Pasta Adoração</span>
-                </div>
-
-                <!-- Botão Geral de Escolha (Label Nativo W3C - 100% Funcional no Poco X6 Pro / Android / iOS / PC) -->
-                <label for="fileInput-main" id="mainUploadBtn" class="big-upload-bar">
-                    <span style="font-size: 1.7rem;">📱</span>
-                    <div style="text-align: left;">
-                        <div style="font-size: 1.05rem; font-weight: 800; line-height: 1.2;">Toque para Escolher Músicas no Celular / PC</div>
-                        <div id="mainUploadSubtitle" style="font-size: 0.82rem; opacity: 0.92; margin-top: 3px; font-weight: 600;">
-                            Destino atual: 🙏 Pasta Adoração
+                <!-- Botão Geral de Escolha -->
+                <button type="button" id="btnUploadMusic" class="main-upload-touch-btn" onclick="openFilePicker()">
+                    <span style="font-size: 1.8rem;">📱</span>
+                    <div>
+                        <div id="uploadBtnTitle" style="font-size: 1.05rem; font-weight: 800; line-height: 1.2;">Adicionar Músicas em 🙏 Adoração</div>
+                        <div id="uploadBtnSubtitle" style="font-size: 0.82rem; opacity: 0.92; margin-top: 3px; font-weight: 600;">
+                            Destino: <strong>🙏 Pasta Adoração da Sarah</strong>
                         </div>
                     </div>
-                </label>
-                <input type="file" id="fileInput-main" accept="audio/*" multiple class="sr-hidden-file-input" onchange="if(this.files && this.files.length) uploadFiles(this.files)">
+                </button>
+                <input type="file" id="hiddenAudioInput" accept="audio/*" multiple style="display: none;" onchange="handleAudioUpload(this.files)">
                 
-                <div id="progressContainer">
+                <div id="progressContainer" style="display: none; margin-top: 14px;">
                     <p id="progressText" style="font-size: 0.88rem; color: #c4b5fd; margin-bottom: 6px; font-weight: 700;">Enviando...</p>
                     <div class="progress-bar">
                         <div class="progress-fill" id="progressFill"></div>
@@ -826,12 +831,16 @@
             <!-- Filter Bar -->
             <div class="filter-bar">
                 <div class="filter-pills">
-                    <button class="pill active" onclick="filterCategory('todas', this)">Todas ({{ count($musicas) }})</button>
-                    <button class="pill" onclick="filterCategory('adoracao', this)">🙏 Adoração ({{ $countAdoracao }})</button>
-                    <button class="pill" onclick="filterCategory('dormir', this)">🌙 Dormir ({{ $countDormir }})</button>
-                    <button class="pill" onclick="filterCategory('animadas', this)">⚡ Animadas ({{ $countAnimadas }})</button>
-                    <button class="pill" onclick="filterCategory('geral', this)">🌟 Geral ({{ $countGeral }})</button>
+                    <button class="pill" data-pill="todas" onclick="filterCategory('todas')">Todas ({{ count($musicas) }})</button>
+                    <button class="pill active" data-pill="adoracao" onclick="filterCategory('adoracao')">🙏 Adoração ({{ $countAdoracao }})</button>
+                    <button class="pill" data-pill="dormir" onclick="filterCategory('dormir')">🌙 Dormir ({{ $countDormir }})</button>
+                    <button class="pill" data-pill="animadas" onclick="filterCategory('animadas')">⚡ Animadas ({{ $countAnimadas }})</button>
+                    <button class="pill" data-pill="geral" onclick="filterCategory('geral')">🌟 Geral ({{ $countGeral }})</button>
                 </div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">
+                    📱 <em>Você também pode enviar MP3 direto no Telegram do Agente King!</em>
+                </div>
+            </div>
                 <div style="font-size: 0.85rem; color: var(--text-muted);">
                     📱 <em>Você também pode enviar MP3 direto no Telegram do Agente King!</em>
                 </div>
@@ -1040,13 +1049,13 @@
     </div>
 
     <script>
-        let currentUploadCategory = 'adoracao';
+        let currentFolder = 'adoracao';
 
-        const categoryLabels = {
-            'adoracao': '🙏 Pasta Adoração',
-            'dormir': '🌙 Pasta Hora de Dormir',
-            'animadas': '⚡ Pasta Animadas',
-            'geral': '🌟 Pasta Geral'
+        const folderMetadata = {
+            'adoracao': { name: 'Adoração', emoji: '🙏', label: '🙏 Pasta Adoração', color: '#8b5cf6' },
+            'dormir': { name: 'Hora de Dormir', emoji: '🌙', label: '🌙 Pasta Hora de Dormir', color: '#3b82f6' },
+            'animadas': { name: 'Animadas', emoji: '⚡', label: '⚡ Pasta Animadas', color: '#ec4899' },
+            'geral': { name: 'Geral', emoji: '🌟', label: '🌟 Pasta Geral', color: '#0ea5e9' }
         };
 
         function switchSection(name, btn) {
@@ -1070,85 +1079,110 @@
             try { localStorage.setItem('charlene_active_tab', name); } catch(e){}
         }
 
-        function handleDirectUpload(category, files) {
-            if (!files || !files.length) return;
-            setDestinationFolder(category);
-            uploadFiles(files, category);
+        // Abre o seletor nativo de arquivos do celular/PC
+        function openFilePicker() {
+            const input = document.getElementById('hiddenAudioInput');
+            if (input) {
+                input.value = '';
+                input.click();
+            }
         }
 
-        // Recupera a aba ativa ao recarregar a tela
-        window.addEventListener('DOMContentLoaded', () => {
-            let active = 'musicas';
-            try {
-                const saved = localStorage.getItem('charlene_active_tab');
-                if (saved && ['musicas', 'memorias', 'historias', 'comandos'].includes(saved)) {
-                    active = saved;
-                }
-            } catch(e){}
-            switchSection(active);
-        });
+        // Ação direta pelo botão "➕ Adicionar MP3" de cada pasta
+        function directUpload(cat) {
+            selectFolder(cat);
+            openFilePicker();
+        }
 
-        function setDestinationFolder(cat) {
-            currentUploadCategory = cat;
+        // Seleção de pasta unificada (Atualiza cards, botão de upload e lista)
+        function selectFolder(cat) {
+            if (!folderMetadata[cat]) return;
+            currentFolder = cat;
             try { if (navigator.vibrate) navigator.vibrate(30); } catch(e){}
 
-            document.querySelectorAll('.target-folder-card').forEach(b => {
-                if (b.getAttribute('data-cat') === cat) b.classList.add('active');
-                else b.classList.remove('active');
+            // 1. Atualiza visual dos cards
+            ['adoracao', 'dormir', 'animadas', 'geral'].forEach(c => {
+                const card = document.getElementById('card-' + c);
+                const badge = document.getElementById('badge-' + c);
+                if (card) {
+                    if (c === cat) card.classList.add('active');
+                    else card.classList.remove('active');
+                }
+                if (badge) {
+                    badge.style.display = (c === cat) ? 'inline-block' : 'none';
+                }
             });
 
-            const badge = document.getElementById('activeCategoryBadge');
-            if (badge && categoryLabels[cat]) {
-                badge.innerText = categoryLabels[cat];
+            // 2. Atualiza o botão principal de upload
+            const info = folderMetadata[cat];
+            const btnTitle = document.getElementById('uploadBtnTitle');
+            const btnSubtitle = document.getElementById('uploadBtnSubtitle');
+            const mainBtn = document.getElementById('btnUploadMusic');
+            if (btnTitle) btnTitle.innerHTML = `Adicionar Músicas em ${info.emoji} ${info.name}`;
+            if (btnSubtitle) btnSubtitle.innerHTML = `Destino: <strong>${info.label} da Sarah</strong>`;
+            if (mainBtn) {
+                if (cat === 'adoracao') mainBtn.style.background = 'linear-gradient(135deg, #8b5cf6, #7c3aed)';
+                else if (cat === 'dormir') mainBtn.style.background = 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
+                else if (cat === 'animadas') mainBtn.style.background = 'linear-gradient(135deg, #ec4899, #db2777)';
+                else mainBtn.style.background = 'linear-gradient(135deg, #0ea5e9, #0284c7)';
             }
 
-            const subtitle = document.getElementById('mainUploadSubtitle');
-            if (subtitle && categoryLabels[cat]) {
-                subtitle.innerHTML = `Destino atual: <strong>${categoryLabels[cat]}</strong>`;
+            // 3. Atualiza pills de filtro
+            document.querySelectorAll('.pill').forEach(p => {
+                if (p.getAttribute('data-pill') === cat) p.classList.add('active');
+                else p.classList.remove('active');
+            });
+
+            // 4. Filtra a lista de músicas
+            filterSongsList(cat);
+        }
+
+        function filterCategory(cat) {
+            if (cat === 'todas') {
+                document.querySelectorAll('.pill').forEach(p => {
+                    if (p.getAttribute('data-pill') === 'todas') p.classList.add('active');
+                    else p.classList.remove('active');
+                });
+                filterSongsList('todas');
+            } else {
+                selectFolder(cat);
             }
         }
 
-        function filterCategory(cat, btn) {
-            document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-            btn.classList.add('active');
-
+        function filterSongsList(cat) {
             const items = document.querySelectorAll('.song-item');
+            let visible = 0;
             items.forEach(item => {
-                if (cat === 'todas' || item.getAttribute('data-category') === cat) {
+                const itemCat = item.getAttribute('data-category');
+                if (cat === 'todas' || itemCat === cat) {
                     item.style.display = 'flex';
+                    visible++;
                 } else {
                     item.style.display = 'none';
                 }
             });
 
-            // Se filtrou por uma pasta específica, já sincroniza o seletor de upload
-            if (cat !== 'todas') {
-                setDestinationFolder(cat);
+            const empty = document.getElementById('emptyState');
+            if (empty) {
+                if (visible === 0) {
+                    empty.style.display = 'block';
+                    const catName = folderMetadata[cat] ? folderMetadata[cat].name : 'selecionada';
+                    empty.innerHTML = `Nenhuma música encontrada na pasta <strong>${catName}</strong> da Sarah. Toque em "➕ Adicionar MP3" acima para enviar!`;
+                } else {
+                    empty.style.display = 'none';
+                }
             }
         }
 
-        // Drag and drop upload
-        const dropZone = document.getElementById('dropZone');
-        const progressContainer = document.getElementById('progressContainer');
-        const progressFill = document.getElementById('progressFill');
-        const progressText = document.getElementById('progressText');
-
-        if (dropZone) {
-            ['dragenter', 'dragover'].forEach(n => {
-                dropZone.addEventListener(n, e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-            });
-            ['dragleave', 'drop'].forEach(n => {
-                dropZone.addEventListener(n, e => { e.preventDefault(); dropZone.classList.remove('dragover'); });
-            });
-            dropZone.addEventListener('drop', e => {
-                if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
-            });
-        }
-
-        async function uploadFiles(files, forcedCategory) {
+        // Upload de arquivos
+        async function handleAudioUpload(files) {
             if (!files || !files.length) return;
-            const targetCat = forcedCategory || currentUploadCategory || 'adoracao';
-            const catName = categoryLabels[targetCat] || targetCat;
+            const targetCat = currentFolder || 'adoracao';
+            const catName = (folderMetadata[targetCat] && folderMetadata[targetCat].label) || targetCat;
+
+            const progressContainer = document.getElementById('progressContainer');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
 
             if (progressContainer) {
                 progressContainer.style.display = 'block';
@@ -1183,7 +1217,7 @@
                         successes++;
                     } else {
                         errors++;
-                        alert(`Erro ao enviar ${f.name}: ` + (j.message || 'Erro desconhecido'));
+                        alert(`Aviso ao enviar ${f.name}: ` + (j.message || 'Erro no envio'));
                     }
                 } catch (e) {
                     errors++;
@@ -1191,8 +1225,9 @@
                 }
             }
 
-            // Limpa todos os campos file para permitir re-seleção do mesmo arquivo
-            document.querySelectorAll('input[type="file"]').forEach(inp => { inp.value = ''; });
+            // Limpa o input
+            const input = document.getElementById('hiddenAudioInput');
+            if (input) input.value = '';
 
             if (successes > 0) {
                 if (progressText) progressText.innerText = `✅ ${successes} música(s) adicionada(s) à ${catName} com sucesso!`;
@@ -1202,6 +1237,33 @@
                 if (progressText) progressText.innerText = `Nenhuma música enviada.`;
             }
         }
+
+        // Drag and drop upload para Desktop
+        const dropZone = document.getElementById('dropZone');
+        if (dropZone) {
+            ['dragenter', 'dragover'].forEach(n => {
+                dropZone.addEventListener(n, e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+            });
+            ['dragleave', 'drop'].forEach(n => {
+                dropZone.addEventListener(n, e => { e.preventDefault(); dropZone.classList.remove('dragover'); });
+            });
+            dropZone.addEventListener('drop', e => {
+                if (e.dataTransfer.files.length) handleAudioUpload(e.dataTransfer.files);
+            });
+        }
+
+        // Recupera a aba ativa ao recarregar a tela
+        window.addEventListener('DOMContentLoaded', () => {
+            let active = 'musicas';
+            try {
+                const saved = localStorage.getItem('charlene_active_tab');
+                if (saved && ['musicas', 'memorias', 'historias', 'comandos'].includes(saved)) {
+                    active = saved;
+                }
+            } catch(e){}
+            switchSection(active);
+            selectFolder('adoracao');
+        });
 
         function getCkCsrfCookie() {
             const match = document.cookie.match(new RegExp('(^| )ck_csrf=([^;]+)'));
