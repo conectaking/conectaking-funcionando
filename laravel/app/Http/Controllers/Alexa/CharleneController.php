@@ -518,7 +518,15 @@ class CharleneController extends Controller
                 return $this->handleBibleStory($tema);
 
             case 'ConversarIntent':
-                $frase = $slots['mensagem']['value'] ?? $slots['pergunta']['value'] ?? null;
+                $frase = null;
+                foreach ($slots as $s) {
+                    if (!empty($s['value'])) { $frase = $s['value']; break; }
+                    if (!empty($s['slotValue']['value'])) { $frase = $s['slotValue']['value']; break; }
+                }
+                if (!$frase) {
+                    $speech = '<speak>Oi, minha princesinha Sarah! A Charlene não conseguiu ouvir o nominho ou a pergunta direitinho. Me pergunta de novo, meu amor?</speak>';
+                    return $this->respondSsml($speech, false, '<speak>Estou te ouvindo, Sarahzinha!</speak>');
+                }
                 return $this->handleIntelligentChat($frase, $payload);
 
             case 'OracaoDormirIntent':
@@ -1063,7 +1071,8 @@ class CharleneController extends Controller
     private function handleIntelligentChat(?string $userUtterance, array $payload): JsonResponse
     {
         if (!$userUtterance) {
-            return $this->handleMenuOpcoes();
+            $speech = '<speak>Oi, minha princesinha Sarah! A Charlene está aqui com você de coração aberto! Você pode me perguntar de novo, meu amor?</speak>';
+            return $this->respondSsml($speech, false, '<speak>Estou te ouvindo, Sarahzinha!</speak>');
         }
 
         // 1. Checa se pediu para repetir ou tocar de novo
