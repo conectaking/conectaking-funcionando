@@ -62,7 +62,7 @@
             margin: 0 auto;
         }
 
-        .sr-hidden-file-input {
+        .sr-hidden-file-input, .native-hidden-file {
             position: fixed !important;
             top: -5000px !important;
             left: -5000px !important;
@@ -863,9 +863,10 @@
                         </div>
                         <div class="folder-title">Adoração</div>
                         <div class="folder-subtitle">{{ $countAdoracao }} músicas</div>
-                        <button type="button" class="folder-direct-btn btn-adoracao" onclick="event.stopPropagation(); directUpload('adoracao')">
+                        <input type="file" id="input-adoracao" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files, 'adoracao')">
+                        <label for="input-adoracao" class="folder-direct-btn btn-adoracao" onclick="event.stopPropagation(); selectFolder('adoracao');">
                             ➕ Adicionar MP3
-                        </button>
+                        </label>
                     </div>
 
                     <!-- Hora de Dormir -->
@@ -876,9 +877,10 @@
                         </div>
                         <div class="folder-title">Hora de Dormir</div>
                         <div class="folder-subtitle">{{ $countDormir }} músicas</div>
-                        <button type="button" class="folder-direct-btn btn-dormir" onclick="event.stopPropagation(); directUpload('dormir')">
+                        <input type="file" id="input-dormir" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files, 'dormir')">
+                        <label for="input-dormir" class="folder-direct-btn btn-dormir" onclick="event.stopPropagation(); selectFolder('dormir');">
                             ➕ Adicionar MP3
-                        </button>
+                        </label>
                     </div>
 
                     <!-- Animadas -->
@@ -889,9 +891,10 @@
                         </div>
                         <div class="folder-title">Animadas</div>
                         <div class="folder-subtitle">{{ $countAnimadas }} músicas</div>
-                        <button type="button" class="folder-direct-btn btn-animadas" onclick="event.stopPropagation(); directUpload('animadas')">
+                        <input type="file" id="input-animadas" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files, 'animadas')">
+                        <label for="input-animadas" class="folder-direct-btn btn-animadas" onclick="event.stopPropagation(); selectFolder('animadas');">
                             ➕ Adicionar MP3
-                        </button>
+                        </label>
                     </div>
 
                     <!-- Geral -->
@@ -902,14 +905,16 @@
                         </div>
                         <div class="folder-title">Geral</div>
                         <div class="folder-subtitle">{{ $countGeral }} músicas</div>
-                        <button type="button" class="folder-direct-btn btn-geral" onclick="event.stopPropagation(); directUpload('geral')">
+                        <input type="file" id="input-geral" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files, 'geral')">
+                        <label for="input-geral" class="folder-direct-btn btn-geral" onclick="event.stopPropagation(); selectFolder('geral');">
                             ➕ Adicionar MP3
-                        </button>
+                        </label>
                     </div>
                 </div>
 
                 <!-- Botão Geral de Escolha -->
-                <button type="button" id="btnUploadMusic" class="main-upload-touch-btn" onclick="openFilePicker()">
+                <input type="file" id="input-main-upload" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files)">
+                <label for="input-main-upload" id="btnUploadMusic" class="main-upload-touch-btn">
                     <span style="font-size: 1.8rem;">📱</span>
                     <div>
                         <div id="uploadBtnTitle" style="font-size: 1.05rem; font-weight: 800; line-height: 1.2;">Adicionar Músicas em 🙏 Adoração</div>
@@ -917,8 +922,7 @@
                             Destino: <strong>🙏 Pasta Adoração da Sarah</strong>
                         </div>
                     </div>
-                </button>
-                <input type="file" id="hiddenAudioInput" accept="audio/*,audio/mpeg,audio/mp3,audio/wav,audio/aac,audio/m4a,.mp3,.wav,.m4a,.aac,.ogg" multiple class="sr-hidden-file-input" onchange="handleAudioUpload(this.files)">
+                </label>
                 
                 <div id="progressContainer" style="display: none; margin-top: 14px;">
                     <p id="progressText" style="font-size: 0.88rem; color: #c4b5fd; margin-bottom: 6px; font-weight: 700;">Enviando...</p>
@@ -1180,14 +1184,15 @@
         }
 
         // Abre o seletor nativo de arquivos do celular/PC
-        function openFilePicker() {
+        function openFilePicker(cat) {
             try {
-                const input = document.getElementById('hiddenAudioInput');
+                const targetId = cat ? ('input-' + cat) : 'input-main-upload';
+                const input = document.getElementById(targetId) || document.getElementById('input-main-upload');
                 if (input) {
                     input.value = '';
                     input.click();
                 } else {
-                    console.error('[Charlene] hiddenAudioInput não encontrado');
+                    console.error('[Charlene] input não encontrado:', targetId);
                 }
             } catch(e) {
                 console.error('[Charlene] Erro em openFilePicker:', e);
@@ -1198,7 +1203,7 @@
         function directUpload(cat) {
             try {
                 selectFolder(cat);
-                setTimeout(() => openFilePicker(), 50);
+                openFilePicker(cat);
             } catch(e) {
                 console.error('[Charlene] Erro em directUpload:', e);
             }
@@ -1297,9 +1302,9 @@
         }
 
         // Upload de arquivos
-        async function handleAudioUpload(files) {
+        async function handleAudioUpload(files, forcedCat) {
             if (!files || !files.length) return;
-            const targetCat = currentFolder || 'adoracao';
+            const targetCat = forcedCat || currentFolder || 'adoracao';
             const catName = (folderMetadata[targetCat] && folderMetadata[targetCat].label) || targetCat;
 
             const progressContainer = document.getElementById('progressContainer');
@@ -1347,9 +1352,11 @@
                 }
             }
 
-            // Limpa o input
-            const input = document.getElementById('hiddenAudioInput');
-            if (input) input.value = '';
+            // Limpa todos os inputs
+            ['input-adoracao', 'input-dormir', 'input-animadas', 'input-geral', 'input-main-upload'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
 
             if (successes > 0) {
                 if (progressText) progressText.innerText = `✅ ${successes} música(s) adicionada(s) à ${catName} com sucesso!`;
