@@ -295,8 +295,7 @@
             "me conta sobre a família da sarah",
             "me conta sobre os tios da sarah",
             "me conta sobre {mensagem}",
-            "fala para mim sobre {mensagem}",
-            "{mensagem}"
+            "fala para mim sobre {mensagem}"
           ]
         }
       ],
