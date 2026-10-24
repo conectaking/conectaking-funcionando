@@ -1457,6 +1457,7 @@
             }
 
             const targetCat = forcedCat || currentFolder || 'adoracao';
+            try { selectFolder(targetCat); } catch(e){}
             const catInfo = folderMetadata[targetCat] || { name: 'Adoração', emoji: '🙏', label: '🙏 Pasta Adoração', color: '#8b5cf6' };
             const catName = catInfo.name || targetCat;
 
@@ -1511,8 +1512,13 @@
                     await new Promise((resolve, reject) => {
                         const xhr = new XMLHttpRequest();
                         xhr.open('POST', '/api/alexa/charlene/upload', true);
-                        xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
-                        xhr.setRequestHeader('X-CK-CSRF', getCkCsrfCookie());
+                        if (csrfToken) {
+                            xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
+                        }
+                        const ck = (typeof getCkCsrfCookie === 'function') ? getCkCsrfCookie() : '';
+                        if (ck) {
+                            xhr.setRequestHeader('X-CK-CSRF', ck);
+                        }
 
                         xhr.upload.onprogress = (e) => {
                             if (e.lengthComputable) {
