@@ -424,6 +424,13 @@ class CharleneController extends Controller
         $reqType = $payload['request']['type'] ?? 'LaunchRequest';
         $intentName = $payload['request']['intent']['name'] ?? '';
 
+        @file_put_contents('/tmp/alexa_charlene_last.json', json_encode([
+            'time' => date('Y-m-d H:i:s'),
+            'reqType' => $reqType,
+            'intentName' => $intentName,
+            'payload' => $payload
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
         Log::info('alexa.charlene.request', ['type' => $reqType, 'intent' => $intentName]);
 
         switch ($reqType) {
@@ -498,9 +505,17 @@ class CharleneController extends Controller
                 $tema = $slots['tema']['value'] ?? $slots['personagem']['value'] ?? null;
                 return $this->handleBibleStory($tema);
 
+            case 'ConversarIntent':
+                $frase = $slots['mensagem']['value'] ?? $slots['pergunta']['value'] ?? null;
+                return $this->handleIntelligentChat($frase, $payload);
+
             case 'OracaoDormirIntent':
             case 'FazerOracaoIntent':
-                $pedido = $slots['motivo']['value'] ?? $slots['pessoa']['value'] ?? null;
+                $pedido = $slots['motivo']['value'] ?? $slots['pessoa']['value'] ?? $slots['mensagem']['value'] ?? null;
+                // PROTEÇÃO: Se a frase contiver perguntas sobre pessoas ("conhece", "quem é", etc.), redireciona para a conversa inteligente!
+                if ($pedido && preg_match('/(?:conhece|quem [ée]|lembra|sabe quem|fala d[oa]|amig|tio|tia|vov|myrla|arthur|gustavo|bispo)/ui', $pedido)) {
+                    return $this->handleIntelligentChat($pedido, $payload);
+                }
                 return $this->handlePrayer($pedido);
 
             case 'TocarDevocionalIntent':
@@ -1009,7 +1024,7 @@ class CharleneController extends Controller
             $this->rememberEntity('pedido_oracao', 'oracao_' . substr(md5($pedido), 0, 8), "Oração realizada por: {$pedido}");
         }
 
-        return $this->respondSsml($prayer, true);
+        return $this->respondSsml($prayer, false, '<speak>Sarahzinha, você quer que eu conte uma historinha ou toque um louvorzinho para dormir agora?</speak>');
     }
 
     /**

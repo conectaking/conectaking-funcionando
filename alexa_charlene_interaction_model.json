@@ -181,24 +181,17 @@
         },
         {
           "name": "OracaoDormirIntent",
-          "slots": [
-            {
-              "name": "motivo",
-              "type": "AMAZON.SearchQuery"
-            }
-          ],
+          "slots": [],
           "samples": [
             "vamos orar",
             "faz uma oração",
             "oração para dormir",
+            "fazer uma oração",
+            "faz uma oração para dormir",
             "orar comigo",
             "quero orar",
             "reza comigo",
-            "oração",
-            "orar pelo {motivo}",
-            "ora pelo {motivo}",
-            "faz uma oração pelo {motivo}",
-            "vamos orar pelo {motivo}"
+            "faz oração"
           ]
         },
         {
@@ -225,6 +218,18 @@
             }
           ],
           "samples": [
+            "orar pelo {mensagem}",
+            "orar pela {mensagem}",
+            "orar por {mensagem}",
+            "ora pelo {mensagem}",
+            "ora pela {mensagem}",
+            "ora por {mensagem}",
+            "faz uma oração pelo {mensagem}",
+            "faz uma oração pela {mensagem}",
+            "faz uma oração por {mensagem}",
+            "vamos orar pelo {mensagem}",
+            "vamos orar pela {mensagem}",
+            "vamos orar por {mensagem}",
             "você conhece {mensagem}",
             "você conhece o {mensagem}",
             "você conhece a {mensagem}",
