@@ -183,34 +183,125 @@
             flex-wrap: wrap;
         }
 
-        .cat-btn {
-            background: #1c2438;
-            border: 1px solid var(--card-border);
-            color: var(--text-muted);
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
+        /* Grid de Pastas Mobile para Upload */
+        .target-folder-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 12px 0 16px 0;
         }
 
-        .cat-btn.active {
-            background: rgba(139, 92, 246, 0.25);
-            border-color: var(--primary);
+        .target-folder-card {
+            background: #141a29;
+            border: 2px solid #232d42;
+            border-radius: 14px;
+            padding: 12px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 78px;
+        }
+
+        .target-folder-card:active {
+            transform: scale(0.97);
+        }
+
+        .target-folder-card.active {
+            background: rgba(139, 92, 246, 0.22);
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 1px #8b5cf6, 0 8px 24px rgba(139, 92, 246, 0.35);
+        }
+
+        .target-folder-card .icon {
+            font-size: 1.6rem;
+            margin-bottom: 4px;
+        }
+
+        .target-folder-card .name {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #f8fafc;
+            line-height: 1.2;
+        }
+
+        .target-folder-card .count {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 3px;
+        }
+
+        .target-folder-card.active .name {
             color: #c4b5fd;
         }
 
-        .upload-btn {
-            background: linear-gradient(135deg, var(--primary), var(--accent));
+        .target-folder-card.active .count {
+            color: #e2e8f0;
+        }
+
+        .target-folder-card .active-pill {
+            display: none;
+            position: absolute;
+            top: -8px;
+            right: 8px;
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
             color: white;
-            border: none;
-            padding: 10px 22px;
-            border-radius: 10px;
-            font-weight: 700;
-            cursor: pointer;
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 999px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            letter-spacing: 0.5px;
+        }
+
+        .target-folder-card.active .active-pill {
+            display: block;
+        }
+
+        .mobile-upload-box {
+            position: relative;
+            width: 100%;
             margin-top: 14px;
-            display: inline-block;
+            overflow: hidden;
+            border-radius: 14px;
+        }
+
+        .mobile-upload-visual {
+            width: 100%;
+            min-height: 56px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: white;
+            font-weight: 800;
+            font-size: 1.05rem;
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.45);
+            pointer-events: none;
+            padding: 12px 16px;
+            text-align: center;
+        }
+
+        .mobile-native-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.001;
+            z-index: 50;
+            cursor: pointer;
+            display: block !important;
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* Filter Tabs */
@@ -591,40 +682,53 @@
             </div>
 
             <!-- Upload Card Ultra-Fácil para Mobile -->
-            <div class="upload-card" id="dropZone">
+            <div class="upload-card" id="dropZone" style="cursor: default;">
                 <div style="font-size: 2.2rem; margin-bottom: 6px;">📂</div>
-                <p style="font-weight: 800; font-size: 1.2rem; margin-bottom: 4px;">Enviar Músicas para a Sarah</p>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 14px;">Escolha a pasta de destino e toque no botão para escolher no celular:</p>
+                <p style="font-weight: 800; font-size: 1.25rem; margin-bottom: 4px;">Enviar Músicas para a Sarah</p>
+                <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 12px;">1. Toque na pasta da Sarah para onde você quer enviar:</p>
                 
-                <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; margin-bottom: 14px; text-align: left;">
-                    <label for="uploadCategorySelect" style="display: block; font-size: 0.88rem; font-weight: 700; color: #c4b5fd; margin-bottom: 8px;">
-                        📁 Escolha a Pasta da Sarah:
-                    </label>
-                    <select id="uploadCategorySelect" onchange="syncUploadCategory(this.value)" style="width: 100%; min-height: 48px; background: #0e1320; border: 2px solid var(--primary); border-radius: 10px; padding: 10px 14px; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; touch-action: manipulation;">
-                        <option value="adoracao" selected>🙏 Pasta Adoração ({{ $countAdoracao }} músicas)</option>
-                        <option value="dormir">🌙 Pasta Hora de Dormir ({{ $countDormir }} músicas)</option>
-                        <option value="animadas">⚡ Pasta Animadas ({{ $countAnimadas }} músicas)</option>
-                        <option value="geral">🌟 Pasta Geral ({{ $countGeral }} músicas)</option>
-                    </select>
-
-                    <div class="category-selector" style="margin-top: 10px; margin-bottom: 4px;">
-                        <button type="button" class="cat-btn active" data-cat="adoracao" onclick="selectUploadCategory('adoracao', this)">🙏 Adoração ({{ $countAdoracao }})</button>
-                        <button type="button" class="cat-btn" data-cat="dormir" onclick="selectUploadCategory('dormir', this)">🌙 Hora de Dormir ({{ $countDormir }})</button>
-                        <button type="button" class="cat-btn" data-cat="animadas" onclick="selectUploadCategory('animadas', this)">⚡ Animadas ({{ $countAnimadas }})</button>
-                        <button type="button" class="cat-btn" data-cat="geral" onclick="selectUploadCategory('geral', this)">🌟 Geral ({{ $countGeral }})</button>
-                    </div>
+                <!-- Grade de 4 Pastas Grandes e Táteis para Celular -->
+                <div class="target-folder-grid">
+                    <button type="button" class="target-folder-card active" data-cat="adoracao" onclick="setDestinationFolder('adoracao', this)">
+                        <div class="active-pill">✓ ATIVA</div>
+                        <span class="icon">🙏</span>
+                        <span class="name">Adoração</span>
+                        <span class="count">{{ $countAdoracao }} músicas</span>
+                    </button>
+                    <button type="button" class="target-folder-card" data-cat="dormir" onclick="setDestinationFolder('dormir', this)">
+                        <div class="active-pill">✓ ATIVA</div>
+                        <span class="icon">🌙</span>
+                        <span class="name">Hora de Dormir</span>
+                        <span class="count">{{ $countDormir }} músicas</span>
+                    </button>
+                    <button type="button" class="target-folder-card" data-cat="animadas" onclick="setDestinationFolder('animadas', this)">
+                        <div class="active-pill">✓ ATIVA</div>
+                        <span class="icon">⚡</span>
+                        <span class="name">Animadas</span>
+                        <span class="count">{{ $countAnimadas }} músicas</span>
+                    </button>
+                    <button type="button" class="target-folder-card" data-cat="geral" onclick="setDestinationFolder('geral', this)">
+                        <div class="active-pill">✓ ATIVA</div>
+                        <span class="icon">🌟</span>
+                        <span class="name">Geral</span>
+                        <span class="count">{{ $countGeral }} músicas</span>
+                    </button>
                 </div>
 
-                <div style="margin: 6px 0 16px 0; font-size: 0.95rem; color: #f8fafc; font-weight: 700;">
+                <div style="margin: 8px 0 14px 0; font-size: 0.95rem; color: #f8fafc; font-weight: 700;">
                     Destino selecionado: <span id="activeCategoryBadge" style="background: linear-gradient(135deg, var(--primary), var(--accent)); padding: 6px 18px; border-radius: 999px; color: #fff; display: inline-block; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);">🙏 Pasta Adoração</span>
                 </div>
 
-                <!-- Input de áudio nativo -->
-                <input type="file" id="fileInput" name="audio" accept=".mp3,.m4a,.aac,.wav,.ogg,audio/*" multiple style="display: none;" onchange="if(this.files.length) uploadFiles(this.files)">
-                
-                <button type="button" class="upload-btn" onclick="openFilePicker()" style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; width: 100%; border: none;">
-                    <span>📱</span> Escolher Músicas no Celular / PC
-                </button>
+                <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 8px;">2. Toque no botão abaixo para escolher o arquivo de áudio no seu celular:</p>
+
+                <!-- Botão com Input Nativo Totalmente Coberto (100% Compatível com Xiaomi Poco X6 Pro / Android) -->
+                <div class="mobile-upload-box">
+                    <div class="mobile-upload-visual">
+                        <span style="font-size: 1.5rem;">📱</span>
+                        <span>Toque Aqui para Escolher Músicas no Celular / PC</span>
+                    </div>
+                    <input type="file" id="fileInput" name="audio" accept="audio/*,audio/mpeg,audio/mp3,audio/m4a,audio/x-m4a,audio/wav,audio/ogg,.mp3,.m4a,.wav,.ogg" multiple class="mobile-native-input" onchange="if(this.files && this.files.length) uploadFiles(this.files)">
+                </div>
                 
                 <div id="progressContainer">
                     <p id="progressText" style="font-size: 0.88rem; color: #c4b5fd; margin-bottom: 6px; font-weight: 700;">Enviando...</p>
