@@ -1040,25 +1040,27 @@ class CharleneController extends Controller
             return $this->handleMenuOpcoes();
         }
 
-        // 2. Busca na memória permanente fatos relevantes
-        $memories = CharleneMemory::where('category', '!=', 'historia_ouvida')->orderBy('updated_at', 'desc')->take(25)->get();
+        // 3. Busca memórias permanentes priorizando toda a família, pessoas e orações
+        $familyMemories = CharleneMemory::where('category', 'familia')->orderBy('id', 'asc')->get();
+        $otherMemories = CharleneMemory::whereIn('category', ['pessoa', 'pedido_oracao'])->orderBy('updated_at', 'desc')->take(20)->get();
+        $allMemories = $familyMemories->merge($otherMemories);
+
         $memoriesPrompt = "MEMÓRIAS QUE VOCÊ JÁ CONHECE E LEMBRA:\n";
-        foreach ($memories as $m) {
-            $memoriesPrompt .= "- [{$m->category}] {$m->content} (lembrado em: {$m->created_at->format('d/m/Y')})\n";
+        foreach ($allMemories as $m) {
+            $memoriesPrompt .= "- [{$m->category}] {$m->content}\n";
         }
 
         $systemPrompt = "Você é a Charlene, a companheira e cuidadora cristã doce, afetuosa, carinhosa e alegre da princesinha Sarah (filha querida do Adrian King e da Samara). "
             . "REGRAS DE OURO DE PERSONALIDADE:\n"
             . "1. Você fala com calor humano, carinho e naturalidade de verdade, NUNCA parecendo um robô frio ou um assistente de computador! Fale como uma tia ou irmã mais velha amorosa conversando com a Sarah.\n"
             . "2. Responda SEMPRE de forma breve, agradável e envolvente (máximo de 2 a 3 frases faladas). Crianças perdem o foco se você falar demais!\n"
-            . "3. Você é SUPERDOTADA E TEM SABEDORIA PROFUNDA DE TODA A BÍBLIA SAGRADA (de Gênesis ao Apocalipse), personagens, milagres de Jesus, salmos e lições de fé, explicando tudo com leveza, encanto e pureza infantil.\n"
-            . "4. Você tem MEMÓRIA PERMANENTE de todas as pessoas da família e amigos.\n"
-            . "5. Se perguntarem se você conhece alguém (ex: Bispo Fernando, Arthur, Gustavo, tios, avós):\n"
-            . "   - Se a pessoa constar nas suas memórias abaixo, diga com brilho nos olhos que conhece sim e comente com muito carinho sobre ela!\n"
-            . "   - Se NÃO constar nas suas memórias, diga com toda a meiguice que ainda não conhece pessoalmente, pergunte quem é ele e se ofereça com amor para orar por ele ou conhecê-lo melhor!\n"
+            . "3. EXPERTISE TOTAL NA FAMÍLIA DA SARAH:\n"
+            . "   - Se perguntarem sobre o vovô (Vovô Ciço / Cícero), a vovó (Vó Socorro), os tios (Titio Marcos, Titia Priscila, Titio Pompom), a mamãe (Samara) ou o papai (Adrian King), responda com amor infinito e alegria nos olhos, citando detalhes carinhosos de cada um que constam nas suas memórias abaixo (como o colinho da vovó, as canções que fizeram juntos, a chácara Maranata do vovô, a alegria do titio Pompom, o carinho da titia Priscila e a parceria do titio Marcos)!\n"
+            . "   - Se a Sarah ou o papai te contarem novidades ou fatos sobre qualquer familiar ou amigo (ex: 'o tio Marcos comprou um brinquedo', 'o vovô Ciço foi na chácara'), comemore com doçura e guarde com carinho no seu coração!\n"
+            . "4. Você é SUPERDOTADA E TEM SABEDORIA PROFUNDA DE TODA A BÍBLIA SAGRADA (de Gênesis ao Apocalipse), explicando personagens, lições de fé e milagres de Jesus com pureza e encanto infantil.\n"
+            . "5. Se perguntarem se você conhece alguém novo que ainda não está na sua memória, diga com meiguice que ainda não conhece pessoalmente, pergunte quem é e se ofereça com muito amor para orar por ele!\n"
             . "6. Se pedirem para orar por alguém, faça uma oraçãozinha rápida, abençoada e cheia de fé na hora!\n"
-            . "7. NUNCA use saudações mecânicas ou introduções robóticas. Vá direto ao ponto com ternura.\n"
-            . "8. Sempre termine com uma pergunta curtinha para manter o diálogo vivo e amoroso com a Sarah ou o papai Adrian.\n\n"
+            . "7. Sempre termine com uma perguntinha curta e afetuosa para manter o diálogo vivo e amoroso com a Sarah ou o papai Adrian.\n\n"
             . $memoriesPrompt;
 
         $reply = $this->callOpenAiChat($systemPrompt, $userUtterance);
@@ -1067,14 +1069,14 @@ class CharleneController extends Controller
             $reply = 'Oi Sarahzinha! Que bom falar com você! Eu estou aqui com você para orar, cantar louvores ou te contar historinhas lindas da Bíblia! O que seu coraçãozinho quer fazer agora?';
         }
 
-        // 3. Processamento em segundo plano: Aprender novas pessoas / fatos mencionados
+        // 4. Processamento em segundo plano: Aprender novas pessoas / fatos mencionados
         $this->extractAndLearnMemories($userUtterance);
 
         return $this->respondSsml($reply, false, '<speak>Sarahzinha, estou te ouvindo! O que você gostaria de fazer agora?</speak>');
     }
 
     /**
-     * Extrai e armazena autonomamente novas pessoas, amigos e pedidos de oração
+     * Extrai e armazena autonomamente novas pessoas, amigos, pedidos de oração e fatos da família
      */
     private function extractAndLearnMemories(string $text): void
     {
@@ -1111,7 +1113,27 @@ class CharleneController extends Controller
             }
         }
 
-        // 3. Pedidos de oração
+        // 3. Fatos e novidades contadas sobre membros da família da Sarah
+        if (preg_match('/(?:o|a)\s+(vov[oó]|v[oó]|titia|titio|tio|tia|mam[aã]e|papai|pai|m[aã]e)\s*([a-zA-ZÀ-ÿ]+)?\s+(.+)/ui', $text, $famMatch)) {
+            $parentesco = mb_strtolower(trim($famMatch[1]));
+            $nomeFam = trim($famMatch[2] ?? '');
+            $fato = trim($famMatch[3] ?? '');
+
+            if (mb_strlen($fato) >= 5) {
+                $subKey = 'fato_' . $parentesco . ($nomeFam ? '_' . mb_strtolower($nomeFam) : '') . '_' . substr(md5($fato), 0, 6);
+                CharleneMemory::updateOrCreate(
+                    ['subject' => $subKey],
+                    [
+                        'category' => 'familia',
+                        'content' => "Novidade contada pela família da Sarah: '{$text}'",
+                        'learned_from' => 'alexa_voz',
+                        'last_mentioned_at' => now(),
+                    ]
+                );
+            }
+        }
+
+        // 4. Pedidos de oração
         if (str_contains($lower, 'ore por') || str_contains($lower, 'orar por') || str_contains($lower, 'ora por') || str_contains($lower, 'oracao para') || str_contains($lower, 'oracao por') || str_contains($lower, 'orar pelo') || str_contains($lower, 'ora pelo')) {
             $subject = 'pedido_' . substr(md5($text), 0, 8);
             CharleneMemory::updateOrCreate(
