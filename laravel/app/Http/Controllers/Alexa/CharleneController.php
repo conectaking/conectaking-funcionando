@@ -1162,6 +1162,21 @@ class CharleneController extends Controller
                 ]
             );
         }
+
+        // 5. Parentescos e informações ensinadas diretamente à Charlene (ex: "ela é mãe da samara", "você sabia que ela é a mãe da samara")
+        if (preg_match('/(?:sabia que|ela [ée]|ele [ée]|eles s[aã]o)\s+(.+)/ui', $text, $relMatch)) {
+            $fatoRel = trim($relMatch[1]);
+            $subKey = 'relato_' . substr(md5($fatoRel), 0, 8);
+            CharleneMemory::updateOrCreate(
+                ['subject' => $subKey],
+                [
+                    'category' => 'familia',
+                    'content' => "Informação ensinada pela família à Charlene: '{$text}'",
+                    'learned_from' => 'alexa_voz',
+                    'last_mentioned_at' => now(),
+                ]
+            );
+        }
     }
 
     /**
