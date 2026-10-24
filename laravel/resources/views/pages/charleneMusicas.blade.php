@@ -890,7 +890,7 @@
                         <div class="folder-subtitle">{{ $countAdoracao }} músicas</div>
                         <div class="folder-direct-btn btn-adoracao" onclick="event.stopPropagation();">
                             ➕ Adicionar MP3
-                            <input type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="selectFolder('adoracao'); handleAudioUpload(this.files, 'adoracao');">
+                            <input type="file" accept="audio/*,audio/mpeg,audio/mp3,audio/x-m4a,audio/aac,audio/wav,audio/ogg,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="selectFolder('adoracao'); handleAudioUpload(this.files, 'adoracao');">
                         </div>
                     </div>
 
@@ -904,7 +904,7 @@
                         <div class="folder-subtitle">{{ $countDormir }} músicas</div>
                         <div class="folder-direct-btn btn-dormir" onclick="event.stopPropagation();">
                             ➕ Adicionar MP3
-                            <input type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="selectFolder('dormir'); handleAudioUpload(this.files, 'dormir');">
+                            <input type="file" accept="audio/*,audio/mpeg,audio/mp3,audio/x-m4a,audio/aac,audio/wav,audio/ogg,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="selectFolder('dormir'); handleAudioUpload(this.files, 'dormir');">
                         </div>
                     </div>
 
@@ -918,7 +918,7 @@
                         <div class="folder-subtitle">{{ $countAnimadas }} músicas</div>
                         <div class="folder-direct-btn btn-animadas" onclick="event.stopPropagation();">
                             ➕ Adicionar MP3
-                            <input type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="selectFolder('animadas'); handleAudioUpload(this.files, 'animadas');">
+                            <input type="file" accept="audio/*,audio/mpeg,audio/mp3,audio/x-m4a,audio/aac,audio/wav,audio/ogg,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="selectFolder('animadas'); handleAudioUpload(this.files, 'animadas');">
                         </div>
                     </div>
 
@@ -932,7 +932,7 @@
                         <div class="folder-subtitle">{{ $countGeral }} músicas</div>
                         <div class="folder-direct-btn btn-geral" onclick="event.stopPropagation();">
                             ➕ Adicionar MP3
-                            <input type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="selectFolder('geral'); handleAudioUpload(this.files, 'geral');">
+                            <input type="file" accept="audio/*,audio/mpeg,audio/mp3,audio/x-m4a,audio/aac,audio/wav,audio/ogg,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="selectFolder('geral'); handleAudioUpload(this.files, 'geral');">
                         </div>
                     </div>
                 </div>
@@ -946,7 +946,7 @@
                             Destino: <strong>🙏 Pasta Adoração da Sarah</strong>
                         </div>
                     </div>
-                    <input type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="handleAudioUpload(this.files)">
+                    <input type="file" accept="audio/*,audio/mpeg,audio/mp3,audio/x-m4a,audio/aac,audio/wav,audio/ogg,.mp3,.m4a,.aac,.wav,.ogg" multiple class="file-input-inside" onchange="handleAudioUpload(this.files)">
                 </div>
                 
                 <div id="progressContainer" style="display: none; margin-top: 14px;">
@@ -1328,7 +1328,11 @@
 
         // Upload de arquivos
         async function handleAudioUpload(files, forcedCat) {
-            if (!files || !files.length) return;
+            if (!files || !files.length) {
+                console.log('[Charlene] Nenhum arquivo selecionado.');
+                return;
+            }
+
             const targetCat = forcedCat || currentFolder || 'adoracao';
             const catName = (folderMetadata[targetCat] && folderMetadata[targetCat].label) || targetCat;
 
@@ -1343,11 +1347,14 @@
 
             let successes = 0;
             let errors = 0;
+            let lastErrMsg = '';
 
             for (let i = 0; i < files.length; i++) {
                 const f = files[i];
-                if (progressText) progressText.innerText = `Enviando (${i+1}/${files.length}) para ${catName}: ${f.name}`;
-                if (progressFill) progressFill.style.width = `${Math.round(((i+1)/files.length)*100)}%`;
+                console.log(`[Charlene] Enviando (${i+1}/${files.length}): ${f.name} [tamanho: ${f.size} bytes, tipo: ${f.type}] para pasta ${targetCat}`);
+                
+                if (progressText) progressText.innerText = `Enviando (${i+1}/${files.length}) para ${catName}: ${f.name}...`;
+                if (progressFill) progressFill.style.width = `${Math.round(((i+1)/files.length)*90)}%`;
 
                 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
                 const fd = new FormData();
@@ -1364,31 +1371,46 @@
                         },
                         body: fd
                     });
-                    const j = await res.json();
-                    if (j.success) {
+
+                    let j = {};
+                    try {
+                        j = await res.json();
+                    } catch(jsonErr) {
+                        j = { success: false, message: `Resposta do servidor: ${res.status} ${res.statusText}` };
+                    }
+
+                    if (res.ok && j.success) {
                         successes++;
+                        console.log(`[Charlene] Upload com sucesso: ${f.name}`);
                     } else {
                         errors++;
-                        alert(`Aviso ao enviar ${f.name}: ` + (j.message || 'Erro no envio'));
+                        lastErrMsg = j.message || `Erro no envio (Status HTTP ${res.status})`;
+                        console.warn(`[Charlene] Falha no upload de ${f.name}:`, j);
                     }
                 } catch (e) {
                     errors++;
-                    alert('Erro de conexão ao enviar: ' + f.name);
+                    lastErrMsg = 'Falha de conexão com o servidor. Verifique sua internet.';
+                    console.error('[Charlene] Exceção de rede:', e);
                 }
             }
 
-            // Limpa todos os inputs
+            // Limpa todos os inputs para permitir selecionar o mesmo arquivo novamente
+            document.querySelectorAll('.file-input-inside').forEach(inp => {
+                try { inp.value = ''; } catch(e){}
+            });
             ['input-adoracao', 'input-dormir', 'input-animadas', 'input-geral', 'input-main-upload'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.value = '';
             });
 
             if (successes > 0) {
-                if (progressText) progressText.innerText = `✅ ${successes} música(s) adicionada(s) à ${catName} com sucesso!`;
+                if (progressText) progressText.innerText = `✅ ${successes} música(s) adicionada(s) à pasta ${catName} com sucesso! Atualizando...`;
                 if (progressFill) progressFill.style.width = '100%';
-                setTimeout(() => location.reload(), 1100);
+                setTimeout(() => location.reload(), 1200);
             } else {
-                if (progressText) progressText.innerText = `Nenhuma música enviada.`;
+                if (progressText) progressText.innerText = `❌ Falha ao enviar: ${lastErrMsg || 'Verifique o formato do arquivo'}`;
+                if (progressFill) progressFill.style.width = '0%';
+                alert(`Não foi possível enviar a música:\n\n${lastErrMsg || 'Verifique se o arquivo é MP3 válido.'}`);
             }
         }
 
