@@ -573,7 +573,7 @@
             background: linear-gradient(180deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 25%, transparent 60%, rgba(0,0,0,0.7) 100%);
             opacity: 1;
             transition: opacity 0.35s ease, visibility 0.35s ease;
-            z-index: 10;
+            z-index: 25;
         }
 
         /* Auto-Hide estilo Yoosee após inatividade de 3.5 segundos */
@@ -1464,7 +1464,7 @@
             position: absolute;
             bottom: 12px;
             left: 12px;
-            z-index: 8;
+            z-index: 30;
             background: rgba(15, 23, 42, 0.88);
             border: 1px solid rgba(245, 158, 11, 0.55);
             color: #f8fafc;
@@ -9025,10 +9025,24 @@
                     panel.classList.toggle('active', t === tabName);
                 }
             });
+
+            // Só exibe o retângulo visual e alças da cerca quando estiver na aba "Berço & Bebê"
             if (tabName === 'crib') {
                 ensureCribFenceVisible(camId);
                 setTimeout(() => ensureCribFenceVisible(camId), 80);
                 setTimeout(() => ensureCribFenceVisible(camId), 300);
+            } else {
+                // Ao ir para PTZ 360°, Reprodução ou Funções, oculta a marcação visual e libera o vídeo
+                hideCribFenceVisual(camId);
+            }
+        }
+
+        function hideCribFenceVisual(camId) {
+            const canvas = document.getElementById(`crib-canvas-${camId}`);
+            if (canvas) {
+                canvas.style.display = 'none';
+                canvas.style.pointerEvents = 'none';
+                canvas.classList.remove('editing');
             }
         }
 
@@ -9275,16 +9289,26 @@
                     dragOffset: { x: 0, y: 0 }
                 };
 
-                canvas.style.display = 'block';
-                canvas.style.pointerEvents = 'auto';
-                canvas.classList.add('editing');
-                canvas.style.zIndex = '25';
-                canvas.style.touchAction = 'none';
-
                 btn.classList.add('active');
-                initCribCanvas(camId);
                 startFenceMonitor(camId);
                 saveCameraFenceConfig(camId, true, roi);
+
+                const cribNav = document.getElementById(`tab-nav-${camId}-crib`);
+                const isCribTab = cribNav ? cribNav.classList.contains('active') : true;
+
+                if (isCribTab) {
+                    canvas.style.display = 'block';
+                    canvas.style.pointerEvents = 'auto';
+                    canvas.classList.add('editing');
+                    canvas.style.zIndex = '15';
+                    canvas.style.touchAction = 'none';
+                    initCribCanvas(camId);
+                    drawCribBox(camId);
+                } else {
+                    canvas.style.display = 'none';
+                    canvas.style.pointerEvents = 'none';
+                    canvas.classList.remove('editing');
+                }
 
                 const wrap = canvas.parentElement;
                 if (wrap) {
@@ -9471,6 +9495,18 @@
         function drawCribBox(camId) {
             const canvas = document.getElementById(`crib-canvas-${camId}`);
             if (!canvas) return;
+
+            const cribNav = document.getElementById(`tab-nav-${camId}-crib`);
+            const isCribTab = cribNav ? cribNav.classList.contains('active') : false;
+            const s = cribFenceState[camId];
+
+            if (!isCribTab || !s || !s.enabled) {
+                canvas.style.display = 'none';
+                canvas.style.pointerEvents = 'none';
+                canvas.classList.remove('editing');
+                return;
+            }
+
             const wrap = canvas.parentElement;
             if (wrap) {
                 const w = wrap.clientWidth || wrap.offsetWidth;
@@ -9481,9 +9517,10 @@
                 }
             }
             canvas.style.display = 'block';
+            canvas.style.pointerEvents = 'auto';
+            canvas.classList.add('editing');
+            canvas.style.zIndex = '15';
             const ctx = canvas.getContext('2d');
-            const s = cribFenceState[camId];
-            if (!s || !s.enabled) return;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -9548,6 +9585,7 @@
             if (!isFenceActive) {
                 canvas.style.display = 'none';
                 canvas.style.pointerEvents = 'none';
+                canvas.classList.remove('editing');
                 if (cribFenceState[camId]) cribFenceState[camId].enabled = false;
                 return;
             }
@@ -9574,10 +9612,24 @@
                 dragOffset: { x: 0, y: 0 }
             };
 
+            // Monitor de saída do berço roda continuamente em segundo plano
+            startFenceMonitor(camId);
+
+            // A marcação VISUAL (retângulo e alças) SÓ é exibida quando o usuário clica na aba "Berço & Bebê"
+            const cribNav = document.getElementById(`tab-nav-${camId}-crib`);
+            const isCribTab = cribNav ? cribNav.classList.contains('active') : false;
+
+            if (!isCribTab) {
+                canvas.style.display = 'none';
+                canvas.style.pointerEvents = 'none';
+                canvas.classList.remove('editing');
+                return;
+            }
+
             canvas.style.display = 'block';
             canvas.style.pointerEvents = 'auto';
             canvas.classList.add('editing');
-            canvas.style.zIndex = '25';
+            canvas.style.zIndex = '15';
             canvas.style.touchAction = 'none';
 
             const wrap = canvas.parentElement;
@@ -9592,14 +9644,11 @@
 
             initCribCanvas(camId);
             drawCribBox(camId);
-            startFenceMonitor(camId);
         }
 
         function restoreCribFenceOnLoad(camId, savedRoi) {
+            // Inicializa a cerca e mantém o monitor ativo em segundo plano sem exibir o retângulo na tela
             ensureCribFenceVisible(camId);
-            setTimeout(() => ensureCribFenceVisible(camId), 150);
-            setTimeout(() => ensureCribFenceVisible(camId), 500);
-            setTimeout(() => ensureCribFenceVisible(camId), 1200);
 
             const v = document.getElementById(`video-${camId}`);
             if (v) {
@@ -9612,11 +9661,19 @@
         window.addEventListener('resize', () => {
             Object.keys(cribFenceState).forEach(camId => {
                 if (cribFenceState[camId] && cribFenceState[camId].enabled) {
+                    const cribNav = document.getElementById(`tab-nav-${camId}-crib`);
+                    const isCribTab = cribNav ? cribNav.classList.contains('active') : false;
                     const canvas = document.getElementById(`crib-canvas-${camId}`);
                     if (canvas && canvas.parentElement) {
                         canvas.width = canvas.parentElement.clientWidth;
                         canvas.height = canvas.parentElement.clientHeight;
-                        drawCribBox(camId);
+                        if (isCribTab) {
+                            drawCribBox(camId);
+                        } else {
+                            canvas.style.display = 'none';
+                            canvas.style.pointerEvents = 'none';
+                            canvas.classList.remove('editing');
+                        }
                     }
                 }
             });
