@@ -404,19 +404,34 @@
             filter: brightness(1.15);
         }
 
-        /* Input nativo invisível, acessível e 100% livre de conflito de toque em celular */
-        .native-file-input {
+        .folder-card-clickable {
+            width: 100%;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        /* Input nativo transparente sobrepondo 100% da área do botão para toque direto e instantâneo no celular */
+        .touch-cover-file-input {
             position: absolute !important;
-            width: 1px !important;
-            height: 1px !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            opacity: 0.0001 !important;
+            cursor: pointer !important;
+            z-index: 50 !important;
+            display: block !important;
+            margin: 0 !important;
             padding: 0 !important;
-            margin: -1px !important;
-            overflow: hidden !important;
-            clip: rect(0, 0, 0, 0) !important;
-            white-space: nowrap !important;
-            border: 0 !important;
-            opacity: 0 !important;
-            pointer-events: none !important;
+            font-size: 100px !important;
+            -webkit-appearance: none !important;
+            appearance: none !important;
         }
 
         /* Modal de Progresso Flutuante de Upload Ultra Visível para Celular e PC */
@@ -963,64 +978,72 @@
                 <!-- Grade das 4 Pastas Principais -->
                 <div class="folder-cards-grid">
                     <!-- Adoração -->
-                    <div class="folder-card active" id="card-adoracao" onclick="selectFolder('adoracao')">
-                        <div class="folder-card-top">
-                            <span class="folder-emoji">🙏</span>
-                            <span class="folder-badge" id="badge-adoracao">✓ ATIVA</span>
+                    <div class="folder-card active" id="card-adoracao">
+                        <div class="folder-card-clickable" onclick="selectFolder('adoracao')">
+                            <div class="folder-card-top">
+                                <span class="folder-emoji">🙏</span>
+                                <span class="folder-badge" id="badge-adoracao">✓ ATIVA</span>
+                            </div>
+                            <div class="folder-title">Adoração</div>
+                            <div class="folder-subtitle">{{ $countAdoracao }} músicas</div>
                         </div>
-                        <div class="folder-title">Adoração</div>
-                        <div class="folder-subtitle">{{ $countAdoracao }} músicas</div>
-                        <label for="input-adoracao" class="folder-direct-btn btn-adoracao" onclick="event.stopPropagation(); selectFolder('adoracao');">
-                            ➕ Adicionar MP3
-                            <input type="file" id="input-adoracao" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" multiple class="native-file-input" onchange="handleAudioUpload(this.files, 'adoracao', this);">
-                        </label>
+                        <div class="folder-direct-btn btn-adoracao">
+                            <span>➕ Adicionar MP3</span>
+                            <input type="file" id="input-adoracao" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,audio/mpeg,audio/mp3,audio/x-m4a,audio/wav" multiple class="touch-cover-file-input" onchange="handleAudioUpload(this.files, 'adoracao', this);">
+                        </div>
                     </div>
 
                     <!-- Hora de Dormir -->
-                    <div class="folder-card" id="card-dormir" onclick="selectFolder('dormir')">
-                        <div class="folder-card-top">
-                            <span class="folder-emoji">🌙</span>
-                            <span class="folder-badge" id="badge-dormir">✓ ATIVA</span>
+                    <div class="folder-card" id="card-dormir">
+                        <div class="folder-card-clickable" onclick="selectFolder('dormir')">
+                            <div class="folder-card-top">
+                                <span class="folder-emoji">🌙</span>
+                                <span class="folder-badge" id="badge-dormir">✓ ATIVA</span>
+                            </div>
+                            <div class="folder-title">Hora de Dormir</div>
+                            <div class="folder-subtitle">{{ $countDormir }} músicas</div>
                         </div>
-                        <div class="folder-title">Hora de Dormir</div>
-                        <div class="folder-subtitle">{{ $countDormir }} músicas</div>
-                        <label for="input-dormir" class="folder-direct-btn btn-dormir" onclick="event.stopPropagation(); selectFolder('dormir');">
-                            ➕ Adicionar MP3
-                            <input type="file" id="input-dormir" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" multiple class="native-file-input" onchange="handleAudioUpload(this.files, 'dormir', this);">
-                        </label>
+                        <div class="folder-direct-btn btn-dormir">
+                            <span>➕ Adicionar MP3</span>
+                            <input type="file" id="input-dormir" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,audio/mpeg,audio/mp3,audio/x-m4a,audio/wav" multiple class="touch-cover-file-input" onchange="handleAudioUpload(this.files, 'dormir', this);">
+                        </div>
                     </div>
 
                     <!-- Animadas -->
-                    <div class="folder-card" id="card-animadas" onclick="selectFolder('animadas')">
-                        <div class="folder-card-top">
-                            <span class="folder-emoji">⚡</span>
-                            <span class="folder-badge" id="badge-animadas">✓ ATIVA</span>
+                    <div class="folder-card" id="card-animadas">
+                        <div class="folder-card-clickable" onclick="selectFolder('animadas')">
+                            <div class="folder-card-top">
+                                <span class="folder-emoji">⚡</span>
+                                <span class="folder-badge" id="badge-animadas">✓ ATIVA</span>
+                            </div>
+                            <div class="folder-title">Animadas</div>
+                            <div class="folder-subtitle">{{ $countAnimadas }} músicas</div>
                         </div>
-                        <div class="folder-title">Animadas</div>
-                        <div class="folder-subtitle">{{ $countAnimadas }} músicas</div>
-                        <label for="input-animadas" class="folder-direct-btn btn-animadas" onclick="event.stopPropagation(); selectFolder('animadas');">
-                            ➕ Adicionar MP3
-                            <input type="file" id="input-animadas" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" multiple class="native-file-input" onchange="handleAudioUpload(this.files, 'animadas', this);">
-                        </label>
+                        <div class="folder-direct-btn btn-animadas">
+                            <span>➕ Adicionar MP3</span>
+                            <input type="file" id="input-animadas" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,audio/mpeg,audio/mp3,audio/x-m4a,audio/wav" multiple class="touch-cover-file-input" onchange="handleAudioUpload(this.files, 'animadas', this);">
+                        </div>
                     </div>
 
                     <!-- Geral -->
-                    <div class="folder-card" id="card-geral" onclick="selectFolder('geral')">
-                        <div class="folder-card-top">
-                            <span class="folder-emoji">🌟</span>
-                            <span class="folder-badge" id="badge-geral">✓ ATIVA</span>
+                    <div class="folder-card" id="card-geral">
+                        <div class="folder-card-clickable" onclick="selectFolder('geral')">
+                            <div class="folder-card-top">
+                                <span class="folder-emoji">🌟</span>
+                                <span class="folder-badge" id="badge-geral">✓ ATIVA</span>
+                            </div>
+                            <div class="folder-title">Geral</div>
+                            <div class="folder-subtitle">{{ $countGeral }} músicas</div>
                         </div>
-                        <div class="folder-title">Geral</div>
-                        <div class="folder-subtitle">{{ $countGeral }} músicas</div>
-                        <label for="input-geral" class="folder-direct-btn btn-geral" onclick="event.stopPropagation(); selectFolder('geral');">
-                            ➕ Adicionar MP3
-                            <input type="file" id="input-geral" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" multiple class="native-file-input" onchange="handleAudioUpload(this.files, 'geral', this);">
-                        </label>
+                        <div class="folder-direct-btn btn-geral">
+                            <span>➕ Adicionar MP3</span>
+                            <input type="file" id="input-geral" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,audio/mpeg,audio/mp3,audio/x-m4a,audio/wav" multiple class="touch-cover-file-input" onchange="handleAudioUpload(this.files, 'geral', this);">
+                        </div>
                     </div>
                 </div>
 
                 <!-- Botão Geral de Escolha -->
-                <label id="btnUploadMusic" for="input-main-upload" class="main-upload-touch-btn" onclick="event.stopPropagation();">
+                <div id="btnUploadMusic" class="main-upload-touch-btn">
                     <span style="font-size: 1.8rem; pointer-events: none;">📱</span>
                     <div style="pointer-events: none;">
                         <div id="uploadBtnTitle" style="font-size: 1.05rem; font-weight: 800; line-height: 1.2;">Adicionar Músicas em 🙏 Adoração</div>
@@ -1028,8 +1051,8 @@
                             Destino: <strong>🙏 Pasta Adoração da Sarah</strong>
                         </div>
                     </div>
-                    <input type="file" id="input-main-upload" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" multiple class="native-file-input" onchange="handleAudioUpload(this.files, currentFolder, this);">
-                </label>
+                    <input type="file" id="input-main-upload" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,audio/mpeg,audio/mp3,audio/x-m4a,audio/wav" multiple class="touch-cover-file-input" onchange="handleAudioUpload(this.files, currentFolder, this);">
+                </div>
                 
                 <div id="progressContainer" style="display: none; margin-top: 14px;">
                     <p id="progressText" style="font-size: 0.88rem; color: #c4b5fd; margin-bottom: 6px; font-weight: 700;">Enviando...</p>
@@ -1337,7 +1360,6 @@
             try {
                 if (!folderMetadata[cat]) return;
                 currentFolder = cat;
-                try { if (navigator.vibrate) navigator.vibrate(30); } catch(e){}
 
                 // 1. Atualiza visual dos cards
                 ['adoracao', 'dormir', 'animadas', 'geral'].forEach(c => {
