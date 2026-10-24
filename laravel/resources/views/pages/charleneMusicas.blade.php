@@ -1005,12 +1005,11 @@
             switchSection(active);
         });
 
-        function syncUploadCategory(cat) {
+        function setDestinationFolder(cat, btn) {
             currentUploadCategory = cat;
-            const select = document.getElementById('uploadCategorySelect');
-            if (select && select.value !== cat) select.value = cat;
+            try { if (navigator.vibrate) navigator.vibrate(40); } catch(e){}
 
-            document.querySelectorAll('.cat-btn').forEach(b => {
+            document.querySelectorAll('.target-folder-card').forEach(b => {
                 if (b.getAttribute('data-cat') === cat) b.classList.add('active');
                 else b.classList.remove('active');
             });
@@ -1019,10 +1018,6 @@
             if (badge && categoryLabels[cat]) {
                 badge.innerText = categoryLabels[cat];
             }
-        }
-
-        function selectUploadCategory(cat, btn) {
-            syncUploadCategory(cat);
         }
 
         function filterCategory(cat, btn) {
@@ -1040,7 +1035,7 @@
 
             // Se filtrou por uma pasta específica, já sincroniza o seletor de upload
             if (cat !== 'todas') {
-                syncUploadCategory(cat);
+                setDestinationFolder(cat);
             }
         }
 
@@ -1060,13 +1055,10 @@
         dropZone.addEventListener('drop', e => {
             if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
         });
-        fileInput.addEventListener('change', () => {
-            if (fileInput.files.length) uploadFiles(fileInput.files);
-        });
 
         async function uploadFiles(files) {
-            const selectEl = document.getElementById('uploadCategorySelect');
-            const targetCat = (selectEl && selectEl.value) ? selectEl.value : currentUploadCategory;
+            if (!files || !files.length) return;
+            const targetCat = currentUploadCategory || 'adoracao';
             const catName = categoryLabels[targetCat] || targetCat;
 
             progressContainer.style.display = 'block';
