@@ -691,6 +691,7 @@
                         </div>
                     </div>
                 @endforeach
+            </div>
         </div>
 
         <!-- ================= SEÇÃO: JORNADA BÍBLICA & HISTÓRIAS ================= -->
