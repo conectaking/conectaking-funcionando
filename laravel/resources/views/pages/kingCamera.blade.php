@@ -3695,6 +3695,11 @@
                 </div>
             </div>
             <div class="kc-topbar-actions">
+                <button type="button" class="kc-btn kc-btn-tunnel" id="btn-camera-tunnel" onclick="handleTunnelClick()" title="Status e Inicialização do Túnel das Câmeras">
+                    <span class="kc-tunnel-dot" id="kc-tunnel-dot"></span>
+                    <i class="fas fa-network-wired" id="kc-tunnel-icon"></i>
+                    <span id="kc-tunnel-text">Túnel Câmeras</span>
+                </button>
                 <button type="button" class="kc-btn kc-btn-secondary" id="btn-open-clips-modal" onclick="openClipsModal()" title="Ver Vídeos e Clipes Gravados" style="border-color: rgba(245, 158, 11, 0.4);">
                     <i class="fas fa-film" style="color: var(--kc-gold);"></i>
                     <span>Clipes (<span id="clips-counter">0</span>)</span>
@@ -4784,6 +4789,68 @@
                 </div>
             </div>
         </div>
+    <!-- Modal Central do Túnel das Câmeras -->
+    <div class="kc-modal-backdrop" id="modal-tunnel" aria-hidden="true" style="display: none;">
+        <div class="kc-modal" style="max-width: 520px; border: 1px solid rgba(16, 185, 129, 0.35); box-shadow: 0 20px 50px rgba(0,0,0,0.7), 0 0 30px rgba(16, 185, 129, 0.15);">
+            <div class="kc-modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); display: flex; align-items: center; justify-content: center; color: #10b981; font-size: 1.25rem;">
+                        <i class="fas fa-network-wired"></i>
+                    </div>
+                    <div>
+                        <h3 class="kc-modal-title" style="margin: 0; font-size: 1.15rem; font-weight: 700;">Central do Túnel das Câmeras</h3>
+                        <div style="font-size: 0.78rem; color: var(--kc-text-muted); margin-top: 2px;">
+                            Conexão direta entre seu computador e o ConectaKing na nuvem
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="kc-modal-close" onclick="closeTunnelModal()">&times;</button>
+            </div>
+
+            <div class="kc-modal-body" style="padding: 1.25rem 0;">
+                <!-- Status Cards -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.25rem;">
+                    <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--kc-border); border-radius: 10px; padding: 0.85rem;">
+                        <div style="font-size: 0.75rem; color: var(--kc-text-muted); margin-bottom: 0.35rem;">Porta do Túnel (1554)</div>
+                        <div id="tunnel-modal-port-status" style="font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem; color: #10b981;">
+                            <span class="kc-tunnel-dot"></span> Ativa / Ouvindo
+                        </div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--kc-border); border-radius: 10px; padding: 0.85rem;">
+                        <div style="font-size: 0.75rem; color: var(--kc-text-muted); margin-bottom: 0.35rem;">Feed Go2RTC (WebRTC)</div>
+                        <div id="tunnel-modal-stream-status" style="font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem; color: #10b981;">
+                            <span class="kc-tunnel-dot"></span> Transmitindo
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tunnel-modal-msg" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 10px; padding: 0.85rem 1rem; font-size: 0.85rem; line-height: 1.4; color: #d1fae5; margin-bottom: 1.25rem;">
+                    Túnel SSH ativo e comunicando com as câmeras!
+                </div>
+
+                <!-- Botões de Ação -->
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <!-- Botão 1: Iniciar no PC via protocolo kingcam:// -->
+                    <button type="button" class="kc-btn kc-btn-primary" onclick="startLocalTunnelProtocol()" style="width: 100%; justify-content: center; padding: 0.85rem 1rem; font-weight: 700; font-size: 0.92rem; background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);">
+                        <i class="fas fa-bolt"></i> Iniciar / Reconectar Túnel no Computador
+                    </button>
+
+                    <!-- Botão 2: Re-sincronizar Streams no Go2RTC -->
+                    <button type="button" class="kc-btn kc-btn-secondary" onclick="restartTunnelStreams()" style="width: 100%; justify-content: center; padding: 0.75rem 1rem; font-size: 0.85rem;">
+                        <i class="fas fa-sync-alt"></i> Forçar Re-sincronização do Stream (Go2RTC)
+                    </button>
+
+                    <!-- Botão 3: Baixar inicializador .bat -->
+                    <a href="/api/cameras/download-tunnel-bat" class="kc-btn kc-btn-secondary" style="width: 100%; justify-content: center; padding: 0.75rem 1rem; font-size: 0.82rem; color: var(--kc-text-muted); text-decoration: none;">
+                        <i class="fas fa-download"></i> Baixar Arquivo Iniciar Túnel (.bat)
+                    </a>
+                </div>
+
+                <div style="margin-top: 1.15rem; font-size: 0.76rem; color: var(--kc-text-muted); text-align: center; line-height: 1.4;">
+                    💡 Dica: O túnel deve rodar no computador que está conectado na mesma rede Wi-Fi das câmeras (IPs 172.16.100.x).
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Modal Galeria de Clipes e Gravações de Movimento -->
@@ -4853,7 +4920,161 @@
             setupGridFilter();
             setupDurationChips();
             updateClipsBadge();
+            checkTunnelStatus();
+            setInterval(() => checkTunnelStatus(true), 30000);
         });
+
+        async function checkTunnelStatus(isSilent = false) {
+            try {
+                const res = await fetch('/api/cameras/tunnel-status');
+                if (!res.ok) return;
+                const json = await res.json();
+                const data = json.data || {};
+                const isOnline = !!data.online;
+
+                const btn = document.getElementById('btn-camera-tunnel');
+                const txt = document.getElementById('kc-tunnel-text');
+                const dot = document.getElementById('kc-tunnel-dot');
+                const icon = document.getElementById('kc-tunnel-icon');
+
+                if (btn && txt) {
+                    if (isOnline) {
+                        btn.classList.remove('kc-tunnel-offline');
+                        btn.classList.add('kc-tunnel-online');
+                        txt.innerText = 'Túnel Conectado';
+                        btn.title = 'Túnel SSH ativo e conectado! Clique para ver detalhes.';
+                    } else {
+                        btn.classList.remove('kc-tunnel-online');
+                        btn.classList.add('kc-tunnel-offline');
+                        txt.innerText = '⚡ Iniciar Túnel';
+                        btn.title = 'Túnel das Câmeras desconectado! Clique para iniciar no seu computador.';
+                    }
+                }
+
+                // Atualiza o modal caso esteja aberto
+                const portStatus = document.getElementById('tunnel-modal-port-status');
+                const streamStatus = document.getElementById('tunnel-modal-stream-status');
+                const modalMsg = document.getElementById('tunnel-modal-msg');
+                if (portStatus) {
+                    portStatus.innerHTML = isOnline 
+                        ? '<span class="kc-tunnel-dot" style="background:#10b981;box-shadow:0 0 8px #10b981;"></span> <span style="color:#10b981;">Ativa / Ouvindo</span>'
+                        : '<span class="kc-tunnel-dot" style="background:#ef4444;box-shadow:0 0 8px #ef4444;"></span> <span style="color:#ef4444;">Desconectada</span>';
+                }
+                if (streamStatus) {
+                    const stActive = !!data.stream_active;
+                    streamStatus.innerHTML = stActive
+                        ? '<span class="kc-tunnel-dot" style="background:#10b981;box-shadow:0 0 8px #10b981;"></span> <span style="color:#10b981;">Transmitindo</span>'
+                        : '<span class="kc-tunnel-dot" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b;"></span> <span style="color:#f59e0b;">Aguardando sinal</span>';
+                }
+                if (modalMsg) {
+                    modalMsg.innerText = data.message || (isOnline ? 'Túnel SSH ativo e comunicando com as câmeras!' : 'Túnel SSH desconectado. Clique abaixo para iniciar.');
+                    if (isOnline) {
+                        modalMsg.style.background = 'rgba(16, 185, 129, 0.08)';
+                        modalMsg.style.borderColor = 'rgba(16, 185, 129, 0.25)';
+                        modalMsg.style.color = '#d1fae5';
+                    } else {
+                        modalMsg.style.background = 'rgba(245, 158, 11, 0.08)';
+                        modalMsg.style.borderColor = 'rgba(245, 158, 11, 0.25)';
+                        modalMsg.style.color = '#fde68a';
+                    }
+                }
+            } catch (e) {
+                if (!isSilent) console.error('[Tunnel] Erro checando status:', e);
+            }
+        }
+
+        function handleTunnelClick() {
+            openTunnelModal();
+        }
+
+        function openTunnelModal() {
+            const m = document.getElementById('modal-tunnel');
+            if (m) {
+                m.style.display = 'flex';
+                m.setAttribute('aria-hidden', 'false');
+                checkTunnelStatus();
+            }
+        }
+
+        function closeTunnelModal() {
+            const m = document.getElementById('modal-tunnel');
+            if (m) {
+                m.style.display = 'none';
+                m.setAttribute('aria-hidden', 'true');
+            }
+        }
+
+        function startLocalTunnelProtocol() {
+            // Dispara protocolo registrado no Windows para rodar monitorar_tunel.ps1 -Force
+            try {
+                window.location.href = 'kingcam://start';
+            } catch(e) {
+                console.warn('[Tunnel] Falha ao disparar protocolo kingcam:', e);
+            }
+
+            const txt = document.getElementById('kc-tunnel-text');
+            if (txt) txt.innerText = '⚡ Conectando...';
+
+            const modalMsg = document.getElementById('tunnel-modal-msg');
+            if (modalMsg) {
+                modalMsg.innerText = 'Iniciando o túnel no Windows e negociando porta 1554 com o servidor...';
+                modalMsg.style.color = '#93c5fd';
+            }
+
+            // Avisa o backend para sincronizar streams do go2rtc
+            setTimeout(() => {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                fetch('/api/cameras/restart-tunnel', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token
+                    }
+                }).catch(e => console.warn(e));
+            }, 1000);
+
+            // Re-verifica status após 2.5s e 5s
+            setTimeout(() => checkTunnelStatus(), 2500);
+            setTimeout(() => {
+                checkTunnelStatus();
+                // Recarrega lista e players de câmera
+                if (typeof loadCameras === 'function') {
+                    loadCameras();
+                }
+            }, 5000);
+        }
+
+        async function restartTunnelStreams() {
+            const modalMsg = document.getElementById('tunnel-modal-msg');
+            if (modalMsg) {
+                modalMsg.innerText = 'Reiniciando e sincronizando stream com o go2rtc...';
+            }
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const res = await fetch('/api/cameras/restart-tunnel', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token
+                    }
+                });
+                const json = await res.json();
+                checkTunnelStatus();
+                if (typeof loadCameras === 'function') {
+                    loadCameras();
+                }
+            } catch (e) {
+                console.error('[Tunnel] Erro reiniciando streams:', e);
+            }
+        }
+
+        window.checkTunnelStatus = checkTunnelStatus;
+        window.handleTunnelClick = handleTunnelClick;
+        window.openTunnelModal = openTunnelModal;
+        window.closeTunnelModal = closeTunnelModal;
+        window.startLocalTunnelProtocol = startLocalTunnelProtocol;
+        window.restartTunnelStreams = restartTunnelStreams;
+
 
 
         // Configuração das abas do Modal

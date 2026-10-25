@@ -529,7 +529,7 @@ XML;
             @fclose($sock);
         }
 
-        $camera = KingCamera::where('port', 1554)->orWhere('id', 1)->first();
+        $camera = KingCamera::where('rtsp_port', 1554)->orWhere('id', 1)->first();
         $streamActive = false;
         if ($camera) {
             $streamActive = $this->ensureStreamInGo2Rtc($camera);
@@ -548,7 +548,7 @@ XML;
      */
     public function restartTunnelStreams(): array
     {
-        $camera = KingCamera::where('port', 1554)->orWhere('id', 1)->first();
+        $camera = KingCamera::where('rtsp_port', 1554)->orWhere('id', 1)->first();
         if ($camera) {
             $this->syncStreamToGo2Rtc($camera, true);
         }
