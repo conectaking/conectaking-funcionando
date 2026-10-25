@@ -329,8 +329,13 @@
             gap: 1.5rem;
         }
 
+        .kc-grid:has(> .kc-card:only-child) {
+            grid-template-columns: minmax(320px, 680px);
+            justify-content: center;
+        }
+
         @media (max-width: 768px) {
-            .kc-grid {
+            .kc-grid, .kc-grid:has(> .kc-card:only-child) {
                 grid-template-columns: 1fr;
             }
         }
@@ -5478,7 +5483,7 @@
                     if (loaderEl) loaderEl.style.display = 'none';
                 };
 
-                videoEl.addEventListener('playing', () => {
+                const stopFallback = () => {
                     hasReceivedVideo = true;
                     if (loaderEl) loaderEl.style.display = 'none';
                     // Se o fallback por snapshot estiver ativo, limpa e oculta
@@ -5488,7 +5493,13 @@
                     }
                     const img = document.getElementById(`fallback-img-${cam.id}`);
                     if (img) img.style.display = 'none';
+                };
+
+                videoEl.addEventListener('playing', stopFallback);
+                videoEl.addEventListener('timeupdate', () => {
+                    if (videoEl.currentTime > 0) stopFallback();
                 });
+                videoEl.addEventListener('loadeddata', stopFallback);
 
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
@@ -5524,12 +5535,13 @@
                         sdp: answerSdp
                     }));
 
-                    // Fallback de segurança: se após 2.5s o vídeo WebRTC ainda não renderizar quadros, ativa o Live Snapshot contínuo
+                    // Fallback de segurança: se após 5.5s o vídeo WebRTC ainda não renderizar quadros nem estiver tocando, ativa o Live Snapshot contínuo
                     setTimeout(() => {
-                        if (!hasReceivedVideo || videoEl.videoWidth === 0) {
+                        const isVideoPlaying = !videoEl.paused && videoEl.currentTime > 0;
+                        if (!hasReceivedVideo && !isVideoPlaying) {
                             activateLiveSnapshotFallback(cam.id, false);
                         }
-                    }, 2500);
+                    }, 5500);
                 } else {
                     // Se WebRTC falhar na negociação, ativa o Live Snapshot contínuo
                     activateLiveSnapshotFallback(cam.id, false);
@@ -5570,6 +5582,19 @@
                     }
                     return;
                 }
+
+                // Se o vídeo WebRTC já está tocando ao vivo perfeitamente, encerra o polling de snapshot imediatamente
+                const activeVid = document.getElementById(`video-${camId}`);
+                if (activeVid && !activeVid.paused && activeVid.currentTime > 0) {
+                    if (window[`snapInterval_${camId}`]) {
+                        clearInterval(window[`snapInterval_${camId}`]);
+                        delete window[`snapInterval_${camId}`];
+                    }
+                    const fImg = document.getElementById(`fallback-img-${camId}`);
+                    if (fImg) fImg.style.display = 'none';
+                    return;
+                }
+
                 if (window[`snapPending_${camId}`]) return;
                 window[`snapPending_${camId}`] = true;
 
@@ -5591,22 +5616,24 @@
                         if (loaderEl) loaderEl.style.display = 'none';
                     } else {
                         failCount++;
-                        if (failCount >= 10 && !firstShotOnly) {
+                        if (failCount >= 5 && !firstShotOnly) {
                             if (window[`snapInterval_${camId}`]) {
                                 clearInterval(window[`snapInterval_${camId}`]);
                                 delete window[`snapInterval_${camId}`];
                             }
-                            showCameraStreamOffline(camId, 'Câmera não respondeu ao feed de vídeo. Verifique se ela está ligada e conectada ao Wi-Fi.');
+                            // Não bloqueia a tela se o WebRTC estiver tocando
+                            if (!activeVid || activeVid.paused || activeVid.currentTime === 0) {
+                                showCameraStreamOffline(camId, 'Câmera não respondeu ao feed de vídeo. Verifique se ela está ligada e conectada ao Wi-Fi.');
+                            }
                         }
                     }
                 } catch (e) {
                     failCount++;
-                    if (failCount >= 10 && !firstShotOnly) {
+                    if (failCount >= 5 && !firstShotOnly) {
                         if (window[`snapInterval_${camId}`]) {
                             clearInterval(window[`snapInterval_${camId}`]);
                             delete window[`snapInterval_${camId}`];
                         }
-                        showCameraStreamOffline(camId, 'Falha ao conectar ao fluxo de vídeo da câmera.');
                     }
                 } finally {
                     window[`snapPending_${camId}`] = false;
