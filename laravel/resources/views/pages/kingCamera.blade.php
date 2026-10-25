@@ -5496,8 +5496,10 @@
                 };
 
                 videoEl.addEventListener('playing', stopFallback);
+                videoEl.addEventListener('play', stopFallback);
+                videoEl.addEventListener('canplay', stopFallback);
                 videoEl.addEventListener('timeupdate', () => {
-                    if (videoEl.currentTime > 0) stopFallback();
+                    if (videoEl.currentTime > 0 || videoEl.videoWidth > 0) stopFallback();
                 });
                 videoEl.addEventListener('loadeddata', stopFallback);
 
@@ -5537,7 +5539,7 @@
 
                     // Fallback de segurança: se após 5.5s o vídeo WebRTC ainda não renderizar quadros nem estiver tocando, ativa o Live Snapshot contínuo
                     setTimeout(() => {
-                        const isVideoPlaying = !videoEl.paused && videoEl.currentTime > 0;
+                        const isVideoPlaying = !videoEl.paused && (videoEl.currentTime > 0 || videoEl.readyState >= 2 || videoEl.videoWidth > 0);
                         if (!hasReceivedVideo && !isVideoPlaying) {
                             activateLiveSnapshotFallback(cam.id, false);
                         }
@@ -5554,6 +5556,11 @@
 
         // Fallback de exibição contínua via Snapshot ao vivo (garante imagem em tempo real mesmo em navegadores sem H.265)
         function activateLiveSnapshotFallback(camId, firstShotOnly = false) {
+            const activeVid = document.getElementById(`video-${camId}`);
+            if (activeVid && !activeVid.paused && (activeVid.currentTime > 0 || activeVid.readyState >= 2 || activeVid.videoWidth > 0)) {
+                return; // WebRTC já está tocando ao vivo perfeitamente
+            }
+
             const wrap = document.querySelector(`#card-cam-${camId} .kc-video-wrap`);
             if (!wrap) return;
 
@@ -5585,7 +5592,7 @@
 
                 // Se o vídeo WebRTC já está tocando ao vivo perfeitamente, encerra o polling de snapshot imediatamente
                 const activeVid = document.getElementById(`video-${camId}`);
-                if (activeVid && !activeVid.paused && activeVid.currentTime > 0) {
+                if (activeVid && !activeVid.paused && (activeVid.currentTime > 0 || activeVid.readyState >= 2 || activeVid.videoWidth > 0)) {
                     if (window[`snapInterval_${camId}`]) {
                         clearInterval(window[`snapInterval_${camId}`]);
                         delete window[`snapInterval_${camId}`];

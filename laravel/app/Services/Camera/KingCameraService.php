@@ -103,11 +103,11 @@ class KingCameraService
     }
 
     /**
-     * Obtém um frame JPEG instantâneo (Snapshot) da câmera via go2rtc.
+     * Obtém um frame JPEG instantâneo (Snapshot) direto do stream no go2rtc.
      */
-    public function getSnapshot(KingCamera $camera): ?string
+    public function getSnapshotFrame(string $streamId): ?string
     {
-        $cacheKey = "cam_snap_{$camera->id}";
+        $cacheKey = "cam_snap_{$streamId}";
         $cached = Cache::get($cacheKey);
         if ($cached) {
             return $cached;
@@ -115,24 +115,25 @@ class KingCameraService
 
         $goUrl = $this->getGo2RtcUrl();
         try {
-            return Cache::lock("cam_snap_lock_{$camera->id}", 6)->block(4, function () use ($cacheKey, $camera, $goUrl) {
-                $cached = Cache::get($cacheKey);
-                if ($cached) {
-                    return $cached;
-                }
-
-                $res = Http::timeout(8.0)->get("{$goUrl}/api/frame.jpeg?src=" . urlencode($camera->stream_id));
-                if ($res->successful() && ! empty($res->body())) {
-                    $body = $res->body();
-                    Cache::put($cacheKey, $body, 3);
-                    return $body;
-                }
-                return null;
-            });
+            // go2rtc precisa de tempo suficiente para aguardar o próximo keyframe (I-frame) do stream RTSP
+            $res = Http::timeout(5.0)->get("{$goUrl}/api/frame.jpeg?src=" . urlencode($streamId));
+            if ($res->successful() && strlen($res->body()) > 500) {
+                $body = $res->body();
+                Cache::put($cacheKey, $body, 2);
+                return $body;
+            }
         } catch (\Throwable $e) {
-            Log::warning('ks.camera.getSnapshot', ['streamId' => $camera->stream_id, 'error' => $e->getMessage()]);
-            return null;
+            Log::warning('ks.camera.getSnapshotFrame', ['streamId' => $streamId, 'error' => $e->getMessage()]);
         }
+        return null;
+    }
+
+    /**
+     * Obtém um frame JPEG instantâneo (Snapshot) da câmera via go2rtc.
+     */
+    public function getSnapshot(KingCamera $camera): ?string
+    {
+        return $this->getSnapshotFrame($camera->stream_id);
     }
 
     /**
