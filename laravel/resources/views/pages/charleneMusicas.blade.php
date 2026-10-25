@@ -985,15 +985,15 @@
                             <div class="folder-title">Adoração</div>
                             <div class="folder-subtitle">{{ $countAdoracao }} músicas</div>
                         </div>
-                        <div class="folder-direct-btn btn-adoracao" style="position: relative; overflow: hidden; cursor: pointer;">
+                        <label class="folder-direct-btn btn-adoracao" style="position: relative; overflow: hidden; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">
                             <span style="pointer-events: none;">➕ Adicionar MP3</span>
                             <input type="file" 
                                    name="audio" 
-                                   accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" 
+                                   accept="audio/*,audio/mpeg,audio/mp3,audio/m4a,audio/x-m4a,audio/aac,audio/wav,audio/ogg,audio/flac" 
                                    multiple 
                                    style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;"
                                    onchange="handleFileInputChange(this, 'adoracao');">
-                        </div>
+                        </label>
                     </div>
 
                     <!-- Hora de Dormir -->
@@ -1006,15 +1006,15 @@
                             <div class="folder-title">Hora de Dormir</div>
                             <div class="folder-subtitle">{{ $countDormir }} músicas</div>
                         </div>
-                        <div class="folder-direct-btn btn-dormir" style="position: relative; overflow: hidden; cursor: pointer;">
+                        <label class="folder-direct-btn btn-dormir" style="position: relative; overflow: hidden; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">
                             <span style="pointer-events: none;">➕ Adicionar MP3</span>
                             <input type="file" 
                                    name="audio" 
-                                   accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" 
+                                   accept="audio/*,audio/mpeg,audio/mp3,audio/m4a,audio/x-m4a,audio/aac,audio/wav,audio/ogg,audio/flac" 
                                    multiple 
                                    style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;"
                                    onchange="handleFileInputChange(this, 'dormir');">
-                        </div>
+                        </label>
                     </div>
 
                     <!-- Animadas -->
@@ -1027,15 +1027,15 @@
                             <div class="folder-title">Animadas</div>
                             <div class="folder-subtitle">{{ $countAnimadas }} músicas</div>
                         </div>
-                        <div class="folder-direct-btn btn-animadas" style="position: relative; overflow: hidden; cursor: pointer;">
+                        <label class="folder-direct-btn btn-animadas" style="position: relative; overflow: hidden; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">
                             <span style="pointer-events: none;">➕ Adicionar MP3</span>
                             <input type="file" 
                                    name="audio" 
-                                   accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" 
+                                   accept="audio/*,audio/mpeg,audio/mp3,audio/m4a,audio/x-m4a,audio/aac,audio/wav,audio/ogg,audio/flac" 
                                    multiple 
                                    style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;"
                                    onchange="handleFileInputChange(this, 'animadas');">
-                        </div>
+                        </label>
                     </div>
 
                     <!-- Geral -->
@@ -1048,20 +1048,20 @@
                             <div class="folder-title">Geral</div>
                             <div class="folder-subtitle">{{ $countGeral }} músicas</div>
                         </div>
-                        <div class="folder-direct-btn btn-geral" style="position: relative; overflow: hidden; cursor: pointer;">
+                        <label class="folder-direct-btn btn-geral" style="position: relative; overflow: hidden; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">
                             <span style="pointer-events: none;">➕ Adicionar MP3</span>
                             <input type="file" 
                                    name="audio" 
-                                   accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" 
+                                   accept="audio/*,audio/mpeg,audio/mp3,audio/m4a,audio/x-m4a,audio/aac,audio/wav,audio/ogg,audio/flac" 
                                    multiple 
                                    style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;"
                                    onchange="handleFileInputChange(this, 'geral');">
-                        </div>
+                        </label>
                     </div>
                 </div>
 
                 <!-- Botão Geral de Escolha -->
-                <div id="btnUploadMusic" class="main-upload-touch-btn" style="position: relative; overflow: hidden; cursor: pointer;">
+                <label id="btnUploadMusic" class="main-upload-touch-btn" style="position: relative; overflow: hidden; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                     <span style="font-size: 1.8rem; pointer-events: none;">📱</span>
                     <div style="pointer-events: none;">
                         <div id="uploadBtnTitle" style="font-size: 1.05rem; font-weight: 800; line-height: 1.2;">Adicionar Músicas em 🙏 Adoração</div>
@@ -1072,11 +1072,11 @@
                     <input type="file" 
                            id="input-main-upload" 
                            name="audio" 
-                           accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" 
+                           accept="audio/*,audio/mpeg,audio/mp3,audio/m4a,audio/x-m4a,audio/aac,audio/wav,audio/ogg,audio/flac" 
                            multiple 
                            style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;"
-                           onchange="handleFileInputChange(this, currentFolder);">
-                </div>
+                           onchange="handleFileInputChange(this);">
+                </label>
                 
                 <div id="progressContainer" style="display: none; margin-top: 14px;">
                     <p id="progressText" style="font-size: 0.88rem; color: #c4b5fd; margin-bottom: 6px; font-weight: 700;">Enviando...</p>
@@ -1319,7 +1319,8 @@
     </div>
 
     <script>
-        let currentFolder = 'adoracao';
+        window.currentFolder = 'adoracao';
+        var currentFolder = 'adoracao';
 
         const folderMetadata = {
             'adoracao': { name: 'Adoração', emoji: '🙏', label: '🙏 Pasta Adoração', color: '#8b5cf6' },
@@ -1467,12 +1468,13 @@
         function handleFileInputChange(inputEl, cat) {
             if (!inputEl) return;
             const files = inputEl.files;
-            console.log('[Charlene] handleFileInputChange disparado:', cat, files ? files.length : 0);
+            const targetFolder = cat || window.currentFolder || (typeof currentFolder !== 'undefined' ? currentFolder : 'adoracao');
+            console.log('[Charlene] handleFileInputChange disparado:', targetFolder, files ? files.length : 0);
             if (!files || files.length === 0) {
                 console.warn('[Charlene] Nenhum arquivo retornado pelo seletor de arquivos.');
                 return;
             }
-            handleAudioUpload(files, cat || currentFolder, inputEl);
+            handleAudioUpload(files, targetFolder, inputEl);
         }
 
         // Upload de arquivos ultra-confiável com progresso em tempo real para Celular e PC
@@ -1484,7 +1486,7 @@
                 return;
             }
 
-            const targetCat = forcedCat || currentFolder || 'adoracao';
+            const targetCat = forcedCat || window.currentFolder || (typeof currentFolder !== 'undefined' ? currentFolder : 'adoracao');
             try { selectFolder(targetCat, false); } catch(e){}
             const catInfo = folderMetadata[targetCat] || { name: 'Adoração', emoji: '🙏', label: '🙏 Pasta Adoração', color: '#8b5cf6' };
             const catName = catInfo.name || targetCat;
@@ -1540,6 +1542,8 @@
                     await new Promise((resolve, reject) => {
                         const xhr = new XMLHttpRequest();
                         xhr.open('POST', '/api/alexa/charlene/upload', true);
+                        xhr.withCredentials = true;
+                        xhr.timeout = 180000;
                         if (csrfToken) {
                             xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
                         }
