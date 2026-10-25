@@ -155,6 +155,33 @@ class FormPublicService
             $fields = $formRow->form_fields;
         }
 
+        // Mapear campos que foram ocultados por hideOnAnswer
+        $hiddenIds = [];
+        foreach ($fields as $f) {
+            $fId = (string) ($f['id'] ?? '');
+            $hideOn = $f['hideOnAnswer'] ?? $f['hide_on_answer'] ?? [];
+            if (!is_array($hideOn) || empty($hideOn)) {
+                continue;
+            }
+            $userAns = $responseData[$fId] ?? null;
+            $ansStr = is_array($userAns) ? implode(' ', $userAns) : trim((string) $userAns);
+            $isSim = preg_match('/^(sim|yes|s)$/i', $ansStr);
+            $isNao = preg_match('/^(não|nao|no|n)$/i', $ansStr);
+
+            $simToHide = $hideOn['Sim'] ?? $hideOn['sim'] ?? $hideOn['yes'] ?? [];
+            $naoToHide = $hideOn['Não'] ?? $hideOn['Nao'] ?? $hideOn['nao'] ?? $hideOn['no'] ?? [];
+
+            if ($isSim && is_array($simToHide)) {
+                foreach ($simToHide as $hid) {
+                    $hiddenIds[(string) $hid] = true;
+                }
+            } elseif ($isNao && is_array($naoToHide)) {
+                foreach ($naoToHide as $hid) {
+                    $hiddenIds[(string) $hid] = true;
+                }
+            }
+        }
+
         foreach ($fields as $field) {
             if (empty($field['required'])) {
                 continue;
@@ -163,6 +190,26 @@ class FormPublicService
             if ($fid === '') {
                 continue;
             }
+
+            // Se o campo foi ocultado por hideOnAnswer, não exigir preenchimento
+            if (isset($hiddenIds[$fid])) {
+                continue;
+            }
+
+            // Se o campo tem dependência condicional (dependsOn) não satisfeita, não exigir preenchimento
+            $depends = $field['dependsOn'] ?? $field['depends_on'] ?? null;
+            if ($depends) {
+                $depParentId = is_array($depends) ? ($depends['fieldId'] ?? $depends['field_id'] ?? null) : (is_string($depends) ? $depends : null);
+                $depNeedVal = is_array($depends) ? (string) ($depends['value'] ?? 'Sim') : 'Sim';
+                if ($depParentId) {
+                    $parentAns = $responseData[$depParentId] ?? null;
+                    $parentStr = is_array($parentAns) ? implode(' ', $parentAns) : trim((string) $parentAns);
+                    if (strcasecmp($parentStr, $depNeedVal) !== 0) {
+                        continue;
+                    }
+                }
+            }
+
             $val = $responseData[$fid] ?? null;
             $empty = $val === null || $val === '' || (is_array($val) && count($val) === 0);
             if ($empty) {

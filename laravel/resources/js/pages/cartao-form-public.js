@@ -108,32 +108,104 @@ import '../vendor-globals.js';
     }
   }
 
+  function getFieldMatch(fieldEl, targetId) {
+    if (!targetId || !fieldEl) return false;
+    var fid = fieldEl.getAttribute('data-field-id');
+    var fidx = fieldEl.getAttribute('data-field-index');
+    if (fid === targetId) return true;
+    if (fidx === targetId) return true;
+    if ('field_' + fidx === targetId || 'f_' + fidx === targetId) return true;
+    if (fid && ('field_' + fid === targetId || 'f_' + fid === targetId)) return true;
+    if (fid && targetId.replace(/^(field_|f_)/, '') === fid.replace(/^(field_|f_)/, '')) return true;
+    return false;
+  }
+
   function applyConditionals() {
-    form.querySelectorAll('.field[data-depends-on]').forEach(function (el) {
-      var parentId = el.getAttribute('data-depends-on');
-      var need = el.getAttribute('data-depends-on-value') || 'Sim';
-      var parent = form.querySelector('[name="' + parentId + '"]:checked')
-        || form.querySelector('[name="' + parentId + '"]');
+    // 1. Coletar todos os IDs de perguntas a ocultar conforme hideOnAnswer
+    var hideSet = new Set();
+    form.querySelectorAll('.field[data-hide-on-sim], .field[data-hide-on-nao]').forEach(function (triggerField) {
+      var checkedRadio = triggerField.querySelector('input[type="radio"]:checked');
       var val = '';
-      if (parent) {
-        if (parent.type === 'checkbox') val = parent.checked ? (parent.value || '1') : '';
-        else val = parent.value || '';
+      if (checkedRadio) {
+        val = String(checkedRadio.value || '').trim();
+      } else {
+        var sel = triggerField.querySelector('select');
+        if (sel) val = String(sel.value || '').trim();
       }
-      var radios = form.querySelectorAll('[name="' + parentId + '"]');
-      if (radios.length > 1) {
-        radios.forEach(function (r) { if (r.checked) val = r.value; });
+
+      var isSim = /^(sim|yes|s)$/i.test(val);
+      var isNao = /^(não|nao|no|n)$/i.test(val);
+
+      var hideSimStr = triggerField.getAttribute('data-hide-on-sim') || '';
+      var hideNaoStr = triggerField.getAttribute('data-hide-on-nao') || '';
+
+      var simIds = hideSimStr.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+      var naoIds = hideNaoStr.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+
+      var toHide = [];
+      if (isSim) toHide = simIds;
+      else if (isNao) toHide = naoIds;
+
+      toHide.forEach(function (id) {
+        hideSet.add(id);
+      });
+    });
+
+    // 2. Aplicar visibilidade e obrigatoriedade para cada campo
+    form.querySelectorAll('.field').forEach(function (el) {
+      var isHiddenByHide = false;
+      hideSet.forEach(function (hid) {
+        if (getFieldMatch(el, hid)) isHiddenByHide = true;
+      });
+
+      var isHiddenByDepends = false;
+      if (el.hasAttribute('data-depends-on')) {
+        var parentId = el.getAttribute('data-depends-on');
+        var need = el.getAttribute('data-depends-on-value') || 'Sim';
+        var parentField = Array.from(form.querySelectorAll('.field')).find(function (f) {
+          return getFieldMatch(f, parentId);
+        });
+
+        var val = '';
+        if (parentField) {
+          var checked = parentField.querySelector('input:checked');
+          if (checked) {
+            val = checked.value;
+          } else {
+            var otherInp = parentField.querySelector('input, textarea, select');
+            if (otherInp) val = otherInp.value || '';
+          }
+        } else {
+          var radios = form.querySelectorAll('[name="' + parentId + '"]');
+          if (radios.length > 0) {
+            radios.forEach(function (r) { if (r.checked) val = r.value; });
+          } else {
+            var fallbackInp = form.querySelector('[name="' + parentId + '"]');
+            if (fallbackInp) val = fallbackInp.value || '';
+          }
+        }
+
+        if (String(val) !== String(need)) {
+          isHiddenByDepends = true;
+        }
       }
-      var show = String(val) === String(need);
-      el.classList.toggle('hidden-cond', !show);
+
+      var shouldHide = isHiddenByHide || isHiddenByDepends;
+      el.classList.toggle('hidden-cond', shouldHide);
+
       el.querySelectorAll('input,textarea,select').forEach(function (inp) {
-        if (show) {
-          if (inp.dataset.wasRequired === '1') inp.required = true;
+        if (!shouldHide) {
+          if (inp.dataset.wasRequired === '1') {
+            inp.required = true;
+            delete inp.dataset.wasRequired;
+          }
         } else {
           if (inp.required) inp.dataset.wasRequired = '1';
           inp.required = false;
         }
       });
     });
+
     updateProgress();
   }
 
@@ -142,9 +214,18 @@ import '../vendor-globals.js';
       var wrap = r.closest('.field');
       var box = wrap && wrap.querySelector('.follow');
       var group = wrap && wrap.querySelector('.yes-no-follow');
-      if (!box || !group) return;
-      var trigger = group.getAttribute('data-follow-trigger') || 'Sim';
-      box.classList.toggle('show', r.checked && r.value === trigger);
+      if (box && group) {
+        var trigger = group.getAttribute('data-follow-trigger') || 'Sim';
+        box.classList.toggle('show', r.checked && r.value === trigger);
+      }
+      applyConditionals();
+      updateProgress();
+    });
+  });
+
+  form.querySelectorAll('input[type="radio"], select').forEach(function (el) {
+    el.addEventListener('change', function () {
+      applyConditionals();
       updateProgress();
     });
   });

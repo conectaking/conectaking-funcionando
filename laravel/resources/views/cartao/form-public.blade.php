@@ -128,10 +128,25 @@
                         $max = $field['max'] ?? ($field['scale_max'] ?? 5);
                         $followLabel = $field['followUpLabel'] ?? $field['follow_up_label'] ?? '';
                         $followTrigger = (($field['followUpTrigger'] ?? $field['follow_up_trigger'] ?? 'Sim') === 'Não') ? 'Não' : 'Sim';
+
+                        $hideOn = $field['hideOnAnswer'] ?? $field['hide_on_answer'] ?? [];
+                        $hideSimArr = [];
+                        $hideNaoArr = [];
+                        if (is_array($hideOn)) {
+                            $simRaw = $hideOn['Sim'] ?? $hideOn['sim'] ?? $hideOn['yes'] ?? [];
+                            $hideSimArr = is_array($simRaw) ? array_filter(array_map('strval', $simRaw)) : (is_string($simRaw) && $simRaw !== '' ? explode(',', $simRaw) : []);
+                            $naoRaw = $hideOn['Não'] ?? $hideOn['Nao'] ?? $hideOn['nao'] ?? $hideOn['no'] ?? [];
+                            $hideNaoArr = is_array($naoRaw) ? array_filter(array_map('strval', $naoRaw)) : (is_string($naoRaw) && $naoRaw !== '' ? explode(',', $naoRaw) : []);
+                        }
+                        $hideSim = implode(',', $hideSimArr);
+                        $hideNao = implode(',', $hideNaoArr);
                     @endphp
                     <div class="field"
                          data-field-id="{{ $fid }}"
-                         @if($depId) data-depends-on="{{ $depId }}" data-depends-on-value="{{ $depVal }}" @endif>
+                         data-field-index="{{ $loop->index }}"
+                         @if($depId) data-depends-on="{{ $depId }}" data-depends-on-value="{{ $depVal }}" @endif
+                         @if($hideSim !== '') data-hide-on-sim="{{ $hideSim }}" @endif
+                         @if($hideNao !== '') data-hide-on-nao="{{ $hideNao }}" @endif>
 
                         <div class="lab">
                             <span class="bar"></span>

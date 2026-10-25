@@ -481,10 +481,14 @@ class GuestListAdminService
         try {
             $piSets = [];
             $piParams = [];
-            foreach (['title' => 'title', 'is_active' => 'is_active', 'display_order' => 'display_order'] as $key => $col) {
+            foreach (['title' => 'title', 'is_active' => 'is_active', 'display_order' => 'display_order', 'is_listed' => 'is_listed'] as $key => $col) {
                 if (array_key_exists($key, $body)) {
                     $piSets[] = "{$col} = ?";
-                    $piParams[] = $body[$key];
+                    $val = $body[$key];
+                    if ($key === 'is_listed' || $key === 'is_active') {
+                        $val = $this->boolish($val);
+                    }
+                    $piParams[] = $val;
                 }
             }
             if ($piSets) {
@@ -494,6 +498,10 @@ class GuestListAdminService
                     'UPDATE profile_items SET '.implode(', ', $piSets).' WHERE id = ? AND user_id = ?',
                     $piParams
                 );
+                try {
+                    CartaoPublicService::forgetCardCache($userId);
+                } catch (\Throwable $e) {
+                }
             }
 
             $gliSets = [];

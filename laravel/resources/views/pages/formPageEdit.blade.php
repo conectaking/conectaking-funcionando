@@ -222,6 +222,7 @@
             <input type="text" id="form-title" placeholder="Ex: Formulário de Contato">
             <textarea id="form-description" rows="4" placeholder="Descreva o propósito do formulário..."></textarea>
             <input type="text" id="whatsapp-number" placeholder="5511999999999">
+            <input type="hidden" id="form-is-listed" value="true">
             <input type="hidden" id="enable-pastor-button" value="false">
             <input type="hidden" id="pastor-whatsapp-number" value="">
             <input type="hidden" id="pastor-button-name" value="Enviar Mensagem para o Pastor">

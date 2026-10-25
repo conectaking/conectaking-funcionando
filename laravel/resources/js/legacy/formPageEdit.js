@@ -28,6 +28,12 @@
         }
     }
     let currentItemData = {}; // Armazena dados do item atual (is_listed, share_token, etc.)
+
+    function isListedTruthy(val) {
+        if (val === false || val === 0 || val === '0' || val === 'false' || val === 'f' || val === 'F') return false;
+        if (val === true || val === 1 || val === '1' || val === 'true' || val === 't' || val === 'T') return true;
+        return val !== undefined && val !== null ? Boolean(val) : true;
+    }
     
     // Sistema de Autosave
     let autosaveTimer = null;
@@ -526,7 +532,7 @@
                         currentItemData = {
                             ...item,
                             item_type: 'digital_form', // Manter compatibilidade
-                            is_listed: item.is_listed !== undefined ? item.is_listed : (item.is_listed === false ? false : true), // Preservar false se for false
+                            is_listed: isListedTruthy(item.is_listed),
                             share_token: item.share_token || null,
                             digital_form_data: {
                                 ...digitalFormColors, // Preservar TODOS os dados de digital_form_items primeiro (incluindo cores)
@@ -560,7 +566,7 @@
                         // Se não encontrou lista, tratar como formulário normal
                         currentItemData = {
                             ...item,
-                            is_listed: item.is_listed !== undefined ? item.is_listed : (item.is_listed === false ? false : true), // Preservar false se for false
+                            is_listed: isListedTruthy(item.is_listed),
                             share_token: item.share_token || null
                         };
                     }
@@ -569,7 +575,7 @@
                     // Continuar como formulário normal
                     currentItemData = {
                         ...item,
-                        is_listed: item.is_listed !== undefined ? item.is_listed : (item.is_listed === false ? false : true), // Preservar false se for false
+                        is_listed: isListedTruthy(item.is_listed),
                         share_token: item.share_token || null
                     };
                 }
@@ -577,7 +583,7 @@
                 // Formulário digital normal
                 currentItemData = {
                     ...item,
-                    is_listed: item.is_listed !== undefined ? item.is_listed : (item.is_listed === false ? false : true), // Preservar false se for false
+                    is_listed: isListedTruthy(item.is_listed),
                     share_token: item.share_token || null
                 };
                 
@@ -701,6 +707,15 @@
             if (whatsappEl) whatsappEl.value = formData.whatsapp_number || '';
             if (cardColorEl) {
                 cardColorEl.value = formData.card_color || '#FFFFFF';
+            }
+
+            // Carregar is_listed para variável global e input hidden
+            const isListedResolved = isListedTruthy(currentItemData?.is_listed !== undefined ? currentItemData.is_listed : item.is_listed);
+            currentItemData.is_listed = isListedResolved;
+            window.currentFormIsListed = isListedResolved;
+            const hiddenIsListedEl = document.getElementById('form-is-listed');
+            if (hiddenIsListedEl) {
+                hiddenIsListedEl.value = isListedResolved ? 'true' : 'false';
             }
             
             // Carregar cor das barrinhas decorativas
@@ -7631,12 +7646,16 @@
         // Configurar toggle de Lista de Convidados
         // Tipo Captação/Check-in fica em Configurações (Tipo de Formulário)
         
-        // Configurar checkbox "Exibir no cartão público"
         const isListedCheckbox = modal.querySelector('#modal-is-listed');
         if (isListedCheckbox) {
             let currentIsListed = true;
-            if (currentItemData?.is_listed !== undefined) {
-                currentIsListed = currentItemData.is_listed;
+            if (window.currentFormIsListed !== undefined) {
+                currentIsListed = isListedTruthy(window.currentFormIsListed);
+            } else if (currentItemData?.is_listed !== undefined) {
+                currentIsListed = isListedTruthy(currentItemData.is_listed);
+            } else {
+                const hiddenIsListed = document.getElementById('form-is-listed');
+                if (hiddenIsListed) currentIsListed = isListedTruthy(hiddenIsListed.value);
             }
             isListedCheckbox.checked = currentIsListed;
         }
@@ -7715,8 +7734,12 @@
         
         // Salvar configurações
         modal.querySelector('.save-settings-modal-btn').addEventListener('click', async () => {
-            // Salvar is_listed em variável global para uso no saveForm
-            window.currentFormIsListed = isListedCheckbox.checked;
+            // Salvar is_listed em variável global, currentItemData e input hidden
+            const isListedVal = isListedCheckbox ? !!isListedCheckbox.checked : true;
+            window.currentFormIsListed = isListedVal;
+            if (currentItemData) currentItemData.is_listed = isListedVal;
+            const hiddenIsListedEl = document.getElementById('form-is-listed');
+            if (hiddenIsListedEl) hiddenIsListedEl.value = isListedVal ? 'true' : 'false';
             
             // Tipo: Captação (lead) ou Check-in + checkbox WhatsApp
             const selectedFormType = modal.querySelector('input[name="modal-form-type"]:checked')?.value || 'lead';
@@ -7998,6 +8021,7 @@
                 const bannerUrlRaw = (document.getElementById('banner-image-url')?.value || '').trim();
                 const sendModeVal = document.getElementById('send-mode-value')?.value || (enableGL ? 'checkin' : 'lead');
                 const configPayload = {
+                    is_listed: isListedVal,
                     title: modal.querySelector('#modal-form-module-title')?.value ?? undefined,
                     form_title: modal.querySelector('#modal-form-title')?.value ?? undefined,
                     form_description: modal.querySelector('#modal-form-description')?.value ?? undefined,
@@ -8025,12 +8049,20 @@
                         body: JSON.stringify(configPayload)
                     });
                     if (configRes.ok) {
+                        const savedJson = await configRes.json().catch(() => ({}));
+                        const finalListed = (savedJson && savedJson.is_listed !== undefined)
+                            ? isListedTruthy(savedJson.is_listed)
+                            : isListedVal;
+                        window.currentFormIsListed = finalListed;
                         if (typeof currentItemData !== 'undefined' && currentItemData) {
+                            currentItemData.is_listed = finalListed;
                             if (!currentItemData.digital_form_data) currentItemData.digital_form_data = {};
                             currentItemData.digital_form_data.enable_guest_list_submit = enableGL;
                             currentItemData.digital_form_data.enable_whatsapp = enableWa;
                             currentItemData.digital_form_data.send_mode = sendModeVal;
                         }
+                        const hiddenIsListedInput = document.getElementById('form-is-listed');
+                        if (hiddenIsListedInput) hiddenIsListedInput.value = finalListed ? 'true' : 'false';
                         if (typeof updatePreviewButton === 'function') updatePreviewButton();
                         const sidebarResponsesBtn = document.getElementById('sidebar-responses') || document.getElementById('sidebar-guest-list');
                         const sidebarSpan = sidebarResponsesBtn?.querySelector('span');
@@ -10536,16 +10568,20 @@
             
             
             // Obter is_listed do modal ou padrão (true)
-            // Verificar também o checkbox do modal diretamente
             const modalIsListedCheckbox = document.getElementById('modal-is-listed');
+            const hiddenIsListedInput = document.getElementById('form-is-listed');
             let isListed = true; // Default true
-            if (window.currentFormIsListed !== undefined) {
-                isListed = window.currentFormIsListed;
-            } else if (modalIsListedCheckbox) {
-                isListed = modalIsListedCheckbox.checked;
-            } else if (currentItemData.is_listed !== undefined) {
-                isListed = currentItemData.is_listed;
+            if (modalIsListedCheckbox) {
+                isListed = !!modalIsListedCheckbox.checked;
+            } else if (window.currentFormIsListed !== undefined) {
+                isListed = isListedTruthy(window.currentFormIsListed);
+            } else if (hiddenIsListedInput) {
+                isListed = isListedTruthy(hiddenIsListedInput.value);
+            } else if (currentItemData && currentItemData.is_listed !== undefined) {
+                isListed = isListedTruthy(currentItemData.is_listed);
             }
+            window.currentFormIsListed = isListed;
+            if (hiddenIsListedInput) hiddenIsListedInput.value = isListed ? 'true' : 'false';
             
             
             // Obter valores do botão do pastor e logo
@@ -10766,7 +10802,14 @@
                     console.error('O [SAVE] Erro ao salvar cores do King Forms:', errorData);
                     // Não lançar erro aqui - continuar com o salvamento de guest_list se necessário
                 } else {
-                    const digitalFormResult = await digitalFormSaveResponse.json();
+                    const digitalFormResult = await digitalFormSaveResponse.json().catch(() => ({}));
+                    if (digitalFormResult && digitalFormResult.is_listed !== undefined) {
+                        isListed = isListedTruthy(digitalFormResult.is_listed);
+                    }
+                    window.currentFormIsListed = isListed;
+                    if (currentItemData) currentItemData.is_listed = isListed;
+                    const hiddenIsListedEl = document.getElementById('form-is-listed');
+                    if (hiddenIsListedEl) hiddenIsListedEl.value = isListed ? 'true' : 'false';
                 }
             } catch (error) {
                 digitalFormSaveError = error;
@@ -10884,6 +10927,7 @@
                 // NÃO sincronizar cores: primary_color, secondary_color, text_color, background_color, card_color, decorative_bar_color, separator_line_color
                 
                 const guestListUpdateData = {
+                    is_listed: isListed,
                     title: updateData.form_title, // Atualizar título do profile_item também
                     event_title: updateData.form_title,
                     event_description: updateData.form_description,

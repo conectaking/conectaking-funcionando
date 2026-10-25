@@ -89,6 +89,12 @@ class ProfileDigitalFormService
 
             $this->upsertFormRow($id, $body);
 
+            try {
+                CartaoPublicService::forgetCardCache($userId);
+            } catch (\Throwable $e) {
+                Log::warning('digital_form.cache_clear_error', ['error' => $e->getMessage()]);
+            }
+
             $item = DB::selectOne('SELECT * FROM profile_items WHERE id = ? AND user_id = ? LIMIT 1', [$id, $userId]);
             $response = (array) $item;
             $form = DB::selectOne(
