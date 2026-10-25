@@ -1223,6 +1223,44 @@ class KingCameraController extends Controller
             'expires_in' => '24h',
         ])->withCookie($cookie);
     }
+
+    /**
+     * Retorna o status de conectividade do túnel SSH e dos streams
+     */
+    public function tunnelStatus(Request $request): JsonResponse
+    {
+        $status = $this->cameraService->checkTunnelStatus();
+        return response()->json([
+            'success' => true,
+            'data' => $status,
+        ]);
+    }
+
+    /**
+     * Força re-sincronização do stream do túnel no go2rtc
+     */
+    public function restartTunnel(Request $request): JsonResponse
+    {
+        $status = $this->cameraService->restartTunnelStreams();
+        return response()->json([
+            'success' => true,
+            'message' => 'Streams do túnel re-sincronizados com o go2rtc.',
+            'data' => $status,
+        ]);
+    }
+
+    /**
+     * Faz download do script .bat para iniciar o túnel no computador local
+     */
+    public function downloadTunnelBat(): \Symfony\Component\HttpFoundation\Response
+    {
+        $bat = "@echo off\r\ntitle ConectaKing - Tunel das Cameras IP\r\necho Conectando tunel das cameras...\r\npowershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -Command \"& { try { & ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 -o TCPKeepAlive=yes -o ExitOnForwardFailure=yes -N -R 0.0.0.0:1554:172.16.100.215:554 -R 0.0.0.0:1557:172.16.100.215:5000 -R 0.0.0.0:1555:172.16.100.43:554 -R 0.0.0.0:1556:172.16.100.43:80 root@46.225.100.64 } catch { Write-Host 'Erro no tunel' } }\"\r\nexit\r\n";
+        return response($bat, 200, [
+            'Content-Type' => 'application/x-bat',
+            'Content-Disposition' => 'attachment; filename="iniciar_tunel_cameras.bat"',
+        ]);
+    }
 }
+
 
 

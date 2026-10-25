@@ -202,6 +202,56 @@
             filter: brightness(1.08);
         }
 
+        .kc-btn-tunnel {
+            background: rgba(16, 185, 129, 0.12);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+
+        .kc-btn-tunnel:hover {
+            background: rgba(16, 185, 129, 0.22);
+            border-color: rgba(16, 185, 129, 0.6);
+            transform: translateY(-1px);
+        }
+
+        .kc-btn-tunnel.kc-tunnel-offline {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(245, 158, 11, 0.15));
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.5);
+            animation: kc-tunnel-attention 2s infinite ease-in-out;
+        }
+
+        .kc-btn-tunnel.kc-tunnel-offline:hover {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.25));
+            border-color: #f59e0b;
+        }
+
+        .kc-tunnel-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #10b981;
+            box-shadow: 0 0 8px #10b981;
+            display: inline-block;
+        }
+
+        .kc-tunnel-offline .kc-tunnel-dot {
+            background-color: #f59e0b;
+            box-shadow: 0 0 8px #f59e0b;
+            animation: kc-pulse 1.2s infinite;
+        }
+
+        @keyframes kc-tunnel-attention {
+            0%, 100% { box-shadow: 0 0 0 rgba(245, 158, 11, 0); }
+            50% { box-shadow: 0 0 14px rgba(245, 158, 11, 0.35); }
+        }
+
         /* Main Container */
         .kc-main {
             max-width: 1500px;

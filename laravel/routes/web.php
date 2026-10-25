@@ -1018,6 +1018,9 @@ Route::get('/api/public/camera-share/{token}/snapshot', [\App\Http\Controllers\C
 // King Câmera API & Webhooks
 Route::post('/api/cameras/telegram-webhook', [\App\Http\Controllers\Camera\KingCameraController::class, 'telegramWebhook']);
 Route::post('/api/cameras/unlock', [\App\Http\Controllers\Camera\KingCameraController::class, 'unlockWithPin']);
+Route::get('/api/cameras/tunnel-status', [\App\Http\Controllers\Camera\KingCameraController::class, 'tunnelStatus']);
+Route::post('/api/cameras/restart-tunnel', [\App\Http\Controllers\Camera\KingCameraController::class, 'restartTunnel']);
+Route::get('/api/cameras/download-tunnel-bat', [\App\Http\Controllers\Camera\KingCameraController::class, 'downloadTunnelBat']);
 Route::middleware(['jwt', 'module:king_camera'])->group(function () {
     Route::get('/api/cameras', [\App\Http\Controllers\Camera\KingCameraController::class, 'index']);
     Route::post('/api/cameras', [\App\Http\Controllers\Camera\KingCameraController::class, 'store']);

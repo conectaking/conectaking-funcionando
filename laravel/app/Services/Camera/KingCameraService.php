@@ -515,5 +515,45 @@ XML;
             'auto_tracking_enabled' => $enabled,
         ];
     }
+
+    /**
+     * Verifica o estado de conectividade do túnel SSH das câmeras na porta 1554
+     */
+    public function checkTunnelStatus(): array
+    {
+        $tunnelHost = '172.18.0.1';
+        $tunnelPort = 1554;
+        $sock = @stream_socket_client("tcp://{$tunnelHost}:{$tunnelPort}", $errno, $errstr, 0.8);
+        $portOpen = is_resource($sock);
+        if ($portOpen) {
+            @fclose($sock);
+        }
+
+        $camera = KingCamera::where('port', 1554)->orWhere('id', 1)->first();
+        $streamActive = false;
+        if ($camera) {
+            $streamActive = $this->ensureStreamInGo2Rtc($camera);
+        }
+
+        return [
+            'online' => $portOpen,
+            'port_1554' => $portOpen,
+            'stream_active' => $streamActive,
+            'message' => $portOpen ? 'Túnel SSH ativo e comunicando com as câmeras!' : 'Túnel SSH desconectado. Inicie o túnel no seu computador.',
+        ];
+    }
+
+    /**
+     * Força a reinicialização dos streams do túnel no go2rtc
+     */
+    public function restartTunnelStreams(): array
+    {
+        $camera = KingCamera::where('port', 1554)->orWhere('id', 1)->first();
+        if ($camera) {
+            $this->syncStreamToGo2Rtc($camera, true);
+        }
+        return $this->checkTunnelStatus();
+    }
 }
+
 
