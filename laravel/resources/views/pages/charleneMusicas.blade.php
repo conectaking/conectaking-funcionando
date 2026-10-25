@@ -334,6 +334,7 @@
         /* Botão direto dentro do card */
         .folder-direct-btn {
             position: relative !important;
+            overflow: hidden !important;
             width: 100%;
             min-height: 44px;
             padding: 8px 10px;
@@ -976,7 +977,7 @@
                 <div class="folder-cards-grid">
                     <!-- Adoração -->
                     <div class="folder-card active" id="card-adoracao">
-                        <div class="folder-card-clickable" onclick="selectFolder('adoracao')">
+                        <div class="folder-card-clickable" onclick="selectFolder('adoracao', true);">
                             <div class="folder-card-top">
                                 <span class="folder-emoji">🙏</span>
                                 <span class="folder-badge" id="badge-adoracao">✓ ATIVA</span>
@@ -984,15 +985,20 @@
                             <div class="folder-title">Adoração</div>
                             <div class="folder-subtitle">{{ $countAdoracao }} músicas</div>
                         </div>
-                        <label for="input-adoracao" class="folder-direct-btn btn-adoracao" onclick="event.stopPropagation(); selectFolder('adoracao');">
-                            <span>➕ Adicionar MP3</span>
+                        <label class="folder-direct-btn btn-adoracao" style="position: relative; overflow: hidden; cursor: pointer;">
+                            <span style="pointer-events: none;">➕ Adicionar MP3</span>
+                            <input type="file" 
+                                   name="audio" 
+                                   accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" 
+                                   multiple 
+                                   style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.0001; cursor: pointer; z-index: 20; display: block; font-size: 100px; margin: 0; padding: 0; border: none; -webkit-appearance: none;"
+                                   onchange="handleAudioUpload(this.files, 'adoracao', this);">
                         </label>
-                        <input type="file" id="input-adoracao" accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files, 'adoracao', this);">
                     </div>
 
                     <!-- Hora de Dormir -->
                     <div class="folder-card" id="card-dormir">
-                        <div class="folder-card-clickable" onclick="selectFolder('dormir')">
+                        <div class="folder-card-clickable" onclick="selectFolder('dormir', true);">
                             <div class="folder-card-top">
                                 <span class="folder-emoji">🌙</span>
                                 <span class="folder-badge" id="badge-dormir">✓ ATIVA</span>
@@ -1000,15 +1006,20 @@
                             <div class="folder-title">Hora de Dormir</div>
                             <div class="folder-subtitle">{{ $countDormir }} músicas</div>
                         </div>
-                        <label for="input-dormir" class="folder-direct-btn btn-dormir" onclick="event.stopPropagation(); selectFolder('dormir');">
-                            <span>➕ Adicionar MP3</span>
+                        <label class="folder-direct-btn btn-dormir" style="position: relative; overflow: hidden; cursor: pointer;">
+                            <span style="pointer-events: none;">➕ Adicionar MP3</span>
+                            <input type="file" 
+                                   name="audio" 
+                                   accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" 
+                                   multiple 
+                                   style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.0001; cursor: pointer; z-index: 20; display: block; font-size: 100px; margin: 0; padding: 0; border: none; -webkit-appearance: none;"
+                                   onchange="handleAudioUpload(this.files, 'dormir', this);">
                         </label>
-                        <input type="file" id="input-dormir" accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files, 'dormir', this);">
                     </div>
 
                     <!-- Animadas -->
                     <div class="folder-card" id="card-animadas">
-                        <div class="folder-card-clickable" onclick="selectFolder('animadas')">
+                        <div class="folder-card-clickable" onclick="selectFolder('animadas', true);">
                             <div class="folder-card-top">
                                 <span class="folder-emoji">⚡</span>
                                 <span class="folder-badge" id="badge-animadas">✓ ATIVA</span>
@@ -1016,15 +1027,20 @@
                             <div class="folder-title">Animadas</div>
                             <div class="folder-subtitle">{{ $countAnimadas }} músicas</div>
                         </div>
-                        <label for="input-animadas" class="folder-direct-btn btn-animadas" onclick="event.stopPropagation(); selectFolder('animadas');">
-                            <span>➕ Adicionar MP3</span>
+                        <label class="folder-direct-btn btn-animadas" style="position: relative; overflow: hidden; cursor: pointer;">
+                            <span style="pointer-events: none;">➕ Adicionar MP3</span>
+                            <input type="file" 
+                                   name="audio" 
+                                   accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" 
+                                   multiple 
+                                   style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.0001; cursor: pointer; z-index: 20; display: block; font-size: 100px; margin: 0; padding: 0; border: none; -webkit-appearance: none;"
+                                   onchange="handleAudioUpload(this.files, 'animadas', this);">
                         </label>
-                        <input type="file" id="input-animadas" accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files, 'animadas', this);">
                     </div>
 
                     <!-- Geral -->
                     <div class="folder-card" id="card-geral">
-                        <div class="folder-card-clickable" onclick="selectFolder('geral')">
+                        <div class="folder-card-clickable" onclick="selectFolder('geral', true);">
                             <div class="folder-card-top">
                                 <span class="folder-emoji">🌟</span>
                                 <span class="folder-badge" id="badge-geral">✓ ATIVA</span>
@@ -1032,15 +1048,20 @@
                             <div class="folder-title">Geral</div>
                             <div class="folder-subtitle">{{ $countGeral }} músicas</div>
                         </div>
-                        <label for="input-geral" class="folder-direct-btn btn-geral" onclick="event.stopPropagation(); selectFolder('geral');">
-                            <span>➕ Adicionar MP3</span>
+                        <label class="folder-direct-btn btn-geral" style="position: relative; overflow: hidden; cursor: pointer;">
+                            <span style="pointer-events: none;">➕ Adicionar MP3</span>
+                            <input type="file" 
+                                   name="audio" 
+                                   accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" 
+                                   multiple 
+                                   style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.0001; cursor: pointer; z-index: 20; display: block; font-size: 100px; margin: 0; padding: 0; border: none; -webkit-appearance: none;"
+                                   onchange="handleAudioUpload(this.files, 'geral', this);">
                         </label>
-                        <input type="file" id="input-geral" accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files, 'geral', this);">
                     </div>
                 </div>
 
                 <!-- Botão Geral de Escolha -->
-                <label id="btnUploadMusic" for="input-main-upload" class="main-upload-touch-btn" onclick="event.stopPropagation();">
+                <label id="btnUploadMusic" class="main-upload-touch-btn" style="position: relative; overflow: hidden; cursor: pointer;">
                     <span style="font-size: 1.8rem; pointer-events: none;">📱</span>
                     <div style="pointer-events: none;">
                         <div id="uploadBtnTitle" style="font-size: 1.05rem; font-weight: 800; line-height: 1.2;">Adicionar Músicas em 🙏 Adoração</div>
@@ -1048,8 +1069,14 @@
                             Destino: <strong>🙏 Pasta Adoração da Sarah</strong>
                         </div>
                     </div>
+                    <input type="file" 
+                           id="input-main-upload" 
+                           name="audio" 
+                           accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" 
+                           multiple 
+                           style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.0001; cursor: pointer; z-index: 20; display: block; font-size: 100px; margin: 0; padding: 0; border: none; -webkit-appearance: none;"
+                           onchange="handleAudioUpload(this.files, currentFolder, this);">
                 </label>
-                <input type="file" id="input-main-upload" accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files, currentFolder, this);">
                 
                 <div id="progressContainer" style="display: none; margin-top: 14px;">
                     <p id="progressText" style="font-size: 0.88rem; color: #c4b5fd; margin-bottom: 6px; font-weight: 700;">Enviando...</p>
@@ -1078,8 +1105,8 @@
             <!-- Filter Bar -->
             <div class="filter-bar">
                 <div class="filter-pills">
-                    <button type="button" class="pill" data-pill="todas" onclick="filterCategory('todas')">Todas ({{ count($musicas) }})</button>
-                    <button type="button" class="pill active" data-pill="adoracao" onclick="filterCategory('adoracao')">🙏 Adoração ({{ $countAdoracao }})</button>
+                    <button type="button" class="pill active" data-pill="todas" onclick="filterCategory('todas')">Todas ({{ count($musicas) }})</button>
+                    <button type="button" class="pill" data-pill="adoracao" onclick="filterCategory('adoracao')">🙏 Adoração ({{ $countAdoracao }})</button>
                     <button type="button" class="pill" data-pill="dormir" onclick="filterCategory('dormir')">🌙 Dormir ({{ $countDormir }})</button>
                     <button type="button" class="pill" data-pill="animadas" onclick="filterCategory('animadas')">⚡ Animadas ({{ $countAnimadas }})</button>
                     <button type="button" class="pill" data-pill="geral" onclick="filterCategory('geral')">🌟 Geral ({{ $countGeral }})</button>
@@ -1326,34 +1353,29 @@
             }
         }
 
-        // Abre o seletor nativo de arquivos do celular/PC
-        function openFilePicker(cat) {
+        // Abre o seletor nativo de arquivos do celular/PC de forma 100% garantida
+        function openFilePicker(cat, e) {
+            if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
             try {
-                const targetId = cat ? ('input-' + cat) : 'input-main-upload';
-                const input = document.getElementById(targetId) || document.getElementById('input-main-upload');
+                const targetCat = cat || currentFolder || 'adoracao';
+                selectFolder(targetCat, false);
+                const card = document.getElementById('card-' + targetCat);
+                const input = (card ? card.querySelector('input[type="file"]') : null) || document.getElementById('input-main-upload');
                 if (input) {
-                    input.value = '';
                     input.click();
-                } else {
-                    console.error('[Charlene] input não encontrado:', targetId);
                 }
-            } catch(e) {
-                console.error('[Charlene] Erro em openFilePicker:', e);
+            } catch(err) {
+                console.error('[Charlene] Erro em openFilePicker:', err);
             }
         }
 
         // Ação direta pelo botão "➕ Adicionar MP3" de cada pasta
-        function directUpload(cat) {
-            try {
-                selectFolder(cat);
-                openFilePicker(cat);
-            } catch(e) {
-                console.error('[Charlene] Erro em directUpload:', e);
-            }
+        function directUpload(cat, e) {
+            openFilePicker(cat, e);
         }
 
         // Seleção de pasta unificada (Atualiza cards, botão de upload e lista)
-        function selectFolder(cat) {
+        function selectFolder(cat, shouldFilterList = true) {
             try {
                 if (!folderMetadata[cat]) return;
                 currentFolder = cat;
@@ -1385,14 +1407,16 @@
                     else mainBtn.style.background = 'linear-gradient(135deg, #0ea5e9, #0284c7)';
                 }
 
-                // 3. Atualiza pills de filtro
-                document.querySelectorAll('.pill').forEach(p => {
-                    if (p.getAttribute('data-pill') === cat) p.classList.add('active');
-                    else p.classList.remove('active');
-                });
+                if (shouldFilterList) {
+                    // 3. Atualiza pills de filtro
+                    document.querySelectorAll('.pill').forEach(p => {
+                        if (p.getAttribute('data-pill') === cat) p.classList.add('active');
+                        else p.classList.remove('active');
+                    });
 
-                // 4. Filtra a lista de músicas
-                filterSongsList(cat);
+                    // 4. Filtra a lista de músicas
+                    filterSongsList(cat);
+                }
             } catch(e) {
                 console.error('[Charlene] Erro em selectFolder:', e);
             }
@@ -1400,15 +1424,11 @@
 
         function filterCategory(cat) {
             try {
-                if (cat === 'todas') {
-                    document.querySelectorAll('.pill').forEach(p => {
-                        if (p.getAttribute('data-pill') === 'todas') p.classList.add('active');
-                        else p.classList.remove('active');
-                    });
-                    filterSongsList('todas');
-                } else {
-                    selectFolder(cat);
-                }
+                document.querySelectorAll('.pill').forEach(p => {
+                    if (p.getAttribute('data-pill') === cat) p.classList.add('active');
+                    else p.classList.remove('active');
+                });
+                filterSongsList(cat);
             } catch(e) {
                 console.error('[Charlene] Erro em filterCategory:', e);
             }
@@ -1432,8 +1452,8 @@
                 if (empty) {
                     if (visible === 0) {
                         empty.style.display = 'block';
-                        const catName = folderMetadata[cat] ? folderMetadata[cat].name : 'selecionada';
-                        empty.innerHTML = `Nenhuma música encontrada na pasta <strong>${catName}</strong> da Sarah. Toque em "➕ Adicionar MP3" acima para enviar!`;
+                        const catName = folderMetadata[cat] ? folderMetadata[cat].name : (cat === 'todas' ? 'de nenhuma categoria' : 'selecionada');
+                        empty.innerHTML = `Nenhuma música encontrada ${cat === 'todas' ? 'cadastrada ainda' : 'na pasta <strong>' + catName + '</strong> da Sarah'}. Toque em "➕ Adicionar MP3" acima para enviar!`;
                     } else {
                         empty.style.display = 'none';
                     }
@@ -1660,7 +1680,8 @@
                 }
             } catch(e){}
             switchSection(active);
-            selectFolder('adoracao');
+            selectFolder('adoracao', false);
+            filterCategory('todas');
         });
 
         function getCkCsrfCookie() {
