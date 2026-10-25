@@ -418,7 +418,7 @@
         }
 
         /* Input nativo oculto de forma acessível e compatível com iOS e Android */
-        .native-hidden-file {
+        .sr-only-file, .native-hidden-file {
             position: absolute !important;
             width: 1px !important;
             height: 1px !important;
@@ -428,7 +428,6 @@
             clip: rect(0, 0, 0, 0) !important;
             border: 0 !important;
             opacity: 0 !important;
-            pointer-events: none !important;
             z-index: -1 !important;
         }
 
@@ -985,9 +984,15 @@
                             <div class="folder-title">Adoração</div>
                             <div class="folder-subtitle">{{ $countAdoracao }} músicas</div>
                         </div>
-                        <button type="button" class="folder-direct-btn btn-adoracao" onclick="openAudioPicker('adoracao', event)">
+                        <label for="file-upload-adoracao" class="folder-direct-btn btn-adoracao">
                             <span>➕ Adicionar MP3</span>
-                        </button>
+                        </label>
+                        <input type="file" 
+                               id="file-upload-adoracao" 
+                               class="sr-only-file" 
+                               multiple 
+                               accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" 
+                               onchange="onFilesChosen(this, 'adoracao')">
                     </div>
 
                     <!-- Hora de Dormir -->
@@ -1000,9 +1005,15 @@
                             <div class="folder-title">Hora de Dormir</div>
                             <div class="folder-subtitle">{{ $countDormir }} músicas</div>
                         </div>
-                        <button type="button" class="folder-direct-btn btn-dormir" onclick="openAudioPicker('dormir', event)">
+                        <label for="file-upload-dormir" class="folder-direct-btn btn-dormir">
                             <span>➕ Adicionar MP3</span>
-                        </button>
+                        </label>
+                        <input type="file" 
+                               id="file-upload-dormir" 
+                               class="sr-only-file" 
+                               multiple 
+                               accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" 
+                               onchange="onFilesChosen(this, 'dormir')">
                     </div>
 
                     <!-- Animadas -->
@@ -1015,9 +1026,15 @@
                             <div class="folder-title">Animadas</div>
                             <div class="folder-subtitle">{{ $countAnimadas }} músicas</div>
                         </div>
-                        <button type="button" class="folder-direct-btn btn-animadas" onclick="openAudioPicker('animadas', event)">
+                        <label for="file-upload-animadas" class="folder-direct-btn btn-animadas">
                             <span>➕ Adicionar MP3</span>
-                        </button>
+                        </label>
+                        <input type="file" 
+                               id="file-upload-animadas" 
+                               class="sr-only-file" 
+                               multiple 
+                               accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" 
+                               onchange="onFilesChosen(this, 'animadas')">
                     </div>
 
                     <!-- Geral -->
@@ -1030,14 +1047,20 @@
                             <div class="folder-title">Geral</div>
                             <div class="folder-subtitle">{{ $countGeral }} músicas</div>
                         </div>
-                        <button type="button" class="folder-direct-btn btn-geral" onclick="openAudioPicker('geral', event)">
+                        <label for="file-upload-geral" class="folder-direct-btn btn-geral">
                             <span>➕ Adicionar MP3</span>
-                        </button>
+                        </label>
+                        <input type="file" 
+                               id="file-upload-geral" 
+                               class="sr-only-file" 
+                               multiple 
+                               accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" 
+                               onchange="onFilesChosen(this, 'geral')">
                     </div>
                 </div>
 
                 <!-- Botão Geral de Escolha -->
-                <button type="button" id="btnUploadMusic" class="main-upload-touch-btn" onclick="openAudioPicker(null, event)">
+                <label for="file-upload-main" id="btnUploadMusic" class="main-upload-touch-btn">
                     <span style="font-size: 1.8rem; pointer-events: none;">📱</span>
                     <div style="pointer-events: none;">
                         <div id="uploadBtnTitle" style="font-size: 1.05rem; font-weight: 800; line-height: 1.2;">Adicionar Músicas em 🙏 Adoração</div>
@@ -1045,14 +1068,13 @@
                             Destino: <strong>🙏 Pasta Adoração da Sarah</strong>
                         </div>
                     </div>
-                </button>
-
-                <!-- Input Único Global para Seleção de Arquivos (Sem filtros restritivos que quebram o Android) -->
+                </label>
                 <input type="file" 
-                       id="globalCharleneFileInput" 
+                       id="file-upload-main" 
+                       class="sr-only-file" 
                        multiple 
-                       style="position: fixed; top: -9999px; left: -9999px; opacity: 0; width: 1px; height: 1px; pointer-events: none;"
-                       aria-hidden="true">
+                       accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" 
+                       onchange="onFilesChosen(this, window.currentFolder || 'adoracao')">
                 
                 <div id="progressContainer" style="display: none; margin-top: 14px;">
                     <p id="progressText" style="font-size: 0.88rem; color: #c4b5fd; margin-bottom: 6px; font-weight: 700;">Enviando...</p>
@@ -1332,47 +1354,51 @@
 
         let activeUploadCategory = 'adoracao';
 
-        // Validação de formato de áudio robusta no cliente
+        // Validação de formato de áudio robusta no cliente (Permissiva para Android e Downloads)
         function isSupportedAudio(file) {
             if (!file) return false;
             const name = (file.name || '').toLowerCase();
             const type = (file.type || '').toLowerCase();
             const audioExts = /\.(mp3|m4a|aac|wav|ogg|flac|wma|opus|webm|mp4|3gp|3gpp)$/i;
-            return type.startsWith('audio/') || 
-                   type.includes('mpeg') || 
-                   type.includes('mp4') || 
-                   type.includes('ogg') || 
-                   type.includes('wav') ||
-                   audioExts.test(name);
-        }
-
-        // Abre o seletor nativo do Android / iPhone / PC com 1 clique limpo
-        function openAudioPicker(cat, e) {
-            if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-            if (e && typeof e.preventDefault === 'function') e.preventDefault();
-
-            activeUploadCategory = cat || window.currentFolder || (typeof currentFolder !== 'undefined' ? currentFolder : 'adoracao');
-            try { selectFolder(activeUploadCategory, false); } catch(err){}
-
-            const inp = document.getElementById('globalCharleneFileInput');
-            if (!inp) {
-                console.error('[Charlene] Input globalCharleneFileInput não encontrado.');
-                return;
+            if (audioExts.test(name)) return true;
+            if (type.startsWith('audio/')) return true;
+            if (type.includes('mpeg') || type.includes('mp4') || type.includes('ogg') || type.includes('wav')) return true;
+            const blockedExts = /\.(jpg|jpeg|png|gif|webp|svg|pdf|doc|docx|xls|xlsx|zip|rar|tar|gz|exe|apk|txt|html|json)$/i;
+            if (!blockedExts.test(name)) {
+                return true;
             }
-
-            // Reseta o input para disparar 'change' mesmo ao selecionar a mesma música
-            inp.value = '';
-
-            // Aciona o seletor nativo
-            inp.click();
+            return false;
         }
 
-        function openFilePicker(cat, e) {
-            openAudioPicker(cat, e);
+        // Handler universal chamado diretamente quando o usuário seleciona os arquivos
+        function onFilesChosen(inputEl, cat) {
+            if (!inputEl) return;
+            const files = inputEl.files;
+            console.log('[Charlene] onFilesChosen disparado para pasta:', cat, 'Arquivos:', files ? files.length : 0);
+            if (!files || files.length === 0) return;
+            const targetFolder = cat || window.currentFolder || 'adoracao';
+            const filesArray = Array.from(files);
+            try { inputEl.value = ''; } catch(e){}
+            handleAudioUpload(filesArray, targetFolder);
         }
 
-        function directUpload(cat, e) {
-            openAudioPicker(cat, e);
+        // Abre o seletor nativo com fallback caso chamado programaticamente
+        function openAudioPicker(cat) {
+            activeUploadCategory = cat || window.currentFolder || 'adoracao';
+            try { selectFolder(activeUploadCategory, false); } catch(err){}
+            const inp = document.getElementById('file-upload-' + activeUploadCategory) || document.getElementById('file-upload-main');
+            if (inp) {
+                try { inp.value = ''; } catch(e){}
+                inp.click();
+            }
+        }
+
+        function openFilePicker(cat) {
+            openAudioPicker(cat);
+        }
+
+        function directUpload(cat) {
+            openAudioPicker(cat);
         }
 
         // Seleção de pasta unificada (Atualiza cards, botão de upload e lista)
@@ -1646,6 +1672,7 @@
         window.openAudioPicker = openAudioPicker;
         window.directUpload = openAudioPicker;
         window.openFilePicker = openAudioPicker;
+        window.onFilesChosen = onFilesChosen;
         window.isSupportedAudio = isSupportedAudio;
         window.filterCategory = filterCategory;
         window.filterSongsList = filterSongsList;
@@ -1657,34 +1684,16 @@
 
         // Recupera a aba ativa ao recarregar a tela e adiciona listeners de toque
         document.addEventListener('DOMContentLoaded', () => {
-            // Listener central do seletor nativo de áudio (Android / iOS / PC)
-            const globalInp = document.getElementById('globalCharleneFileInput');
-            if (globalInp) {
-                globalInp.addEventListener('change', function(e) {
-                    const files = this.files;
-                    console.log('[Charlene] globalCharleneFileInput selecionou:', files ? files.length : 0);
-                    if (!files || files.length === 0) {
-                        return;
-                    }
-
-                    const validFiles = [];
-                    for (let i = 0; i < files.length; i++) {
-                        const f = files[i];
-                        if (isSupportedAudio(f)) {
-                            validFiles.push(f);
-                        } else {
-                            console.warn('[Charlene] Arquivo ignorado por não ser áudio:', f.name, f.type);
-                        }
-                    }
-
-                    if (validFiles.length === 0) {
-                        alert('O arquivo selecionado não foi reconhecido como música (.mp3, .m4a, .wav, .aac).\n\nPor favor, selecione um arquivo de áudio.');
-                        return;
-                    }
-
-                    handleAudioUpload(validFiles, activeUploadCategory);
-                });
-            }
+            // Listeners adicionais de garantia para cada input de arquivo
+            ['adoracao', 'dormir', 'animadas', 'geral', 'main'].forEach(cat => {
+                const inp = document.getElementById('file-upload-' + cat);
+                if (inp) {
+                    inp.addEventListener('change', function() {
+                        const targetCat = (cat === 'main') ? (window.currentFolder || 'adoracao') : cat;
+                        onFilesChosen(this, targetCat);
+                    });
+                }
+            });
 
             // Garante cliques diretos nas abas
             document.querySelectorAll('.main-tab').forEach(tab => {
