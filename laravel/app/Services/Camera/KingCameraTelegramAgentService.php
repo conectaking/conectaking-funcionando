@@ -84,28 +84,47 @@ class KingCameraTelegramAgentService
         ];
 
         try {
-            if ($jpegBinary) {
-                $res = Http::timeout(10)->attach(
-                    'photo',
-                    $jpegBinary,
-                    'snapshot.jpg',
-                    ['Content-Type' => 'image/jpeg']
-                )->post("https://api.telegram.org/bot{$token}/sendPhoto", [
-                    'chat_id' => $chatId,
-                    'caption' => $caption,
-                    'parse_mode' => 'HTML',
-                    'reply_markup' => json_encode($keyboard),
-                ]);
-            } else {
-                $res = Http::timeout(5)->post("https://api.telegram.org/bot{$token}/sendMessage", [
+            $sent = false;
+
+            if ($jpegBinary && strlen($jpegBinary) > 100) {
+                try {
+                    $res = Http::timeout(8)->attach(
+                        'photo',
+                        $jpegBinary,
+                        'snapshot.jpg',
+                        ['Content-Type' => 'image/jpeg']
+                    )->post("https://api.telegram.org/bot{$token}/sendPhoto", [
+                        'chat_id' => $chatId,
+                        'caption' => $caption,
+                        'parse_mode' => 'HTML',
+                        'reply_markup' => json_encode($keyboard),
+                    ]);
+                    if ($res->successful()) {
+                        $sent = true;
+                    } else {
+                        Log::warning('ks.camera.telegramPhoto.failed', ['response' => $res->body()]);
+                    }
+                } catch (\Throwable $photoErr) {
+                    Log::warning('ks.camera.telegramPhoto.error', ['msg' => $photoErr->getMessage()]);
+                }
+            }
+
+            // Fallback garantido: se o envio da foto não foi realizado ou falhou, envia mensagem de texto com botões
+            if (!$sent) {
+                $res = Http::timeout(6)->post("https://api.telegram.org/bot{$token}/sendMessage", [
                     'chat_id' => $chatId,
                     'text' => $caption,
                     'parse_mode' => 'HTML',
                     'reply_markup' => json_encode($keyboard),
                 ]);
+                if ($res->successful()) {
+                    $sent = true;
+                } else {
+                    Log::warning('ks.camera.telegramText.failed', ['response' => $res->body()]);
+                }
             }
 
-            if ($res->successful()) {
+            if ($sent) {
                 KingCameraEvent::create([
                     'camera_id' => $camera->id,
                     'user_id' => (string) $camera->user_id,
@@ -116,8 +135,6 @@ class KingCameraTelegramAgentService
                 $camera->update(['last_event_at' => now()]);
                 return true;
             }
-
-            Log::warning('ks.camera.telegramAlert.failed', ['response' => $res->body()]);
         } catch (\Throwable $e) {
             Log::error('ks.camera.telegramAlert.error', ['error' => $e->getMessage()]);
         }

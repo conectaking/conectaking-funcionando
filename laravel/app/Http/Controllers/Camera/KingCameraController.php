@@ -1113,6 +1113,16 @@ class KingCameraController extends Controller
             try {
                 $shouldSend = true;
 
+                // Extrai snapshot instantâneo em Base64 enviado diretamente pelo navegador se disponível
+                $jpegBinary = null;
+                if ($request->filled('snapshot_base64')) {
+                    $rawBase64 = preg_replace('#^data:image/\w+;base64,#i', '', (string) $request->input('snapshot_base64'));
+                    $decoded = base64_decode($rawBase64);
+                    if ($decoded && strlen($decoded) > 300) {
+                        $jpegBinary = $decoded;
+                    }
+                }
+
                 // Controle inteligente anti-spam da Cerca do Berço
                 if (in_array($eventType, ['crib_fence', 'fence_breach'])) {
                     $cacheKey = "kc_fence_alert_{$camera->id}";
@@ -1122,25 +1132,40 @@ class KingCameraController extends Controller
 
                     // 1º alerta: envia imediatamente
                     if (($state['count'] ?? 0) === 0) {
-                        \Illuminate\Support\Facades\Cache::put($cacheKey, ['count' => 1, 'last_sent' => $nowTs], 600);
+                        \Illuminate\Support\Facades\Cache::put($cacheKey, ['count' => 1, 'last_sent' => $nowTs], 60);
                     }
-                    // 2º alerta (reforço): só envia se passaram pelo menos 20 segundos
+                    // 2º alerta (reforço): só envia se passaram pelo menos 15 segundos
                     elseif ($state['count'] === 1) {
-                        if ($diffSec >= 20) {
-                            \Illuminate\Support\Facades\Cache::put($cacheKey, ['count' => 2, 'last_sent' => $nowTs], 600);
+                        if ($diffSec >= 15) {
+                            \Illuminate\Support\Facades\Cache::put($cacheKey, ['count' => 2, 'last_sent' => $nowTs], 60);
                         } else {
                             $shouldSend = false;
                         }
                     }
-                    // Atingiu 2 alertas: NÃO envia mais nenhum lembrete (limite máximo de 2 avisos por ocorrência).
-                    // Evita disparar alertas quando os pais já retiraram o bebê do berço e o quarto está vazio.
+                    // Atingiu 2 alertas recentes: pausa envios até resetar (60s) ou o bebê retornar
                     else {
+                        if ($diffSec >= 60) {
+                            \Illuminate\Support\Facades\Cache::put($cacheKey, ['count' => 1, 'last_sent' => $nowTs], 60);
+                        } else {
+                            $shouldSend = false;
+                        }
+                    }
+                }
+
+                // Controle inteligente anti-spam do Bebê em Pé (15s de intervalo mínimo)
+                if ($eventType === 'baby_stand') {
+                    $standCacheKey = "kc_stand_alert_{$camera->id}";
+                    $lastStand = (int) \Illuminate\Support\Facades\Cache::get($standCacheKey, 0);
+                    $nowTs = time();
+                    if (($nowTs - $lastStand) < 15) {
                         $shouldSend = false;
+                    } else {
+                        \Illuminate\Support\Facades\Cache::put($standCacheKey, $nowTs, 45);
                     }
                 }
 
                 if ($shouldSend) {
-                    $this->telegramAgent->sendAlert($camera, $eventType, $description);
+                    $this->telegramAgent->sendAlert($camera, $eventType, $description, $jpegBinary);
                     $event->update(['notified_telegram' => true]);
                 }
             } catch (\Throwable $e) {

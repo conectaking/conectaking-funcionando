@@ -9379,14 +9379,14 @@
                     let motionInsideFence = 0;
                     let totalMotion = 0;
 
-                    for (let y = 0; y < 90; y += 3) {
-                        for (let x = 0; x < 160; x += 3) {
+                    for (let y = 0; y < 90; y += 2) {
+                        for (let x = 0; x < 160; x += 2) {
                             const idx = (y * 160 + x) * 4;
                             const diff = Math.abs(currentData[idx] - prevData[idx]) +
                                          Math.abs(currentData[idx+1] - prevData[idx+1]) +
                                          Math.abs(currentData[idx+2] - prevData[idx+2]);
-                            // Limiar de 48 filtra ruídos e compressão de vídeo
-                            if (diff > 48) {
+                            // Limiar de 38 filtra compressão de vídeo e ruído
+                            if (diff > 38) {
                                 totalMotion++;
                                 const isInside = (x >= rx && x <= rx + rw && y >= ry && y <= ry + rh);
                                 if (isInside) {
@@ -9399,18 +9399,33 @@
                     }
 
                     const now = Date.now();
-                    const isRoomCalm = (totalMotion < 8);
-                    const isBreachingNow = (motionOutsideFence >= 15);
-                    const isBabyInside = (motionInsideFence >= 12);
+                    const isRoomCalm = (totalMotion < 6);
+                    const isBreachingNow = (motionOutsideFence >= 10);
+                    const isBabyInside = (motionInsideFence >= 8);
 
-                    // 1. O quarto está calmo/vazio OU o bebê está no berço se movendo:
-                    if (isBabyInside || isRoomCalm) {
+                    // 1. PRIORIDADE MÁXIMA: Movimento detectado FORA da área segura do berço é uma saída/breach!
+                    if (isBreachingNow) {
+                        s.calmCycles = 0;
+
+                        // 1º ALERTA: Imediato quando detecta saída
+                        if (s.fenceState === 'INSIDE') {
+                            s.fenceState = 'OUTSIDE';
+                            s.alertCount = 1;
+                            s.lastAlertTime = now;
+                            triggerFenceBreachAlert(camId, 1, '🚨 Criança fora da área segura do berço detectada!');
+                        }
+                        // 2º ALERTA (REFORÇO): Se o movimento continuar fora por mais de 16 segundos
+                        else if (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 16000)) {
+                            s.alertCount = 2;
+                            s.lastAlertTime = now;
+                            triggerFenceBreachAlert(camId, 2, '⚠️ REFORÇO: O bebê continua fora do cerco seguro!');
+                        }
+                    }
+                    // 2. Apenas se NÃO há movimento fora e o bebê está seguro dentro ou o quarto está calmo
+                    else if (isBabyInside || isRoomCalm) {
                         s.calmCycles++;
 
-                        // Se o bebê voltou ao berço OU se o quarto ficou calmo/vazio por 4 ciclos (~5 segundos):
-                        // Resetamos o estado imediatamente! Se os pais tiraram o bebê, o quarto fica vazio e calmo,
-                        // logo o sistema NÃO fica acusando que o bebê está fora!
-                        if (s.fenceState === 'OUTSIDE' && (isBabyInside || s.calmCycles >= 4)) {
+                        if (s.fenceState === 'OUTSIDE' && (isBabyInside || s.calmCycles >= 3)) {
                             s.fenceState = 'INSIDE';
                             s.alertCount = 0;
                             console.log(`[CribFence] Quarto calmo ou bebê no berço (câmera ${camId}). Estado normalizado.`);
@@ -9428,29 +9443,9 @@
                             } catch(e) {}
                         }
                     }
-                    // 2. Movimento humano real detectado fora do cerco seguro:
-                    else if (isBreachingNow) {
-                        s.calmCycles = 0;
-
-                        // 1º ALERTA: Imediato quando detecta saída
-                        if (s.fenceState === 'INSIDE') {
-                            s.fenceState = 'OUTSIDE';
-                            s.alertCount = 1;
-                            s.lastAlertTime = now;
-                            triggerFenceBreachAlert(camId, 1, '🚨 Criança fora da área segura do berço detectada!');
-                        }
-                        // 2º ALERTA (REFORÇO ÚNICO): Só após 25 segundos se o movimento continuar ativamente fora
-                        else if (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 25000)) {
-                            s.alertCount = 2;
-                            s.lastAlertTime = now;
-                            triggerFenceBreachAlert(camId, 2, '⚠️ REFORÇO: O bebê continua fora do cerco seguro!');
-                        }
-                        // Atingiu 2 alertas: SILÊNCIO TOTAL! Não envia mais nenhum alerta ou lembrete repetido.
-                        // Atende à solicitação: não fica louco mandando mensagens se os pais já tiraram o bebê.
-                    }
                 }
                 prevData = currentData;
-            }, 1200);
+            }, 1000);
         }
 
         function triggerFenceBreachAlert(camId, alertIndex, customMsg) {
@@ -9466,6 +9461,8 @@
             playToneSound(800, 0.25);
 
             captureAutoSnapshot(camId);
+            const liveSnapshotBase64 = getLiveVideoSnapshotBase64(camId);
+
             try {
                 fetch(`/api/cameras/${camId}/events`, {
                     method: 'POST',
@@ -9473,7 +9470,8 @@
                     headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({
                         event_type: 'crib_fence',
-                        description: customMsg || '🚨 Criança fora da área segura do berço detectada!'
+                        description: customMsg || '🚨 Criança fora da área segura do berço detectada!',
+                        snapshot_base64: liveSnapshotBase64
                     })
                 }).catch(e => console.warn(e));
             } catch(e) {}
@@ -10033,6 +10031,22 @@
             } catch(e) {}
         }
 
+        // Captura instantânea do frame atual do vídeo em Base64 para envio direto ao Telegram
+        function getLiveVideoSnapshotBase64(camId) {
+            const v = document.getElementById(`video-${camId}`);
+            if (!v || v.readyState < 2 || !v.videoWidth || !v.videoHeight) return null;
+            try {
+                const c = document.createElement('canvas');
+                c.width = 640;
+                c.height = 360;
+                const ctx = c.getContext('2d');
+                ctx.drawImage(v, 0, 0, 640, 360);
+                return c.toDataURL('image/jpeg', 0.82);
+            } catch (e) {
+                return null;
+            }
+        }
+
         function captureAutoSnapshot(camId) {
             const v = document.getElementById(`video-${camId}`);
             if (v && v.videoWidth > 0 && v.videoHeight > 0) {
@@ -10174,35 +10188,45 @@
                     const s = cribFenceState[camId];
                     const r = (s && s.roi) ? s.roi : { x: 20, y: 20, w: 60, h: 55 };
                     
-                    // Terço superior do berço onde o bebê aparece ao ficar em pé ou subir na grade
-                    const topY = (r.y / 100) * 90;
-                    const standH = ((r.h * 0.45) / 100) * 90;
-                    const startX = (r.x / 100) * 160;
-                    const endX = ((r.x + r.w) / 100) * 160;
+                    // Metade e terço superior do berço onde o bebê aparece ao se levantar ou apoiar na grade
+                    const topY = Math.max(0, (r.y / 100) * 90);
+                    const standH = Math.max(14, ((r.h * 0.65) / 100) * 90);
+                    const startX = Math.max(0, (r.x / 100) * 160);
+                    const endX = Math.min(160, ((r.x + r.w) / 100) * 160);
+
+                    const minY = Math.floor(topY);
+                    const maxY = Math.min(90, Math.floor(topY + standH));
+                    const minX = Math.floor(startX);
+                    const maxX = Math.min(160, Math.floor(endX));
 
                     let standDiffCount = 0;
-                    for (let y = Math.max(0, Math.floor(topY)); y < Math.min(90, Math.floor(topY + standH)); y += 2) {
-                        for (let x = Math.max(0, Math.floor(startX)); x < Math.min(160, Math.floor(endX)); x += 2) {
+                    for (let y = minY; y < maxY; y += 1) {
+                        for (let x = minX; x < maxX; x += 1) {
                             const idx = (y * 160 + x) * 4;
                             const diff = Math.abs(currentData[idx] - prevData[idx]) +
                                          Math.abs(currentData[idx+1] - prevData[idx+1]) +
                                          Math.abs(currentData[idx+2] - prevData[idx+2]);
-                            if (diff > 65) {
+                            // Limiar de 34 capta bebê se movendo/levantando mesmo em iluminação noturna (IR)
+                            if (diff > 34) {
                                 standDiffCount++;
                             }
                         }
                     }
 
-                    if (standDiffCount > 32) {
+                    const totalSampled = Math.max(1, (maxY - minY) * (maxX - minX));
+                    const motionRatio = standDiffCount / totalSampled;
+
+                    // Dispara se houver pelo menos 18 pixels em movimento ou mais de 2.2% da área do topo do berço alterada
+                    if (standDiffCount >= 18 || motionRatio > 0.022) {
                         const now = Date.now();
-                        if (now - standCooldown > 20000) {
+                        if (now - standCooldown > 15000) {
                             standCooldown = now;
                             triggerBabyStandAlert(camId);
                         }
                     }
                 }
                 prevData = currentData;
-            }, 1200);
+            }, 1000);
         }
 
         function stopBabyStandWatcher(camId) {
@@ -10223,6 +10247,7 @@
             playToneSound(750, 0.35);
 
             captureAutoSnapshot(camId);
+            const liveSnapshotBase64 = getLiveVideoSnapshotBase64(camId);
 
             try {
                 fetch(`/api/cameras/${camId}/events`, {
@@ -10231,7 +10256,8 @@
                     headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({
                         event_type: 'baby_stand',
-                        description: '🚨 ALERTA: Bebê ficou em pé ou se apoiou na grade do berço!'
+                        description: '🚨 ALERTA: Bebê ficou em pé ou se apoiou na grade do berço!',
+                        snapshot_base64: liveSnapshotBase64
                     })
                 }).catch(e => console.warn(e));
             } catch(e) {}

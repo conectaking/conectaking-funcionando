@@ -977,7 +977,7 @@
                 <div class="folder-cards-grid">
                     <!-- Adoração -->
                     <div class="folder-card active" id="card-adoracao">
-                        <div class="folder-card-clickable" onclick="selectFolder('adoracao', true);">
+                        <div class="folder-card-clickable" onclick="selectFolder('adoracao', false);">
                             <div class="folder-card-top">
                                 <span class="folder-emoji">🙏</span>
                                 <span class="folder-badge" id="badge-adoracao">✓ ATIVA</span>
@@ -985,20 +985,20 @@
                             <div class="folder-title">Adoração</div>
                             <div class="folder-subtitle">{{ $countAdoracao }} músicas</div>
                         </div>
-                        <label class="folder-direct-btn btn-adoracao" style="position: relative; overflow: hidden; cursor: pointer;">
+                        <div class="folder-direct-btn btn-adoracao" style="position: relative; overflow: hidden; cursor: pointer;">
                             <span style="pointer-events: none;">➕ Adicionar MP3</span>
                             <input type="file" 
                                    name="audio" 
-                                   accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" 
+                                   accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" 
                                    multiple 
-                                   style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.0001; cursor: pointer; z-index: 20; display: block; font-size: 100px; margin: 0; padding: 0; border: none; -webkit-appearance: none;"
-                                   onchange="handleAudioUpload(this.files, 'adoracao', this);">
-                        </label>
+                                   style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;"
+                                   onchange="handleFileInputChange(this, 'adoracao');">
+                        </div>
                     </div>
 
                     <!-- Hora de Dormir -->
                     <div class="folder-card" id="card-dormir">
-                        <div class="folder-card-clickable" onclick="selectFolder('dormir', true);">
+                        <div class="folder-card-clickable" onclick="selectFolder('dormir', false);">
                             <div class="folder-card-top">
                                 <span class="folder-emoji">🌙</span>
                                 <span class="folder-badge" id="badge-dormir">✓ ATIVA</span>
@@ -1006,20 +1006,20 @@
                             <div class="folder-title">Hora de Dormir</div>
                             <div class="folder-subtitle">{{ $countDormir }} músicas</div>
                         </div>
-                        <label class="folder-direct-btn btn-dormir" style="position: relative; overflow: hidden; cursor: pointer;">
+                        <div class="folder-direct-btn btn-dormir" style="position: relative; overflow: hidden; cursor: pointer;">
                             <span style="pointer-events: none;">➕ Adicionar MP3</span>
                             <input type="file" 
                                    name="audio" 
-                                   accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" 
+                                   accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" 
                                    multiple 
-                                   style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.0001; cursor: pointer; z-index: 20; display: block; font-size: 100px; margin: 0; padding: 0; border: none; -webkit-appearance: none;"
-                                   onchange="handleAudioUpload(this.files, 'dormir', this);">
-                        </label>
+                                   style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;"
+                                   onchange="handleFileInputChange(this, 'dormir');">
+                        </div>
                     </div>
 
                     <!-- Animadas -->
                     <div class="folder-card" id="card-animadas">
-                        <div class="folder-card-clickable" onclick="selectFolder('animadas', true);">
+                        <div class="folder-card-clickable" onclick="selectFolder('animadas', false);">
                             <div class="folder-card-top">
                                 <span class="folder-emoji">⚡</span>
                                 <span class="folder-badge" id="badge-animadas">✓ ATIVA</span>
@@ -1027,20 +1027,20 @@
                             <div class="folder-title">Animadas</div>
                             <div class="folder-subtitle">{{ $countAnimadas }} músicas</div>
                         </div>
-                        <label class="folder-direct-btn btn-animadas" style="position: relative; overflow: hidden; cursor: pointer;">
+                        <div class="folder-direct-btn btn-animadas" style="position: relative; overflow: hidden; cursor: pointer;">
                             <span style="pointer-events: none;">➕ Adicionar MP3</span>
                             <input type="file" 
                                    name="audio" 
-                                   accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" 
+                                   accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" 
                                    multiple 
-                                   style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.0001; cursor: pointer; z-index: 20; display: block; font-size: 100px; margin: 0; padding: 0; border: none; -webkit-appearance: none;"
-                                   onchange="handleAudioUpload(this.files, 'animadas', this);">
-                        </label>
+                                   style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;"
+                                   onchange="handleFileInputChange(this, 'animadas');">
+                        </div>
                     </div>
 
                     <!-- Geral -->
                     <div class="folder-card" id="card-geral">
-                        <div class="folder-card-clickable" onclick="selectFolder('geral', true);">
+                        <div class="folder-card-clickable" onclick="selectFolder('geral', false);">
                             <div class="folder-card-top">
                                 <span class="folder-emoji">🌟</span>
                                 <span class="folder-badge" id="badge-geral">✓ ATIVA</span>
@@ -1048,20 +1048,20 @@
                             <div class="folder-title">Geral</div>
                             <div class="folder-subtitle">{{ $countGeral }} músicas</div>
                         </div>
-                        <label class="folder-direct-btn btn-geral" style="position: relative; overflow: hidden; cursor: pointer;">
+                        <div class="folder-direct-btn btn-geral" style="position: relative; overflow: hidden; cursor: pointer;">
                             <span style="pointer-events: none;">➕ Adicionar MP3</span>
                             <input type="file" 
                                    name="audio" 
-                                   accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" 
+                                   accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" 
                                    multiple 
-                                   style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.0001; cursor: pointer; z-index: 20; display: block; font-size: 100px; margin: 0; padding: 0; border: none; -webkit-appearance: none;"
-                                   onchange="handleAudioUpload(this.files, 'geral', this);">
-                        </label>
+                                   style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;"
+                                   onchange="handleFileInputChange(this, 'geral');">
+                        </div>
                     </div>
                 </div>
 
                 <!-- Botão Geral de Escolha -->
-                <label id="btnUploadMusic" class="main-upload-touch-btn" style="position: relative; overflow: hidden; cursor: pointer;">
+                <div id="btnUploadMusic" class="main-upload-touch-btn" style="position: relative; overflow: hidden; cursor: pointer;">
                     <span style="font-size: 1.8rem; pointer-events: none;">📱</span>
                     <div style="pointer-events: none;">
                         <div id="uploadBtnTitle" style="font-size: 1.05rem; font-weight: 800; line-height: 1.2;">Adicionar Músicas em 🙏 Adoração</div>
@@ -1072,11 +1072,11 @@
                     <input type="file" 
                            id="input-main-upload" 
                            name="audio" 
-                           accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" 
+                           accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" 
                            multiple 
-                           style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.0001; cursor: pointer; z-index: 20; display: block; font-size: 100px; margin: 0; padding: 0; border: none; -webkit-appearance: none;"
-                           onchange="handleAudioUpload(this.files, currentFolder, this);">
-                </label>
+                           style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;"
+                           onchange="handleFileInputChange(this, currentFolder);">
+                </div>
                 
                 <div id="progressContainer" style="display: none; margin-top: 14px;">
                     <p id="progressText" style="font-size: 0.88rem; color: #c4b5fd; margin-bottom: 6px; font-weight: 700;">Enviando...</p>
@@ -1463,6 +1463,18 @@
             }
         }
 
+        // Listener direto e resiliente para mobile Android (Xiaomi Poco X6 Pro / MIUI / Chrome) e Desktop
+        function handleFileInputChange(inputEl, cat) {
+            if (!inputEl) return;
+            const files = inputEl.files;
+            console.log('[Charlene] handleFileInputChange disparado:', cat, files ? files.length : 0);
+            if (!files || files.length === 0) {
+                console.warn('[Charlene] Nenhum arquivo retornado pelo seletor de arquivos.');
+                return;
+            }
+            handleAudioUpload(files, cat || currentFolder, inputEl);
+        }
+
         // Upload de arquivos ultra-confiável com progresso em tempo real para Celular e PC
         async function handleAudioUpload(files, forcedCat, inputEl) {
             const selectedFiles = (files && files.length) ? files : (inputEl && inputEl.files && inputEl.files.length ? inputEl.files : null);
@@ -1473,7 +1485,7 @@
             }
 
             const targetCat = forcedCat || currentFolder || 'adoracao';
-            try { selectFolder(targetCat); } catch(e){}
+            try { selectFolder(targetCat, false); } catch(e){}
             const catInfo = folderMetadata[targetCat] || { name: 'Adoração', emoji: '🙏', label: '🙏 Pasta Adoração', color: '#8b5cf6' };
             const catName = catInfo.name || targetCat;
 
@@ -1645,6 +1657,7 @@
         window.filterCategory = filterCategory;
         window.filterSongsList = filterSongsList;
         window.handleAudioUpload = handleAudioUpload;
+        window.handleFileInputChange = handleFileInputChange;
         window.deleteSong = deleteSong;
         window.saveMemory = saveMemory;
         window.deleteMemory = deleteMemory;

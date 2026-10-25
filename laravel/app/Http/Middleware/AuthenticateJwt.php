@@ -56,6 +56,11 @@ class AuthenticateJwt
         }
         $request->attributes->set('auth_user_id', (string) $userId);
         $request->attributes->set('auth_payload', $payload);
+        $isAdmin = (bool) ($payload['isAdmin'] ?? $payload['is_admin'] ?? false);
+        $request->attributes->set('is_admin', $isAdmin);
+        if ($isAdmin) {
+            $request->attributes->set('auth_role', 'admin');
+        }
 
         return $next($request);
     }
