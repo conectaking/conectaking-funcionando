@@ -1498,35 +1498,44 @@ class CharleneController extends Controller
             return response()->json(['success' => false, 'message' => "Falha no arquivo enviado: {$errMsg}"], 400);
         }
 
-        $allowedExts = ['mp3', 'm4a', 'aac', 'wav', 'ogg', 'flac', 'wma', 'opus', 'webm'];
-        $ext = strtolower($file->getClientOriginalExtension());
-        
+        $allowedExts = ['mp3', 'm4a', 'aac', 'wav', 'ogg', 'flac', 'wma', 'opus', 'webm', 'mp4', '3gp', '3gpp'];
+        $ext = strtolower($file->getClientOriginalExtension() ?? '');
+        $mime = strtolower($file->getMimeType() ?? '');
+        $clientMime = strtolower($file->getClientMimeType() ?? '');
+        $guessed = strtolower($file->guessExtension() ?? '');
+
         // Se a extensão veio vazia ou diferente do esperado (muito comum em mobile Android e iOS)
-        if (!$ext || !in_array($ext, $allowedExts)) {
-            $guessed = strtolower($file->guessExtension() ?? '');
-            if (in_array($guessed, $allowedExts)) {
+        if (!$ext || !in_array($ext, $allowedExts, true)) {
+            if (in_array($guessed, $allowedExts, true)) {
                 $ext = $guessed;
+            } elseif (
+                str_starts_with($mime, 'audio/') || 
+                str_starts_with($clientMime, 'audio/') || 
+                $mime === 'application/octet-stream' ||
+                $clientMime === 'application/octet-stream' ||
+                str_contains($mime, 'mp4') ||
+                str_contains($clientMime, 'mp4') ||
+                str_contains($mime, 'quicktime') ||
+                str_contains($clientMime, 'quicktime') ||
+                str_contains($mime, 'mp3') ||
+                str_contains($clientMime, 'mp3') ||
+                str_contains($mime, 'mpeg') ||
+                str_contains($clientMime, 'mpeg') ||
+                $guessed === 'mp4' ||
+                $guessed === 'm4a'
+            ) {
+                $ext = ($guessed === 'mp4' || $guessed === 'm4a' || str_contains($mime, 'mp4') || str_contains($clientMime, 'mp4')) ? 'm4a' : 'mp3';
             } else {
-                $mime = strtolower($file->getMimeType() ?? '');
-                $clientMime = strtolower($file->getClientMimeType() ?? '');
-                if (
-                    str_starts_with($mime, 'audio/') || 
-                    str_starts_with($clientMime, 'audio/') || 
-                    $mime === 'application/octet-stream' ||
-                    $clientMime === 'application/octet-stream' ||
-                    str_contains($mime, 'mp3') ||
-                    str_contains($clientMime, 'mp3') ||
-                    str_contains($mime, 'mpeg') ||
-                    str_contains($clientMime, 'mpeg')
-                ) {
-                    $ext = 'mp3';
-                } else {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Formato não suportado. Por favor, envie um arquivo de áudio (MP3, M4A ou WAV).'
-                    ], 422);
-                }
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Formato não suportado. Por favor, envie um arquivo de áudio (.mp3, .m4a, .wav ou .aac).'
+                ], 422);
             }
+        }
+
+        // Se o arquivo veio com extensão mp4 (container de áudio comum de iPhone/Android), salva como m4a para compatibilidade com Alexa
+        if ($ext === 'mp4' || $ext === '3gp' || $ext === '3gpp') {
+            $ext = 'm4a';
         }
 
         $cat = $request->input('category', 'adoracao');

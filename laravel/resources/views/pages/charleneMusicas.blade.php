@@ -416,22 +416,19 @@
             touch-action: manipulation;
         }
 
-        /* Input nativo transparente sobrepondo 100% da área do botão para toque direto e instantâneo no celular */
-        .touch-cover-file-input {
+        /* Input nativo oculto de forma acessível e compatível com iOS e Android */
+        .native-hidden-file {
             position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            opacity: 0.0001 !important;
-            cursor: pointer !important;
-            z-index: 50 !important;
-            display: block !important;
-            margin: 0 !important;
+            width: 1px !important;
+            height: 1px !important;
             padding: 0 !important;
-            font-size: 100px !important;
-            -webkit-appearance: none !important;
-            appearance: none !important;
+            margin: -1px !important;
+            overflow: hidden !important;
+            clip: rect(0, 0, 0, 0) !important;
+            border: 0 !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            z-index: -1 !important;
         }
 
         /* Modal de Progresso Flutuante de Upload Ultra Visível para Celular e PC */
@@ -987,10 +984,10 @@
                             <div class="folder-title">Adoração</div>
                             <div class="folder-subtitle">{{ $countAdoracao }} músicas</div>
                         </div>
-                        <div class="folder-direct-btn btn-adoracao">
+                        <label for="input-adoracao" class="folder-direct-btn btn-adoracao" onclick="event.stopPropagation(); selectFolder('adoracao');">
                             <span>➕ Adicionar MP3</span>
-                            <input type="file" id="input-adoracao" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,audio/mpeg,audio/mp3,audio/x-m4a,audio/wav" multiple class="touch-cover-file-input" onchange="handleAudioUpload(this.files, 'adoracao', this);">
-                        </div>
+                        </label>
+                        <input type="file" id="input-adoracao" accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files, 'adoracao', this);">
                     </div>
 
                     <!-- Hora de Dormir -->
@@ -1003,10 +1000,10 @@
                             <div class="folder-title">Hora de Dormir</div>
                             <div class="folder-subtitle">{{ $countDormir }} músicas</div>
                         </div>
-                        <div class="folder-direct-btn btn-dormir">
+                        <label for="input-dormir" class="folder-direct-btn btn-dormir" onclick="event.stopPropagation(); selectFolder('dormir');">
                             <span>➕ Adicionar MP3</span>
-                            <input type="file" id="input-dormir" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,audio/mpeg,audio/mp3,audio/x-m4a,audio/wav" multiple class="touch-cover-file-input" onchange="handleAudioUpload(this.files, 'dormir', this);">
-                        </div>
+                        </label>
+                        <input type="file" id="input-dormir" accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files, 'dormir', this);">
                     </div>
 
                     <!-- Animadas -->
@@ -1019,10 +1016,10 @@
                             <div class="folder-title">Animadas</div>
                             <div class="folder-subtitle">{{ $countAnimadas }} músicas</div>
                         </div>
-                        <div class="folder-direct-btn btn-animadas">
+                        <label for="input-animadas" class="folder-direct-btn btn-animadas" onclick="event.stopPropagation(); selectFolder('animadas');">
                             <span>➕ Adicionar MP3</span>
-                            <input type="file" id="input-animadas" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,audio/mpeg,audio/mp3,audio/x-m4a,audio/wav" multiple class="touch-cover-file-input" onchange="handleAudioUpload(this.files, 'animadas', this);">
-                        </div>
+                        </label>
+                        <input type="file" id="input-animadas" accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files, 'animadas', this);">
                     </div>
 
                     <!-- Geral -->
@@ -1035,15 +1032,15 @@
                             <div class="folder-title">Geral</div>
                             <div class="folder-subtitle">{{ $countGeral }} músicas</div>
                         </div>
-                        <div class="folder-direct-btn btn-geral">
+                        <label for="input-geral" class="folder-direct-btn btn-geral" onclick="event.stopPropagation(); selectFolder('geral');">
                             <span>➕ Adicionar MP3</span>
-                            <input type="file" id="input-geral" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,audio/mpeg,audio/mp3,audio/x-m4a,audio/wav" multiple class="touch-cover-file-input" onchange="handleAudioUpload(this.files, 'geral', this);">
-                        </div>
+                        </label>
+                        <input type="file" id="input-geral" accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files, 'geral', this);">
                     </div>
                 </div>
 
                 <!-- Botão Geral de Escolha -->
-                <div id="btnUploadMusic" class="main-upload-touch-btn">
+                <label id="btnUploadMusic" for="input-main-upload" class="main-upload-touch-btn" onclick="event.stopPropagation();">
                     <span style="font-size: 1.8rem; pointer-events: none;">📱</span>
                     <div style="pointer-events: none;">
                         <div id="uploadBtnTitle" style="font-size: 1.05rem; font-weight: 800; line-height: 1.2;">Adicionar Músicas em 🙏 Adoração</div>
@@ -1051,8 +1048,8 @@
                             Destino: <strong>🙏 Pasta Adoração da Sarah</strong>
                         </div>
                     </div>
-                    <input type="file" id="input-main-upload" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,audio/mpeg,audio/mp3,audio/x-m4a,audio/wav" multiple class="touch-cover-file-input" onchange="handleAudioUpload(this.files, currentFolder, this);">
-                </div>
+                </label>
+                <input type="file" id="input-main-upload" accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,audio/*" multiple class="native-hidden-file" onchange="handleAudioUpload(this.files, currentFolder, this);">
                 
                 <div id="progressContainer" style="display: none; margin-top: 14px;">
                     <p id="progressText" style="font-size: 0.88rem; color: #c4b5fd; margin-bottom: 6px; font-weight: 700;">Enviando...</p>
@@ -1452,7 +1449,6 @@
 
             if (!selectedFiles || !selectedFiles.length) {
                 console.warn('[Charlene] Nenhum arquivo selecionado.');
-                alert('Nenhum arquivo de música foi detectado pelo celular.\n\nPor favor, toque novamente no botão e escolha o arquivo de áudio (.mp3, .m4a ou .wav).');
                 return;
             }
 
@@ -1533,25 +1529,35 @@
 
                         xhr.onload = () => {
                             try {
-                                const resp = JSON.parse(xhr.responseText || '{}');
+                                let resp = {};
+                                try {
+                                    resp = JSON.parse(xhr.responseText || '{}');
+                                } catch(parseE) {
+                                    resp = {};
+                                }
+
                                 if (xhr.status >= 200 && xhr.status < 300 && resp.success) {
                                     successes++;
                                     resolve(resp);
                                 } else {
                                     errors++;
-                                    lastErrMsg = resp.message || `Erro HTTP ${xhr.status}`;
+                                    if (xhr.status === 413) {
+                                        lastErrMsg = 'Arquivo muito grande (limite de 64MB). Escolha um arquivo menor.';
+                                    } else {
+                                        lastErrMsg = resp.message || `Erro do servidor (HTTP ${xhr.status})`;
+                                    }
                                     reject(new Error(lastErrMsg));
                                 }
                             } catch (parseErr) {
                                 errors++;
-                                lastErrMsg = `Resposta inesperada do servidor (HTTP ${xhr.status})`;
+                                lastErrMsg = `Erro HTTP ${xhr.status}: ${xhr.statusText || 'Falha no processamento'}`;
                                 reject(new Error(lastErrMsg));
                             }
                         };
 
                         xhr.onerror = () => {
                             errors++;
-                            lastErrMsg = 'Falha de conexão com a internet ou servidor.';
+                            lastErrMsg = 'Falha de conexão com o servidor. Verifique a internet do celular.';
                             reject(new Error(lastErrMsg));
                         };
 
