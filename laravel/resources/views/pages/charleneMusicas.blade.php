@@ -985,15 +985,9 @@
                             <div class="folder-title">Adoração</div>
                             <div class="folder-subtitle">{{ $countAdoracao }} músicas</div>
                         </div>
-                        <label class="folder-direct-btn btn-adoracao" style="position: relative; overflow: hidden; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">
-                            <span style="pointer-events: none;">➕ Adicionar MP3</span>
-                            <input type="file" 
-                                   name="audio" 
-                                   accept="audio/*,audio/mpeg,audio/mp3,audio/m4a,audio/x-m4a,audio/aac,audio/wav,audio/ogg,audio/flac" 
-                                   multiple 
-                                   style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;"
-                                   onchange="handleFileInputChange(this, 'adoracao');">
-                        </label>
+                        <button type="button" class="folder-direct-btn btn-adoracao" onclick="openAudioPicker('adoracao', event)">
+                            <span>➕ Adicionar MP3</span>
+                        </button>
                     </div>
 
                     <!-- Hora de Dormir -->
@@ -1006,15 +1000,9 @@
                             <div class="folder-title">Hora de Dormir</div>
                             <div class="folder-subtitle">{{ $countDormir }} músicas</div>
                         </div>
-                        <label class="folder-direct-btn btn-dormir" style="position: relative; overflow: hidden; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">
-                            <span style="pointer-events: none;">➕ Adicionar MP3</span>
-                            <input type="file" 
-                                   name="audio" 
-                                   accept="audio/*,audio/mpeg,audio/mp3,audio/m4a,audio/x-m4a,audio/aac,audio/wav,audio/ogg,audio/flac" 
-                                   multiple 
-                                   style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;"
-                                   onchange="handleFileInputChange(this, 'dormir');">
-                        </label>
+                        <button type="button" class="folder-direct-btn btn-dormir" onclick="openAudioPicker('dormir', event)">
+                            <span>➕ Adicionar MP3</span>
+                        </button>
                     </div>
 
                     <!-- Animadas -->
@@ -1027,15 +1015,9 @@
                             <div class="folder-title">Animadas</div>
                             <div class="folder-subtitle">{{ $countAnimadas }} músicas</div>
                         </div>
-                        <label class="folder-direct-btn btn-animadas" style="position: relative; overflow: hidden; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">
-                            <span style="pointer-events: none;">➕ Adicionar MP3</span>
-                            <input type="file" 
-                                   name="audio" 
-                                   accept="audio/*,audio/mpeg,audio/mp3,audio/m4a,audio/x-m4a,audio/aac,audio/wav,audio/ogg,audio/flac" 
-                                   multiple 
-                                   style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;"
-                                   onchange="handleFileInputChange(this, 'animadas');">
-                        </label>
+                        <button type="button" class="folder-direct-btn btn-animadas" onclick="openAudioPicker('animadas', event)">
+                            <span>➕ Adicionar MP3</span>
+                        </button>
                     </div>
 
                     <!-- Geral -->
@@ -1048,20 +1030,14 @@
                             <div class="folder-title">Geral</div>
                             <div class="folder-subtitle">{{ $countGeral }} músicas</div>
                         </div>
-                        <label class="folder-direct-btn btn-geral" style="position: relative; overflow: hidden; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">
-                            <span style="pointer-events: none;">➕ Adicionar MP3</span>
-                            <input type="file" 
-                                   name="audio" 
-                                   accept="audio/*,audio/mpeg,audio/mp3,audio/m4a,audio/x-m4a,audio/aac,audio/wav,audio/ogg,audio/flac" 
-                                   multiple 
-                                   style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;"
-                                   onchange="handleFileInputChange(this, 'geral');">
-                        </label>
+                        <button type="button" class="folder-direct-btn btn-geral" onclick="openAudioPicker('geral', event)">
+                            <span>➕ Adicionar MP3</span>
+                        </button>
                     </div>
                 </div>
 
                 <!-- Botão Geral de Escolha -->
-                <label id="btnUploadMusic" class="main-upload-touch-btn" style="position: relative; overflow: hidden; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                <button type="button" id="btnUploadMusic" class="main-upload-touch-btn" onclick="openAudioPicker(null, event)">
                     <span style="font-size: 1.8rem; pointer-events: none;">📱</span>
                     <div style="pointer-events: none;">
                         <div id="uploadBtnTitle" style="font-size: 1.05rem; font-weight: 800; line-height: 1.2;">Adicionar Músicas em 🙏 Adoração</div>
@@ -1069,14 +1045,14 @@
                             Destino: <strong>🙏 Pasta Adoração da Sarah</strong>
                         </div>
                     </div>
-                    <input type="file" 
-                           id="input-main-upload" 
-                           name="audio" 
-                           accept="audio/*,audio/mpeg,audio/mp3,audio/m4a,audio/x-m4a,audio/aac,audio/wav,audio/ogg,audio/flac" 
-                           multiple 
-                           style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;"
-                           onchange="handleFileInputChange(this);">
-                </label>
+                </button>
+
+                <!-- Input Único Global para Seleção de Arquivos (Sem filtros restritivos que quebram o Android) -->
+                <input type="file" 
+                       id="globalCharleneFileInput" 
+                       multiple 
+                       style="position: fixed; top: -9999px; left: -9999px; opacity: 0; width: 1px; height: 1px; pointer-events: none;"
+                       aria-hidden="true">
                 
                 <div id="progressContainer" style="display: none; margin-top: 14px;">
                     <p id="progressText" style="font-size: 0.88rem; color: #c4b5fd; margin-bottom: 6px; font-weight: 700;">Enviando...</p>
@@ -1354,25 +1330,49 @@
             }
         }
 
-        // Abre o seletor nativo de arquivos do celular/PC de forma 100% garantida
-        function openFilePicker(cat, e) {
-            if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-            try {
-                const targetCat = cat || currentFolder || 'adoracao';
-                selectFolder(targetCat, false);
-                const card = document.getElementById('card-' + targetCat);
-                const input = (card ? card.querySelector('input[type="file"]') : null) || document.getElementById('input-main-upload');
-                if (input) {
-                    input.click();
-                }
-            } catch(err) {
-                console.error('[Charlene] Erro em openFilePicker:', err);
-            }
+        let activeUploadCategory = 'adoracao';
+
+        // Validação de formato de áudio robusta no cliente
+        function isSupportedAudio(file) {
+            if (!file) return false;
+            const name = (file.name || '').toLowerCase();
+            const type = (file.type || '').toLowerCase();
+            const audioExts = /\.(mp3|m4a|aac|wav|ogg|flac|wma|opus|webm|mp4|3gp|3gpp)$/i;
+            return type.startsWith('audio/') || 
+                   type.includes('mpeg') || 
+                   type.includes('mp4') || 
+                   type.includes('ogg') || 
+                   type.includes('wav') ||
+                   audioExts.test(name);
         }
 
-        // Ação direta pelo botão "➕ Adicionar MP3" de cada pasta
+        // Abre o seletor nativo do Android / iPhone / PC com 1 clique limpo
+        function openAudioPicker(cat, e) {
+            if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+            if (e && typeof e.preventDefault === 'function') e.preventDefault();
+
+            activeUploadCategory = cat || window.currentFolder || (typeof currentFolder !== 'undefined' ? currentFolder : 'adoracao');
+            try { selectFolder(activeUploadCategory, false); } catch(err){}
+
+            const inp = document.getElementById('globalCharleneFileInput');
+            if (!inp) {
+                console.error('[Charlene] Input globalCharleneFileInput não encontrado.');
+                return;
+            }
+
+            // Reseta o input para disparar 'change' mesmo ao selecionar a mesma música
+            inp.value = '';
+
+            // Aciona o seletor nativo
+            inp.click();
+        }
+
+        function openFilePicker(cat, e) {
+            openAudioPicker(cat, e);
+        }
+
         function directUpload(cat, e) {
-            openFilePicker(cat, e);
+            openAudioPicker(cat, e);
         }
 
         // Seleção de pasta unificada (Atualiza cards, botão de upload e lista)
@@ -1464,29 +1464,16 @@
             }
         }
 
-        // Listener direto e resiliente para mobile Android (Xiaomi Poco X6 Pro / MIUI / Chrome) e Desktop
-        function handleFileInputChange(inputEl, cat) {
-            if (!inputEl) return;
-            const files = inputEl.files;
-            const targetFolder = cat || window.currentFolder || (typeof currentFolder !== 'undefined' ? currentFolder : 'adoracao');
-            console.log('[Charlene] handleFileInputChange disparado:', targetFolder, files ? files.length : 0);
-            if (!files || files.length === 0) {
-                console.warn('[Charlene] Nenhum arquivo retornado pelo seletor de arquivos.');
-                return;
-            }
-            handleAudioUpload(files, targetFolder, inputEl);
-        }
-
         // Upload de arquivos ultra-confiável com progresso em tempo real para Celular e PC
-        async function handleAudioUpload(files, forcedCat, inputEl) {
-            const selectedFiles = (files && files.length) ? files : (inputEl && inputEl.files && inputEl.files.length ? inputEl.files : null);
+        async function handleAudioUpload(files, forcedCat) {
+            const selectedFiles = files;
 
             if (!selectedFiles || !selectedFiles.length) {
-                console.warn('[Charlene] Nenhum arquivo selecionado.');
+                alert('Nenhum arquivo selecionado.');
                 return;
             }
 
-            const targetCat = forcedCat || window.currentFolder || (typeof currentFolder !== 'undefined' ? currentFolder : 'adoracao');
+            const targetCat = forcedCat || activeUploadCategory || window.currentFolder || (typeof currentFolder !== 'undefined' ? currentFolder : 'adoracao');
             try { selectFolder(targetCat, false); } catch(e){}
             const catInfo = folderMetadata[targetCat] || { name: 'Adoração', emoji: '🙏', label: '🙏 Pasta Adoração', color: '#8b5cf6' };
             const catName = catInfo.name || targetCat;
@@ -1656,12 +1643,13 @@
         // Exposição global no window
         window.switchSection = switchSection;
         window.selectFolder = selectFolder;
-        window.directUpload = directUpload;
-        window.openFilePicker = openFilePicker;
+        window.openAudioPicker = openAudioPicker;
+        window.directUpload = openAudioPicker;
+        window.openFilePicker = openAudioPicker;
+        window.isSupportedAudio = isSupportedAudio;
         window.filterCategory = filterCategory;
         window.filterSongsList = filterSongsList;
         window.handleAudioUpload = handleAudioUpload;
-        window.handleFileInputChange = handleFileInputChange;
         window.deleteSong = deleteSong;
         window.saveMemory = saveMemory;
         window.deleteMemory = deleteMemory;
@@ -1669,6 +1657,35 @@
 
         // Recupera a aba ativa ao recarregar a tela e adiciona listeners de toque
         document.addEventListener('DOMContentLoaded', () => {
+            // Listener central do seletor nativo de áudio (Android / iOS / PC)
+            const globalInp = document.getElementById('globalCharleneFileInput');
+            if (globalInp) {
+                globalInp.addEventListener('change', function(e) {
+                    const files = this.files;
+                    console.log('[Charlene] globalCharleneFileInput selecionou:', files ? files.length : 0);
+                    if (!files || files.length === 0) {
+                        return;
+                    }
+
+                    const validFiles = [];
+                    for (let i = 0; i < files.length; i++) {
+                        const f = files[i];
+                        if (isSupportedAudio(f)) {
+                            validFiles.push(f);
+                        } else {
+                            console.warn('[Charlene] Arquivo ignorado por não ser áudio:', f.name, f.type);
+                        }
+                    }
+
+                    if (validFiles.length === 0) {
+                        alert('O arquivo selecionado não foi reconhecido como música (.mp3, .m4a, .wav, .aac).\n\nPor favor, selecione um arquivo de áudio.');
+                        return;
+                    }
+
+                    handleAudioUpload(validFiles, activeUploadCategory);
+                });
+            }
+
             // Garante cliques diretos nas abas
             document.querySelectorAll('.main-tab').forEach(tab => {
                 const sec = tab.getAttribute('data-section');
