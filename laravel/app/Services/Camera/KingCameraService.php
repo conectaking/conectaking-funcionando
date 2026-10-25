@@ -20,9 +20,34 @@ class KingCameraService
     }
 
     /**
+     * Garante que o stream esteja registrado no go2rtc sem destruí-lo se já estiver ativo.
+     */
+    public function ensureStreamInGo2Rtc(KingCamera $camera): bool
+    {
+        $goUrl = $this->getGo2RtcUrl();
+        $streamId = $camera->stream_id;
+
+        try {
+            // Verifica se o stream já existe no go2rtc
+            $res = Http::timeout(2.0)->get("{$goUrl}/api/streams?src=" . urlencode($streamId));
+            if ($res->successful()) {
+                $data = $res->json();
+                if (! empty($data)) {
+                    // Já está registrado e saudável! NÃO recriar nem deletar.
+                    return true;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Se falhar a checagem, prossegue para registrar
+        }
+
+        return $this->syncStreamToGo2Rtc($camera, false);
+    }
+
+    /**
      * Registra ou atualiza um stream na API REST do go2rtc (sem reiniciar container).
      */
-    public function syncStreamToGo2Rtc(KingCamera $camera): bool
+    public function syncStreamToGo2Rtc(KingCamera $camera, bool $forceDelete = false): bool
     {
         $goUrl = $this->getGo2RtcUrl();
         $streamId = $camera->stream_id;
@@ -31,11 +56,12 @@ class KingCameraService
             $rtspUrl .= '#transport=tcp';
         }
         try {
-
-            // 2. Remove stream anterior para garantir produtores limpos sem looping
-            @file_get_contents("{$goUrl}/api/streams?src=" . urlencode($streamId), false, stream_context_create([
-                'http' => ['method' => 'DELETE', 'timeout' => 2]
-            ]));
+            // Apenas remove se for explicitamente solicitado (ex: mudança de IP/credenciais)
+            if ($forceDelete) {
+                @file_get_contents("{$goUrl}/api/streams?src=" . urlencode($streamId), false, stream_context_create([
+                    'http' => ['method' => 'DELETE', 'timeout' => 2]
+                ]));
+            }
 
             $encodedSrc = str_replace(['%2A', '%2a'], '*', urlencode($rtspUrl));
             $endpoint = "{$goUrl}/api/streams?name=" . urlencode($streamId) . "&src=" . $encodedSrc;
@@ -143,7 +169,7 @@ class KingCameraService
     {
         $goUrl = $this->getGo2RtcUrl();
         try {
-            $res = Http::timeout(10.0)
+            $res = Http::timeout(15.0)
                 ->withBody($offerSdp, 'application/sdp')
                 ->post("{$goUrl}/api/webrtc?src=" . urlencode($streamId));
 

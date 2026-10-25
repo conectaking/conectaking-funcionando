@@ -5485,6 +5485,7 @@
 
                 const stopFallback = () => {
                     hasReceivedVideo = true;
+                    cam._webrtcRetries = 0;
                     if (loaderEl) loaderEl.style.display = 'none';
                     // Se o fallback por snapshot estiver ativo, limpa e oculta
                     if (window[`snapInterval_${cam.id}`]) {
@@ -5536,20 +5537,32 @@
                         type: 'answer',
                         sdp: answerSdp
                     }));
+                    cam._webrtcRetries = 0;
 
-                    // Fallback de segurança: se após 5.5s o vídeo WebRTC ainda não renderizar quadros nem estiver tocando, ativa o Live Snapshot contínuo
+                    // Fallback de segurança: se após 6s o vídeo WebRTC ainda não renderizar quadros nem estiver tocando, ativa o Live Snapshot contínuo
                     setTimeout(() => {
                         const isVideoPlaying = !videoEl.paused && (videoEl.currentTime > 0 || videoEl.readyState >= 2 || videoEl.videoWidth > 0);
                         if (!hasReceivedVideo && !isVideoPlaying) {
                             activateLiveSnapshotFallback(cam.id, false);
                         }
-                    }, 5500);
+                    }, 6000);
                 } else {
-                    // Se WebRTC falhar na negociação, ativa o Live Snapshot contínuo
+                    // Se falhar na negociação WebRTC, tenta reconexão automática rápida em 2s (até 2 tentativas)
+                    if (!cam._webrtcRetries || cam._webrtcRetries < 2) {
+                        cam._webrtcRetries = (cam._webrtcRetries || 0) + 1;
+                        console.warn(`WebRTC handshake retornou status ${response.status}. Tentativa ${cam._webrtcRetries}/2 em 2 segundos...`);
+                        setTimeout(() => startCameraFeed(cam), 2000);
+                        return;
+                    }
                     activateLiveSnapshotFallback(cam.id, false);
                 }
             } catch (err) {
                 console.warn(`WebRTC error for camera ${cam.id}:`, err);
+                if (!cam._webrtcRetries || cam._webrtcRetries < 2) {
+                    cam._webrtcRetries = (cam._webrtcRetries || 0) + 1;
+                    setTimeout(() => startCameraFeed(cam), 2000);
+                    return;
+                }
                 activateLiveSnapshotFallback(cam.id, false);
             }
         }

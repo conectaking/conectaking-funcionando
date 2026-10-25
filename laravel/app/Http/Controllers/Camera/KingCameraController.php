@@ -269,8 +269,8 @@ class KingCameraController extends Controller
             return response('SDP Offer is required', 400);
         }
 
-        // Garante que o stream está registrado no go2rtc
-        $this->cameraService->syncStreamToGo2Rtc($camera);
+        // Garante que o stream está registrado no go2rtc sem interromper a transmissão ativa
+        $this->cameraService->ensureStreamInGo2Rtc($camera);
 
         $answerSdp = $this->cameraService->exchangeWebRtcSdp($camera->stream_id, $offerSdp);
         if (! $answerSdp) {
@@ -601,8 +601,8 @@ class KingCameraController extends Controller
             return response('SDP Offer is required', 400);
         }
 
-        // Garante que o stream está registrado no go2rtc
-        $this->cameraService->syncStreamToGo2Rtc($camera);
+        // Garante que o stream está registrado no go2rtc sem interromper a transmissão ativa
+        $this->cameraService->ensureStreamInGo2Rtc($camera);
 
         $answerSdp = $this->cameraService->exchangeWebRtcSdp($camera->stream_id, $offerSdp);
         if (! $answerSdp) {
