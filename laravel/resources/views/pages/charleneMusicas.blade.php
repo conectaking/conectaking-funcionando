@@ -637,6 +637,68 @@
             flex-wrap: wrap;
         }
 
+        .batch-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #e2e8f0;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .batch-btn:hover {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: rgba(139, 92, 246, 0.5);
+            color: #fff;
+        }
+
+        .del-btn-batch {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: #fca5a5;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 0.84rem;
+            font-weight: 800;
+            cursor: not-allowed;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            opacity: 0.6;
+        }
+
+        .del-btn-batch.active {
+            background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+            color: #ffffff !important;
+            border: none !important;
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45) !important;
+            cursor: pointer !important;
+            opacity: 1 !important;
+        }
+
+        .del-btn-batch.active:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(239, 68, 68, 0.6) !important;
+        }
+
+        .song-item {
+            transition: background 0.2s, border-color 0.2s;
+            cursor: pointer;
+        }
+
+        .song-item.selected {
+            background: rgba(139, 92, 246, 0.18) !important;
+            border-color: rgba(139, 92, 246, 0.6) !important;
+            box-shadow: 0 0 12px rgba(139, 92, 246, 0.25);
+        }
+
         /* Floating Player Bar (Passar e Repetir Músicas) */
         .floating-player-bar {
             position: fixed;
@@ -1274,17 +1336,23 @@
 
             <!-- Barra de Ações em Lote e Limpeza de Pasta -->
             <div class="batch-toolbar" id="batchToolbar">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.86rem; font-weight: 700;">
-                        <input type="checkbox" id="selectAllSongs" onchange="toggleSelectAllSongs(this.checked)" style="width: 17px; height: 17px; accent-color: var(--primary); cursor: pointer;">
-                        <span>Selecionar Músicas</span>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.86rem; font-weight: 700; user-select: none;">
+                        <input type="checkbox" id="selectAllSongs" onclick="toggleSelectAllSongs(this.checked)" onchange="toggleSelectAllSongs(this.checked)" style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
+                        <span id="selectAllLabel">Selecionar Todas</span>
                     </label>
+                    <button type="button" class="batch-btn" onclick="toggleSelectAllSongs(true)" title="Selecionar todas as músicas visíveis">
+                        ☑️ Selecionar Todas
+                    </button>
+                    <button type="button" class="batch-btn" onclick="toggleSelectAllSongs(false)" title="Desmarcar todas as músicas">
+                        ⬜ Desmarcar
+                    </button>
                     <span id="selectedCountBadge" style="display: none; font-size: 0.78rem; background: rgba(139, 92, 246, 0.25); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4); padding: 3px 10px; border-radius: 999px; font-weight: 700;">
                         <span id="selectedCountNum">0</span> selecionada(s)
                     </span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <button id="btnDeleteSelected" type="button" class="del-btn" onclick="deleteSelectedSongs()" style="display: none; background: #ef4444; color: white; font-weight: 800; padding: 7px 14px; border: none; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);">
+                    <button id="btnDeleteSelected" type="button" class="del-btn-batch" onclick="deleteSelectedSongs()" disabled title="Excluir todas as músicas marcadas">
                         🗑️ Excluir Selecionadas (<span id="selectedCountNumBtn">0</span>)
                     </button>
                     <button id="btnClearFolder" type="button" class="del-btn" onclick="clearCurrentFolder()" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; font-weight: 700; padding: 7px 12px;">
@@ -1300,11 +1368,13 @@
                          data-category="{{ $song['category'] }}"
                          data-url="{{ $song['url'] }}"
                          data-title="{{ $song['title'] }}"
-                         data-filename="{{ $song['filename'] }}">
+                         data-filename="{{ $song['filename'] }}"
+                         onclick="onSongItemClick(event, this)">
                         <div style="display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1;">
                             <input type="checkbox" class="song-checkbox" 
                                    data-filename="{{ $song['filename'] }}" 
                                    data-category="{{ $song['category'] }}" 
+                                   onclick="event.stopPropagation();"
                                    onchange="updateSelectedSongsUI()" 
                                    style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); flex-shrink: 0;"
                                    title="Selecionar para apagar">
@@ -1769,17 +1839,54 @@
         }
 
         // ==================== AÇÕES EM LOTE (SELEÇÃO & LIMPEZA) ====================
-        function toggleSelectAllSongs(checked) {
-            document.querySelectorAll('.song-item').forEach(item => {
-                if (item.style.display !== 'none') {
+        function toggleSelectAllSongs(forceState) {
+            const selectAllCb = document.getElementById('selectAllSongs');
+            let shouldCheck;
+            if (typeof forceState === 'boolean') {
+                shouldCheck = forceState;
+            } else if (selectAllCb) {
+                shouldCheck = Boolean(selectAllCb.checked);
+            } else {
+                shouldCheck = true;
+            }
+
+            if (selectAllCb) {
+                selectAllCb.checked = shouldCheck;
+                selectAllCb.indeterminate = false;
+            }
+
+            const items = document.querySelectorAll('.song-item');
+            items.forEach(item => {
+                const isHidden = (item.style.display === 'none') || (window.getComputedStyle(item).display === 'none');
+                if (!isHidden) {
                     const cb = item.querySelector('.song-checkbox');
-                    if (cb) cb.checked = checked;
+                    if (cb) {
+                        cb.checked = shouldCheck;
+                    }
+                    if (shouldCheck) {
+                        item.classList.add('selected');
+                    } else {
+                        item.classList.remove('selected');
+                    }
                 }
             });
             updateSelectedSongsUI();
         }
 
+        function onSongItemClick(e, item) {
+            // Ignora cliques no player de áudio nativo, botões e na própria caixa de marcação
+            if (e.target.closest('audio') || e.target.closest('button') || e.target.closest('input[type="checkbox"]')) {
+                return;
+            }
+            const cb = item.querySelector('.song-checkbox');
+            if (cb) {
+                cb.checked = !cb.checked;
+                updateSelectedSongsUI();
+            }
+        }
+
         function updateSelectedSongsUI() {
+            const visibleItems = Array.from(document.querySelectorAll('.song-item')).filter(it => it.style.display !== 'none' && window.getComputedStyle(it).display !== 'none');
             const checked = Array.from(document.querySelectorAll('.song-checkbox:checked'));
             const count = checked.length;
             const badge = document.getElementById('selectedCountBadge');
@@ -1787,29 +1894,68 @@
             const numSpan = document.getElementById('selectedCountNum');
             const numSpanBtn = document.getElementById('selectedCountNumBtn');
             const selectAllCb = document.getElementById('selectAllSongs');
+            const selectAllLabel = document.getElementById('selectAllLabel');
 
             if (numSpan) numSpan.innerText = count;
             if (numSpanBtn) numSpanBtn.innerText = count;
 
+            // Sincroniza visual de cada card de música selecionada
+            document.querySelectorAll('.song-item').forEach(item => {
+                const cb = item.querySelector('.song-checkbox');
+                if (cb && cb.checked) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+
             if (count > 0) {
                 if (badge) badge.style.display = 'inline-block';
-                if (btnDel) btnDel.style.display = 'inline-flex';
+                if (btnDel) {
+                    btnDel.removeAttribute('disabled');
+                    btnDel.classList.add('active');
+                }
             } else {
                 if (badge) badge.style.display = 'none';
-                if (btnDel) btnDel.style.display = 'none';
-                if (selectAllCb) selectAllCb.checked = false;
+                if (btnDel) {
+                    btnDel.setAttribute('disabled', 'disabled');
+                    btnDel.classList.remove('active');
+                }
+            }
+
+            // Sincroniza estado do checkbox mestre (checked / indeterminate / unchecked)
+            if (selectAllCb) {
+                if (visibleItems.length > 0 && count >= visibleItems.length) {
+                    selectAllCb.checked = true;
+                    selectAllCb.indeterminate = false;
+                    if (selectAllLabel) selectAllLabel.innerText = 'Todas Selecionadas';
+                } else if (count > 0) {
+                    selectAllCb.checked = false;
+                    selectAllCb.indeterminate = true;
+                    if (selectAllLabel) selectAllLabel.innerText = 'Selecionar Todas';
+                } else {
+                    selectAllCb.checked = false;
+                    selectAllCb.indeterminate = false;
+                    if (selectAllLabel) selectAllLabel.innerText = 'Selecionar Todas';
+                }
             }
         }
 
         async function deleteSelectedSongs() {
             const checked = Array.from(document.querySelectorAll('.song-checkbox:checked'));
             if (!checked.length) {
-                alert('Nenhuma música selecionada para exclusão.');
+                alert('Nenhuma música selecionada para exclusão. Toque nas músicas ou em "Selecionar Todas" primeiro.');
                 return;
             }
 
-            if (!confirm(`Deseja realmente apagar as ${checked.length} músicas selecionadas da Charlene?`)) {
+            if (!confirm(`Deseja realmente apagar as ${checked.length} músicas selecionadas da playlist da Charlene?`)) {
                 return;
+            }
+
+            const btnDel = document.getElementById('btnDeleteSelected');
+            if (btnDel) {
+                btnDel.setAttribute('disabled', 'disabled');
+                btnDel.innerText = 'Excluindo músicas...';
             }
 
             const files = checked.map(cb => ({
@@ -1835,9 +1981,17 @@
                     location.reload();
                 } else {
                     alert('Erro: ' + (j.message || 'Falha ao excluir músicas selecionadas.'));
+                    if (btnDel) {
+                        btnDel.removeAttribute('disabled');
+                        updateSelectedSongsUI();
+                    }
                 }
             } catch (e) {
                 alert('Erro de conexão ao excluir músicas.');
+                if (btnDel) {
+                    btnDel.removeAttribute('disabled');
+                    updateSelectedSongsUI();
+                }
             }
         }
 
@@ -2294,6 +2448,7 @@
         window.clearCurrentFolder = clearCurrentFolder;
         window.toggleSelectAllSongs = toggleSelectAllSongs;
         window.updateSelectedSongsUI = updateSelectedSongsUI;
+        window.onSongItemClick = onSongItemClick;
         window.playTrackFromList = playTrackFromList;
         window.onNativeAudioPlay = onNativeAudioPlay;
         window.playerPlayNext = playerPlayNext;

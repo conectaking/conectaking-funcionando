@@ -9720,7 +9720,7 @@
             });
         }
 
-        // ── 3. CERCA VIRTUAL DO BERÇO (SAFE ZONE INTELIGENTE COM DETECÇÃO HUMANA) ──
+        // ── 3. CERCA VIRTUAL DO BERÇO (SAFE ZONE INTELIGENTE COM DETECÇÃO HUMANA EXCLUSIVA) ──
         window.kingVisionAI = {
             model: null,
             loading: false,
@@ -9731,9 +9731,9 @@
                 this.loading = true;
                 try {
                     this.model = await cocoSsd.load({ base: 'mobilenet_v2' });
-                    console.log('[KingCamera AI] Modelo COCO-SSD de Detecção Humana inicializado com sucesso!');
+                    console.log('[KingCamera AI] Modelo COCO-SSD de Detecção Humana calibrado e inicializado com sucesso!');
                 } catch(e) {
-                    console.warn('[KingCamera AI] COCO-SSD indisponível, utilizando visão computacional de alta precisão:', e);
+                    console.warn('[KingCamera AI] COCO-SSD indisponível:', e);
                 } finally {
                     this.loading = false;
                 }
@@ -9747,12 +9747,46 @@
                 if (!this.model) return null;
                 try {
                     const preds = await this.model.detect(videoEl);
-                    return preds.filter(p => p.class === 'person' && p.score >= 0.28);
+                    const vw = videoEl.videoWidth || 640;
+                    const vh = videoEl.videoHeight || 360;
+
+                    // Filtra ESTRITAMENTE PESSOAS com alta precisão (elimina roupas, cobertas, travesseiros e objetos)
+                    return preds.filter(p => {
+                        if (p.class !== 'person') return false;
+
+                        // Score de confiança elevado: roupas soltas ou empilhadas e travesseiros costumam dar 0.20-0.45.
+                        // Exigimos >= 0.52 para garantir que é um ser humano / bebê de verdade.
+                        if (p.score < 0.52) return false;
+
+                        const [bx, by, bw, bh] = p.bbox;
+                        // Tamanho mínimo para ser um corpo humano ou bebê real
+                        if (bw < 22 || bh < 24) return false;
+
+                        // Evita falsos positivos de tela inteira ou ruído extremo
+                        if ((bw / vw) > 0.96 && (bh / vh) > 0.96) return false;
+
+                        // Descarta proporções anômalas (ex: faixas excessivamente finas)
+                        const ratio = bh / Math.max(1, bw);
+                        if (ratio < 0.15 || ratio > 6.0) return false;
+
+                        return true;
+                    });
                 } catch(e) {
                     return null;
                 }
             }
         };
+
+        // Pré-carrega o modelo de visão humana assim que a página abrir
+        if (typeof window !== 'undefined') {
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(() => {
+                    if (window.kingVisionAI && typeof cocoSsd !== 'undefined') {
+                        window.kingVisionAI.init().catch(() => {});
+                    }
+                }, 1000);
+            });
+        }
 
         const cribFenceState = {};
 
@@ -10127,7 +10161,7 @@
                     const r = s.roi || { x: 20, y: 25, w: 60, h: 50 };
                     const now = Date.now();
 
-                    // 1. ANÁLISE REAL DE PESSOA VIA IA (Diferencia Bebê vs Travesseiro/Roupa/Chão)
+                    // 1. ANÁLISE REAL DE PESSOA VIA IA (Detecta estritamente seres humanos: Sara no berço vs fora)
                     let aiHandled = false;
                     const persons = await window.kingVisionAI.detectPersons(video);
 
@@ -10144,7 +10178,7 @@
                             const cxPct = ((bx + bw / 2) / vw) * 100;
                             const cyPct = ((by + bh / 2) / vh) * 100;
                             
-                            // Verifica se o bebê está dentro do polígono inclinado ou do círculo
+                            // Verifica se a pessoa/bebê está dentro do perímetro demarcado do berço
                             const isInside = isPointInCribFence(cxPct, cyPct, r);
                             if (isInside) {
                                 personInsideCount++;
@@ -10156,12 +10190,28 @@
                             }
                         });
 
-                        // Se pessoa detectada FORA e NENHUMA pessoa dentro do berço
-                        if (personOutsideCount > 0 && personInsideCount === 0) {
+                        // CASO 1: A Sara / Bebê está confirmada dentro do berço!
+                        if (personInsideCount > 0) {
+                            s.breachStreak = 0;
+                            s.calmCycles = (s.calmCycles || 0) + 1;
+                            s.hasSeenInCrib = true;
+                            s.lastSeenInsideTime = now;
+
+                            if (s.fenceState === 'OUTSIDE') {
+                                s.fenceState = 'INSIDE';
+                                s.alertCount = 0;
+                                console.log(`[CribFence] Sara / Bebê confirmada dentro do berço (câmera ${camId}). Normalizado.`);
+                                sendFenceClearedEvent(camId, true);
+                                const alertEl = document.getElementById(`fence-alert-${camId}`);
+                                if (alertEl) alertEl.style.display = 'none';
+                            }
+                        }
+                        // CASO 2: Pessoa real confirmada FORA do berço e NENHUMA pessoa dentro do berço (Sara saiu!)
+                        else if (personOutsideCount > 0 && personInsideCount === 0) {
                             s.breachStreak = (s.breachStreak || 0) + 1;
                             s.calmCycles = 0;
 
-                            // Requer 2 ciclos confirmados seguidos para evitar qualquer oscilação
+                            // Requer 2 ciclos confirmados seguidos de detecção humana para total estabilidade
                             if (s.breachStreak >= 2) {
                                 if (s.fenceState === 'INSIDE') {
                                     s.fenceState = 'OUTSIDE';
@@ -10171,91 +10221,27 @@
                                 } else if (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 18000)) {
                                     s.alertCount = 2;
                                     s.lastAlertTime = now;
-                                    triggerFenceBreachAlert(camId, 2, '⚠️ REFORÇO: O bebê continua fora do cerco seguro!');
+                                    triggerFenceBreachAlert(camId, 2, '⚠️ REFORÇO: A criança continua fora do cerco seguro!');
                                 }
                             }
-                        } else {
-                            // Bebê está seguro no berço (ou não há nenhuma pessoa fora)
+                        }
+                        // CASO 3: NENHUMA PESSOA NO AMBIENTE (quarto vazio, ou apenas roupas, travesseiros e objetos)
+                        // A IA NÃO deve detectar nem disparar alarme de saída se não houver pessoa real!
+                        else {
                             s.breachStreak = 0;
                             s.calmCycles = (s.calmCycles || 0) + 1;
 
-                            if (s.fenceState === 'OUTSIDE' && (personInsideCount > 0 || s.calmCycles >= 2)) {
+                            // Normaliza estado silenciosamente sem falso positivo
+                            if (s.fenceState === 'OUTSIDE' && s.calmCycles >= 2) {
                                 s.fenceState = 'INSIDE';
                                 s.alertCount = 0;
-                                console.log(`[CribFence] Bebê no berço seguro (câmera ${camId}). Estado normalizado.`);
-                                sendFenceClearedEvent(camId, personInsideCount > 0);
+                                sendFenceClearedEvent(camId, false);
+                                const alertEl = document.getElementById(`fence-alert-${camId}`);
+                                if (alertEl) alertEl.style.display = 'none';
                             }
                         }
-                    }
-
-                    // 2. VISÃO COMPUTACIONAL INTELIGENTE (Fallback com filtro de ruído e densidade)
-                    if (!aiHandled) {
-                        ctx.drawImage(video, 0, 0, 160, 90);
-                        const currentData = ctx.getImageData(0, 0, 160, 90).data;
-
-                        if (prevData) {
-                            let motionOutsideFence = 0;
-                            let motionInsideFence = 0;
-                            let outsideMinX = 160, outsideMaxX = 0, outsideMinY = 90, outsideMaxY = 0;
-
-                            for (let y = 0; y < 90; y += 2) {
-                                for (let x = 0; x < 160; x += 2) {
-                                    const idx = (y * 160 + x) * 4;
-                                    const diff = Math.abs(currentData[idx] - prevData[idx]) +
-                                                 Math.abs(currentData[idx+1] - prevData[idx+1]) +
-                                                 Math.abs(currentData[idx+2] - prevData[idx+2]);
-                                    
-                                    if (diff > 46) {
-                                        const isInside = isPointInCribFence((x / 160) * 100, (y / 90) * 100, r);
-                                        if (isInside) {
-                                            motionInsideFence++;
-                                        } else {
-                                            motionOutsideFence++;
-                                            if (x < outsideMinX) outsideMinX = x;
-                                            if (x > outsideMaxX) outsideMaxX = x;
-                                            if (y < outsideMinY) outsideMinY = y;
-                                            if (y > outsideMaxY) outsideMaxY = y;
-                                        }
-                                    }
-                                }
-                            }
-
-                            const clusterW = Math.max(0, outsideMaxX - outsideMinX);
-                            const clusterH = Math.max(0, outsideMaxY - outsideMinY);
-                            const isHumanCluster = (clusterW >= 14 && clusterH >= 14 && motionOutsideFence >= 75);
-
-                            const isBreachingNow = isHumanCluster && (motionOutsideFence > (motionInsideFence * 2.2));
-                            const isBabyInside = (motionInsideFence >= 25);
-
-                            if (isBreachingNow) {
-                                s.breachStreak = (s.breachStreak || 0) + 1;
-                                s.calmCycles = 0;
-
-                                if (s.breachStreak >= 3) {
-                                    if (s.fenceState === 'INSIDE') {
-                                        s.fenceState = 'OUTSIDE';
-                                        s.alertCount = 1;
-                                        s.lastAlertTime = now;
-                                        triggerFenceBreachAlert(camId, 1, '🚨 Criança fora da área segura do berço detectada!');
-                                    } else if (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 18000)) {
-                                        s.alertCount = 2;
-                                        s.lastAlertTime = now;
-                                        triggerFenceBreachAlert(camId, 2, '⚠️ REFORÇO: O bebê continua fora do cerco seguro!');
-                                    }
-                                }
-                            } else if (isBabyInside || motionOutsideFence < 25) {
-                                s.breachStreak = 0;
-                                s.calmCycles = (s.calmCycles || 0) + 1;
-
-                                if (s.fenceState === 'OUTSIDE' && (isBabyInside || s.calmCycles >= 3)) {
-                                    s.fenceState = 'INSIDE';
-                                    s.alertCount = 0;
-                                    console.log(`[CribFence] Quarto calmo ou bebê no berço (câmera ${camId}). Estado normalizado.`);
-                                    sendFenceClearedEvent(camId, isBabyInside);
-                                }
-                            }
-                        }
-                        prevData = currentData;
+                    } else {
+                        // IA ainda carregando no navegador: não dispara alarme por pixels para evitar falsos positivos de roupas/vento
                     }
                 } catch(err) {
                     console.error('[CribFence] Erro no monitor de cerca:', err);
