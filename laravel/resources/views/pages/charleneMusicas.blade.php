@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel da Charlene • Sarah & Família King</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -1079,28 +1082,33 @@
                 gap: 10px;
                 width: 100% !important;
                 box-sizing: border-box !important;
-                overflow: hidden !important;
+                overflow: visible !important;
             }
             .filter-pills {
-                overflow-x: auto !important;
-                flex-wrap: nowrap !important;
-                -webkit-overflow-scrolling: touch;
-                padding-bottom: 6px;
+                display: flex !important;
+                flex-wrap: wrap !important;
+                overflow: visible !important;
+                -webkit-overflow-scrolling: auto !important;
+                padding-bottom: 0 !important;
                 width: 100% !important;
                 box-sizing: border-box !important;
-                scrollbar-width: none;
-            }
-            .filter-pills::-webkit-scrollbar {
-                display: none;
+                gap: 6px !important;
             }
             .pill {
-                flex-shrink: 0;
-                min-height: 38px;
-                padding: 8px 12px;
-                font-size: 0.8rem;
-                touch-action: manipulation;
-                -webkit-tap-highlight-color: transparent;
-                cursor: pointer;
+                flex: 1 1 calc(33.333% - 6px) !important;
+                min-height: 44px !important;
+                padding: 10px 8px !important;
+                font-size: 0.82rem !important;
+                font-weight: 700 !important;
+                text-align: center !important;
+                justify-content: center !important;
+                align-items: center !important;
+                display: inline-flex !important;
+                touch-action: manipulation !important;
+                -webkit-tap-highlight-color: transparent !important;
+                cursor: pointer !important;
+                user-select: none !important;
+                -webkit-user-select: none !important;
             }
             .song-item {
                 flex-direction: column;
@@ -1386,25 +1394,23 @@
             <!-- Barra de Ações em Lote e Limpeza de Pasta -->
             <div class="batch-toolbar" id="batchToolbar">
                 <div class="batch-toolbar-row">
-                    <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.86rem; font-weight: 700; user-select: none;">
-                        <input type="checkbox" id="selectAllSongs" onclick="toggleSelectAllSongs(this.checked)" onchange="toggleSelectAllSongs(this.checked)" style="width: 20px; height: 20px; accent-color: var(--primary); cursor: pointer;">
-                        <span id="selectAllLabel">Selecionar Todas</span>
-                    </label>
-                    <button type="button" class="batch-btn" onclick="toggleSelectAllSongs(true)" title="Selecionar todas as músicas visíveis">
-                        ☑️ Selecionar Todas
-                    </button>
-                    <button type="button" class="batch-btn" onclick="toggleSelectAllSongs(false)" title="Desmarcar todas as músicas">
-                        ⬜ Desmarcar
-                    </button>
-                    <span id="selectedCountBadge" style="display: none; font-size: 0.78rem; background: rgba(139, 92, 246, 0.25); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4); padding: 3px 10px; border-radius: 999px; font-weight: 700;">
+                    <div style="display: inline-flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                        <button type="button" id="btnSelectAll" class="batch-btn" onclick="toggleSelectAllSongs(true)" title="Selecionar todas as músicas visíveis">
+                            ☑️ Selecionar Todas
+                        </button>
+                        <button type="button" id="btnDeselectAll" class="batch-btn" onclick="toggleSelectAllSongs(false)" title="Desmarcar todas as músicas">
+                            ⬜ Desmarcar
+                        </button>
+                    </div>
+                    <span id="selectedCountBadge" style="display: none; font-size: 0.82rem; background: rgba(139, 92, 246, 0.25); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4); padding: 5px 14px; border-radius: 999px; font-weight: 800;">
                         <span id="selectedCountNum">0</span> selecionada(s)
                     </span>
                 </div>
-                <div class="batch-toolbar-row">
+                <div class="batch-toolbar-row" style="margin-top: 6px;">
                     <button id="btnDeleteSelected" type="button" class="del-btn-batch" onclick="deleteSelectedSongs()" disabled title="Excluir todas as músicas marcadas">
                         🗑️ Excluir Selecionadas (<span id="selectedCountNumBtn">0</span>)
                     </button>
-                    <button id="btnClearFolder" type="button" class="del-btn" onclick="clearCurrentFolder()" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; font-weight: 700; padding: 7px 12px;">
+                    <button id="btnClearFolder" type="button" class="del-btn" onclick="clearCurrentFolder()" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; font-weight: 700; padding: 8px 14px;">
                         ⚠️ Limpar Pasta (<span id="activeFolderNameLabel">Todas as Pastas</span>)
                     </button>
                 </div>
@@ -1412,7 +1418,7 @@
 
             <!-- Song List -->
             <div class="song-list" id="songList">
-                @forelse($musicas as $song)
+                @foreach($musicas as $song)
                     <div class="song-item" 
                          data-category="{{ $song['category'] }}"
                          data-url="{{ $song['url'] }}"
@@ -1423,9 +1429,9 @@
                             <input type="checkbox" class="song-checkbox" 
                                    data-filename="{{ $song['filename'] }}" 
                                    data-category="{{ $song['category'] }}" 
-                                   onclick="event.stopPropagation();"
-                                   onchange="updateSelectedSongsUI()" 
-                                   style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); flex-shrink: 0;"
+                                   onclick="event.stopPropagation(); updateSelectedSongsUI();"
+                                   onchange="updateSelectedSongsUI();"
+                                   style="width: 22px; height: 22px; cursor: pointer; accent-color: var(--primary); flex-shrink: 0;"
                                    title="Selecionar para apagar">
                             <button type="button" class="play-btn-track" onclick="playTrackFromList(this)" 
                                     style="background: rgba(139, 92, 246, 0.2); border: 1px solid rgba(139, 92, 246, 0.4); color: #c4b5fd; border-radius: 8px; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;" 
@@ -1442,11 +1448,10 @@
                             <button class="del-btn" onclick="deleteSong('{{ addslashes($song['filename']) }}', '{{ $song['category'] }}')">Excluir</button>
                         </div>
                     </div>
-                @empty
-                    <div class="empty-state" id="emptyState">
-                        Nenhuma música adicionada ainda. Selecione uma pasta e envie seus arquivos MP3 acima!
-                    </div>
-                @endforelse
+                @endforeach
+                <div class="empty-state" id="emptyState" style="{{ count($musicas) === 0 ? 'display: block;' : 'display: none;' }}">
+                    Nenhuma música adicionada ainda nesta pasta. Selecione uma pasta e envie seus arquivos MP3 acima!
+                </div>
             </div>
         </div>
 
@@ -1857,12 +1862,30 @@
                     }
                 }
 
+                // Sincroniza o botão principal de upload e os cards superiores
+                if (cat !== 'todas' && typeof selectFolder === 'function') {
+                    selectFolder(cat, false);
+                } else if (cat === 'todas') {
+                    // No modo "Todas", desmarca o foco específico de apenas 1 pasta nos cards
+                    ['adoracao', 'dormir', 'animadas', 'geral'].forEach(c => {
+                        const card = document.getElementById('card-' + c);
+                        const badge = document.getElementById('badge-' + c);
+                        if (card) card.classList.remove('active');
+                        if (badge) badge.style.display = 'none';
+                    });
+                    const btnTitle = document.getElementById('uploadBtnTitle');
+                    const btnSubtitle = document.getElementById('uploadBtnSubtitle');
+                    const mainBtn = document.getElementById('btnUploadMusic');
+                    if (btnTitle) btnTitle.innerHTML = 'Adicionar Músicas em 🌟 Geral';
+                    if (btnSubtitle) btnSubtitle.innerHTML = 'Destino: <strong>🌟 Pasta Geral da Sarah</strong>';
+                    if (mainBtn) mainBtn.style.background = 'linear-gradient(135deg, #0ea5e9, #0284c7)';
+                    window.currentFolder = 'geral';
+                }
+
                 filterSongsList(cat);
 
-                // Desmarca seleção geral ao trocar de categoria
-                const selectAllCb = document.getElementById('selectAllSongs');
-                if (selectAllCb) selectAllCb.checked = false;
-                document.querySelectorAll('.song-checkbox').forEach(cb => cb.checked = false);
+                // Desmarca seleções anteriores para evitar exclusões acidentais em outras pastas
+                document.querySelectorAll('.song-checkbox').forEach(cb => { cb.checked = false; });
                 updateSelectedSongsUI();
             } catch(e) {
                 console.error('[Charlene] Erro em filterCategory:', e);
@@ -1882,6 +1905,7 @@
                         item.style.display = 'none';
                         const cb = item.querySelector('.song-checkbox');
                         if (cb) cb.checked = false;
+                        item.classList.remove('selected');
                     }
                 });
 
@@ -1889,8 +1913,8 @@
                 if (empty) {
                     if (visible === 0) {
                         empty.style.display = 'block';
-                        const catName = folderMetadata[cat] ? folderMetadata[cat].name : (cat === 'todas' ? 'de nenhuma categoria' : 'selecionada');
-                        empty.innerHTML = `Nenhuma música encontrada ${cat === 'todas' ? 'cadastrada ainda' : 'na pasta <strong>' + catName + '</strong> da Sarah'}. Toque em "➕ Adicionar MP3" acima para enviar!`;
+                        const catName = folderMetadata[cat] ? folderMetadata[cat].name : (cat === 'todas' ? 'Geral' : 'selecionada');
+                        empty.innerHTML = `📁 A pasta <strong>${cat === 'todas' ? 'Geral' : catName}</strong> da Sarah está vazia no momento (0 músicas).<br><br><span style="font-size: 0.88rem; color: #c4b5fd;">Toque em <strong>"Adicionar Músicas em ${catName}"</strong> acima para enviar MP3 para cá!</span>`;
                     } else {
                         empty.style.display = 'none';
                     }
@@ -1902,25 +1926,26 @@
 
         // ==================== AÇÕES EM LOTE (SELEÇÃO & LIMPEZA) ====================
         function toggleSelectAllSongs(forceState) {
-            const selectAllCb = document.getElementById('selectAllSongs');
-            let shouldCheck;
-            if (typeof forceState === 'boolean') {
-                shouldCheck = forceState;
-            } else if (selectAllCb) {
-                shouldCheck = Boolean(selectAllCb.checked);
-            } else {
-                shouldCheck = true;
-            }
+            try {
+                const currentCat = window.currentFilterCategory || 'todas';
+                const items = document.querySelectorAll('.song-item');
+                const visibleItems = Array.from(items).filter(it => {
+                    const itemCat = it.getAttribute('data-category');
+                    return (it.style.display !== 'none') && (currentCat === 'todas' || itemCat === currentCat);
+                });
 
-            if (selectAllCb) {
-                selectAllCb.checked = shouldCheck;
-                selectAllCb.indeterminate = false;
-            }
+                let shouldCheck;
+                if (typeof forceState === 'boolean') {
+                    shouldCheck = forceState;
+                } else {
+                    const checkedCount = visibleItems.filter(it => {
+                        const cb = it.querySelector('.song-checkbox');
+                        return cb && cb.checked;
+                    }).length;
+                    shouldCheck = (checkedCount < visibleItems.length);
+                }
 
-            const items = document.querySelectorAll('.song-item');
-            items.forEach(item => {
-                const isHidden = (item.style.display === 'none') || (window.getComputedStyle(item).display === 'none');
-                if (!isHidden) {
+                visibleItems.forEach(item => {
                     const cb = item.querySelector('.song-checkbox');
                     if (cb) {
                         cb.checked = shouldCheck;
@@ -1930,9 +1955,12 @@
                     } else {
                         item.classList.remove('selected');
                     }
-                }
-            });
-            updateSelectedSongsUI();
+                });
+
+                updateSelectedSongsUI();
+            } catch(e) {
+                console.error('[Charlene] Erro em toggleSelectAllSongs:', e);
+            }
         }
 
         function onSongItemClick(e, item) {
@@ -1948,58 +1976,66 @@
         }
 
         function updateSelectedSongsUI() {
-            const visibleItems = Array.from(document.querySelectorAll('.song-item')).filter(it => it.style.display !== 'none' && window.getComputedStyle(it).display !== 'none');
-            const checked = Array.from(document.querySelectorAll('.song-checkbox:checked'));
-            const count = checked.length;
-            const badge = document.getElementById('selectedCountBadge');
-            const btnDel = document.getElementById('btnDeleteSelected');
-            const numSpan = document.getElementById('selectedCountNum');
-            const numSpanBtn = document.getElementById('selectedCountNumBtn');
-            const selectAllCb = document.getElementById('selectAllSongs');
-            const selectAllLabel = document.getElementById('selectAllLabel');
+            try {
+                const currentCat = window.currentFilterCategory || 'todas';
+                const visibleItems = Array.from(document.querySelectorAll('.song-item')).filter(it => {
+                    const cat = it.getAttribute('data-category');
+                    return (it.style.display !== 'none') && (currentCat === 'todas' || cat === currentCat);
+                });
 
-            if (numSpan) numSpan.innerText = count;
-            if (numSpanBtn) numSpanBtn.innerText = count;
+                const checkedBoxes = Array.from(document.querySelectorAll('.song-checkbox:checked')).filter(cb => {
+                    const item = cb.closest('.song-item');
+                    return item && item.style.display !== 'none';
+                });
+                const count = checkedBoxes.length;
 
-            // Sincroniza visual de cada card de música selecionada
-            document.querySelectorAll('.song-item').forEach(item => {
-                const cb = item.querySelector('.song-checkbox');
-                if (cb && cb.checked) {
-                    item.classList.add('selected');
+                const badge = document.getElementById('selectedCountBadge');
+                const btnDel = document.getElementById('btnDeleteSelected');
+                const numSpan = document.getElementById('selectedCountNum');
+                const numSpanBtn = document.getElementById('selectedCountNumBtn');
+                const btnSelectAll = document.getElementById('btnSelectAll');
+
+                if (numSpan) numSpan.innerText = count;
+                if (numSpanBtn) numSpanBtn.innerText = count;
+
+                // Sincroniza visual de cada card de música selecionada
+                document.querySelectorAll('.song-item').forEach(item => {
+                    const cb = item.querySelector('.song-checkbox');
+                    if (cb && cb.checked && item.style.display !== 'none') {
+                        item.classList.add('selected');
+                    } else {
+                        item.classList.remove('selected');
+                    }
+                });
+
+                if (count > 0) {
+                    if (badge) badge.style.display = 'inline-block';
+                    if (btnDel) {
+                        btnDel.removeAttribute('disabled');
+                        btnDel.classList.add('active');
+                    }
                 } else {
-                    item.classList.remove('selected');
+                    if (badge) badge.style.display = 'none';
+                    if (btnDel) {
+                        btnDel.setAttribute('disabled', 'disabled');
+                        btnDel.classList.remove('active');
+                    }
                 }
-            });
 
-            if (count > 0) {
-                if (badge) badge.style.display = 'inline-block';
-                if (btnDel) {
-                    btnDel.removeAttribute('disabled');
-                    btnDel.classList.add('active');
+                // Sincroniza rótulo do botão de selecionar todas
+                if (btnSelectAll) {
+                    if (visibleItems.length > 0 && count >= visibleItems.length) {
+                        btnSelectAll.innerHTML = '☑️ Todas Marcadas';
+                        btnSelectAll.style.background = 'rgba(139, 92, 246, 0.25)';
+                        btnSelectAll.style.borderColor = '#8b5cf6';
+                    } else {
+                        btnSelectAll.innerHTML = '☑️ Selecionar Todas';
+                        btnSelectAll.style.background = '';
+                        btnSelectAll.style.borderColor = '';
+                    }
                 }
-            } else {
-                if (badge) badge.style.display = 'none';
-                if (btnDel) {
-                    btnDel.setAttribute('disabled', 'disabled');
-                    btnDel.classList.remove('active');
-                }
-            }
-
-            // Sincroniza estado do checkbox mestre (checked / indeterminate / unchecked)
-            if (selectAllCb) {
-                if (visibleItems.length > 0 && count >= visibleItems.length) {
-                    selectAllCb.checked = true;
-                    selectAllCb.indeterminate = false;
-                    if (selectAllLabel) selectAllLabel.innerText = 'Todas Selecionadas';
-                } else if (count > 0) {
-                    selectAllCb.checked = false;
-                    selectAllCb.indeterminate = true;
-                    if (selectAllLabel) selectAllLabel.innerText = 'Selecionar Todas';
-                } else {
-                    selectAllCb.checked = false;
-                    selectAllCb.indeterminate = false;
-                    if (selectAllLabel) selectAllLabel.innerText = 'Selecionar Todas';
-                }
+            } catch(e) {
+                console.error('[Charlene] Erro em updateSelectedSongsUI:', e);
             }
         }
 
@@ -2555,6 +2591,38 @@
                     });
                 }
             });
+
+            // Garante resposta instantânea a toque e clique nos botões de filtro (pills: Todas, Adoração, Dormir, Animadas, Geral)
+            document.querySelectorAll('.pill').forEach(pill => {
+                const cat = pill.getAttribute('data-pill');
+                if (!cat) return;
+                ['click', 'touchend'].forEach(evtType => {
+                    pill.addEventListener(evtType, (e) => {
+                        if (evtType === 'touchend') e.preventDefault();
+                        filterCategory(cat);
+                    }, { passive: false });
+                });
+            });
+
+            // Garante resposta direta aos botões de seleção em lote
+            const btnSelectAll = document.getElementById('btnSelectAll');
+            const btnDeselectAll = document.getElementById('btnDeselectAll');
+            if (btnSelectAll) {
+                ['click', 'touchend'].forEach(evtType => {
+                    btnSelectAll.addEventListener(evtType, (e) => {
+                        if (evtType === 'touchend') e.preventDefault();
+                        toggleSelectAllSongs(true);
+                    }, { passive: false });
+                });
+            }
+            if (btnDeselectAll) {
+                ['click', 'touchend'].forEach(evtType => {
+                    btnDeselectAll.addEventListener(evtType, (e) => {
+                        if (evtType === 'touchend') e.preventDefault();
+                        toggleSelectAllSongs(false);
+                    }, { passive: false });
+                });
+            }
 
             let active = 'musicas';
             try {

@@ -1879,14 +1879,18 @@ class CharleneController extends Controller
         $historiasOuvidas = CharleneMemory::where('category', 'historia_ouvida')->orderBy('updated_at', 'desc')->get();
         $totalCatalogo = count(self::HISTORIAS_CATALOGO);
 
-        return view('pages.charleneMusicas', [
-            'musicas' => $musicas,
-            'memorias' => $memorias,
-            'historiasOuvidas' => $historiasOuvidas,
-            'totalCatalogo' => $totalCatalogo,
-            'historiasCatalogo' => self::HISTORIAS_CATALOGO,
-            'baseUrl' => $this->baseUrl . '/storage/sara/musicas/',
-        ]);
+        return response()
+            ->view('pages.charleneMusicas', [
+                'musicas' => $musicas,
+                'memorias' => $memorias,
+                'historiasOuvidas' => $historiasOuvidas,
+                'totalCatalogo' => $totalCatalogo,
+                'historiasCatalogo' => self::HISTORIAS_CATALOGO,
+                'baseUrl' => $this->baseUrl . '/storage/sara/musicas/',
+            ])
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     /**

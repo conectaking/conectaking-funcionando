@@ -9780,24 +9780,24 @@
                     const vw = videoEl.videoWidth || 640;
                     const vh = videoEl.videoHeight || 360;
 
-                    // Filtra ESTRITAMENTE PESSOAS com alta precisão (elimina roupas, cobertas, travesseiros e objetos)
+                    // Filtra ESTRITAMENTE PESSOAS com calibração precisa para visão noturna infravermelha (grayscale) e bebês deitados
                     return preds.filter(p => {
                         if (p.class !== 'person') return false;
 
-                        // Score de confiança elevado: roupas soltas ou empilhadas e travesseiros costumam dar 0.20-0.45.
-                        // Exigimos >= 0.52 para garantir que é um ser humano / bebê de verdade.
-                        if (p.score < 0.52) return false;
+                        // Calibrado para visão noturna IR e bebês deitados em lençol claro:
+                        // No infravermelho deitado, MobileNet COCO-SSD varia entre 0.30 e 0.50.
+                        if (p.score < 0.30) return false;
 
                         const [bx, by, bw, bh] = p.bbox;
-                        // Tamanho mínimo para ser um corpo humano ou bebê real
-                        if (bw < 22 || bh < 24) return false;
+                        // Tamanho mínimo para ser um bebê ou criança
+                        if (bw < 16 || bh < 16) return false;
 
                         // Evita falsos positivos de tela inteira ou ruído extremo
                         if ((bw / vw) > 0.96 && (bh / vh) > 0.96) return false;
 
                         // Descarta proporções anômalas (ex: faixas excessivamente finas)
                         const ratio = bh / Math.max(1, bw);
-                        if (ratio < 0.15 || ratio > 6.0) return false;
+                        if (ratio < 0.12 || ratio > 7.0) return false;
 
                         return true;
                     });
@@ -10223,6 +10223,7 @@
                         // CASO 1: A Sara / Bebê está confirmada dentro do berço!
                         if (personInsideCount > 0) {
                             s.breachStreak = 0;
+                            s.absenceStreak = 0;
                             s.calmCycles = (s.calmCycles || 0) + 1;
                             s.hasSeenInCrib = true;
                             s.lastSeenInsideTime = now;
@@ -10236,18 +10237,18 @@
                                 if (alertEl) alertEl.style.display = 'none';
                             }
                         }
-                        // CASO 2: Pessoa real confirmada FORA do berço e NENHUMA pessoa dentro do berço (Sara saiu!)
+                        // CASO 2: Pessoa confirmada FORA do berço (Sara saiu ou foi para fora do cerco!)
                         else if (personOutsideCount > 0 && personInsideCount === 0) {
                             s.breachStreak = (s.breachStreak || 0) + 1;
+                            s.absenceStreak = (s.absenceStreak || 0) + 1;
                             s.calmCycles = 0;
 
-                            // Requer 2 ciclos confirmados seguidos de detecção humana para total estabilidade
                             if (s.breachStreak >= 2) {
-                                if (s.fenceState === 'INSIDE') {
+                                if (s.fenceState !== 'OUTSIDE') {
                                     s.fenceState = 'OUTSIDE';
                                     s.alertCount = 1;
                                     s.lastAlertTime = now;
-                                    triggerFenceBreachAlert(camId, 1, '🚨 Criança fora da área segura do berço detectada!');
+                                    triggerFenceBreachAlert(camId, 1, '🚨 ALERTA: Bebê fora do cerco seguro detectado!');
                                 } else if (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 18000)) {
                                     s.alertCount = 2;
                                     s.lastAlertTime = now;
@@ -10255,20 +10256,31 @@
                                 }
                             }
                         }
-                        // CASO 3: NENHUMA PESSOA NO AMBIENTE (quarto vazio, ou apenas roupas, travesseiros e objetos)
-                        // A IA NÃO deve detectar nem disparar alarme de saída se não houver pessoa real!
+                        // CASO 3: A Sara estava no berço e agora o berço está VAZIO (personInsideCount === 0)!
+                        // Se o bebê estava no berço e saiu (ou foi retirado ou saiu do ângulo), DISPARA ALARME!
+                        else if (s.hasSeenInCrib && personInsideCount === 0) {
+                            s.absenceStreak = (s.absenceStreak || 0) + 1;
+                            s.calmCycles = 0;
+
+                            // 2 ciclos sem bebê no berço (~2.4s) confirma que a criança saiu do cerco
+                            if (s.absenceStreak >= 2) {
+                                if (s.fenceState !== 'OUTSIDE') {
+                                    s.fenceState = 'OUTSIDE';
+                                    s.alertCount = 1;
+                                    s.lastAlertTime = now;
+                                    triggerFenceBreachAlert(camId, 1, '🚨 ALERTA: Bebê saiu do cerco! (Criança não está mais dentro do berço)');
+                                } else if (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 18000)) {
+                                    s.alertCount = 2;
+                                    s.lastAlertTime = now;
+                                    triggerFenceBreachAlert(camId, 2, '⚠️ REFORÇO: O berço continua vazio / criança fora do cerco!');
+                                }
+                            }
+                        }
+                        // CASO 4: Berço vazio antes de colocar o bebê (em espera)
                         else {
                             s.breachStreak = 0;
+                            s.absenceStreak = 0;
                             s.calmCycles = (s.calmCycles || 0) + 1;
-
-                            // Normaliza estado silenciosamente sem falso positivo
-                            if (s.fenceState === 'OUTSIDE' && s.calmCycles >= 2) {
-                                s.fenceState = 'INSIDE';
-                                s.alertCount = 0;
-                                sendFenceClearedEvent(camId, false);
-                                const alertEl = document.getElementById(`fence-alert-${camId}`);
-                                if (alertEl) alertEl.style.display = 'none';
-                            }
                         }
                     } else {
                         // IA ainda carregando no navegador: não dispara alarme por pixels para evitar falsos positivos de roupas/vento
