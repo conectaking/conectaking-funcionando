@@ -4603,6 +4603,22 @@
                         </div>
                     </div>
 
+                    <!-- 5. Detecção de Movimento (Foto + Vídeo 10s) -->
+                    <div class="kc-method-card">
+                        <div class="kc-method-icon-box" style="color: #10b981; background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.3);">
+                            <i class="fas fa-running"></i>
+                        </div>
+                        <div class="kc-method-details" style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                                <h5>5. Detecção de Movimento (Foto + Vídeo 10s)</h5>
+                                <label style="cursor: pointer;">
+                                    <input type="checkbox" id="cam-motion-detection-enabled" style="width: 18px; height: 18px; accent-color: #10b981;">
+                                </label>
+                            </div>
+                            <p>Detecta movimentos no ambiente da câmera, dispara captura instantânea de foto e grava um vídeo automático de 10 segundos para conferência.</p>
+                        </div>
+                    </div>
+
                     <button type="button" class="kc-btn kc-btn-primary" onclick="saveBabyAiSettings()" style="width: 100%; margin-top: 1rem; padding: 0.75rem;">
                         <i class="fas fa-shield-heart"></i> Salvar Configurações de IA Babá
                     </button>
@@ -5639,7 +5655,7 @@
                                     <button type="button" class="kc-pill-btn kc-btn-cry ${cam.baby_cry_enabled ? 'active' : ''}" id="btn-cry-${cam.id}" onclick="toggleBabyCryDetector(${cam.id})" title="Alerta Sonoro quando a criança chorar">
                                         <i class="fas fa-volume-up" style="color: #ec4899;"></i> <span>Monitor Choro</span>
                                     </button>
-                                    <button type="button" class="kc-pill-btn kc-btn-motion active" id="btn-motion-alert-${cam.id}" onclick="toggleBabyMotionAlert(${cam.id})" title="Detectar Movimento com Foto Automática e Gravação de 10s">
+                                    <button type="button" class="kc-pill-btn kc-btn-motion ${cam.motion_detection_enabled ? 'active' : ''}" id="btn-motion-alert-${cam.id}" onclick="toggleBabyMotionAlert(${cam.id})" title="Detectar Movimento com Foto Automática e Gravação de 10s">
                                         <i class="fas fa-running" style="color: #10b981;"></i> <span>Movimento (Foto + 10s)</span>
                                     </button>
                                 </div>
@@ -5741,6 +5757,7 @@
 
                 // Restaura estado ativo exclusivamente do banco (única fonte de verdade para sincronia Mobile e PC)
                 setTimeout(() => {
+                    // 1. Cerca do Berço
                     const isFenceActive = Boolean(cam.crib_fence_enabled);
                     const savedRoi = localStorage.getItem(`kc_fence_${cam.id}`) || cam.crib_roi_json;
                     if (isFenceActive) {
@@ -5754,6 +5771,8 @@
                                 cribFenceState[cam.id].interval = null;
                             }
                         }
+                        const fenceBtn = document.getElementById(`btn-fence-${cam.id}`);
+                        if (fenceBtn) fenceBtn.classList.remove('active');
                         const alertEl = document.getElementById(`fence-alert-${cam.id}`);
                         if (alertEl) alertEl.style.display = 'none';
                         const canvas = document.getElementById(`crib-canvas-${cam.id}`);
@@ -5764,22 +5783,30 @@
                         }
                     }
 
+                    // 2. Bebê em Pé (Alerta se levantar ou apoiar na grade)
                     const isStandActive = Boolean(cam.baby_stand_enabled);
-                    if (isStandActive) {
-                        toggleBabyStandDetector(cam.id, true);
-                    } else {
-                        localStorage.removeItem(`kc_stand_enabled_${cam.id}`);
-                        stopBabyStandWatcher(cam.id);
-                    }
+                    toggleBabyStandDetector(cam.id, isStandActive);
 
-                    if (cam.auto_tracking_enabled) {
-                        cameraTracking[cam.id] = true;
+                    // 3. Movimento (Foto Instantânea + Vídeo 10s)
+                    const isMotionActive = Boolean(cam.motion_detection_enabled);
+                    toggleBabyMotionAlert(cam.id, isMotionActive);
+
+                    // 4. Seguir Bebê / Pessoa (Auto-Tracking 360°)
+                    const isTrackingActive = Boolean(cam.auto_tracking_enabled);
+                    cameraTracking[cam.id] = isTrackingActive;
+                    if (isTrackingActive) {
+                        window.trackingModes[cam.id] = window.trackingModes[cam.id] || 'baby';
                         updateTrackingPills(cam.id);
                         startAutoTrackingLoop(cam.id);
+                    } else {
+                        window.trackingModes[cam.id] = null;
+                        updateTrackingPills(cam.id);
+                        stopAutoTrackingLoop(cam.id);
                     }
-                    if (cam.baby_cry_enabled) {
-                        toggleBabyCryDetector(cam.id);
-                    }
+
+                    // 5. Monitor de Choro Inteligente (Sensor Acústico)
+                    const isCryActive = Boolean(cam.baby_cry_enabled);
+                    toggleBabyCryDetector(cam.id, isCryActive);
                 }, 500);
             });
         }
@@ -7357,6 +7384,7 @@
             setChk('cam-baby-stand-enabled', cam ? cam.baby_stand_enabled : false);
             setChk('cam-baby-cry-enabled', cam ? cam.baby_cry_enabled : false);
             setChk('cam-auto-tracking-enabled', cam ? cam.auto_tracking_enabled : false);
+            setChk('cam-motion-detection-enabled', cam ? cam.motion_detection_enabled : true);
 
             if (cam && cam.crib_roi_json) {
                 setVal('cam-crib-x', cam.crib_roi_json.x ?? 20);
@@ -8709,6 +8737,7 @@
                 baby_stand_enabled: document.getElementById('cam-baby-stand-enabled')?.checked || false,
                 baby_cry_enabled: document.getElementById('cam-baby-cry-enabled')?.checked || false,
                 auto_tracking_enabled: document.getElementById('cam-auto-tracking-enabled')?.checked || false,
+                motion_detection_enabled: document.getElementById('cam-motion-detection-enabled') ? document.getElementById('cam-motion-detection-enabled').checked : (camerasData.find(c => c.id == id)?.motion_detection_enabled ?? true),
             };
             const pass = document.getElementById('cam-pass').value;
             if (pass) payload.password = pass;
@@ -8779,6 +8808,7 @@
                 baby_stand_enabled: document.getElementById('cam-baby-stand-enabled')?.checked || false,
                 baby_cry_enabled: document.getElementById('cam-baby-cry-enabled')?.checked || false,
                 auto_tracking_enabled: document.getElementById('cam-auto-tracking-enabled')?.checked || false,
+                motion_detection_enabled: document.getElementById('cam-motion-detection-enabled') ? document.getElementById('cam-motion-detection-enabled').checked : (camerasData.find(c => c.id == camId)?.motion_detection_enabled ?? true),
             };
 
             try {
@@ -11069,34 +11099,52 @@
         let lastMotionAlertSent = 0;
         let isMotionRecordingMap = {};
 
-        function toggleBabyMotionAlert(camId) {
-            const isNowActive = !window.babyMotionAlerts[camId];
+        function toggleBabyMotionAlert(camId, explicitState) {
+            const isCurrentlyOn = Boolean(window.babyMotionAlerts[camId]);
+            const isNowActive = explicitState !== undefined ? Boolean(explicitState) : !isCurrentlyOn;
             window.babyMotionAlerts[camId] = isNowActive;
 
             const btn = document.getElementById(`btn-motion-alert-${camId}`);
             if (btn) btn.classList.toggle('active', isNowActive);
 
+            const cam = (typeof camerasData !== 'undefined' ? camerasData : []).find(x => x.id === camId);
+            if (cam) cam.motion_detection_enabled = isNowActive ? 1 : 0;
+
+            if (isNowActive) {
+                localStorage.setItem(`kc_motion_enabled_${camId}`, '1');
+            } else {
+                localStorage.removeItem(`kc_motion_enabled_${camId}`);
+            }
+
+            if (explicitState === undefined) {
+                saveCameraMotionConfig(camId, isNowActive);
+            }
+
             if (isNowActive) {
                 startBabyMotionWatcher(camId);
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'success',
-                    title: '📸 Detecção Ativa (Foto + Vídeo 10s)',
-                    text: 'Ao detectar qualquer movimento, uma foto será capturada e um clipe de 10 segundos gravado automaticamente!',
-                    showConfirmButton: false,
-                    timer: 3500
-                });
+                if (explicitState === undefined) {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: '📸 Detecção Ativa (Foto + Vídeo 10s)',
+                        text: 'Ao detectar qualquer movimento, uma foto será capturada e um clipe de 10 segundos gravado automaticamente!',
+                        showConfirmButton: false,
+                        timer: 3500
+                    });
+                }
             } else {
                 stopBabyMotionWatcher(camId);
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'info',
-                    title: 'Detecção de Movimento Desativada',
-                    showConfirmButton: false,
-                    timer: 2000
-                });
+                if (explicitState === undefined) {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'info',
+                        title: 'Detecção de Movimento Desativada',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                }
             }
         }
 
@@ -11241,6 +11289,24 @@
             }
         }
 
+        async function saveCameraMotionConfig(camId, enabled) {
+            try {
+                const c = (typeof camerasData !== 'undefined' ? camerasData : []).find(x => x.id === camId);
+                if (c) c.motion_detection_enabled = enabled ? 1 : 0;
+
+                await fetch(`/api/cameras/${camId}/tracking`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({
+                        motion_detection_enabled: enabled ? 1 : 0
+                    })
+                });
+            } catch(e) {
+                console.warn('Erro ao salvar detecção de movimento:', e);
+            }
+        }
+
         async function saveCameraFenceConfig(camId, enabled, roi) {
             try {
                 // Persistência Imediata no LocalStorage e no Objeto em Memória
@@ -11322,6 +11388,9 @@
 
         async function saveCameraBabyStandConfig(camId, enabled) {
             try {
+                const c = (typeof camerasData !== 'undefined' ? camerasData : []).find(x => x.id === camId);
+                if (c) c.baby_stand_enabled = enabled ? 1 : 0;
+
                 await fetch(`/api/cameras/${camId}/tracking`, {
                     method: 'POST',
                     credentials: 'include',
@@ -11662,12 +11731,18 @@
         // ── 5. Detector de Choro de Bebê (Baby Cry AI) ───────────────────────────
         const babyCryMonitors = {};
 
-        function toggleBabyCryDetector(camId) {
+        function toggleBabyCryDetector(camId, explicitState) {
             const btn = document.getElementById(`btn-cry-${camId}`);
             const video = document.getElementById(`video-${camId}`);
             if (!btn) return;
 
-            if (!babyCryMonitors[camId]) {
+            const isCurrentlyOn = Boolean(babyCryMonitors[camId] && babyCryMonitors[camId].active);
+            const shouldEnable = explicitState !== undefined ? Boolean(explicitState) : !isCurrentlyOn;
+
+            const cam = (typeof camerasData !== 'undefined' ? camerasData : []).find(c => c.id === camId);
+            if (cam) cam.baby_cry_enabled = shouldEnable ? 1 : 0;
+
+            if (shouldEnable) {
                 try {
                     let ctx = null;
                     let interval = null;
@@ -11712,38 +11787,45 @@
 
                     babyCryMonitors[camId] = { ctx, interval, active: true };
                     btn.classList.add('active');
-                    saveCameraBabyCryConfig(camId, true);
 
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-end',
-                        icon: 'success',
-                        title: '😭 Monitor de Choro IA Ativado!',
-                        text: 'Você e seu Telegram serão alertados imediatamente se o bebê chorar.',
-                        showConfirmButton: false,
-                        timer: 3500
-                    });
+                    if (explicitState === undefined) {
+                        saveCameraBabyCryConfig(camId, true);
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: '😭 Monitor de Choro IA Ativado!',
+                            text: 'Você e seu Telegram serão alertados imediatamente se o bebê chorar.',
+                            showConfirmButton: false,
+                            timer: 3500
+                        });
+                    }
                 } catch(e) {
                     console.warn(e);
                 }
             } else {
-                const m = babyCryMonitors[camId];
-                if (m.interval) clearInterval(m.interval);
-                if (m.ctx) m.ctx.close();
-                delete babyCryMonitors[camId];
+                if (babyCryMonitors[camId]) {
+                    const m = babyCryMonitors[camId];
+                    if (m.interval) clearInterval(m.interval);
+                    if (m.ctx) {
+                        try { m.ctx.close(); } catch(e) {}
+                    }
+                    delete babyCryMonitors[camId];
+                }
                 btn.classList.remove('active');
-                saveCameraBabyCryConfig(camId, false);
+                if (explicitState === undefined) {
+                    saveCameraBabyCryConfig(camId, false);
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'info',
+                        title: 'Monitor de Choro Desativado',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                }
                 const alertEl = document.getElementById(`cry-alert-${camId}`);
                 if (alertEl) alertEl.style.display = 'none';
-
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'info',
-                    title: 'Monitor de Choro Desativado',
-                    showConfirmButton: false,
-                    timer: 2000
-                });
             }
         }
 
@@ -11768,13 +11850,18 @@
 
         async function saveCameraBabyCryConfig(camId, enabled) {
             try {
+                const c = (typeof camerasData !== 'undefined' ? camerasData : []).find(x => x.id === camId);
+                if (c) c.baby_cry_enabled = enabled ? 1 : 0;
+
                 await fetch(`/api/cameras/${camId}/tracking`, {
                     method: 'POST',
                     credentials: 'include',
                     headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({ baby_cry_enabled: enabled ? 1 : 0 })
                 });
-            } catch(e) {}
+            } catch(e) {
+                console.warn('Erro ao salvar config choro:', e);
+            }
         }
 
         // ── 6. Sirene Dissuasória / Alarme de Pânico ──────────────────────────────
