@@ -1,0 +1,384 @@
+{
+  "id": "J0xNWmOgaJqMsCEa",
+  "name": "CK Agente King — Finanças",
+  "description": null,
+  "active": false,
+  "activeVersionId": null,
+  "createdAt": "2026-10-26T15:46:46.111Z",
+  "updatedAt": "2026-10-26T15:46:46.111Z",
+  "isArchived": false,
+  "versionId": "25036e52-679d-4cdb-8df9-a99ed9b97cb2",
+  "versionCounter": 1,
+  "sourceWorkflowId": null,
+  "triggerCount": 0,
+  "nodes": [
+    {
+      "id": "tg-trigger-financas",
+      "name": "Telegram Trigger",
+      "webhookId": "ck-financas-telegram",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1100,
+        300
+      ],
+      "parameters": {
+        "updates": [
+          "message",
+          "edited_message"
+        ],
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "MFt7IUN9HkKveUW8",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "id": "prep01",
+      "name": "Preparar (texto/voz)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -900,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst msg = raw.message || {};\nconst adminId = String($env.ADMIN_TELEGRAM_ID || '0');\nconst senderId = String(msg.from?.id || '');\nconst chatId = String(msg.chat?.id || '');\nconst firstName = msg.from?.first_name || 'cliente';\nconst text = String(msg.text || msg.caption || '').trim();\n\n// Checar se é arquivo de música (áudio do Telegram ou documento .mp3 / áudio)\nconst isAudioMusic = !!(msg.audio || (msg.document && (msg.document.mime_type?.startsWith('audio/') || msg.document.file_name?.toLowerCase().endsWith('.mp3'))));\nconst audioMusicFileId = msg.audio?.file_id || msg.document?.file_id || null;\nconst audioMusicFileName = msg.audio?.file_name || msg.audio?.title || msg.document?.file_name || 'musica_sarah.mp3';\n\nconst fileId = msg.voice?.file_id || (isAudioMusic ? null : msg.audio?.file_id) || msg.video_note?.file_id || null;\nconst hadVoice = !text && !!fileId && !isAudioMusic;\n\nreturn [{ json: {\n  adminId, senderId, chatId, firstName,\n  text: text || (hadVoice ? '' : (isAudioMusic ? '[música para sarah]' : '[mensagem sem texto]')),\n  hadVoice, fileId: fileId || '',\n  voiceError: '',\n  isAudioMusic, audioMusicFileId, audioMusicFileName\n} }];\n"
+      }
+    },
+    {
+      "id": "if-voz-financas",
+      "name": "É Voz?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -700,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-voz",
+              "leftValue": "={{ $json.hadVoice }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "tgGetFile01",
+      "name": "TG getFile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "continueOnFail": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        -500,
+        150
+      ],
+      "parameters": {
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/getFile",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "file_id",
+              "value": "={{ $json.fileId }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      }
+    },
+    {
+      "id": "tgDlAudio01",
+      "name": "Baixar áudio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "continueOnFail": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        -300,
+        150
+      ],
+      "parameters": {
+        "url": "=https://api.telegram.org/file/bot{{ $env.TELEGRAM_BOT_TOKEN }}/{{ $json.result.file_path }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 25000
+        }
+      }
+    },
+    {
+      "id": "whisper01",
+      "name": "Whisper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "continueOnFail": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        -100,
+        150
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/transcriptions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.OPENAI_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "whisper-1"
+            },
+            {
+              "name": "language",
+              "value": "pt"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 45000
+        }
+      }
+    },
+    {
+      "id": "unirVoz01",
+      "name": "Unir voz",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        100,
+        150
+      ],
+      "parameters": {
+        "jsCode": "const prep = $('Preparar (texto/voz)').first().json;\nconst j = $input.first().json || {};\nlet text = String(j.text || '').trim();\nlet voiceError = '';\nif (!text) {\n  voiceError = String(j.error?.message || j.message || 'whisper vazio').slice(0, 180);\n  text = '[áudio recebido, mas não consegui transcrever]';\n}\nreturn [{ json: { ...prep, text, hadVoice: true, voiceError } }];\n"
+      }
+    },
+    {
+      "id": "exec-king-financas",
+      "name": "Executar King Finanças",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const prev = $input.first().json;\nconst base = String($env.CK_BASE_URL || 'https://www.conectaking.com.br').replace(/\\/$/, '');\nconst token = String($env.CK_AGENT_JWT || '').trim();\nconst openaiKey = String($env.OPENAI_API_KEY || '').trim();\nconst model = String($env.OPENAI_MODEL || 'gpt-4o-mini').trim();\nconst text = String(prev.text || '').trim();\nconst chatId = String(prev.chatId || '');\nconst hadVoice = !!prev.hadVoice;\n\nlet outMessage = '';\n\ntry {\n  // Formatador de Moeda R$\n  function fmt(val) {\n    const num = Number(val || 0);\n    return 'R$ ' + num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\n  }\n\n  // Helper HTTP para a API Laravel do Conecta King\n  async function ck(method, path, body) {\n    const url = `${base}${path}`;\n    const headers = {\n      'Accept': 'application/json',\n      'Content-Type': 'application/json',\n      ...(token ? { 'Authorization': `Bearer ${token}` } : {})\n    };\n    const opts = { method, headers };\n    if (body && ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())) {\n      opts.body = JSON.stringify(body);\n    }\n    const r = await fetch(url, opts);\n    let data;\n    try { data = await r.json(); } catch { data = await r.text(); }\n    return { ok: r.ok, status: r.status, body: data };\n  }\n\n  // Chamada direta à OpenAI com Function Calling\n  async function openaiCall(payload) {\n    const r = await fetch('https://api.openai.com/v1/chat/completions', {\n      method: 'POST',\n      headers: {\n        'Content-Type': 'application/json',\n        'Authorization': `Bearer ${openaiKey}`\n      },\n      body: JSON.stringify(payload)\n    });\n    if (!r.ok) {\n      const errTxt = await r.text();\n      throw new Error(`OpenAI API error ${r.status}: ${errTxt}`);\n    }\n    return await r.json();\n  }\n\n  async function resolveProfileId() {\n    try {\n      const meRes = await ck('GET', '/api/finance/me');\n      if (meRes.ok && meRes.body && meRes.body.profile && meRes.body.profile.id) {\n        return meRes.body.profile.id;\n      }\n    } catch (e) {\n      // fallback\n    }\n    return 1;\n  }\n\n  async function fetchRecentTransactions(limitN) {\n    try {\n      const r = await ck('GET', `/api/finance/transactions?limit=${limitN || 10}`);\n      if (r.ok && r.body && r.body.data) return r.body.data;\n    } catch {}\n    return [];\n  }\n\n  function parseDateInput(str) {\n    if (!str) return null;\n    str = String(str).trim();\n    if (/^\\d{4}-\\d{2}-\\d{2}$/.test(str)) return str;\n    const parts = str.split(/[\\/\\-]/);\n    if (parts.length === 3) {\n      let d = parseInt(parts[0], 10), m = parseInt(parts[1], 10), y = parseInt(parts[2], 10);\n      if (parts[0].length === 4) { y = parseInt(parts[0], 10); m = parseInt(parts[1], 10); d = parseInt(parts[2], 10); }\n      if (y < 100) y += 2000;\n      if (d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 2000) {\n        return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;\n      }\n    }\n    return null;\n  }\n\n  async function fetchRealSummary(profileId) {\n    const today = new Date();\n    const curYear = today.getFullYear();\n    const curMonth = today.getMonth() + 1;\n    let sum = {\n      cash_balance: 0,\n      bank_balance: 0,\n      total_balance: 0,\n      month_income: 0,\n      month_expense: 0,\n      pending_income: 0,\n      pending_expense: 0,\n      net_month: 0,\n      total_to_receive: 0,\n      total_to_pay: 0\n    };\n    try {\n      const r = await ck('GET', `/api/finance/summary?year=${curYear}&month=${curMonth}`);\n      if (r.ok && r.body) {\n        const d = r.body.data || r.body;\n        sum.cash_balance = Number(d.cash_balance || 0);\n        sum.bank_balance = Number(d.bank_balance || 0);\n        sum.total_balance = Number(d.total_balance || (sum.cash_balance + sum.bank_balance));\n        sum.month_income = Number(d.month_income || 0);\n        sum.month_expense = Number(d.month_expense || 0);\n        sum.pending_income = Number(d.pending_income || 0);\n        sum.pending_expense = Number(d.pending_expense || 0);\n        sum.net_month = Number(d.net_month || (sum.month_income - sum.month_expense));\n      }\n    } catch {}\n    try {\n      const rec = await ck('GET', '/api/finance/receivables');\n      if (rec.ok && rec.body && rec.body.total_receivable !== undefined) {\n        sum.total_to_receive = Number(rec.body.total_receivable);\n      }\n    } catch {}\n    try {\n      const deb = await ck('GET', '/api/finance/debts');\n      if (deb.ok && deb.body && deb.body.total_debt !== undefined) {\n        sum.total_to_pay = Number(deb.body.total_debt);\n      }\n    } catch {}\n    return sum;\n  }\n\n  function buildSummaryMessage(summary, f) {\n    return [\n      '📊 *Resumo Financeiro em Tempo Real:*',\n      `• *Saldo em Caixa / Banco:* ${f(summary.total_balance)}`,\n      `• *Entradas do Mês:* ${f(summary.month_income)}`,\n      `• *Saídas do Mês:* ${f(summary.month_expense)}`,\n      `• *Resultado do Mês:* ${f(summary.net_month)}`,\n      `• *A Receber (Trabalhos/Clientes):* ${f(summary.total_to_receive)}`,\n      `• *A Pagar (Dívidas/Compromissos):* ${f(summary.total_to_pay)}`\n    ].join('\\n');\n  }\n\n  const nowSp = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));\n  const todayStr = nowSp.toISOString().slice(0, 10);\n  const diasSemana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];\n  const diaSemanaHoje = diasSemana[nowSp.getDay()];\n  const mesesNomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];\n  const mesAtualNome = mesesNomes[nowSp.getMonth()];\n  const mesQueVemNome = mesesNomes[(nowSp.getMonth() + 1) % 12];\n  const anoAtual = nowSp.getFullYear();\n  const proximoMesData = new Date(anoAtual, nowSp.getMonth() + 1, 1);\n  const anoProximoMes = proximoMesData.getFullYear();\n  const proximoMesYYYYMM = `${anoProximoMes}-${String(proximoMesData.getMonth() + 1).padStart(2, '0')}`;\n\n  const SYSTEM_PROMPT = `Você é o AGENTE KING FINANÇAS, Diretor Financeiro (CFO) Pessoal e Operador de Finanças do Adriano King.\nVocê atende exclusivamente o CEO Adriano King no Telegram com foco 100% DEDICADO às suas Finanças Pessoais e da Empresa.\nTom de voz: executivo de altíssimo nível, analítico, seguro, direto e organizado. Valores sempre formatados em R$ (ex: R$ 450,00).\n\n════ DATA E CONTEXTO ATUAL (FUSO BRASÍLIA) ════\n• Data de hoje: ${todayStr} (${diaSemanaHoje})\n• Mês atual: ${mesAtualNome} de ${anoAtual}\n• Próximo mês: ${mesQueVemNome} (${proximoMesYYYYMM})\n\n════ SUAS ATRIBUIÇÕES SUPREMAS (FINANÇAS 100%) ════\n1. FLUXO DE CAIXA:\n   - Registrar receitas (entradas) e despesas (saídas).\n   - Suportar lançamentos avulsos ou múltiplos em um só comando (com 'transactions' array).\n   - Classificação precisa: PAID (já pago/recebido hoje) vs PENDING (a pagar/a receber no futuro).\n2. TRABALHOS E FOTOGRAFIA:\n   - Criar trabalhos fotográficos ou eventos ('create_trabalho') informando: cliente, valor total, entrada já recebida e saldo pendente.\n   - Atualizar trabalhos ('update_trabalho') e excluir ('delete_trabalho').\n   - Registrar pagamento/abater no valor de trabalho ('record_payment', ex: Katiane pagou R$ 400).\n   - Listar clientes que devem ('receivables_list').\n3. DÍVIDAS, CARTÕES E TERCEIROS:\n   - Consultar pessoas e contas que o Adriano deve ('list_debts', ex: Socorrinha, parcelas, cartões).\n   - Suportar filtro por pessoa ou por período ('mes: proximo' / 'mes_que_vem' / 'atual').\n   - Adicionar novas dívidas ou compras parceladas ('add_debt' com parcelas e valor por parcela).\n   - Dar baixa em dívidas ('pay_debt' ou 'mark_paid').\n4. CONSULTA E RESUMOS:\n   - Resumo em tempo real do caixa, faturamento do mês, saldo atual e projeção ('summary').\n   - Ajustar saldo de caixa ('adjust_cash').\n   - Cancelar último lançamento ou excluir por critérios ('cancel_last', 'delete_by_criteria').\n\n════ REGRAS CRÍTICAS DE PRECISÃO ════\n- Se o Adriano disser \"quanto fulano falta me pagar\" ou \"quem me deve\", isso é SEMPRE A RECEBER (receivables_list). NUNCA confunda com dívidas que o Adriano deve!\n- Se o Adriano disser \"quem eu estou devendo\" ou \"quanto devo para Socorrinha\", isso é SEMPRE DÍVIDA DO ADRIANO (list_debts).\n- Nunca crie transações com valores inventados. Confirme sempre o que foi registrado com bullet points e o novo saldo.`;\n\n  const tools = [\n    {\n      type: 'function',\n      function: {\n        name: 'manage_finance',\n        description: 'Gerencia finanças completas do Adriano King com poder total: consultar pessoas e contas que eu devo (list_debts), adicionar compras parceladas ou dívidas para o próximo mês (add_debt), dar baixa em dívidas (pay_debt), criar trabalhos/ensaios com entrada e saldo a receber (create_trabalho), abater pagamento em trabalho existente (record_payment), consultar trabalhos a receber (receivables_list), registrar receitas e despesas avulsas do fluxo de caixa (create), ajustar saldo em caixa (adjust_cash), cancelar lançamentos errados (cancel_last, delete_by_criteria) e ver o resumo financeiro atualizado (summary).',\n        parameters: {\n          type: 'object',\n          properties: {\n            action: {\n              type: 'string',\n              enum: ['summary', 'create_trabalho', 'update_trabalho', 'delete_trabalho', 'record_payment', 'receivables_list', 'list_debts', 'add_debt', 'pay_debt', 'mark_paid', 'create', 'cancel_last', 'delete_by_criteria', 'adjust_cash', 'list_recent', 'clear_all', 'advice'],\n              description: 'Ação financeira a executar'\n            },\n            cliente: { type: 'string', description: 'Nome do cliente para trabalhos ou a receber (ex: Katiane)' },\n            pessoa: { type: 'string', description: 'Nome da pessoa para dívidas (ex: Socorrinha)' },\n            valor_total: { type: 'number', description: 'Valor total do trabalho/serviço' },\n            entrada: { type: 'number', description: 'Valor pago como entrada no trabalho' },\n            valor_pago: { type: 'number', description: 'Valor a abater/dar baixa no trabalho ou dívida' },\n            valor: { type: 'number', description: 'Valor da despesa/receita ou parcela' },\n            parcelas: { type: 'number', description: 'Número de parcelas (para compras a prazo)' },\n            data_vencimento: { type: 'string', description: 'Data de vencimento YYYY-MM-DD' },\n            dia_vencimento: { type: 'number', description: 'Dia do mês do vencimento (ex: 10)' },\n            nome_conta: { type: 'string', description: 'Nome ou título da conta/dívida' },\n            descricao: { type: 'string', description: 'Descrição da despesa/receita/trabalho' },\n            type: { type: 'string', enum: ['INCOME', 'EXPENSE'], description: 'INCOME (entrada) ou EXPENSE (saída)' },\n            status: { type: 'string', enum: ['PAID', 'PENDING'], description: 'PAID (já pago/recebido) ou PENDING (futuro)' },\n            categoria: { type: 'string', description: 'Categoria financeira (Alimentação, Fotografia, Transporte, etc.)' },\n            forma_pagamento: { type: 'string', description: 'PIX, Cartão de Crédito, Dinheiro, etc.' },\n            mes: { type: 'string', description: 'Filtro de mês: \"proximo\", \"atual\", \"2026-11\", etc.' },\n            transactions: {\n              type: 'array',\n              items: {\n                type: 'object',\n                properties: {\n                  type: { type: 'string', enum: ['INCOME', 'EXPENSE'] },\n                  amount: { type: 'number' },\n                  description: { type: 'string' },\n                  status: { type: 'string', enum: ['PAID', 'PENDING'] },\n                  due_date: { type: 'string' },\n                  payment_method: { type: 'string' },\n                  category: { type: 'string' }\n                },\n                required: ['type', 'amount', 'description']\n              }\n            }\n          },\n          required: ['action']\n        }\n      }\n    }\n  ];\n\n  // Identificação rápida de comandos\n  const lowerMsg = text.toLowerCase();\n  let fnName = null;\n  let args = {};\n\n  if (/^(saldo|resumo|como\\s+t[aá]\\s+minhas?\\s+finan[cç]as?|resumo\\s+financeiro|fluxo\\s+de\\s+caixa|faturamento)/i.test(lowerMsg)) {\n    fnName = 'manage_finance';\n    args = { action: 'summary' };\n  } else if (/quem\\s+eu\\s+devo|quanto\\s+devo|minhas\\s+d[ií]vidas|contas\\s+a\\s+pagar|d[ií]vidas/i.test(lowerMsg)) {\n    fnName = 'manage_finance';\n    const isProximo = /m[eê]s\\s+que\\s+vem|pr[oó]ximo/i.test(lowerMsg);\n    let pMatch = lowerMsg.match(/(?:devo\\s+para|devo\\s+a|socorrinha|socorr)\\s*([a-zA-Zá-úÁ-Ú]+)?/i);\n    let pessoa = /socorr/i.test(lowerMsg) ? 'Socorrinha' : (pMatch && pMatch[1] ? pMatch[1] : undefined);\n    args = { action: 'list_debts', mes: isProximo ? 'proximo' : 'atual', pessoa };\n  } else if (/quanto\\s+(?:falta\\s+)?([a-zA-Zá-úÁ-Ú]+)\\s+(?:falta\\s+)?me\\s+pagar|quem\\s+me\\s+deve|trabalhos?\\s+a\\s+receber/i.test(lowerMsg)) {\n    fnName = 'manage_finance';\n    const m = lowerMsg.match(/(?:falta|deve)\\s+([a-zA-Zá-úÁ-Ú]+)/i);\n    const cli = m && !['me', 'que', 'pagar', 'o', 'a'].includes(m[1].toLowerCase()) ? m[1] : undefined;\n    args = { action: 'receivables_list', cliente: cli };\n  }\n\n  // Se não foi interceptado por atalho direto, consulta o modelo com function calling\n  if (!fnName) {\n    const aiRes = await openaiCall({\n      model,\n      messages: [\n        { role: 'system', content: SYSTEM_PROMPT },\n        { role: 'user', content: (hadVoice ? '[Mensagem de voz transcrita]: ' : '') + text }\n      ],\n      tools,\n      tool_choice: 'auto',\n      temperature: 0.2\n    });\n\n    const choice = aiRes.choices && aiRes.choices[0] && aiRes.choices[0].message;\n    if (choice && choice.tool_calls && choice.tool_calls.length > 0) {\n      const tc = choice.tool_calls[0];\n      fnName = tc.function.name;\n      try { args = JSON.parse(tc.function.arguments); } catch { args = {}; }\n    } else {\n      outMessage = (choice && choice.content) || '👑 Adriano, como posso ajudar nas suas finanças hoje?';\n    }\n  }\n\n  // Execução do manage_finance se solicitado\n  if (fnName === 'manage_finance') {\n    const profileId = await resolveProfileId();\n    const action = args.action || 'summary';\n\n    if (action === 'summary') {\n      const s = await fetchRealSummary(profileId);\n      outMessage = `💼 *Agente King Finanças — Resumo Financeiro*\\n\\n${buildSummaryMessage(s, fmt)}`;\n    } else if (action === 'receivables_list') {\n      const r = await ck('GET', '/api/finance/receivables');\n      let items = (r.body && r.body.data) || (Array.isArray(r.body) ? r.body : []);\n      if (args.cliente) {\n        const cLower = String(args.cliente).toLowerCase();\n        items = items.filter(it => String(it.client_name || it.title || '').toLowerCase().includes(cLower));\n      }\n      if (!items || items.length === 0) {\n        outMessage = args.cliente\n          ? `✅ *Trabalhos a Receber:* Não há valores pendentes para *\"${args.cliente}\"*!`\n          : '✅ *Trabalhos a Receber:* Todos os trabalhos estão quitados! Nada pendente no momento.';\n      } else {\n        const lines = items.map(it => `• *Cliente:* ${it.client_name || it.title}\\n  Total: ${fmt(it.total_amount)} | Entrada: ${fmt(it.paid_amount)} | *Falta Pagar: ${fmt(it.remaining_amount)}*`);\n        const totalRem = items.reduce((acc, it) => acc + Number(it.remaining_amount || 0), 0);\n        outMessage = `📋 *Trabalhos e Contas a Receber:*\\n\\n${lines.join('\\n\\n')}\\n\\n💰 *Total a Receber: ${fmt(totalRem)}*`;\n      }\n    } else if (action === 'record_payment') {\n      const payload = {\n        client_name: args.cliente,\n        amount: args.valor_pago || args.valor || 0\n      };\n      const r = await ck('POST', '/api/finance/receivables/payment', payload);\n      if (r.ok) {\n        const d = r.body.data || r.body;\n        outMessage = `✅ *Pagamento Abatido com Sucesso!*\\n\\n👤 *Cliente:* ${args.cliente}\\n💵 *Valor Abatido:* ${fmt(payload.amount)}\\n📌 *Saldo Restante a Receber:* ${fmt(d.remaining_amount || 0)}`;\n      } else {\n        outMessage = `⚠️ Não foi possível abater o pagamento: ${(r.body && r.body.message) || 'Erro desconhecido'}`;\n      }\n    } else if (action === 'list_debts') {\n      const q = args.mes ? `?month=${encodeURIComponent(args.mes)}` : '';\n      const r = await ck('GET', '/api/finance/debts' + q);\n      let items = (r.body && r.body.data) || (Array.isArray(r.body) ? r.body : []);\n      if (args.pessoa) {\n        const pLower = String(args.pessoa).toLowerCase();\n        items = items.filter(it => String(it.person_name || it.title || it.creditor || '').toLowerCase().includes(pLower));\n      }\n      if (!items || items.length === 0) {\n        outMessage = args.pessoa\n          ? `✅ *Contas a Pagar:* Você não tem nenhuma dívida pendente com *\"${args.pessoa}\"*!`\n          : '✅ *Contas a Pagar:* Nenhuma conta ou dívida pendente registrada!';\n      } else {\n        const lines = items.map(it => `• *Conta/Pessoa:* ${it.person_name || it.title || it.creditor}\\n  Valor: *${fmt(it.amount)}* | Vencimento: ${it.due_date || 'A combinar'}`);\n        const totalDeb = items.reduce((acc, it) => acc + Number(it.amount || 0), 0);\n        outMessage = `📋 *Contas e Dívidas a Pagar (${args.mes === 'proximo' ? 'Próximo Mês' : 'Geral'}):*\\n\\n${lines.join('\\n\\n')}\\n\\n💸 *Total a Pagar: ${fmt(totalDeb)}*`;\n      }\n    } else if (action === 'add_debt') {\n      const payload = {\n        person_name: args.pessoa || 'Terceiro',\n        title: args.nome_conta || args.descricao || 'Dívida/Parcela',\n        amount: args.valor,\n        installments: args.parcelas || 1,\n        due_date: args.data_vencimento || todayStr\n      };\n      const r = await ck('POST', '/api/finance/debts', payload);\n      if (r.ok) {\n        outMessage = `✅ *Dívida / Parcela Registrada com Sucesso!*\\n\\n👤 *Credor:* ${payload.person_name}\\n📝 *Título:* ${payload.title}\\n💵 *Valor:* ${fmt(payload.amount)}\\n🗓️ *Parcelas:* ${payload.installments}x\\n📅 *Vencimento Inicial:* ${payload.due_date}`;\n      } else {\n        outMessage = `⚠️ Não foi possível registrar a dívida: ${(r.body && r.body.message) || 'Erro ao salvar'}`;\n      }\n    } else if (action === 'create_trabalho') {\n      const payload = {\n        client_name: args.cliente || 'Cliente Ensaio',\n        total_amount: args.valor_total || args.valor || 0,\n        paid_amount: args.entrada || 0,\n        title: args.descricao || `Ensaio / Trabalho Fotográfico - ${args.cliente || ''}`,\n        event_date: args.data_vencimento || todayStr\n      };\n      const r = await ck('POST', '/api/finance/receivables', payload);\n      if (r.ok) {\n        const remaining = payload.total_amount - payload.paid_amount;\n        outMessage = `📸 *Trabalho Registrado com Sucesso!*\\n\\n👤 *Cliente:* ${payload.client_name}\\n💰 *Valor Total:* ${fmt(payload.total_amount)}\\n💵 *Entrada Paga:* ${fmt(payload.paid_amount)}\\n⏳ *Saldo a Receber:* ${fmt(remaining)}\\n📅 *Data:* ${payload.event_date}`;\n      } else {\n        outMessage = `⚠️ Erro ao registrar trabalho: ${(r.body && r.body.message) || 'Falha no servidor'}`;\n      }\n    } else if (action === 'create') {\n      const items = (args.transactions && args.transactions.length > 0)\n        ? args.transactions\n        : [{\n            type: args.type || 'EXPENSE',\n            amount: args.valor || 0,\n            description: args.descricao || 'Lançamento financeiro',\n            status: args.status || 'PAID',\n            due_date: args.data_vencimento || todayStr\n          }];\n\n      const results = [];\n      for (const it of items) {\n        const r = await ck('POST', '/api/finance/transactions', {\n          profile_id: profileId,\n          type: it.type || 'EXPENSE',\n          amount: it.amount || 0,\n          description: it.description || 'Lançamento via Agente King Finanças',\n          status: it.status || 'PAID',\n          date: it.due_date || todayStr\n        });\n        if (r.ok) results.push(it);\n      }\n\n      const s = await fetchRealSummary(profileId);\n      const lines = results.map(it => `${it.type === 'INCOME' ? '💵' : '💸'} *${it.type === 'INCOME' ? 'Receita' : 'Despesa'}:* ${fmt(it.amount)} (${it.status === 'PAID' ? 'Pago/Recebido' : 'Pendente'})\\n   📝 _${it.description}_`);\n      outMessage = `✅ *Lançamento(s) Realizado(s)!*\\n\\n${lines.join('\\n')}\\n\\n${buildSummaryMessage(s, fmt)}`;\n    } else if (action === 'adjust_cash') {\n      const r = await ck('POST', '/api/finance/adjust-balance', {\n        new_balance: args.valor || 0\n      });\n      const s = await fetchRealSummary(profileId);\n      outMessage = `⚖️ *Saldo em Caixa Ajustado!*\\n\\nNovo Saldo: *${fmt(args.valor)}*\\n\\n${buildSummaryMessage(s, fmt)}`;\n    } else if (action === 'cancel_last') {\n      const r = await ck('DELETE', '/api/finance/transactions/last');\n      const s = await fetchRealSummary(profileId);\n      outMessage = `🗑️ *Último Lançamento Cancelado com Sucesso!*\\n\\n${buildSummaryMessage(s, fmt)}`;\n    }\n  }\n\n} catch (err) {\n  outMessage = '⚠️ *Agente King Finanças:* Ocorreu um erro ao processar seu comando: ' + String(err.message || err).slice(0, 250);\n}\n\nfunction fixTelegramMarkdown(text) {\n  if (!text) return '';\n  let t = String(text);\n  const underscores = (t.match(/_/g) || []).length;\n  if (underscores % 2 !== 0) {\n    let count = 0;\n    t = t.replace(/_/g, m => (++count === underscores ? '' : m));\n  }\n  const stars = (t.match(/\\*/g) || []).length;\n  if (stars % 2 !== 0) {\n    let count = 0;\n    t = t.replace(/\\*/g, m => (++count === stars ? '' : m));\n  }\n  return t;\n}\n\noutMessage = fixTelegramMarkdown(outMessage || '👑 Agente King Finanças pronto para operar.');\nreturn [{ json: { ...prev, outMessage } }];\n"
+      }
+    },
+    {
+      "id": "splitTg01",
+      "name": "Dividir Mensagem TG",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function fixTelegramMarkdown(text) {\n  if (!text) return '';\n  let t = String(text);\n  const underscores = (t.match(/_/g) || []).length;\n  if (underscores % 2 !== 0) {\n    let count = 0;\n    t = t.replace(/_/g, m => (++count === underscores ? '' : m));\n  }\n  const stars = (t.match(/\\*/g) || []).length;\n  if (stars % 2 !== 0) {\n    let count = 0;\n    t = t.replace(/\\*/g, m => (++count === stars ? '' : m));\n  }\n  return t;\n}\n\nfunction splitTelegramMessage(text, maxLen = 3800) {\n  if (!text) return [''];\n  if (text.length <= maxLen) return [text];\n\n  const chunks = [];\n  let remaining = text;\n\n  while (remaining.length > maxLen) {\n    let splitIdx = remaining.lastIndexOf('\\n\\n', maxLen);\n    if (splitIdx === -1 || splitIdx < maxLen * 0.3) {\n      splitIdx = remaining.lastIndexOf('\\n', maxLen);\n    }\n    if (splitIdx === -1 || splitIdx < maxLen * 0.3) {\n      splitIdx = remaining.lastIndexOf('. ', maxLen);\n      if (splitIdx !== -1) splitIdx += 1;\n    }\n    if (splitIdx === -1 || splitIdx < maxLen * 0.3) {\n      splitIdx = remaining.lastIndexOf(' ', maxLen);\n    }\n    if (splitIdx === -1 || splitIdx < maxLen * 0.3) {\n      splitIdx = maxLen;\n    }\n\n    const chunk = remaining.slice(0, splitIdx).trim();\n    if (chunk) chunks.push(chunk);\n    remaining = remaining.slice(splitIdx).trim();\n  }\n\n  if (remaining.length > 0) {\n    chunks.push(remaining);\n  }\n  return chunks;\n}\n\nconst outItems = [];\n\nfor (const item of $input.all()) {\n  const rawMsg = item.json.outMessage || item.json.output || item.json.message || '';\n  if (!rawMsg) {\n    outItems.push(item);\n    continue;\n  }\n\n  const parts = splitTelegramMessage(rawMsg, 3800);\n  for (const part of parts) {\n    const fixedPart = fixTelegramMarkdown(part);\n    outItems.push({\n      json: {\n        ...item.json,\n        outMessage: fixedPart\n      }\n    });\n  }\n}\n\nreturn outItems;"
+      }
+    },
+    {
+      "id": "a39693ec-a458-475c-a4e4-18745434f129",
+      "name": "Enviar Telegram",
+      "webhookId": "23aa3799-8331-4570-9571-1206955dec41",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        500,
+        300
+      ],
+      "parameters": {
+        "chatId": "={{ $('Preparar (texto/voz)').first().json.chatId }}",
+        "text": "={{ $json.outMessage || $json.output || 'Sem resposta.' }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "MFt7IUN9HkKveUW8",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Preparar (texto/voz)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar (texto/voz)": {
+      "main": [
+        [
+          {
+            "node": "É Voz?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É Voz?": {
+      "main": [
+        [
+          {
+            "node": "TG getFile",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Executar King Finanças",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TG getFile": {
+      "main": [
+        [
+          {
+            "node": "Baixar áudio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baixar áudio": {
+      "main": [
+        [
+          {
+            "node": "Whisper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Whisper": {
+      "main": [
+        [
+          {
+            "node": "Unir voz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unir voz": {
+      "main": [
+        [
+          {
+            "node": "Executar King Finanças",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Executar King Finanças": {
+      "main": [
+        [
+          {
+            "node": "Dividir Mensagem TG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dividir Mensagem TG": {
+      "main": [
+        [
+          {
+            "node": "Enviar Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": null,
+  "meta": null,
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "J0xNWmOgaJqMsCEa",
+      "projectId": "38exZ3CcqzZj3va8",
+      "project": {
+        "id": "38exZ3CcqzZj3va8",
+        "name": "CONECTA KING <conectaking@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "3d0208f7-e092-475a-a710-3df0a3cd5c2d",
+        "createdAt": "2026-09-13T01:23:00.632Z",
+        "updatedAt": "2026-09-13T14:10:30.916Z"
+      },
+      "createdAt": "2026-10-26T15:46:46.129Z",
+      "updatedAt": "2026-10-26T15:46:46.129Z"
+    }
+  ],
+  "activeVersion": null,
+  "parentFolder": null
+}

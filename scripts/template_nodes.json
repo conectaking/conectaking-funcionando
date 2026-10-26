@@ -1,0 +1,162 @@
+[
+  {
+    "id": "a39693ec-a458-475c-a4e4-18745434f129",
+    "name": "Enviar Telegram",
+    "webhookId": "23aa3799-8331-4570-9571-1206955dec41",
+    "type": "n8n-nodes-base.telegram",
+    "typeVersion": 1.2,
+    "position": [
+      256,
+      256
+    ],
+    "parameters": {
+      "chatId": "={{ $('Preparar (texto/voz)').first().json.chatId }}",
+      "text": "={{ $json.outMessage || $json.output || 'Sem resposta.' }}",
+      "additionalFields": {
+        "appendAttribution": false
+      }
+    },
+    "credentials": {
+      "telegramApi": {
+        "id": "MFt7IUN9HkKveUW8",
+        "name": "Telegram account"
+      }
+    }
+  },
+  {
+    "id": "prep01",
+    "name": "Preparar (texto/voz)",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+      -1120,
+      448
+    ],
+    "parameters": {
+      "jsCode": "const raw = $input.first().json;\nconst msg = raw.message || {};\nconst adminId = String($env.ADMIN_TELEGRAM_ID || '0');\nconst senderId = String(msg.from?.id || '');\nconst chatId = String(msg.chat?.id || '');\nconst firstName = msg.from?.first_name || 'cliente';\nconst text = String(msg.text || msg.caption || '').trim();\n\n// Checar se é arquivo de música (áudio do Telegram ou documento .mp3 / áudio)\nconst isAudioMusic = !!(msg.audio || (msg.document && (msg.document.mime_type?.startsWith('audio/') || msg.document.file_name?.toLowerCase().endsWith('.mp3'))));\nconst audioMusicFileId = msg.audio?.file_id || msg.document?.file_id || null;\nconst audioMusicFileName = msg.audio?.file_name || msg.audio?.title || msg.document?.file_name || 'musica_sarah.mp3';\n\nconst fileId = msg.voice?.file_id || (isAudioMusic ? null : msg.audio?.file_id) || msg.video_note?.file_id || null;\nconst hadVoice = !text && !!fileId && !isAudioMusic;\n\nreturn [{ json: {\n  adminId, senderId, chatId, firstName,\n  text: text || (hadVoice ? '' : (isAudioMusic ? '[música para sarah]' : '[mensagem sem texto]')),\n  hadVoice, fileId: fileId || '',\n  voiceError: '',\n  isAudioMusic, audioMusicFileId, audioMusicFileName\n} }];\n"
+    }
+  },
+  {
+    "id": "tgGetFile01",
+    "name": "TG getFile",
+    "type": "n8n-nodes-base.httpRequest",
+    "typeVersion": 4.2,
+    "continueOnFail": true,
+    "onError": "continueRegularOutput",
+    "position": [
+      -656,
+      400
+    ],
+    "parameters": {
+      "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/getFile",
+      "sendQuery": true,
+      "queryParameters": {
+        "parameters": [
+          {
+            "name": "file_id",
+            "value": "={{ $json.fileId }}"
+          }
+        ]
+      },
+      "options": {
+        "timeout": 15000
+      }
+    }
+  },
+  {
+    "id": "tgDlAudio01",
+    "name": "Baixar áudio",
+    "type": "n8n-nodes-base.httpRequest",
+    "typeVersion": 4.2,
+    "continueOnFail": true,
+    "onError": "continueRegularOutput",
+    "position": [
+      -416,
+      400
+    ],
+    "parameters": {
+      "url": "=https://api.telegram.org/file/bot{{ $env.TELEGRAM_BOT_TOKEN }}/{{ $json.result.file_path }}",
+      "options": {
+        "response": {
+          "response": {
+            "responseFormat": "file"
+          }
+        },
+        "timeout": 25000
+      }
+    }
+  },
+  {
+    "id": "whisper01",
+    "name": "Whisper",
+    "type": "n8n-nodes-base.httpRequest",
+    "typeVersion": 4.2,
+    "continueOnFail": true,
+    "onError": "continueRegularOutput",
+    "position": [
+      -176,
+      768
+    ],
+    "parameters": {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/audio/transcriptions",
+      "sendHeaders": true,
+      "headerParameters": {
+        "parameters": [
+          {
+            "name": "Authorization",
+            "value": "=Bearer {{ $env.OPENAI_API_KEY }}"
+          }
+        ]
+      },
+      "sendBody": true,
+      "contentType": "multipart-form-data",
+      "bodyParameters": {
+        "parameters": [
+          {
+            "name": "model",
+            "value": "whisper-1"
+          },
+          {
+            "name": "language",
+            "value": "pt"
+          },
+          {
+            "parameterType": "formBinaryData",
+            "name": "file",
+            "inputDataFieldName": "data"
+          }
+        ]
+      },
+      "options": {
+        "timeout": 45000
+      }
+    }
+  },
+  {
+    "id": "unirVoz01",
+    "name": "Unir voz",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+      0,
+      768
+    ],
+    "parameters": {
+      "jsCode": "const prep = $('Preparar (texto/voz)').first().json;\nconst j = $input.first().json || {};\nlet text = String(j.text || '').trim();\nlet voiceError = '';\nif (!text) {\n  voiceError = String(j.error?.message || j.message || 'whisper vazio').slice(0, 180);\n  text = '[áudio recebido, mas não consegui transcrever]';\n}\nreturn [{ json: { ...prep, text, hadVoice: true, voiceError } }];\n"
+    }
+  },
+  {
+    "id": "splitTg01",
+    "name": "Dividir Mensagem TG",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+      256,
+      380
+    ],
+    "parameters": {
+      "jsCode": "function fixTelegramMarkdown(text) {\n  if (!text) return '';\n  let t = String(text);\n  const underscores = (t.match(/_/g) || []).length;\n  if (underscores % 2 !== 0) {\n    let count = 0;\n    t = t.replace(/_/g, m => (++count === underscores ? '' : m));\n  }\n  const stars = (t.match(/\\*/g) || []).length;\n  if (stars % 2 !== 0) {\n    let count = 0;\n    t = t.replace(/\\*/g, m => (++count === stars ? '' : m));\n  }\n  return t;\n}\n\nfunction splitTelegramMessage(text, maxLen = 3800) {\n  if (!text) return [''];\n  if (text.length <= maxLen) return [text];\n\n  const chunks = [];\n  let remaining = text;\n\n  while (remaining.length > maxLen) {\n    let splitIdx = remaining.lastIndexOf('\\n\\n', maxLen);\n    if (splitIdx === -1 || splitIdx < maxLen * 0.3) {\n      splitIdx = remaining.lastIndexOf('\\n', maxLen);\n    }\n    if (splitIdx === -1 || splitIdx < maxLen * 0.3) {\n      splitIdx = remaining.lastIndexOf('. ', maxLen);\n      if (splitIdx !== -1) splitIdx += 1;\n    }\n    if (splitIdx === -1 || splitIdx < maxLen * 0.3) {\n      splitIdx = remaining.lastIndexOf(' ', maxLen);\n    }\n    if (splitIdx === -1 || splitIdx < maxLen * 0.3) {\n      splitIdx = maxLen;\n    }\n\n    const chunk = remaining.slice(0, splitIdx).trim();\n    if (chunk) chunks.push(chunk);\n    remaining = remaining.slice(splitIdx).trim();\n  }\n\n  if (remaining.length > 0) {\n    chunks.push(remaining);\n  }\n  return chunks;\n}\n\nconst outItems = [];\n\nfor (const item of $input.all()) {\n  const rawMsg = item.json.outMessage || item.json.output || item.json.message || '';\n  if (!rawMsg) {\n    outItems.push(item);\n    continue;\n  }\n\n  const parts = splitTelegramMessage(rawMsg, 3800);\n  for (const part of parts) {\n    const fixedPart = fixTelegramMarkdown(part);\n    outItems.push({\n      json: {\n        ...item.json,\n        outMessage: fixedPart\n      }\n    });\n  }\n}\n\nreturn outItems;"
+    }
+  }
+]
