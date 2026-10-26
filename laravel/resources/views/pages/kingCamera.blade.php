@@ -5671,19 +5671,37 @@
                 startWebRtcStream(cam);
                 startClock(cam.id);
 
-                // Restaura estado ativo salvo no banco e no localStorage (Cerca do Berço, Bebê em Pé, Rastreamento, Choro)
+                // Restaura estado ativo exclusivamente do banco (única fonte de verdade para sincronia Mobile e PC)
                 setTimeout(() => {
-                    const localFenceEnabled = localStorage.getItem(`kc_fence_enabled_${cam.id}`);
-                    const isFenceActive = localFenceEnabled !== null ? localFenceEnabled === '1' : Boolean(cam.crib_fence_enabled);
+                    const isFenceActive = Boolean(cam.crib_fence_enabled);
                     const savedRoi = localStorage.getItem(`kc_fence_${cam.id}`) || cam.crib_roi_json;
                     if (isFenceActive) {
                         restoreCribFenceOnLoad(cam.id, savedRoi);
+                    } else {
+                        localStorage.removeItem(`kc_fence_enabled_${cam.id}`);
+                        if (cribFenceState[cam.id]) {
+                            cribFenceState[cam.id].enabled = false;
+                            if (cribFenceState[cam.id].interval) {
+                                clearInterval(cribFenceState[cam.id].interval);
+                                cribFenceState[cam.id].interval = null;
+                            }
+                        }
+                        const alertEl = document.getElementById(`fence-alert-${cam.id}`);
+                        if (alertEl) alertEl.style.display = 'none';
+                        const canvas = document.getElementById(`crib-canvas-${cam.id}`);
+                        if (canvas) {
+                            canvas.style.display = 'none';
+                            canvas.style.pointerEvents = 'none';
+                            canvas.classList.remove('editing');
+                        }
                     }
 
-                    const localStandEnabled = localStorage.getItem(`kc_stand_enabled_${cam.id}`);
-                    const isStandActive = localStandEnabled !== null ? localStandEnabled === '1' : Boolean(cam.baby_stand_enabled);
+                    const isStandActive = Boolean(cam.baby_stand_enabled);
                     if (isStandActive) {
-                        toggleBabyStandDetector(cam.id);
+                        toggleBabyStandDetector(cam.id, true);
+                    } else {
+                        localStorage.removeItem(`kc_stand_enabled_${cam.id}`);
+                        stopBabyStandWatcher(cam.id);
                     }
 
                     if (cam.auto_tracking_enabled) {
@@ -9703,8 +9721,17 @@
             let isProcessing = false;
 
             s.interval = setInterval(async () => {
+                if (!s || !s.enabled) {
+                    if (s && s.interval) {
+                        clearInterval(s.interval);
+                        s.interval = null;
+                    }
+                    const alertEl = document.getElementById(`fence-alert-${camId}`);
+                    if (alertEl) alertEl.style.display = 'none';
+                    return;
+                }
                 const video = document.getElementById(`video-${camId}`);
-                if (!video || video.readyState < 2 || !s.enabled || isProcessing) return;
+                if (!video || video.readyState < 2 || isProcessing) return;
                 isProcessing = true;
 
                 try {
@@ -9888,12 +9915,15 @@
             } catch(e) {}
         }
 
-        function toggleCribFence(camId) {
+        function toggleCribFence(camId, explicitState) {
             const canvas = document.getElementById(`crib-canvas-${camId}`);
             const btn = document.getElementById(`btn-fence-${camId}`);
             if (!canvas || !btn) return;
 
-            if (!cribFenceState[camId] || !cribFenceState[camId].enabled) {
+            const isCurrentlyOn = Boolean(cribFenceState[camId] && cribFenceState[camId].enabled);
+            const shouldEnable = explicitState !== undefined ? Boolean(explicitState) : !isCurrentlyOn;
+
+            if (shouldEnable) {
                 const cam = (typeof camerasData !== 'undefined' ? camerasData : []).find(c => c.id === camId);
                 let roi = { x: 20, y: 25, w: 60, h: 50 };
                 
@@ -9929,8 +9959,13 @@
                 };
 
                 btn.classList.add('active');
+                localStorage.setItem(`kc_fence_enabled_${camId}`, '1');
+                if (cam) cam.crib_fence_enabled = 1;
                 startFenceMonitor(camId);
-                saveCameraFenceConfig(camId, true, roi);
+
+                if (explicitState === undefined) {
+                    saveCameraFenceConfig(camId, true, roi);
+                }
 
                 const cribNav = document.getElementById(`tab-nav-${camId}-crib`);
                 const isCribTab = cribNav ? cribNav.classList.contains('active') : true;
@@ -9949,40 +9984,56 @@
                     canvas.classList.remove('editing');
                 }
 
-                const wrap = canvas.parentElement;
-                if (wrap) {
-                    wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
+                if (explicitState === undefined) {
+                    const wrap = canvas.parentElement;
+                    if (wrap) {
+                        wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
 
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'success',
-                    title: '👶 Cerca do Berço Ativa!',
-                    text: 'O retângulo azul apareceu no vídeo. Arraste os círculos ou o centro para cobrir o berço.',
-                    showConfirmButton: false,
-                    timer: 4000
-                });
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: '👶 Cerca do Berço Ativa!',
+                        text: 'O retângulo azul apareceu no vídeo. Arraste os círculos ou o centro para cobrir o berço.',
+                        showConfirmButton: false,
+                        timer: 4000
+                    });
+                }
             } else {
-                const s = cribFenceState[camId];
-                s.enabled = false;
+                if (cribFenceState[camId]) {
+                    cribFenceState[camId].enabled = false;
+                    if (cribFenceState[camId].interval) {
+                        clearInterval(cribFenceState[camId].interval);
+                        cribFenceState[camId].interval = null;
+                    }
+                }
+                localStorage.removeItem(`kc_fence_enabled_${camId}`);
+                const cam = (typeof camerasData !== 'undefined' ? camerasData : []).find(c => c.id === camId);
+                if (cam) cam.crib_fence_enabled = 0;
+
                 canvas.style.display = 'none';
                 canvas.style.pointerEvents = 'none';
                 canvas.classList.remove('editing');
                 btn.classList.remove('active');
-                if (s.interval) clearInterval(s.interval);
-                saveCameraFenceConfig(camId, false, s.roi);
+
+                if (explicitState === undefined) {
+                    const s = cribFenceState[camId];
+                    saveCameraFenceConfig(camId, false, s ? s.roi : null);
+                }
                 const alertEl = document.getElementById(`fence-alert-${camId}`);
                 if (alertEl) alertEl.style.display = 'none';
 
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'info',
-                    title: 'Cerca do Berço Desativada',
-                    showConfirmButton: false,
-                    timer: 2000
-                });
+                if (explicitState === undefined) {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'info',
+                        title: 'Cerca do Berço Desativada',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                }
             }
         }
 
@@ -10212,22 +10263,33 @@
 
         function ensureCribFenceVisible(camId) {
             const cam = (typeof camerasData !== 'undefined' ? camerasData : []).find(c => c.id === camId) || {};
-            const localFenceEnabled = localStorage.getItem(`kc_fence_enabled_${camId}`);
-            const isFenceActive = localFenceEnabled !== null ? (localFenceEnabled === '1') : Boolean(cam.crib_fence_enabled);
+            const isFenceActive = Boolean(cam.crib_fence_enabled);
 
             const btn = document.getElementById(`btn-fence-${camId}`);
             if (btn) btn.classList.toggle('active', isFenceActive);
 
             const canvas = document.getElementById(`crib-canvas-${camId}`);
-            if (!canvas) return;
 
             if (!isFenceActive) {
-                canvas.style.display = 'none';
-                canvas.style.pointerEvents = 'none';
-                canvas.classList.remove('editing');
-                if (cribFenceState[camId]) cribFenceState[camId].enabled = false;
+                if (canvas) {
+                    canvas.style.display = 'none';
+                    canvas.style.pointerEvents = 'none';
+                    canvas.classList.remove('editing');
+                }
+                if (cribFenceState[camId]) {
+                    cribFenceState[camId].enabled = false;
+                    if (cribFenceState[camId].interval) {
+                        clearInterval(cribFenceState[camId].interval);
+                        cribFenceState[camId].interval = null;
+                    }
+                }
+                localStorage.removeItem(`kc_fence_enabled_${camId}`);
+                const alertEl = document.getElementById(`fence-alert-${camId}`);
+                if (alertEl) alertEl.style.display = 'none';
                 return;
             }
+
+            if (!canvas) return;
 
             let roi = { x: 20, y: 25, w: 60, h: 50 };
             const localRoi = localStorage.getItem(`kc_fence_${camId}`);
@@ -10286,6 +10348,21 @@
         }
 
         function restoreCribFenceOnLoad(camId, savedRoi) {
+            const cam = (typeof camerasData !== 'undefined' ? camerasData : []).find(c => c.id === camId);
+            if (!cam || !cam.crib_fence_enabled) {
+                if (cribFenceState[camId]) {
+                    cribFenceState[camId].enabled = false;
+                    if (cribFenceState[camId].interval) {
+                        clearInterval(cribFenceState[camId].interval);
+                        cribFenceState[camId].interval = null;
+                    }
+                }
+                const alertEl = document.getElementById(`fence-alert-${camId}`);
+                if (alertEl) alertEl.style.display = 'none';
+                localStorage.removeItem(`kc_fence_enabled_${camId}`);
+                return;
+            }
+
             // Inicializa a cerca e mantém o monitor ativo em segundo plano sem exibir o retângulo na tela
             ensureCribFenceVisible(camId);
 
@@ -10527,40 +10604,51 @@
         window.babyStandAlerts = {};
         window.babyStandIntervals = {};
 
-        function toggleBabyStandDetector(camId) {
-            const isNowActive = !window.babyStandAlerts[camId];
+        function toggleBabyStandDetector(camId, explicitState) {
+            const isCurrentlyOn = Boolean(window.babyStandAlerts[camId]);
+            const isNowActive = explicitState !== undefined ? Boolean(explicitState) : !isCurrentlyOn;
             window.babyStandAlerts[camId] = isNowActive;
 
             const btn = document.getElementById(`btn-stand-${camId}`);
             if (btn) btn.classList.toggle('active', isNowActive);
 
-            localStorage.setItem(`kc_stand_enabled_${camId}`, isNowActive ? '1' : '0');
+            if (isNowActive) {
+                localStorage.setItem(`kc_stand_enabled_${camId}`, '1');
+            } else {
+                localStorage.removeItem(`kc_stand_enabled_${camId}`);
+            }
             const c = (typeof camerasData !== 'undefined' ? camerasData : []).find(x => x.id === camId);
             if (c) c.baby_stand_enabled = isNowActive ? 1 : 0;
 
-            saveCameraBabyStandConfig(camId, isNowActive);
+            if (explicitState === undefined) {
+                saveCameraBabyStandConfig(camId, isNowActive);
+            }
 
             if (isNowActive) {
                 startBabyStandWatcher(camId);
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'success',
-                    title: '👶 Monitor "Bebê em Pé" Ativado!',
-                    text: 'Você e seu Telegram serão alertados se a criança ficar em pé ou se apoiar na grade!',
-                    showConfirmButton: false,
-                    timer: 3500
-                });
+                if (explicitState === undefined) {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: '👶 Monitor "Bebê em Pé" Ativado!',
+                        text: 'Você e seu Telegram serão alertados se a criança ficar em pé ou se apoiar na grade!',
+                        showConfirmButton: false,
+                        timer: 3500
+                    });
+                }
             } else {
                 stopBabyStandWatcher(camId);
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'info',
-                    title: 'Monitor "Bebê em Pé" Desativado',
-                    showConfirmButton: false,
-                    timer: 2000
-                });
+                if (explicitState === undefined) {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'info',
+                        title: 'Monitor "Bebê em Pé" Desativado',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                }
             }
         }
 
@@ -10712,6 +10800,9 @@
                 clearInterval(window.babyStandIntervals[camId]);
                 delete window.babyStandIntervals[camId];
             }
+            window.babyStandAlerts[camId] = false;
+            const btn = document.getElementById(`btn-stand-${camId}`);
+            if (btn) btn.classList.remove('active');
             const banner = document.getElementById(`stand-alert-${camId}`);
             if (banner) banner.style.display = 'none';
         }
@@ -11278,6 +11369,64 @@
                 modal.setAttribute('aria-hidden', 'true');
             }
         }
+
+        // ─── SINCRONIZAÇÃO EM TEMPO REAL ENTRE DISPOSITIVOS (PC & CELULAR) ───
+        let isSyncingDevices = false;
+        async function syncCamerasDeviceState() {
+            if (isSyncingDevices || document.hidden) return;
+            isSyncingDevices = true;
+            try {
+                const res = await fetch('/api/cameras', {
+                    headers: getAuthHeaders({ 'Accept': 'application/json' }),
+                    credentials: 'include'
+                });
+                if (!res.ok) return;
+                const json = await res.json();
+                const list = (json && json.data) ? json.data : (Array.isArray(json) ? json : []);
+                if (!Array.isArray(list)) return;
+
+                list.forEach(remoteCam => {
+                    const localCam = (typeof camerasData !== 'undefined' ? camerasData : []).find(c => c.id === remoteCam.id);
+                    if (!localCam) return;
+
+                    // 1. Cerca do Berço: reflete instantaneamente entre Mobile e PC
+                    const remoteFence = Boolean(remoteCam.crib_fence_enabled);
+                    const localFence = Boolean(localCam.crib_fence_enabled);
+                    if (remoteFence !== localFence) {
+                        localCam.crib_fence_enabled = remoteFence ? 1 : 0;
+                        if (remoteCam.crib_roi_json) localCam.crib_roi_json = remoteCam.crib_roi_json;
+                        toggleCribFence(remoteCam.id, remoteFence);
+                    }
+
+                    // 2. Bebê em Pé: sincroniza botão e monitoramento
+                    const remoteStand = Boolean(remoteCam.baby_stand_enabled);
+                    const localStand = Boolean(localCam.baby_stand_enabled);
+                    if (remoteStand !== localStand) {
+                        localCam.baby_stand_enabled = remoteStand ? 1 : 0;
+                        toggleBabyStandDetector(remoteCam.id, remoteStand);
+                    }
+
+                    // 3. Rastreamento / Seguir Bebê 360°
+                    const remoteTrack = Boolean(remoteCam.auto_tracking_enabled);
+                    const localTrack = Boolean(localCam.auto_tracking_enabled);
+                    if (remoteTrack !== localTrack) {
+                        localCam.auto_tracking_enabled = remoteTrack ? 1 : 0;
+                        cameraTracking[remoteCam.id] = remoteTrack;
+                        updateTrackingPills(remoteCam.id);
+                        if (remoteTrack) {
+                            startAutoTrackingLoop(remoteCam.id);
+                        } else {
+                            stopAutoTrackingLoop(remoteCam.id);
+                        }
+                    }
+                });
+            } catch(e) {
+                // Silencioso em caso de oscilação momentânea de conexão
+            } finally {
+                isSyncingDevices = false;
+            }
+        }
+        setInterval(syncCamerasDeviceState, 3500);
     </script>
 </body>
 </html>

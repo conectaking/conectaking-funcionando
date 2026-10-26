@@ -1556,7 +1556,7 @@
                         const xhr = new XMLHttpRequest();
                         xhr.open('POST', '/api/alexa/charlene/upload', true);
                         xhr.withCredentials = true;
-                        xhr.timeout = 180000;
+                        xhr.timeout = 600000;
                         if (csrfToken) {
                             xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
                         }
@@ -1591,7 +1591,7 @@
                                 } else {
                                     errors++;
                                     if (xhr.status === 413) {
-                                        lastErrMsg = 'Arquivo muito grande (limite de 64MB). Escolha um arquivo menor.';
+                                        lastErrMsg = 'Arquivo muito grande (limite de 300MB). Escolha um arquivo menor.';
                                     } else {
                                         lastErrMsg = resp.message || `Erro do servidor (HTTP ${xhr.status})`;
                                     }
