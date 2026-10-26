@@ -1056,8 +1056,11 @@ Route::get('/charleneMusicas', [\App\Http\Controllers\Alexa\CharleneController::
 Route::get('/charlene-musicas', [\App\Http\Controllers\Alexa\CharleneController::class, 'managerPage']);
 Route::get('/api/alexa/charlene/playlist', [\App\Http\Controllers\Alexa\CharleneController::class, 'listPlaylist']);
 Route::post('/api/alexa/charlene/upload', [\App\Http\Controllers\Alexa\CharleneController::class, 'uploadMusic']);
+Route::post('/api/alexa/charlene/upload-chunk', [\App\Http\Controllers\Alexa\CharleneController::class, 'uploadMusicChunk']);
 Route::post('/api/alexa/charlene/upload-telegram', [\App\Http\Controllers\Alexa\CharleneController::class, 'uploadFromTelegram']);
 Route::post('/api/alexa/charlene/delete', [\App\Http\Controllers\Alexa\CharleneController::class, 'deleteMusic']);
+Route::post('/api/alexa/charlene/delete-multiple', [\App\Http\Controllers\Alexa\CharleneController::class, 'deleteMultipleMusic']);
+Route::post('/api/alexa/charlene/delete-folder', [\App\Http\Controllers\Alexa\CharleneController::class, 'deleteFolderMusic']);
 Route::post('/api/alexa/charlene/memory/save', [\App\Http\Controllers\Alexa\CharleneController::class, 'saveMemory']);
 Route::post('/api/alexa/charlene/memory/delete', [\App\Http\Controllers\Alexa\CharleneController::class, 'deleteMemory']);
 Route::post('/api/alexa/charlene/historias/reset', [\App\Http\Controllers\Alexa\CharleneController::class, 'resetHistoriasProgresso']);

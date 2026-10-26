@@ -52,6 +52,48 @@
           "samples": []
         },
         {
+          "name": "PassarMusicaIntent",
+          "slots": [],
+          "samples": [
+            "passa a música",
+            "passar a música",
+            "passa essa música",
+            "passa",
+            "passar",
+            "pula a música",
+            "pular a música",
+            "pula essa música",
+            "pula",
+            "pular",
+            "próxima música",
+            "próxima",
+            "toca a próxima música",
+            "toca a próxima",
+            "tocar a próxima",
+            "vai para a próxima",
+            "avança a música",
+            "avançar a música",
+            "avança",
+            "seguinte",
+            "passa essa"
+          ]
+        },
+        {
+          "name": "VoltarMusicaIntent",
+          "slots": [],
+          "samples": [
+            "volta a música",
+            "voltar a música",
+            "volta essa música",
+            "volta",
+            "voltar",
+            "música anterior",
+            "anterior",
+            "toca a anterior",
+            "vai para a anterior"
+          ]
+        },
+        {
           "name": "RepetirMusicaIntent",
           "slots": [],
           "samples": [

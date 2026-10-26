@@ -486,9 +486,11 @@ class CharleneController extends Controller
                 $musica = $slots['musica']['value'] ?? null;
                 return $this->handlePlayMusic($musica, $categoria, $payload);
 
+            case 'PassarMusicaIntent':
             case 'AMAZON.NextIntent':
                 return $this->handleNextMusic($payload);
 
+            case 'VoltarMusicaIntent':
             case 'AMAZON.PreviousIntent':
                 return $this->handlePreviousMusic($payload);
 
@@ -783,14 +785,28 @@ class CharleneController extends Controller
     }
 
     /**
-     * Avança para a próxima música com 'Alexa, próxima'
+     * Avança para a próxima música com 'Alexa, próxima', 'Charlene, passa a música'
      */
     private function handleNextMusic(array $payload): JsonResponse
     {
-        $token = $payload['context']['AudioPlayer']['token'] ?? '';
-        $parts = explode('|', $token);
-        $cat = $parts[1] ?? 'animadas';
-        $currentIndex = isset($parts[2]) ? (int)$parts[2] : 0;
+        $token = $payload['context']['AudioPlayer']['token'] ?? $payload['request']['token'] ?? '';
+        $cat = 'adoracao';
+        $currentIndex = 0;
+
+        if (!empty($token) && str_starts_with($token, 'sarah|')) {
+            $parts = explode('|', $token);
+            $cat = $parts[1] ?? 'adoracao';
+            $currentIndex = isset($parts[2]) ? (int)$parts[2] : 0;
+        } else {
+            $lastMem = CharleneMemory::where('subject', 'ultima_musica')->first();
+            if ($lastMem && !empty($lastMem->content)) {
+                $lastData = json_decode($lastMem->content, true);
+                if (is_array($lastData)) {
+                    $cat = $lastData['category'] ?? 'adoracao';
+                    $currentIndex = (int)($lastData['index'] ?? 0);
+                }
+            }
+        }
 
         $files = $this->getMusicFiles($cat);
         if (empty($files)) $files = $this->getMusicFiles('todas');
@@ -799,18 +815,32 @@ class CharleneController extends Controller
         $nextIndex = ($currentIndex + 1) % count($files);
         $nextSong = $files[$nextIndex];
 
-        return $this->playSpecificSong($nextSong, $cat, $nextIndex, "<speak>Tocando a próxima: " . htmlspecialchars($nextSong['title']) . "!</speak>");
+        return $this->playSpecificSong($nextSong, $cat, $nextIndex, "<speak>Passando a música! Tocando agora: " . htmlspecialchars($nextSong['title']) . "!</speak>");
     }
 
     /**
-     * Volta para a música anterior com 'Alexa, anterior'
+     * Volta para a música anterior com 'Alexa, anterior', 'Charlene, volta a música'
      */
     private function handlePreviousMusic(array $payload): JsonResponse
     {
-        $token = $payload['context']['AudioPlayer']['token'] ?? '';
-        $parts = explode('|', $token);
-        $cat = $parts[1] ?? 'animadas';
-        $currentIndex = isset($parts[2]) ? (int)$parts[2] : 0;
+        $token = $payload['context']['AudioPlayer']['token'] ?? $payload['request']['token'] ?? '';
+        $cat = 'adoracao';
+        $currentIndex = 0;
+
+        if (!empty($token) && str_starts_with($token, 'sarah|')) {
+            $parts = explode('|', $token);
+            $cat = $parts[1] ?? 'adoracao';
+            $currentIndex = isset($parts[2]) ? (int)$parts[2] : 0;
+        } else {
+            $lastMem = CharleneMemory::where('subject', 'ultima_musica')->first();
+            if ($lastMem && !empty($lastMem->content)) {
+                $lastData = json_decode($lastMem->content, true);
+                if (is_array($lastData)) {
+                    $cat = $lastData['category'] ?? 'adoracao';
+                    $currentIndex = (int)($lastData['index'] ?? 0);
+                }
+            }
+        }
 
         $files = $this->getMusicFiles($cat);
         if (empty($files)) $files = $this->getMusicFiles('todas');
@@ -819,11 +849,11 @@ class CharleneController extends Controller
         $prevIndex = ($currentIndex - 1 + count($files)) % count($files);
         $prevSong = $files[$prevIndex];
 
-        return $this->playSpecificSong($prevSong, $cat, $prevIndex, "<speak>Voltando para: " . htmlspecialchars($prevSong['title']) . "!</speak>");
+        return $this->playSpecificSong($prevSong, $cat, $prevIndex, "<speak>Voltando a música! Tocando agora: " . htmlspecialchars($prevSong['title']) . "!</speak>");
     }
 
     /**
-     * Reinicia ou repete a música atual / última música tocada com 'Alexa, repete', 'toca de novo'
+     * Reinicia ou repete a música atual / última música tocada com 'Alexa, repete', 'toca de novo', 'Charlene, repete essa música'
      */
     private function handleRestartMusic(array $payload): JsonResponse
     {
@@ -832,7 +862,7 @@ class CharleneController extends Controller
 
         if (!empty($token) && str_starts_with($token, 'sarah|')) {
             $parts = explode('|', $token);
-            $cat = $parts[1] ?? 'animadas';
+            $cat = $parts[1] ?? 'adoracao';
             $currentIndex = isset($parts[2]) ? (int)$parts[2] : 0;
 
             $files = $this->getMusicFiles($cat);
@@ -849,7 +879,7 @@ class CharleneController extends Controller
         if ($lastMem && !empty($lastMem->content)) {
             $lastData = json_decode($lastMem->content, true);
             if (is_array($lastData) && !empty($lastData['filename'])) {
-                $cat = $lastData['category'] ?? 'animadas';
+                $cat = $lastData['category'] ?? 'adoracao';
                 $files = $this->getMusicFiles($cat);
                 if (empty($files)) $files = $this->getMusicFiles('todas');
 
@@ -1075,8 +1105,18 @@ class CharleneController extends Controller
             return $this->respondSsml($speech, false, '<speak>Estou te ouvindo, Sarahzinha!</speak>');
         }
 
-        // 1. Checa se pediu para repetir ou tocar de novo
-        if (preg_match('/(?:repete|repetir|de novo|mais uma vez|outra vez|toca de novo|coloca de novo)/iu', $userUtterance)) {
+        // 1. Checa se pediu para passar / pular / avançar música
+        if (preg_match('/(?:passa|passar|pula|pular|pr[oó]xima|avan[cç]a|seguinte)\s*(?:a\s+|o\s+)?(?:m[uú]sica|can[cç][aã]o|louvor|faixa)?/iu', $userUtterance)) {
+            return $this->handleNextMusic($payload);
+        }
+
+        // 2. Checa se pediu para voltar para música anterior
+        if (preg_match('/(?:volta|voltar|anterior)\s*(?:a\s+|o\s+)?(?:m[uú]sica|can[cç][aã]o|louvor|faixa)?/iu', $userUtterance)) {
+            return $this->handlePreviousMusic($payload);
+        }
+
+        // 3. Checa se pediu para repetir ou tocar de novo
+        if (preg_match('/(?:repete|repetir|de novo|mais uma vez|outra vez|toca de novo|coloca de novo|repita|tocar de novo)/iu', $userUtterance)) {
             return $this->handleRestartMusic($payload);
         }
 
@@ -1650,6 +1690,183 @@ class CharleneController extends Controller
         }
 
         return response()->json(['success' => false, 'message' => 'Arquivo não encontrado.'], 404);
+    }
+
+    /**
+     * Upload de músicas pesadas em chunks (fatias) para contornar limites de proxy / Cloudflare
+     */
+    public function uploadMusicChunk(Request $request): JsonResponse
+    {
+        $fileId = preg_replace('/[^a-zA-Z0-9_\-]/', '', (string)$request->input('file_id', ''));
+        $chunkIndex = (int)$request->input('chunk_index', 0);
+        $totalChunks = (int)$request->input('total_chunks', 1);
+        $filename = (string)$request->input('filename', 'musica.mp3');
+        $cat = (string)$request->input('category', 'adoracao');
+
+        if (!$request->hasFile('chunk') || empty($fileId)) {
+            return response()->json(['success' => false, 'message' => 'Nenhum pedaço (chunk) de áudio recebido.'], 400);
+        }
+
+        $chunkFile = $request->file('chunk');
+        if (!$chunkFile || !$chunkFile->isValid()) {
+            return response()->json(['success' => false, 'message' => 'Falha no recebimento do pedaço.'], 400);
+        }
+
+        $tempDir = storage_path('app/charlene_temp/' . $fileId);
+        File::ensureDirectoryExists($tempDir, 0777, true);
+
+        $partName = 'part_' . str_pad((string)$chunkIndex, 5, '0', STR_PAD_LEFT);
+        $chunkFile->move($tempDir, $partName);
+
+        // Se todos os pedaços foram recebidos
+        if ($chunkIndex + 1 >= $totalChunks) {
+            if (!in_array($cat, self::CATEGORIAS, true)) {
+                $cat = 'adoracao';
+            }
+            $destDir = ($cat === 'geral') ? $this->storageDir : ($this->storageDir . '/' . $cat);
+            File::ensureDirectoryExists($destDir, 0777, true);
+
+            $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION) ?: 'mp3');
+            $allowedExts = ['mp3', 'm4a', 'aac', 'wav', 'ogg', 'flac', 'wma', 'opus', 'webm', 'mp4', '3gp', '3gpp'];
+            if (!in_array($ext, $allowedExts, true)) {
+                $ext = 'mp3';
+            }
+            if ($ext === 'mp4' || $ext === '3gp' || $ext === '3gpp') {
+                $ext = 'm4a';
+            }
+
+            $origName = pathinfo($filename, PATHINFO_FILENAME);
+            $cleanBase = preg_replace('/[^\w\s\-\.]/u', '_', $origName);
+            $cleanBase = trim(preg_replace('/\s+/', ' ', $cleanBase));
+            if ($cleanBase === '') {
+                $cleanBase = 'musica_' . time();
+            }
+            $cleanName = $cleanBase . '.' . $ext;
+            if (file_exists($destDir . '/' . $cleanName)) {
+                $cleanName = $cleanBase . '_' . time() . '.' . $ext;
+            }
+
+            $finalPath = $destDir . '/' . $cleanName;
+            $out = fopen($finalPath, 'wb');
+            if (!$out) {
+                return response()->json(['success' => false, 'message' => 'Falha ao gravar arquivo final no disco.'], 500);
+            }
+
+            for ($i = 0; $i < $totalChunks; $i++) {
+                $partPath = $tempDir . '/part_' . str_pad((string)$i, 5, '0', STR_PAD_LEFT);
+                if (file_exists($partPath)) {
+                    $in = fopen($partPath, 'rb');
+                    if ($in) {
+                        while (!feof($in)) {
+                            $buffer = fread($in, 1048576);
+                            if ($buffer !== false) {
+                                fwrite($out, $buffer);
+                            }
+                        }
+                        fclose($in);
+                    }
+                    @unlink($partPath);
+                }
+            }
+            fclose($out);
+            @rmdir($tempDir);
+
+            Log::info("Charlene chunked upload complete: {$cleanName} into {$cat} (total chunks: {$totalChunks})");
+
+            $subPath = ($cat === 'geral') ? '' : ($cat . '/');
+
+            return response()->json([
+                'success' => true,
+                'completed' => true,
+                'name' => $cleanName,
+                'message' => "Música '" . htmlspecialchars($cleanName) . "' adicionada à pasta '" . ucfirst($cat) . "' da Sarah com sucesso!",
+                'url' => $this->baseUrl . '/storage/sara/musicas/' . $subPath . rawurlencode($cleanName)
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'completed' => false,
+            'chunk_index' => $chunkIndex,
+            'message' => "Parte " . ($chunkIndex + 1) . " de {$totalChunks} recebida com sucesso."
+        ]);
+    }
+
+    /**
+     * Remove múltiplas músicas selecionadas de uma vez
+     */
+    public function deleteMultipleMusic(Request $request): JsonResponse
+    {
+        $files = $request->input('files', []);
+        if (is_string($files)) {
+            $files = json_decode($files, true) ?: [$files];
+        }
+        if (!is_array($files) || empty($files)) {
+            return response()->json(['success' => false, 'message' => 'Nenhum arquivo informado para exclusão.'], 400);
+        }
+
+        $deletedCount = 0;
+        foreach ($files as $item) {
+            $filename = is_array($item) ? ($item['filename'] ?? '') : (string)$item;
+            $cat = is_array($item) ? ($item['category'] ?? '') : (string)$request->input('category', '');
+
+            $filename = basename($filename);
+            if (empty($filename)) continue;
+
+            $pathsToTry = [];
+            if ($cat) {
+                $pathsToTry[] = ($cat === 'geral') ? ($this->storageDir . '/' . $filename) : ($this->storageDir . '/' . $cat . '/' . $filename);
+            }
+            foreach (['adoracao', 'dormir', 'animadas', ''] as $c) {
+                $pathsToTry[] = $c ? ($this->storageDir . '/' . $c . '/' . $filename) : ($this->storageDir . '/' . $filename);
+            }
+
+            foreach ($pathsToTry as $p) {
+                if (File::exists($p)) {
+                    File::delete($p);
+                    $deletedCount++;
+                    break;
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'count' => $deletedCount,
+            'message' => "{$deletedCount} música(s) removida(s) com sucesso!"
+        ]);
+    }
+
+    /**
+     * Apaga todas as músicas da pasta especificada
+     */
+    public function deleteFolderMusic(Request $request): JsonResponse
+    {
+        $cat = (string)$request->input('category', '');
+        if (!in_array($cat, ['adoracao', 'dormir', 'animadas', 'geral', 'todas'], true)) {
+            return response()->json(['success' => false, 'message' => 'Pasta/categoria inválida.'], 400);
+        }
+
+        $deletedCount = 0;
+        $targets = ($cat === 'todas') ? ['adoracao', 'dormir', 'animadas', 'geral'] : [$cat];
+
+        foreach ($targets as $c) {
+            $folder = ($c === 'geral') ? $this->storageDir : ($this->storageDir . '/' . $c);
+            if (File::isDirectory($folder)) {
+                $allFiles = File::files($folder);
+                foreach ($allFiles as $f) {
+                    File::delete($f->getPathname());
+                    $deletedCount++;
+                }
+            }
+        }
+
+        $label = ($cat === 'todas') ? 'Todas as pastas' : "A pasta '" . ucfirst($cat) . "'";
+        return response()->json([
+            'success' => true,
+            'count' => $deletedCount,
+            'message' => "{$label} foi limpa! {$deletedCount} música(s) removida(s)."
+        ]);
     }
 
     /**

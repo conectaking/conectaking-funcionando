@@ -623,6 +623,164 @@
             color: white;
         }
 
+        /* Batch Actions Toolbar */
+        .batch-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* Floating Player Bar (Passar e Repetir Músicas) */
+        .floating-player-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.97);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-top: 1px solid rgba(139, 92, 246, 0.4);
+            box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.7);
+            z-index: 9998;
+            padding: 10px 16px;
+            animation: slideUpPlayer 0.25s ease-out;
+        }
+
+        @keyframes slideUpPlayer {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .player-inner {
+            max-width: 860px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .player-top-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .player-track-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .player-controls-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .player-ctrl-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            color: white;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+
+        .player-ctrl-btn:hover {
+            background: rgba(139, 92, 246, 0.25);
+            border-color: var(--primary);
+        }
+
+        .player-ctrl-btn:active {
+            transform: scale(0.96);
+        }
+
+        .player-play-main {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border: none;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            justify-content: center;
+            font-size: 1rem;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+        }
+
+        .player-next-btn {
+            background: rgba(139, 92, 246, 0.25);
+            border-color: rgba(139, 92, 246, 0.5);
+            color: #c4b5fd;
+        }
+
+        .player-ctrl-btn.active {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-color: #34d399;
+            color: white;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+        }
+
+        .player-progress-track {
+            width: 100%;
+            height: 6px;
+            background: #232d42;
+            border-radius: 999px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .player-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            width: 0%;
+            border-radius: 999px;
+            pointer-events: none;
+        }
+
+        .player-close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .player-close-btn:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        @media (max-width: 600px) {
+            .player-ctrl-btn .ctrl-label {
+                display: none;
+            }
+            .player-ctrl-btn {
+                padding: 7px 9px;
+            }
+            body {
+                padding-bottom: 96px !important;
+            }
+        }
+
         /* Memories Card */
         .memory-form-card {
             background: var(--card);
@@ -1114,18 +1272,52 @@
                 </div>
             </div>
 
+            <!-- Barra de Ações em Lote e Limpeza de Pasta -->
+            <div class="batch-toolbar" id="batchToolbar">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.86rem; font-weight: 700;">
+                        <input type="checkbox" id="selectAllSongs" onchange="toggleSelectAllSongs(this.checked)" style="width: 17px; height: 17px; accent-color: var(--primary); cursor: pointer;">
+                        <span>Selecionar Músicas</span>
+                    </label>
+                    <span id="selectedCountBadge" style="display: none; font-size: 0.78rem; background: rgba(139, 92, 246, 0.25); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4); padding: 3px 10px; border-radius: 999px; font-weight: 700;">
+                        <span id="selectedCountNum">0</span> selecionada(s)
+                    </span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <button id="btnDeleteSelected" type="button" class="del-btn" onclick="deleteSelectedSongs()" style="display: none; background: #ef4444; color: white; font-weight: 800; padding: 7px 14px; border: none; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);">
+                        🗑️ Excluir Selecionadas (<span id="selectedCountNumBtn">0</span>)
+                    </button>
+                    <button id="btnClearFolder" type="button" class="del-btn" onclick="clearCurrentFolder()" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; font-weight: 700; padding: 7px 12px;">
+                        ⚠️ Limpar Pasta (<span id="activeFolderNameLabel">Todas as Pastas</span>)
+                    </button>
+                </div>
+            </div>
+
             <!-- Song List -->
             <div class="song-list" id="songList">
                 @forelse($musicas as $song)
-                    <div class="song-item" data-category="{{ $song['category'] }}">
-                        <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+                    <div class="song-item" 
+                         data-category="{{ $song['category'] }}"
+                         data-url="{{ $song['url'] }}"
+                         data-title="{{ $song['title'] }}"
+                         data-filename="{{ $song['filename'] }}">
+                        <div style="display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1;">
+                            <input type="checkbox" class="song-checkbox" 
+                                   data-filename="{{ $song['filename'] }}" 
+                                   data-category="{{ $song['category'] }}" 
+                                   onchange="updateSelectedSongsUI()" 
+                                   style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); flex-shrink: 0;"
+                                   title="Selecionar para apagar">
+                            <button type="button" class="play-btn-track" onclick="playTrackFromList(this)" 
+                                    style="background: rgba(139, 92, 246, 0.2); border: 1px solid rgba(139, 92, 246, 0.4); color: #c4b5fd; border-radius: 8px; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;" 
+                                    title="Tocar no tocador da Charlene com repetição e passar">▶️</button>
                             <div class="song-tag tag-{{ $song['category'] }}">{{ $song['category'] }}</div>
                             <div style="font-size: 0.95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ $song['title'] }}">
                                 {{ $song['title'] }}
                             </div>
                         </div>
                         <div class="song-item-controls">
-                            <audio controls preload="none" style="height: 34px;">
+                            <audio controls preload="none" style="height: 34px;" onplay="onNativeAudioPlay(this)">
                                 <source src="{{ $song['url'] }}" type="audio/mpeg">
                             </audio>
                             <button class="del-btn" onclick="deleteSong('{{ addslashes($song['filename']) }}', '{{ $song['category'] }}')">Excluir</button>
@@ -1308,10 +1500,72 @@
                     </div>
 
                     <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
+                        <strong style="color: #ec4899;">⏭️ Passar Música / Próxima Faixa:</strong>
+                        <p style="margin-top: 4px; color: var(--text-muted);">• <em>"Alexa, passa a música"</em> ou <em>"Alexa, próxima música"</em></p>
+                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Charlene, pula essa música"</em> ou <em>"Charlene, avança"</em></p>
+                    </div>
+
+                    <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
+                        <strong style="color: #10b981;">🔂 Repetir Música / Tocar de Novo:</strong>
+                        <p style="margin-top: 4px; color: var(--text-muted);">• <em>"Alexa, repete a música"</em> ou <em>"Alexa, repita"</em></p>
+                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Charlene, toca de novo essa música"</em> ou <em>"Charlene, repete"</em></p>
+                    </div>
+
+                    <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
+                        <strong style="color: #38bdf8;">⏮️ Voltar Música Anterior:</strong>
+                        <p style="margin-top: 4px; color: var(--text-muted);">• <em>"Alexa, volta a música"</em> ou <em>"Alexa, música anterior"</em></p>
+                    </div>
+
+                    <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
                         <strong style="color: #a78bfa;">📜 Devocional do Papai Adrian King:</strong>
                         <p style="margin-top: 4px; color: var(--text-muted);"><em>"Alexa, pede para a Charlene tocar o devocional de hoje"</em></p>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tocador Flutuante Moderno da Charlene (Passar e Repetir) -->
+    <div id="floatingPlayerBar" class="floating-player-bar" style="display: none;">
+        <div class="player-inner">
+            <div class="player-top-row">
+                <div class="player-track-info">
+                    <span style="font-size: 1.3rem;">🎵</span>
+                    <div style="min-width: 0; flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span id="playerTrackCat" class="song-tag tag-adoracao">Adoração</span>
+                            <span id="playerRepeatStatus" style="display: none; font-size: 0.72rem; color: #34d399; font-weight: 800;">🔂 Repetição Ativa</span>
+                        </div>
+                        <div id="playerTrackTitle" style="font-size: 0.95rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #f8fafc; margin-top: 2px;">
+                            Tocando música...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="player-controls-row">
+                    <button type="button" id="playerBtnRepeat" class="player-ctrl-btn" onclick="togglePlayerRepeat()" title="Repetir esta música continuamente">
+                        🔂 <span class="ctrl-label">Repetir</span>
+                    </button>
+                    <button type="button" id="playerBtnPrev" class="player-ctrl-btn" onclick="playerPlayPrev()" title="Voltar para a música anterior">
+                        ⏮️
+                    </button>
+                    <button type="button" id="playerBtnPlay" class="player-ctrl-btn player-play-main" onclick="togglePlayerPlay()" title="Play / Pausar">
+                        ⏸️
+                    </button>
+                    <button type="button" id="playerBtnNext" class="player-ctrl-btn player-next-btn" onclick="playerPlayNext()" title="Passar para a próxima música">
+                        ⏭️ <span class="ctrl-label">Passar</span>
+                    </button>
+                    <button type="button" class="player-close-btn" onclick="closePlayerBar()" title="Fechar tocador">
+                        ✕
+                    </button>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="player-progress-track" id="playerSeekTrack" onclick="seekPlayerAudio(event)">
+                    <div id="playerProgressBar" class="player-progress-fill"></div>
+                </div>
+                <span id="playerTimeDisplay" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; white-space: nowrap;">0:00 / 0:00</span>
             </div>
         </div>
     </div>
@@ -1449,13 +1703,35 @@
             }
         }
 
+        window.currentFilterCategory = 'todas';
+
         function filterCategory(cat) {
             try {
+                window.currentFilterCategory = cat;
                 document.querySelectorAll('.pill').forEach(p => {
                     if (p.getAttribute('data-pill') === cat) p.classList.add('active');
                     else p.classList.remove('active');
                 });
+
+                // Atualiza o texto do botão de limpar pasta
+                const folderLabel = document.getElementById('activeFolderNameLabel');
+                if (folderLabel) {
+                    if (cat === 'todas') {
+                        folderLabel.innerText = 'Todas as Pastas';
+                    } else if (folderMetadata[cat]) {
+                        folderLabel.innerText = folderMetadata[cat].name;
+                    } else {
+                        folderLabel.innerText = cat;
+                    }
+                }
+
                 filterSongsList(cat);
+
+                // Desmarca seleção geral ao trocar de categoria
+                const selectAllCb = document.getElementById('selectAllSongs');
+                if (selectAllCb) selectAllCb.checked = false;
+                document.querySelectorAll('.song-checkbox').forEach(cb => cb.checked = false);
+                updateSelectedSongsUI();
             } catch(e) {
                 console.error('[Charlene] Erro em filterCategory:', e);
             }
@@ -1472,6 +1748,8 @@
                         visible++;
                     } else {
                         item.style.display = 'none';
+                        const cb = item.querySelector('.song-checkbox');
+                        if (cb) cb.checked = false;
                     }
                 });
 
@@ -1490,7 +1768,327 @@
             }
         }
 
-        // Upload de arquivos ultra-confiável com progresso em tempo real para Celular e PC
+        // ==================== AÇÕES EM LOTE (SELEÇÃO & LIMPEZA) ====================
+        function toggleSelectAllSongs(checked) {
+            document.querySelectorAll('.song-item').forEach(item => {
+                if (item.style.display !== 'none') {
+                    const cb = item.querySelector('.song-checkbox');
+                    if (cb) cb.checked = checked;
+                }
+            });
+            updateSelectedSongsUI();
+        }
+
+        function updateSelectedSongsUI() {
+            const checked = Array.from(document.querySelectorAll('.song-checkbox:checked'));
+            const count = checked.length;
+            const badge = document.getElementById('selectedCountBadge');
+            const btnDel = document.getElementById('btnDeleteSelected');
+            const numSpan = document.getElementById('selectedCountNum');
+            const numSpanBtn = document.getElementById('selectedCountNumBtn');
+            const selectAllCb = document.getElementById('selectAllSongs');
+
+            if (numSpan) numSpan.innerText = count;
+            if (numSpanBtn) numSpanBtn.innerText = count;
+
+            if (count > 0) {
+                if (badge) badge.style.display = 'inline-block';
+                if (btnDel) btnDel.style.display = 'inline-flex';
+            } else {
+                if (badge) badge.style.display = 'none';
+                if (btnDel) btnDel.style.display = 'none';
+                if (selectAllCb) selectAllCb.checked = false;
+            }
+        }
+
+        async function deleteSelectedSongs() {
+            const checked = Array.from(document.querySelectorAll('.song-checkbox:checked'));
+            if (!checked.length) {
+                alert('Nenhuma música selecionada para exclusão.');
+                return;
+            }
+
+            if (!confirm(`Deseja realmente apagar as ${checked.length} músicas selecionadas da Charlene?`)) {
+                return;
+            }
+
+            const files = checked.map(cb => ({
+                filename: cb.dataset.filename,
+                category: cb.dataset.category
+            }));
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+
+            try {
+                const res = await fetch('/api/alexa/charlene/delete-multiple', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-CK-CSRF': getCkCsrfCookie()
+                    },
+                    body: JSON.stringify({ files, _token: csrfToken })
+                });
+                const j = await res.json();
+                if (j.success) {
+                    alert(j.message || `${checked.length} música(s) removida(s) com sucesso!`);
+                    location.reload();
+                } else {
+                    alert('Erro: ' + (j.message || 'Falha ao excluir músicas selecionadas.'));
+                }
+            } catch (e) {
+                alert('Erro de conexão ao excluir músicas.');
+            }
+        }
+
+        async function clearCurrentFolder() {
+            const cat = window.currentFilterCategory || window.currentFolder || 'adoracao';
+            const catInfo = folderMetadata[cat] || { name: cat === 'todas' ? 'Todas as Pastas' : cat };
+            const folderLabel = cat === 'todas' ? 'TODAS AS PASTAS (Todas as músicas do sistema)' : `a pasta "${catInfo.name || cat}"`;
+
+            if (!confirm(`⚠️ ATENÇÃO: Deseja apagar TODAS as músicas d${folderLabel}? Esta ação removerá definitivamente todos os arquivos desta pasta!`)) {
+                return;
+            }
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+
+            try {
+                const res = await fetch('/api/alexa/charlene/delete-folder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-CK-CSRF': getCkCsrfCookie()
+                    },
+                    body: JSON.stringify({ category: cat, _token: csrfToken })
+                });
+                const j = await res.json();
+                if (j.success) {
+                    alert(j.message || 'Pasta limpa com sucesso!');
+                    location.reload();
+                } else {
+                    alert('Erro: ' + (j.message || 'Falha ao limpar pasta.'));
+                }
+            } catch (e) {
+                alert('Erro de conexão ao limpar pasta.');
+            }
+        }
+
+        // ==================== TOCADOR FLUTUANTE (PASSAR & REPETIR) ====================
+        let globalPlayerAudio = null;
+        let currentPlaylistIndex = -1;
+        let isRepeatEnabled = false;
+
+        function initGlobalPlayer() {
+            if (globalPlayerAudio) return;
+            globalPlayerAudio = new Audio();
+            globalPlayerAudio.id = 'globalCharleneAudio';
+            globalPlayerAudio.preload = 'auto';
+            document.body.appendChild(globalPlayerAudio);
+
+            globalPlayerAudio.addEventListener('timeupdate', () => {
+                const cur = globalPlayerAudio.currentTime || 0;
+                const dur = globalPlayerAudio.duration || 0;
+                const bar = document.getElementById('playerProgressBar');
+                const timeDisplay = document.getElementById('playerTimeDisplay');
+
+                if (bar && dur > 0) {
+                    bar.style.width = ((cur / dur) * 100) + '%';
+                }
+                if (timeDisplay) {
+                    timeDisplay.innerText = `${formatSeconds(cur)} / ${dur > 0 ? formatSeconds(dur) : '--:--'}`;
+                }
+            });
+
+            globalPlayerAudio.addEventListener('play', () => {
+                const playBtn = document.getElementById('playerBtnPlay');
+                if (playBtn) playBtn.innerHTML = '⏸️';
+            });
+
+            globalPlayerAudio.addEventListener('pause', () => {
+                const playBtn = document.getElementById('playerBtnPlay');
+                if (playBtn) playBtn.innerHTML = '▶️';
+            });
+
+            globalPlayerAudio.addEventListener('ended', () => {
+                if (isRepeatEnabled) {
+                    // Repetir a mesma música
+                    globalPlayerAudio.currentTime = 0;
+                    globalPlayerAudio.play().catch(e => console.log(e));
+                } else {
+                    // Passar automaticamente para a próxima música
+                    playerPlayNext();
+                }
+            });
+        }
+
+        function formatSeconds(sec) {
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        function getVisibleSongItems() {
+            return Array.from(document.querySelectorAll('.song-item')).filter(it => it.style.display !== 'none');
+        }
+
+        function playTrackFromList(btn) {
+            const item = btn.closest('.song-item');
+            if (!item) return;
+
+            // Pausa players nativos inline
+            document.querySelectorAll('.song-item audio').forEach(a => {
+                try { a.pause(); } catch(e){}
+            });
+
+            const visibleItems = getVisibleSongItems();
+            currentPlaylistIndex = visibleItems.indexOf(item);
+
+            playSongItem(item);
+        }
+
+        function onNativeAudioPlay(audioEl) {
+            const item = audioEl.closest('.song-item');
+            if (!item) return;
+
+            // Pausa outros áudios
+            document.querySelectorAll('.song-item audio').forEach(a => {
+                if (a !== audioEl) {
+                    try { a.pause(); } catch(e){}
+                }
+            });
+            if (globalPlayerAudio && !globalPlayerAudio.paused) {
+                globalPlayerAudio.pause();
+            }
+
+            const visibleItems = getVisibleSongItems();
+            currentPlaylistIndex = visibleItems.indexOf(item);
+
+            showPlayerBarForElement(item);
+        }
+
+        function showPlayerBarForElement(item) {
+            const playerBar = document.getElementById('floatingPlayerBar');
+            if (playerBar) playerBar.style.display = 'block';
+
+            const title = item.dataset.title || 'Música da Sarah';
+            const cat = item.dataset.category || 'adoracao';
+
+            const titleEl = document.getElementById('playerTrackTitle');
+            const catEl = document.getElementById('playerTrackCat');
+
+            if (titleEl) titleEl.innerText = title;
+            if (catEl) {
+                catEl.innerText = cat;
+                catEl.className = 'song-tag tag-' + cat;
+            }
+        }
+
+        function playSongItem(item) {
+            if (!item) return;
+            initGlobalPlayer();
+
+            const url = item.dataset.url;
+            const title = item.dataset.title;
+            const cat = item.dataset.category;
+
+            const titleEl = document.getElementById('playerTrackTitle');
+            const catEl = document.getElementById('playerTrackCat');
+            const playerBar = document.getElementById('floatingPlayerBar');
+
+            if (titleEl) titleEl.innerText = title;
+            if (catEl) {
+                catEl.innerText = cat;
+                catEl.className = 'song-tag tag-' + cat;
+            }
+            if (playerBar) playerBar.style.display = 'block';
+
+            globalPlayerAudio.src = url;
+            globalPlayerAudio.currentTime = 0;
+            globalPlayerAudio.play().catch(e => console.error('Erro ao tocar música:', e));
+        }
+
+        function togglePlayerPlay() {
+            if (!globalPlayerAudio) return;
+            if (globalPlayerAudio.paused) {
+                globalPlayerAudio.play().catch(e => console.log(e));
+            } else {
+                globalPlayerAudio.pause();
+            }
+        }
+
+        function playerPlayNext() {
+            const visibleItems = getVisibleSongItems();
+            if (!visibleItems.length) return;
+
+            if (currentPlaylistIndex < 0 || currentPlaylistIndex >= visibleItems.length - 1) {
+                currentPlaylistIndex = 0;
+            } else {
+                currentPlaylistIndex++;
+            }
+
+            const nextItem = visibleItems[currentPlaylistIndex];
+            if (nextItem) {
+                playSongItem(nextItem);
+                try { nextItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch(e){}
+            }
+        }
+
+        function playerPlayPrev() {
+            const visibleItems = getVisibleSongItems();
+            if (!visibleItems.length) return;
+
+            if (currentPlaylistIndex <= 0) {
+                currentPlaylistIndex = visibleItems.length - 1;
+            } else {
+                currentPlaylistIndex--;
+            }
+
+            const prevItem = visibleItems[currentPlaylistIndex];
+            if (prevItem) {
+                playSongItem(prevItem);
+                try { prevItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch(e){}
+            }
+        }
+
+        function togglePlayerRepeat() {
+            isRepeatEnabled = !isRepeatEnabled;
+            const btn = document.getElementById('playerBtnRepeat');
+            const status = document.getElementById('playerRepeatStatus');
+
+            if (btn) {
+                if (isRepeatEnabled) {
+                    btn.classList.add('active');
+                    btn.setAttribute('title', 'Repetir Música: ATIVADO (clique para desativar)');
+                } else {
+                    btn.classList.remove('active');
+                    btn.setAttribute('title', 'Repetir Música: DESATIVADO (clique para ativar)');
+                }
+            }
+            if (status) {
+                status.style.display = isRepeatEnabled ? 'inline' : 'none';
+            }
+        }
+
+        function seekPlayerAudio(e) {
+            if (!globalPlayerAudio || !globalPlayerAudio.duration) return;
+            const track = document.getElementById('playerSeekTrack');
+            if (!track) return;
+            const rect = track.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const pct = Math.max(0, Math.min(1, clickX / rect.width));
+            globalPlayerAudio.currentTime = pct * globalPlayerAudio.duration;
+        }
+
+        function closePlayerBar() {
+            if (globalPlayerAudio) {
+                try { globalPlayerAudio.pause(); } catch(e){}
+            }
+            const playerBar = document.getElementById('floatingPlayerBar');
+            if (playerBar) playerBar.style.display = 'none';
+        }
+
+        // ==================== UPLOAD EM CHUNKS (FATIADO - SUPORTE ATÉ 300MB NO CLOUDFLARE) ====================
         async function handleAudioUpload(files, forcedCat) {
             const selectedFiles = files;
 
@@ -1532,6 +2130,8 @@
                 try { progressContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch(e){}
             }
 
+            // Chunk size de 12MB para passar de forma 100% segura pelo limite de 100MB do Cloudflare
+            const CHUNK_SIZE = 12 * 1024 * 1024;
             const totalFiles = selectedFiles.length;
             let successes = 0;
             let errors = 0;
@@ -1540,44 +2140,63 @@
             for (let i = 0; i < totalFiles; i++) {
                 const file = selectedFiles[i];
                 const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+                const totalChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
+                const fileId = 'charlene_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
 
                 if (modalFile) modalFile.innerText = `(${i + 1}/${totalFiles}) ${file.name} • ${fileSizeMB} MB`;
-                if (modalDetail) modalDetail.innerText = `Enviando arquivo ${i + 1} de ${totalFiles}...`;
-                if (progressText) progressText.innerText = `Enviando (${i + 1}/${totalFiles}) para ${catName}: ${file.name} (${fileSizeMB} MB)...`;
 
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
-                const formData = new FormData();
-                formData.append('_token', csrfToken);
-                formData.append('audio', file);
-                formData.append('category', targetCat);
+                let fileError = null;
 
-                try {
-                    await new Promise((resolve, reject) => {
-                        const xhr = new XMLHttpRequest();
-                        xhr.open('POST', '/api/alexa/charlene/upload', true);
-                        xhr.withCredentials = true;
-                        xhr.timeout = 600000;
-                        if (csrfToken) {
-                            xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
-                        }
-                        const ck = (typeof getCkCsrfCookie === 'function') ? getCkCsrfCookie() : '';
-                        if (ck) {
-                            xhr.setRequestHeader('X-CK-CSRF', ck);
-                        }
+                for (let chunkIdx = 0; chunkIdx < totalChunks; chunkIdx++) {
+                    const start = chunkIdx * CHUNK_SIZE;
+                    const end = Math.min(file.size, start + CHUNK_SIZE);
+                    const chunkBlob = file.slice(start, end);
+                    const chunkUploadedBefore = start;
 
-                        xhr.upload.onprogress = (e) => {
-                            if (e.lengthComputable) {
-                                const filePct = Math.round((e.loaded / e.total) * 100);
-                                const overallPct = Math.round(((i / totalFiles) * 100) + (filePct / totalFiles));
-                                if (modalBar) modalBar.style.width = `${filePct}%`;
-                                if (modalPct) modalPct.innerText = `${filePct}%`;
-                                if (modalDetail) modalDetail.innerText = `${(e.loaded / (1024 * 1024)).toFixed(1)} MB de ${fileSizeMB} MB enviado`;
-                                if (progressFill) progressFill.style.width = `${overallPct}%`;
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+                    const formData = new FormData();
+                    formData.append('_token', csrfToken);
+                    formData.append('file_id', fileId);
+                    formData.append('chunk_index', chunkIdx);
+                    formData.append('total_chunks', totalChunks);
+                    formData.append('filename', file.name);
+                    formData.append('category', targetCat);
+                    formData.append('chunk', chunkBlob, file.name);
+
+                    try {
+                        await new Promise((resolve, reject) => {
+                            const xhr = new XMLHttpRequest();
+                            xhr.open('POST', '/api/alexa/charlene/upload-chunk', true);
+                            xhr.withCredentials = true;
+                            xhr.timeout = 600000;
+                            if (csrfToken) {
+                                xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
                             }
-                        };
+                            const ck = (typeof getCkCsrfCookie === 'function') ? getCkCsrfCookie() : '';
+                            if (ck) {
+                                xhr.setRequestHeader('X-CK-CSRF', ck);
+                            }
 
-                        xhr.onload = () => {
-                            try {
+                            xhr.upload.onprogress = (e) => {
+                                if (e.lengthComputable) {
+                                    const totalLoaded = chunkUploadedBefore + e.loaded;
+                                    const filePct = Math.min(100, Math.round((totalLoaded / file.size) * 100));
+                                    const overallPct = Math.min(100, Math.round(((i / totalFiles) * 100) + (filePct / totalFiles)));
+
+                                    if (modalBar) modalBar.style.width = `${filePct}%`;
+                                    if (modalPct) modalPct.innerText = `${filePct}%`;
+                                    const loadedMB = (totalLoaded / (1024 * 1024)).toFixed(1);
+                                    if (modalDetail) {
+                                        modalDetail.innerText = `${loadedMB} MB de ${fileSizeMB} MB enviado ${totalChunks > 1 ? `(fatia ${chunkIdx + 1}/${totalChunks})` : ''}`;
+                                    }
+                                    if (progressFill) progressFill.style.width = `${overallPct}%`;
+                                    if (progressText) {
+                                        progressText.innerText = `Enviando (${i + 1}/${totalFiles}) para ${catName}: ${file.name} (${loadedMB} MB)...`;
+                                    }
+                                }
+                            };
+
+                            xhr.onload = () => {
                                 let resp = {};
                                 try {
                                     resp = JSON.parse(xhr.responseText || '{}');
@@ -1586,40 +2205,33 @@
                                 }
 
                                 if (xhr.status >= 200 && xhr.status < 300 && resp.success) {
-                                    successes++;
                                     resolve(resp);
                                 } else {
-                                    errors++;
+                                    let msg = resp.message || `Erro do servidor (HTTP ${xhr.status})`;
                                     if (xhr.status === 413) {
-                                        lastErrMsg = 'Arquivo muito grande (limite de 300MB). Escolha um arquivo menor.';
-                                    } else {
-                                        lastErrMsg = resp.message || `Erro do servidor (HTTP ${xhr.status})`;
+                                        msg = 'Arquivo muito grande (limite de 300MB).';
                                     }
-                                    reject(new Error(lastErrMsg));
+                                    reject(new Error(msg));
                                 }
-                            } catch (parseErr) {
-                                errors++;
-                                lastErrMsg = `Erro HTTP ${xhr.status}: ${xhr.statusText || 'Falha no processamento'}`;
-                                reject(new Error(lastErrMsg));
-                            }
-                        };
+                            };
 
-                        xhr.onerror = () => {
-                            errors++;
-                            lastErrMsg = 'Falha de conexão com o servidor. Verifique a internet do celular.';
-                            reject(new Error(lastErrMsg));
-                        };
+                            xhr.onerror = () => reject(new Error('Falha de conexão com o servidor. Verifique a internet.'));
+                            xhr.ontimeout = () => reject(new Error('Tempo limite de envio esgotado (timeout).'));
 
-                        xhr.ontimeout = () => {
-                            errors++;
-                            lastErrMsg = 'Tempo limite de envio esgotado (timeout).';
-                            reject(new Error(lastErrMsg));
-                        };
+                            xhr.send(formData);
+                        });
+                    } catch (uploadErr) {
+                        fileError = uploadErr.message || 'Falha no envio';
+                        break;
+                    }
+                }
 
-                        xhr.send(formData);
-                    });
-                } catch (uploadErr) {
-                    console.error('[Charlene] Falha no upload:', uploadErr);
+                if (fileError) {
+                    errors++;
+                    lastErrMsg = fileError;
+                    console.error('[Charlene] Falha no upload:', fileError);
+                } else {
+                    successes++;
                 }
             }
 
@@ -1678,6 +2290,18 @@
         window.filterSongsList = filterSongsList;
         window.handleAudioUpload = handleAudioUpload;
         window.deleteSong = deleteSong;
+        window.deleteSelectedSongs = deleteSelectedSongs;
+        window.clearCurrentFolder = clearCurrentFolder;
+        window.toggleSelectAllSongs = toggleSelectAllSongs;
+        window.updateSelectedSongsUI = updateSelectedSongsUI;
+        window.playTrackFromList = playTrackFromList;
+        window.onNativeAudioPlay = onNativeAudioPlay;
+        window.playerPlayNext = playerPlayNext;
+        window.playerPlayPrev = playerPlayPrev;
+        window.togglePlayerRepeat = togglePlayerRepeat;
+        window.togglePlayerPlay = togglePlayerPlay;
+        window.seekPlayerAudio = seekPlayerAudio;
+        window.closePlayerBar = closePlayerBar;
         window.saveMemory = saveMemory;
         window.deleteMemory = deleteMemory;
         window.resetStoryProgress = resetStoryProgress;
@@ -1725,6 +2349,7 @@
             switchSection(active);
             selectFolder('adoracao', false);
             filterCategory('todas');
+            initGlobalPlayer();
         });
 
         function getCkCsrfCookie() {
