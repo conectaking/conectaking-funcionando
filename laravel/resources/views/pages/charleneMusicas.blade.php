@@ -1140,6 +1140,55 @@
             .form-row {
                 grid-template-columns: 1fr;
             }
+            /* Ações em lote e botões responsivos no Mobile */
+            .batch-toolbar {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 10px !important;
+                padding: 12px 10px !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .batch-toolbar-row {
+                display: flex !important;
+                width: 100% !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+            }
+            .batch-btn {
+                min-height: 42px !important;
+                padding: 10px 14px !important;
+                font-size: 0.86rem !important;
+                flex: 1 1 auto !important;
+                justify-content: center !important;
+                touch-action: manipulation !important;
+                -webkit-tap-highlight-color: transparent !important;
+            }
+            .del-btn-batch {
+                min-height: 44px !important;
+                padding: 10px 14px !important;
+                font-size: 0.88rem !important;
+                width: 100% !important;
+                justify-content: center !important;
+                touch-action: manipulation !important;
+                -webkit-tap-highlight-color: transparent !important;
+            }
+            #btnClearFolder {
+                min-height: 44px !important;
+                width: 100% !important;
+                justify-content: center !important;
+                text-align: center !important;
+                touch-action: manipulation !important;
+                -webkit-tap-highlight-color: transparent !important;
+            }
+            .song-checkbox {
+                width: 24px !important;
+                height: 24px !important;
+                min-width: 24px !important;
+                min-height: 24px !important;
+            }
         }
     </style>
 </head>
@@ -1196,7 +1245,7 @@
                 <div class="folder-cards-grid">
                     <!-- Adoração -->
                     <div class="folder-card active" id="card-adoracao">
-                        <div class="folder-card-clickable" onclick="selectFolder('adoracao', false);">
+                        <div class="folder-card-clickable" onclick="selectFolder('adoracao', true);">
                             <div class="folder-card-top">
                                 <span class="folder-emoji">🙏</span>
                                 <span class="folder-badge" id="badge-adoracao">✓ ATIVA</span>
@@ -1217,7 +1266,7 @@
 
                     <!-- Hora de Dormir -->
                     <div class="folder-card" id="card-dormir">
-                        <div class="folder-card-clickable" onclick="selectFolder('dormir', false);">
+                        <div class="folder-card-clickable" onclick="selectFolder('dormir', true);">
                             <div class="folder-card-top">
                                 <span class="folder-emoji">🌙</span>
                                 <span class="folder-badge" id="badge-dormir">✓ ATIVA</span>
@@ -1238,7 +1287,7 @@
 
                     <!-- Animadas -->
                     <div class="folder-card" id="card-animadas">
-                        <div class="folder-card-clickable" onclick="selectFolder('animadas', false);">
+                        <div class="folder-card-clickable" onclick="selectFolder('animadas', true);">
                             <div class="folder-card-top">
                                 <span class="folder-emoji">⚡</span>
                                 <span class="folder-badge" id="badge-animadas">✓ ATIVA</span>
@@ -1259,7 +1308,7 @@
 
                     <!-- Geral -->
                     <div class="folder-card" id="card-geral">
-                        <div class="folder-card-clickable" onclick="selectFolder('geral', false);">
+                        <div class="folder-card-clickable" onclick="selectFolder('geral', true);">
                             <div class="folder-card-top">
                                 <span class="folder-emoji">🌟</span>
                                 <span class="folder-badge" id="badge-geral">✓ ATIVA</span>
@@ -1336,9 +1385,9 @@
 
             <!-- Barra de Ações em Lote e Limpeza de Pasta -->
             <div class="batch-toolbar" id="batchToolbar">
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <div class="batch-toolbar-row">
                     <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.86rem; font-weight: 700; user-select: none;">
-                        <input type="checkbox" id="selectAllSongs" onclick="toggleSelectAllSongs(this.checked)" onchange="toggleSelectAllSongs(this.checked)" style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
+                        <input type="checkbox" id="selectAllSongs" onclick="toggleSelectAllSongs(this.checked)" onchange="toggleSelectAllSongs(this.checked)" style="width: 20px; height: 20px; accent-color: var(--primary); cursor: pointer;">
                         <span id="selectAllLabel">Selecionar Todas</span>
                     </label>
                     <button type="button" class="batch-btn" onclick="toggleSelectAllSongs(true)" title="Selecionar todas as músicas visíveis">
@@ -1351,7 +1400,7 @@
                         <span id="selectedCountNum">0</span> selecionada(s)
                     </span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <div class="batch-toolbar-row">
                     <button id="btnDeleteSelected" type="button" class="del-btn-batch" onclick="deleteSelectedSongs()" disabled title="Excluir todas as músicas marcadas">
                         🗑️ Excluir Selecionadas (<span id="selectedCountNumBtn">0</span>)
                     </button>
@@ -1765,8 +1814,21 @@
                         else p.classList.remove('active');
                     });
 
-                    // 4. Filtra a lista de músicas
+                    // 4. Atualiza o texto do botão de limpar pasta
+                    const folderLabel = document.getElementById('activeFolderNameLabel');
+                    if (folderLabel) {
+                        folderLabel.innerText = info.name || cat;
+                    }
+                    window.currentFilterCategory = cat;
+
+                    // 5. Filtra a lista de músicas
                     filterSongsList(cat);
+
+                    // 6. Desmarca seleção geral ao trocar de categoria
+                    const selectAllCb = document.getElementById('selectAllSongs');
+                    if (selectAllCb) selectAllCb.checked = false;
+                    document.querySelectorAll('.song-checkbox').forEach(cb => cb.checked = false);
+                    updateSelectedSongsUI();
                 }
             } catch(e) {
                 console.error('[Charlene] Erro em selectFolder:', e);

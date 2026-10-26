@@ -4,7 +4,9 @@ files = [
     ("laravel/resources/views/pages/kingCamera.blade.php", "/app/resources/views/pages/kingCamera.blade.php", "/tmp/kingCamera.blade.php"),
     ("laravel/app/Http/Controllers/Camera/KingCameraController.php", "/app/app/Http/Controllers/Camera/KingCameraController.php", "/tmp/KingCameraController.php"),
     ("laravel/app/Services/Camera/KingCameraService.php", "/app/app/Services/Camera/KingCameraService.php", "/tmp/KingCameraService.php"),
-    ("laravel/app/Services/Camera/KingCameraTelegramAgentService.php", "/app/app/Services/Camera/KingCameraTelegramAgentService.php", "/tmp/KingCameraTelegramAgentService.php")
+    ("laravel/app/Services/Camera/KingCameraTelegramAgentService.php", "/app/app/Services/Camera/KingCameraTelegramAgentService.php", "/tmp/KingCameraTelegramAgentService.php"),
+    ("laravel/resources/views/pages/charleneMusicas.blade.php", "/app/resources/views/pages/charleneMusicas.blade.php", "/tmp/charleneMusicas.blade.php"),
+    ("laravel/app/Http/Controllers/Alexa/CharleneController.php", "/app/app/Http/Controllers/Alexa/CharleneController.php", "/tmp/CharleneController.php")
 ]
 
 for local, container_path, tmp_remote in files:
