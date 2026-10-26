@@ -1498,6 +1498,56 @@
             box-shadow: 0 0 12px rgba(139, 92, 246, 0.4);
         }
 
+        /* Seletor de Formato do Berço (Polígono Inclinado / Redondo / Retângulo) */
+        .kc-crib-shape-selector {
+            display: flex;
+            gap: 6px;
+            margin: 8px 0;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .kc-shape-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #cbd5e1;
+            font-size: 0.74rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .kc-shape-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .kc-shape-btn.active {
+            background: rgba(6, 182, 212, 0.25) !important;
+            border-color: #06b6d4 !important;
+            color: #38bdf8 !important;
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+        }
+
+        .kc-shape-btn.btn-action-shape {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: rgba(139, 92, 246, 0.35);
+            color: #c4b5fd;
+        }
+
+        .kc-shape-btn.btn-action-shape:hover {
+            background: rgba(139, 92, 246, 0.3);
+            color: #fff;
+        }
+
         .kc-btn-sharp.active {
             background: rgba(245, 158, 11, 0.25) !important;
             border-color: #f59e0b !important;
@@ -5552,8 +5602,26 @@
                                         <i class="fas fa-shield-alt" style="color: var(--kc-cyan);"></i> Proteção Inteligente do Berço
                                     </div>
                                     <div style="font-size: 0.74rem; color: var(--kc-text-muted);">
-                                        Arraste os círculos azuis sobre o berço para demarcar a área segura da neném.
+                                        Arraste os pontos azuis livremente para alinhar com a inclinação e perspectiva do berço da neném.
                                     </div>
+                                </div>
+                                <div class="kc-crib-shape-selector" id="shape-selector-${cam.id}">
+                                    <span style="font-size: 0.72rem; color: var(--kc-text-muted); font-weight: 700;">Forma:</span>
+                                    <button type="button" class="kc-shape-btn active" id="shape-poly-${cam.id}" onclick="setCribFenceShape(${cam.id}, 'polygon')" title="Mover cada ponto livremente para alinhar com o berço inclinado (estilo Corel / Bezier)">
+                                        <i class="fas fa-draw-polygon" style="color: #06b6d4;"></i> <span>Pontos Livres (Inclinado)</span>
+                                    </button>
+                                    <button type="button" class="kc-shape-btn" id="shape-circle-${cam.id}" onclick="setCribFenceShape(${cam.id}, 'circle')" title="Área Redonda / Circular / Oval">
+                                        <i class="fas fa-circle" style="color: #38bdf8;"></i> <span>Redondo / Oval</span>
+                                    </button>
+                                    <button type="button" class="kc-shape-btn" id="shape-rect-${cam.id}" onclick="setCribFenceShape(${cam.id}, 'rect')" title="Retângulo Tradicional">
+                                        <i class="fas fa-vector-square" style="color: #94a3b8;"></i> <span>Retângulo</span>
+                                    </button>
+                                    <button type="button" class="kc-shape-btn btn-action-shape" id="btn-add-point-${cam.id}" onclick="addCribPoint(${cam.id})" title="Adicionar Ponto de Ajuste / Curva ao Berço">
+                                        <i class="fas fa-plus"></i> <span>+ Ponto</span>
+                                    </button>
+                                    <button type="button" class="kc-shape-btn btn-action-shape" onclick="resetCribFencePoints(${cam.id})" title="Redefinir Posição dos Pontos">
+                                        <i class="fas fa-undo"></i> <span>Redefinir</span>
+                                    </button>
                                 </div>
                                 <div class="kc-crib-toggles-grid">
                                     <button type="button" class="kc-pill-btn kc-btn-track" id="btn-track-person-${cam.id}" onclick="togglePersonTracking(${cam.id})" title="Rastrear e Seguir Pessoa 360°">
@@ -9688,6 +9756,327 @@
 
         const cribFenceState = {};
 
+        // ==================== GEOMETRIA & CÁLCULOS DA CERCA DO BERÇO ====================
+        function distToSegment(px, py, x1, y1, x2, y2) {
+            const dx = x2 - x1, dy = y2 - y1;
+            const len2 = dx * dx + dy * dy;
+            if (len2 === 0) return Math.hypot(px - x1, py - y1);
+            let t = ((px - x1) * dx + (py - y1) * dy) / len2;
+            t = Math.max(0, Math.min(1, t));
+            return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+        }
+
+        // Algoritmo Ray-casting para detectar se ponto está dentro de polígono livre (inclinado/perspectiva)
+        function isPointInPolygon(px, py, points) {
+            if (!points || points.length < 3) return false;
+            let inside = false;
+            for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+                const xi = points[i].x, yi = points[i].y;
+                const xj = points[j].x, yj = points[j].y;
+                const intersect = ((yi > py) !== (yj > py))
+                    && (px < (xj - xi) * (py - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        function isPointNearPolygonEdge(px, py, points, maxDist = 4.0) {
+            if (!points || points.length < 2) return false;
+            for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+                const dist = distToSegment(px, py, points[i].x, points[i].y, points[j].x, points[j].y);
+                if (dist <= maxDist) return true;
+            }
+            return false;
+        }
+
+        function isPointInsidePolygonWithTolerance(px, py, points, tol = 4.0) {
+            return isPointInPolygon(px, py, points) || isPointNearPolygonEdge(px, py, points, tol);
+        }
+
+        function isPointInCircle(px, py, circle, tol = 4.0) {
+            const cx = Number(circle.cx ?? 50);
+            const cy = Number(circle.cy ?? 50);
+            const rx = Math.max(5, Number(circle.rx ?? circle.r ?? 25));
+            const ry = Math.max(5, Number(circle.ry ?? circle.r ?? 20));
+            const effRx = rx + tol;
+            const effRy = ry + tol;
+            const dx = px - cx;
+            const dy = py - cy;
+            return ((dx * dx) / (effRx * effRx) + (dy * dy) / (effRy * effRy)) <= 1.0;
+        }
+
+        function isPointInCribFence(px, py, r) {
+            if (!r) return true;
+            if (r.type === 'circle' && r.circle) {
+                return isPointInCircle(px, py, r.circle, 4.0);
+            }
+            if (Array.isArray(r.points) && r.points.length >= 3) {
+                return isPointInsidePolygonWithTolerance(px, py, r.points, 4.0);
+            }
+            // Fallback retangular legado
+            const rx = Number(r.x ?? 20);
+            const ry = Number(r.y ?? 25);
+            const rw = Number(r.w ?? r.width ?? 60);
+            const rh = Number(r.h ?? r.height ?? 50);
+            return (px >= rx - 5 && px <= rx + rw + 5 && py >= ry - 5 && py <= ry + rh + 5);
+        }
+
+        function getPolygonCentroid(points) {
+            if (!points || !points.length) return { x: 50, y: 50 };
+            let sumX = 0, sumY = 0;
+            points.forEach(p => { sumX += p.x; sumY += p.y; });
+            return { x: sumX / points.length, y: sumY / points.length };
+        }
+
+        function getBoundingBoxFromRoi(roi) {
+            if (roi.type === 'circle' && roi.circle) {
+                const cx = Number(roi.circle.cx ?? 50);
+                const cy = Number(roi.circle.cy ?? 50);
+                const rx = Number(roi.circle.rx ?? roi.circle.r ?? 25);
+                const ry = Number(roi.circle.ry ?? roi.circle.r ?? 20);
+                return {
+                    x: Math.max(0, cx - rx),
+                    y: Math.max(0, cy - ry),
+                    w: Math.min(100, rx * 2),
+                    h: Math.min(100, ry * 2)
+                };
+            }
+            if (Array.isArray(roi.points) && roi.points.length >= 3) {
+                let minX = 100, maxX = 0, minY = 100, maxY = 0;
+                roi.points.forEach(p => {
+                    if (p.x < minX) minX = p.x;
+                    if (p.x > maxX) maxX = p.x;
+                    if (p.y < minY) minY = p.y;
+                    if (p.y > maxY) maxY = p.y;
+                });
+                return {
+                    x: minX,
+                    y: minY,
+                    w: Math.max(5, maxX - minX),
+                    h: Math.max(5, maxY - minY)
+                };
+            }
+            return {
+                x: Number(roi.x ?? 20),
+                y: Number(roi.y ?? 25),
+                w: Number(roi.w ?? 60),
+                h: Number(roi.h ?? 50)
+            };
+        }
+
+        function normalizeCribRoi(parsed) {
+            if (!parsed || typeof parsed !== 'object') {
+                return {
+                    type: 'polygon',
+                    points: [
+                        { x: 18, y: 22 },
+                        { x: 78, y: 30 },
+                        { x: 82, y: 70 },
+                        { x: 20, y: 62 }
+                    ],
+                    x: 18, y: 22, w: 64, h: 48
+                };
+            }
+
+            const type = parsed.type || (parsed.points ? 'polygon' : (parsed.circle ? 'circle' : 'polygon'));
+
+            if (type === 'circle') {
+                const circle = parsed.circle || {};
+                const cx = Number(circle.cx ?? parsed.cx ?? 50);
+                const cy = Number(circle.cy ?? parsed.cy ?? 50);
+                const rx = Number(circle.rx ?? parsed.rx ?? circle.r ?? 25);
+                const ry = Number(circle.ry ?? parsed.ry ?? circle.r ?? 20);
+                return {
+                    type: 'circle',
+                    circle: { cx, cy, rx, ry },
+                    x: Math.max(0, cx - rx),
+                    y: Math.max(0, cy - ry),
+                    w: Math.min(100, rx * 2),
+                    h: Math.min(100, ry * 2)
+                };
+            }
+
+            if (type === 'rect') {
+                const x = Number(parsed.x ?? 20);
+                const y = Number(parsed.y ?? 25);
+                const w = Number(parsed.w ?? parsed.width ?? 60);
+                const h = Number(parsed.h ?? parsed.height ?? 50);
+                return {
+                    type: 'rect',
+                    x, y, w, h,
+                    points: [
+                        { x, y },
+                        { x: x + w, y },
+                        { x: x + w, y: y + h },
+                        { x, y: y + h }
+                    ]
+                };
+            }
+
+            // Padrão: 'polygon' (pontos livres para berço inclinado)
+            let points = [];
+            if (Array.isArray(parsed.points) && parsed.points.length >= 3) {
+                points = parsed.points.map(p => ({
+                    x: Math.max(0, Math.min(100, Number(p.x ?? 50))),
+                    y: Math.max(0, Math.min(100, Number(p.y ?? 50)))
+                }));
+            } else {
+                // Converte o retângulo legado {x, y, w, h} em 4 pontos livres
+                const x = Number(parsed.x ?? 20);
+                const y = Number(parsed.y ?? 25);
+                const w = Number(parsed.w ?? parsed.width ?? 60);
+                const h = Number(parsed.h ?? parsed.height ?? 50);
+                points = [
+                    { x: x, y: y },
+                    { x: x + w, y: y },
+                    { x: x + w, y: y + h },
+                    { x: x, y: y + h }
+                ];
+            }
+
+            let minX = 100, maxX = 0, minY = 100, maxY = 0;
+            points.forEach(p => {
+                if (p.x < minX) minX = p.x;
+                if (p.x > maxX) maxX = p.x;
+                if (p.y < minY) minY = p.y;
+                if (p.y > maxY) maxY = p.y;
+            });
+
+            return {
+                type: 'polygon',
+                points: points,
+                x: Math.round(minX),
+                y: Math.round(minY),
+                w: Math.round(Math.max(5, maxX - minX)),
+                h: Math.round(Math.max(5, maxY - minY))
+            };
+        }
+
+        // ==================== SELETOR DE FORMA E EDIÇÃO ====================
+        function updateShapeSelectorButtons(camId, shapeType) {
+            const polyBtn = document.getElementById(`shape-poly-${camId}`);
+            const circleBtn = document.getElementById(`shape-circle-${camId}`);
+            const rectBtn = document.getElementById(`shape-rect-${camId}`);
+            const addPtBtn = document.getElementById(`btn-add-point-${camId}`);
+
+            if (polyBtn) polyBtn.classList.toggle('active', shapeType === 'polygon');
+            if (circleBtn) circleBtn.classList.toggle('active', shapeType === 'circle');
+            if (rectBtn) rectBtn.classList.toggle('active', shapeType === 'rect');
+            if (addPtBtn) addPtBtn.style.display = (shapeType === 'polygon') ? 'inline-flex' : 'none';
+        }
+
+        function setCribFenceShape(camId, shapeType) {
+            const s = cribFenceState[camId];
+            if (!s || !s.enabled) return;
+
+            const currentRoi = s.roi || {};
+            const bb = getBoundingBoxFromRoi(currentRoi);
+
+            if (shapeType === 'circle') {
+                const cx = Math.round(bb.x + bb.w / 2);
+                const cy = Math.round(bb.y + bb.h / 2);
+                const rx = Math.round(bb.w / 2);
+                const ry = Math.round(bb.h / 2);
+                s.roi = {
+                    type: 'circle',
+                    circle: { cx, cy, rx, ry },
+                    x: bb.x, y: bb.y, w: bb.w, h: bb.h
+                };
+            } else if (shapeType === 'rect') {
+                s.roi = {
+                    type: 'rect',
+                    x: bb.x, y: bb.y, w: bb.w, h: bb.h,
+                    points: [
+                        { x: bb.x, y: bb.y },
+                        { x: bb.x + bb.w, y: bb.y },
+                        { x: bb.x + bb.w, y: bb.y + bb.h },
+                        { x: bb.x, y: bb.y + bb.h }
+                    ]
+                };
+            } else {
+                // Polígono livre
+                if (currentRoi.type === 'circle' && currentRoi.circle) {
+                    const c = currentRoi.circle;
+                    s.roi = {
+                        type: 'polygon',
+                        points: [
+                            { x: Math.round(c.cx - c.rx), y: Math.round(c.cy) },
+                            { x: Math.round(c.cx), y: Math.round(c.cy - c.ry) },
+                            { x: Math.round(c.cx + c.rx), y: Math.round(c.cy) },
+                            { x: Math.round(c.cx), y: Math.round(c.cy + c.ry) }
+                        ],
+                        x: bb.x, y: bb.y, w: bb.w, h: bb.h
+                    };
+                } else {
+                    s.roi = {
+                        type: 'polygon',
+                        points: (currentRoi.points && currentRoi.points.length >= 3) ? currentRoi.points : [
+                            { x: bb.x, y: bb.y },
+                            { x: bb.x + bb.w, y: bb.y },
+                            { x: bb.x + bb.w, y: bb.y + bb.h },
+                            { x: bb.x, y: bb.y + bb.h }
+                        ],
+                        x: bb.x, y: bb.y, w: bb.w, h: bb.h
+                    };
+                }
+            }
+
+            updateShapeSelectorButtons(camId, shapeType);
+            drawCribBox(camId);
+            saveCameraFenceConfig(camId, true, s.roi);
+        }
+
+        function addCribPoint(camId) {
+            const s = cribFenceState[camId];
+            if (!s || !s.enabled) return;
+            if (s.roi.type !== 'polygon') {
+                setCribFenceShape(camId, 'polygon');
+            }
+            const pts = s.roi.points || [];
+            if (pts.length >= 10) {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Limite de 10 pontos atingido', timer: 2000, showConfirmButton: false });
+                return;
+            }
+            let maxLen = 0;
+            let insertIdx = pts.length;
+            let newPt = { x: 50, y: 50 };
+            for (let i = 0; i < pts.length; i++) {
+                const next = (i + 1) % pts.length;
+                const len = Math.hypot(pts[next].x - pts[i].x, pts[next].y - pts[i].y);
+                if (len > maxLen) {
+                    maxLen = len;
+                    insertIdx = i + 1;
+                    newPt = {
+                        x: Math.round((pts[i].x + pts[next].x) / 2),
+                        y: Math.round((pts[i].y + pts[next].y) / 2)
+                    };
+                }
+            }
+            pts.splice(insertIdx, 0, newPt);
+            s.roi.points = pts;
+            drawCribBox(camId);
+            saveCameraFenceConfig(camId, true, s.roi);
+        }
+
+        function resetCribFencePoints(camId) {
+            const s = cribFenceState[camId];
+            if (!s || !s.enabled) return;
+            s.roi = {
+                type: 'polygon',
+                points: [
+                    { x: 18, y: 22 },
+                    { x: 78, y: 30 },
+                    { x: 82, y: 70 },
+                    { x: 20, y: 62 }
+                ],
+                x: 18, y: 22, w: 64, h: 48
+            };
+            updateShapeSelectorButtons(camId, 'polygon');
+            drawCribBox(camId);
+            saveCameraFenceConfig(camId, true, s.roi);
+            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Área do berço redefinida!', timer: 2000, showConfirmButton: false });
+        }
+
         function sendFenceClearedEvent(camId, isBabyInside) {
             try {
                 fetch(`/api/cameras/${camId}/events`, {
@@ -9755,9 +10144,8 @@
                             const cxPct = ((bx + bw / 2) / vw) * 100;
                             const cyPct = ((by + bh / 2) / vh) * 100;
                             
-                            // Margem de tolerância de 5% ao redor do berço
-                            const isInside = (cxPct >= r.x - 5 && cxPct <= r.x + r.w + 5 && 
-                                              cyPct >= r.y - 5 && cyPct <= r.y + r.h + 5);
+                            // Verifica se o bebê está dentro do polígono inclinado ou do círculo
+                            const isInside = isPointInCribFence(cxPct, cyPct, r);
                             if (isInside) {
                                 personInsideCount++;
                             } else {
@@ -9806,11 +10194,6 @@
                         const currentData = ctx.getImageData(0, 0, 160, 90).data;
 
                         if (prevData) {
-                            const rx = (r.x / 100) * 160;
-                            const ry = (r.y / 100) * 90;
-                            const rw = (r.w / 100) * 160;
-                            const rh = (r.h / 100) * 90;
-
                             let motionOutsideFence = 0;
                             let motionInsideFence = 0;
                             let outsideMinX = 160, outsideMaxX = 0, outsideMinY = 90, outsideMaxY = 0;
@@ -9822,9 +10205,8 @@
                                                  Math.abs(currentData[idx+1] - prevData[idx+1]) +
                                                  Math.abs(currentData[idx+2] - prevData[idx+2]);
                                     
-                                    // Limiar de 46 filtra ruído de sensor infravermelho e compressão H.264
                                     if (diff > 46) {
-                                        const isInside = (x >= rx - 3 && x <= rx + rw + 3 && y >= ry - 3 && y <= ry + rh + 3);
+                                        const isInside = isPointInCribFence((x / 160) * 100, (y / 90) * 100, r);
                                         if (isInside) {
                                             motionInsideFence++;
                                         } else {
@@ -9838,12 +10220,10 @@
                                 }
                             }
 
-                            // Valida se o movimento externo forma um bloco de massa humana (e não pixels soltos no chão/travesseiro)
                             const clusterW = Math.max(0, outsideMaxX - outsideMinX);
                             const clusterH = Math.max(0, outsideMaxY - outsideMinY);
                             const isHumanCluster = (clusterW >= 14 && clusterH >= 14 && motionOutsideFence >= 75);
 
-                            // Só considera breach se houver massa humana real do lado de fora E não houver movimento predominante dentro do berço
                             const isBreachingNow = isHumanCluster && (motionOutsideFence > (motionInsideFence * 2.2));
                             const isBabyInside = (motionInsideFence >= 25);
 
@@ -9851,7 +10231,6 @@
                                 s.breachStreak = (s.breachStreak || 0) + 1;
                                 s.calmCycles = 0;
 
-                                // Exige 3 ciclos consecutivos (3 segundos) para disparo de alarme
                                 if (s.breachStreak >= 3) {
                                     if (s.fenceState === 'INSIDE') {
                                         s.fenceState = 'OUTSIDE';
@@ -9925,29 +10304,26 @@
 
             if (shouldEnable) {
                 const cam = (typeof camerasData !== 'undefined' ? camerasData : []).find(c => c.id === camId);
-                let roi = { x: 20, y: 25, w: 60, h: 50 };
+                let roi = {
+                    type: 'polygon',
+                    points: [
+                        { x: 18, y: 22 },
+                        { x: 78, y: 30 },
+                        { x: 82, y: 70 },
+                        { x: 20, y: 62 }
+                    ],
+                    x: 18, y: 22, w: 64, h: 48
+                };
                 
-                // 1. Prioriza coordenadas salvas no localStorage (mantém retângulo desenhado pelo usuário)
                 const localRoi = localStorage.getItem(`kc_fence_${camId}`);
                 if (localRoi) {
                     try {
-                        const parsed = JSON.parse(localRoi);
-                        roi = {
-                            x: Number(parsed.x ?? 20),
-                            y: Number(parsed.y ?? 25),
-                            w: Number(parsed.w ?? parsed.width ?? 60),
-                            h: Number(parsed.h ?? parsed.height ?? 50)
-                        };
+                        roi = normalizeCribRoi(JSON.parse(localRoi));
                     } catch(e) {}
                 } else if (cam && cam.crib_roi_json) {
                     try {
                         const parsed = typeof cam.crib_roi_json === 'string' ? JSON.parse(cam.crib_roi_json) : cam.crib_roi_json;
-                        roi = {
-                            x: Number(parsed.x ?? 20),
-                            y: Number(parsed.y ?? 25),
-                            w: Number(parsed.w ?? parsed.width ?? 60),
-                            h: Number(parsed.h ?? parsed.height ?? 50)
-                        };
+                        roi = normalizeCribRoi(parsed);
                     } catch(e) {}
                 }
 
@@ -9969,6 +10345,8 @@
 
                 const cribNav = document.getElementById(`tab-nav-${camId}-crib`);
                 const isCribTab = cribNav ? cribNav.classList.contains('active') : true;
+
+                updateShapeSelectorButtons(camId, roi.type || 'polygon');
 
                 if (isCribTab) {
                     canvas.style.display = 'block';
@@ -9995,9 +10373,9 @@
                         position: 'top-end',
                         icon: 'success',
                         title: '👶 Cerca do Berço Ativa!',
-                        text: 'O retângulo azul apareceu no vídeo. Arraste os círculos ou o centro para cobrir o berço.',
+                        text: 'Arraste os pontos azuis livremente para alinhar exatamente com os cantos do berço inclinado.',
                         showConfirmButton: false,
-                        timer: 4000
+                        timer: 4500
                     });
                 }
             } else {
@@ -10049,7 +10427,7 @@
             let isPointerDown = false;
             let activeHandle = null;
             let startPos = { x: 0, y: 0 };
-            let initialRoi = { x: 20, y: 25, w: 60, h: 50 };
+            let initialRoi = null;
 
             const getPos = (e) => {
                 const rect = canvas.getBoundingClientRect();
@@ -10068,45 +10446,112 @@
                 const s = cribFenceState[camId];
                 if (!s || !s.enabled) return;
                 const pos = getPos(e);
-                const r = s.roi;
-                const rx = Number(r.x ?? 20);
-                const ry = Number(r.y ?? 25);
-                const rw = Number(r.w ?? r.width ?? 60);
-                const rh = Number(r.h ?? r.height ?? 50);
-
-                const bx = (rx / 100) * canvas.width;
-                const by = (ry / 100) * canvas.height;
-                const bw = (rw / 100) * canvas.width;
-                const bh = (rh / 100) * canvas.height;
-
-                // Hit test ampliado para mobile: 38px
-                const handles = [
-                    { id: 'tl', x: bx, y: by },
-                    { id: 'tr', x: bx + bw, y: by },
-                    { id: 'bl', x: bx, y: by + bh },
-                    { id: 'br', x: bx + bw, y: by + bh }
-                ];
+                const roi = s.roi;
+                const cw = canvas.width;
+                const ch = canvas.height;
 
                 activeHandle = null;
-                for (let h of handles) {
-                    const dist = Math.hypot(pos.px - h.x, pos.py - h.y);
-                    if (dist <= 38) {
-                        activeHandle = h.id;
-                        break;
-                    }
-                }
 
-                // Se clicou dentro da área, arrasta a caixa inteira
-                if (!activeHandle) {
-                    if (pos.x >= rx && pos.x <= rx + rw && pos.y >= ry && pos.y <= ry + rh) {
-                        activeHandle = 'move';
+                if (roi.type === 'circle' && roi.circle) {
+                    const c = roi.circle;
+                    const cpx = (c.cx / 100) * cw;
+                    const cpy = (c.cy / 100) * ch;
+                    const rpx = (c.rx / 100) * cw;
+                    const rpy = (c.ry / 100) * ch;
+
+                    // 4 Alças Radiais (Top, Right, Bottom, Left)
+                    const handles = [
+                        { id: 'top', px: cpx, py: cpy - rpy },
+                        { id: 'right', px: cpx + rpx, py: cpy },
+                        { id: 'bottom', px: cpx, py: cpy + rpy },
+                        { id: 'left', px: cpx - rpx, py: cpy }
+                    ];
+
+                    for (let h of handles) {
+                        if (Math.hypot(pos.px - h.px, pos.py - h.py) <= 38) {
+                            activeHandle = { type: 'circle_handle', handle: h.id };
+                            break;
+                        }
+                    }
+
+                    if (!activeHandle) {
+                        // Centro ou interior da elipse
+                        if (Math.hypot(pos.px - cpx, pos.py - cpy) <= 34 || isPointInCircle(pos.x, pos.y, c, 2)) {
+                            activeHandle = { type: 'move' };
+                        }
+                    }
+                } else if (roi.type === 'rect') {
+                    const rx = Number(roi.x ?? 20);
+                    const ry = Number(roi.y ?? 25);
+                    const rw = Number(roi.w ?? 60);
+                    const rh = Number(roi.h ?? 50);
+
+                    const bx = (rx / 100) * cw;
+                    const by = (ry / 100) * ch;
+                    const bw = (rw / 100) * cw;
+                    const bh = (rh / 100) * ch;
+
+                    const handles = [
+                        { id: 'tl', px: bx, py: by },
+                        { id: 'tr', px: bx + bw, py: by },
+                        { id: 'br', px: bx + bw, py: by + bh },
+                        { id: 'bl', px: bx, py: by + bh }
+                    ];
+
+                    for (let h of handles) {
+                        if (Math.hypot(pos.px - h.px, pos.py - h.py) <= 38) {
+                            activeHandle = { type: 'rect_handle', handle: h.id };
+                            break;
+                        }
+                    }
+
+                    if (!activeHandle && pos.x >= rx && pos.x <= rx + rw && pos.y >= ry && pos.y <= ry + rh) {
+                        activeHandle = { type: 'move' };
+                    }
+                } else {
+                    // Padrão: Polígono livre (estilo Corel Draw / Bezier com 4 ou mais pontos)
+                    const pts = roi.points || [];
+
+                    // 1. Testa cada vértice do polígono (alças azuis grandes para toque mobile)
+                    for (let i = 0; i < pts.length; i++) {
+                        const ppx = (pts[i].x / 100) * cw;
+                        const ppy = (pts[i].y / 100) * ch;
+                        if (Math.hypot(pos.px - ppx, pos.py - ppy) <= 38) {
+                            activeHandle = { type: 'point', index: i };
+                            break;
+                        }
+                    }
+
+                    // 2. Se clicou em um ponto médio das arestas, adiciona novo ponto (como Bezier/Corel)
+                    if (!activeHandle && pts.length < 10) {
+                        for (let i = 0; i < pts.length; i++) {
+                            const next = (i + 1) % pts.length;
+                            const mpx = ((pts[i].x + pts[next].x) / 2 / 100) * cw;
+                            const mpy = ((pts[i].y + pts[next].y) / 2 / 100) * ch;
+                            if (Math.hypot(pos.px - mpx, pos.py - mpy) <= 26) {
+                                const newPt = { x: Math.round(pos.x), y: Math.round(pos.y) };
+                                pts.splice(i + 1, 0, newPt);
+                                activeHandle = { type: 'point', index: i + 1 };
+                                break;
+                            }
+                        }
+                    }
+
+                    // 3. Testa centroide ou interior do polígono para arrastar a área inteira
+                    if (!activeHandle) {
+                        const c = getPolygonCentroid(pts);
+                        const cpx = (c.x / 100) * cw;
+                        const cpy = (c.y / 100) * ch;
+                        if (Math.hypot(pos.px - cpx, pos.py - cpy) <= 34 || isPointInPolygon(pos.x, pos.y, pts)) {
+                            activeHandle = { type: 'move' };
+                        }
                     }
                 }
 
                 if (activeHandle) {
                     isPointerDown = true;
                     startPos = { x: pos.x, y: pos.y };
-                    initialRoi = { x: rx, y: ry, w: rw, h: rh };
+                    initialRoi = JSON.parse(JSON.stringify(roi));
                     if (e.cancelable) e.preventDefault();
                     if (e.stopPropagation) e.stopPropagation();
                 }
@@ -10120,44 +10565,95 @@
                 const dx = pos.x - startPos.x;
                 const dy = pos.y - startPos.y;
 
-                let nx = initialRoi.x;
-                let ny = initialRoi.y;
-                let nw = initialRoi.w;
-                let nh = initialRoi.h;
+                if (activeHandle.type === 'point') {
+                    // Mover ponto individual livremente (ajustar cantos inclinados do berço)
+                    const pts = s.roi.points;
+                    if (pts && pts[activeHandle.index]) {
+                        pts[activeHandle.index].x = Math.max(0, Math.min(100, Math.round(pos.x)));
+                        pts[activeHandle.index].y = Math.max(0, Math.min(100, Math.round(pos.y)));
+                    }
+                } else if (activeHandle.type === 'circle_handle') {
+                    const c = s.roi.circle;
+                    const initC = initialRoi.circle;
+                    if (activeHandle.handle === 'right') {
+                        c.rx = Math.max(4, Math.min(50, Math.round(Math.abs(pos.x - initC.cx))));
+                    } else if (activeHandle.handle === 'left') {
+                        c.rx = Math.max(4, Math.min(50, Math.round(Math.abs(initC.cx - pos.x))));
+                    } else if (activeHandle.handle === 'bottom') {
+                        c.ry = Math.max(4, Math.min(50, Math.round(Math.abs(pos.y - initC.cy))));
+                    } else if (activeHandle.handle === 'top') {
+                        c.ry = Math.max(4, Math.min(50, Math.round(Math.abs(initC.cy - pos.y))));
+                    }
+                } else if (activeHandle.type === 'rect_handle') {
+                    let nx = initialRoi.x;
+                    let ny = initialRoi.y;
+                    let nw = initialRoi.w;
+                    let nh = initialRoi.h;
 
-                if (activeHandle === 'move') {
-                    nx = Math.max(0, Math.min(100 - nw, initialRoi.x + dx));
-                    ny = Math.max(0, Math.min(100 - nh, initialRoi.y + dy));
-                } else if (activeHandle === 'br') {
-                    nw = Math.max(15, Math.min(100 - nx, initialRoi.w + dx));
-                    nh = Math.max(15, Math.min(100 - ny, initialRoi.h + dy));
-                } else if (activeHandle === 'tl') {
-                    const proposedX = Math.max(0, Math.min(initialRoi.x + initialRoi.w - 15, initialRoi.x + dx));
-                    const proposedY = Math.max(0, Math.min(initialRoi.y + initialRoi.h - 15, initialRoi.y + dy));
-                    nw = initialRoi.w + (initialRoi.x - proposedX);
-                    nh = initialRoi.h + (initialRoi.y - proposedY);
-                    nx = proposedX;
-                    ny = proposedY;
-                } else if (activeHandle === 'tr') {
-                    const proposedY = Math.max(0, Math.min(initialRoi.y + initialRoi.h - 15, initialRoi.y + dy));
-                    nw = Math.max(15, Math.min(100 - nx, initialRoi.w + dx));
-                    nh = initialRoi.h + (initialRoi.y - proposedY);
-                    ny = proposedY;
-                } else if (activeHandle === 'bl') {
-                    const proposedX = Math.max(0, Math.min(initialRoi.x + initialRoi.w - 15, initialRoi.x + dx));
-                    nw = initialRoi.w + (initialRoi.x - proposedX);
-                    nh = Math.max(15, Math.min(100 - ny, initialRoi.h + dy));
-                    nx = proposedX;
+                    if (activeHandle.handle === 'br') {
+                        nw = Math.max(15, Math.min(100 - nx, initialRoi.w + dx));
+                        nh = Math.max(15, Math.min(100 - ny, initialRoi.h + dy));
+                    } else if (activeHandle.handle === 'tl') {
+                        const proposedX = Math.max(0, Math.min(initialRoi.x + initialRoi.w - 15, initialRoi.x + dx));
+                        const proposedY = Math.max(0, Math.min(initialRoi.y + initialRoi.h - 15, initialRoi.y + dy));
+                        nw = initialRoi.w + (initialRoi.x - proposedX);
+                        nh = initialRoi.h + (initialRoi.y - proposedY);
+                        nx = proposedX;
+                        ny = proposedY;
+                    } else if (activeHandle.handle === 'tr') {
+                        const proposedY = Math.max(0, Math.min(initialRoi.y + initialRoi.h - 15, initialRoi.y + dy));
+                        nw = Math.max(15, Math.min(100 - nx, initialRoi.w + dx));
+                        nh = initialRoi.h + (initialRoi.y - proposedY);
+                        ny = proposedY;
+                    } else if (activeHandle.handle === 'bl') {
+                        const proposedX = Math.max(0, Math.min(initialRoi.x + initialRoi.w - 15, initialRoi.x + dx));
+                        nw = initialRoi.w + (initialRoi.x - proposedX);
+                        nh = Math.max(15, Math.min(100 - ny, initialRoi.h + dy));
+                        nx = proposedX;
+                    }
+
+                    s.roi.x = Math.round(nx);
+                    s.roi.y = Math.round(ny);
+                    s.roi.w = Math.round(nw);
+                    s.roi.h = Math.round(nh);
+                    s.roi.points = [
+                        { x: s.roi.x, y: s.roi.y },
+                        { x: s.roi.x + s.roi.w, y: s.roi.y },
+                        { x: s.roi.x + s.roi.w, y: s.roi.y + s.roi.h },
+                        { x: s.roi.x, y: s.roi.y + s.roi.h }
+                    ];
+                } else if (activeHandle.type === 'move') {
+                    // Mover a forma inteira mantendo proporções e inclinação
+                    if (s.roi.type === 'circle' && s.roi.circle) {
+                        const c = s.roi.circle;
+                        const initC = initialRoi.circle;
+                        c.cx = Math.max(c.rx, Math.min(100 - c.rx, Math.round(initC.cx + dx)));
+                        c.cy = Math.max(c.ry, Math.min(100 - c.ry, Math.round(initC.cy + dy)));
+                    } else if (s.roi.points) {
+                        const initPts = initialRoi.points;
+                        // Valida se nenhum ponto ultrapassa os limites
+                        let valid = true;
+                        initPts.forEach(p => {
+                            if (p.x + dx < 0 || p.x + dx > 100 || p.y + dy < 0 || p.y + dy > 100) valid = false;
+                        });
+                        if (valid) {
+                            initPts.forEach((p, idx) => {
+                                s.roi.points[idx].x = Math.round(p.x + dx);
+                                s.roi.points[idx].y = Math.round(p.y + dy);
+                            });
+                        }
+                    } else {
+                        s.roi.x = Math.max(0, Math.min(100 - initialRoi.w, Math.round(initialRoi.x + dx)));
+                        s.roi.y = Math.max(0, Math.min(100 - initialRoi.h, Math.round(initialRoi.y + dy)));
+                    }
                 }
 
-                s.roi = {
-                    x: Math.round(nx),
-                    y: Math.round(ny),
-                    w: Math.round(nw),
-                    h: Math.round(nh),
-                    width: Math.round(nw),
-                    height: Math.round(nh)
-                };
+                // Atualiza bounding box
+                const bb = getBoundingBoxFromRoi(s.roi);
+                s.roi.x = bb.x;
+                s.roi.y = bb.y;
+                s.roi.w = bb.w;
+                s.roi.h = bb.h;
 
                 drawCribBox(camId);
                 if (e.cancelable) e.preventDefault();
@@ -10169,7 +10665,14 @@
                     isPointerDown = false;
                     activeHandle = null;
                     const s = cribFenceState[camId];
-                    if (s && s.enabled) saveCameraFenceConfig(camId, true, s.roi);
+                    if (s && s.enabled) {
+                        const bb = getBoundingBoxFromRoi(s.roi);
+                        s.roi.x = bb.x;
+                        s.roi.y = bb.y;
+                        s.roi.w = bb.w;
+                        s.roi.h = bb.h;
+                        saveCameraFenceConfig(camId, true, s.roi);
+                    }
                 }
             };
 
@@ -10214,51 +10717,225 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const r = s.roi || {};
-            const rx = Number(r.x ?? 20);
-            const ry = Number(r.y ?? 25);
-            const rw = Number(r.w ?? r.width ?? 60);
-            const rh = Number(r.h ?? r.height ?? 50);
+            const roi = s.roi || {};
+            const cw = canvas.width;
+            const ch = canvas.height;
+            const handleR = 15; // Toque fácil no celular e mouse
 
-            const bx = (rx / 100) * canvas.width;
-            const by = (ry / 100) * canvas.height;
-            const bw = (rw / 100) * canvas.width;
-            const bh = (rh / 100) * canvas.height;
+            if (roi.type === 'circle' && roi.circle) {
+                // ================= DESENHO REDONDO / OVAL (ELIPSE) =================
+                const c = roi.circle;
+                const cpx = (c.cx / 100) * cw;
+                const cpy = (c.cy / 100) * ch;
+                const rpx = (c.rx / 100) * cw;
+                const rpy = (c.ry / 100) * ch;
 
-            // Fundo semitransparente azul ciano
-            ctx.fillStyle = 'rgba(6, 182, 212, 0.22)';
-            ctx.fillRect(bx, by, bw, bh);
-
-            // Borda traçada cyan brilhante
-            ctx.strokeStyle = '#06b6d4';
-            ctx.lineWidth = 3.5;
-            ctx.setLineDash([8, 4]);
-            ctx.strokeRect(bx, by, bw, bh);
-            ctx.setLineDash([]);
-
-            // 4 Círculos de Redimensionamento dos Cantos (Grandes para toque mobile)
-            const handleR = 14;
-            const corners = [
-                { x: bx, y: by },
-                { x: bx + bw, y: by },
-                { x: bx, y: by + bh },
-                { x: bx + bw, y: by + bh }
-            ];
-
-            corners.forEach(c => {
                 ctx.beginPath();
-                ctx.arc(c.x, c.y, handleR, 0, Math.PI * 2);
-                ctx.fillStyle = '#06b6d4';
+                ctx.ellipse(cpx, cpy, rpx, rpy, 0, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(6, 182, 212, 0.22)';
                 ctx.fill();
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 3;
-                ctx.stroke();
-            });
 
-            // Tag com texto nítido
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 12px Inter, sans-serif';
-            ctx.fillText('👶 ÁREA SEGURA DO BERÇO (Arraste cantos ou centro)', bx + 8, Math.max(16, by - 8));
+                ctx.strokeStyle = '#06b6d4';
+                ctx.lineWidth = 3.5;
+                ctx.setLineDash([8, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Centro Move Handle
+                ctx.beginPath();
+                ctx.arc(cpx, cpy, 16, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+                ctx.fill();
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = '#38bdf8';
+                ctx.font = 'bold 13px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('✥', cpx, cpy);
+
+                // 4 Alças de redimensionamento nos eixos
+                const handles = [
+                    { px: cpx, py: cpy - rpy },
+                    { px: cpx + rpx, py: cpy },
+                    { px: cpx, py: cpy + rpy },
+                    { px: cpx - rpx, py: cpy }
+                ];
+
+                handles.forEach(h => {
+                    ctx.beginPath();
+                    ctx.arc(h.px, h.py, handleR, 0, Math.PI * 2);
+                    ctx.fillStyle = '#06b6d4';
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                });
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 12px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'alphabetic';
+                ctx.fillText('👶 ÁREA REDONDA DO BERÇO (Arraste as alças ou o centro ✥)', Math.max(12, cpx - rpx + 8), Math.max(18, cpy - rpy - 10));
+
+            } else if (roi.type === 'rect') {
+                // ================= DESENHO RETÂNGULO TRADICIONAL =================
+                const rx = Number(roi.x ?? 20);
+                const ry = Number(roi.y ?? 25);
+                const rw = Number(roi.w ?? 60);
+                const rh = Number(roi.h ?? 50);
+
+                const bx = (rx / 100) * cw;
+                const by = (ry / 100) * ch;
+                const bw = (rw / 100) * cw;
+                const bh = (rh / 100) * ch;
+
+                ctx.fillStyle = 'rgba(6, 182, 212, 0.22)';
+                ctx.fillRect(bx, by, bw, bh);
+
+                ctx.strokeStyle = '#06b6d4';
+                ctx.lineWidth = 3.5;
+                ctx.setLineDash([8, 4]);
+                ctx.strokeRect(bx, by, bw, bh);
+                ctx.setLineDash([]);
+
+                const corners = [
+                    { px: bx, py: by },
+                    { px: bx + bw, py: by },
+                    { px: bx + bw, py: by + bh },
+                    { px: bx, py: by + bh }
+                ];
+
+                corners.forEach(c => {
+                    ctx.beginPath();
+                    ctx.arc(c.px, c.py, handleR, 0, Math.PI * 2);
+                    ctx.fillStyle = '#06b6d4';
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                });
+
+                // Centro
+                const cpx = bx + bw / 2;
+                const cpy = by + bh / 2;
+                ctx.beginPath();
+                ctx.arc(cpx, cpy, 16, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+                ctx.fill();
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = '#38bdf8';
+                ctx.font = 'bold 13px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('✥', cpx, cpy);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 12px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'alphabetic';
+                ctx.fillText('👶 ÁREA DO BERÇO (Arraste cantos ou centro ✥)', bx + 8, Math.max(18, by - 8));
+
+            } else {
+                // ================= DESENHO POLÍGONO DE PONTOS LIVRES (BERÇO INCLINADO) =================
+                const pts = roi.points || [
+                    { x: 18, y: 22 },
+                    { x: 78, y: 30 },
+                    { x: 82, y: 70 },
+                    { x: 20, y: 62 }
+                ];
+
+                ctx.beginPath();
+                pts.forEach((p, idx) => {
+                    const px = (p.x / 100) * cw;
+                    const py = (p.y / 100) * ch;
+                    if (idx === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                });
+                ctx.closePath();
+
+                // Fundo semitransparente azul ciano
+                ctx.fillStyle = 'rgba(6, 182, 212, 0.22)';
+                ctx.fill();
+
+                // Borda tracejada cyan brilhante
+                ctx.strokeStyle = '#06b6d4';
+                ctx.lineWidth = 3.5;
+                ctx.setLineDash([8, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Centroide para arrastar a área inteira
+                const c = getPolygonCentroid(pts);
+                const cpx = (c.x / 100) * cw;
+                const cpy = (c.y / 100) * ch;
+                ctx.beginPath();
+                ctx.arc(cpx, cpy, 16, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+                ctx.fill();
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = '#38bdf8';
+                ctx.font = 'bold 13px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('✥', cpx, cpy);
+
+                // Pontos médios sutis (Permitem tocar para adicionar curvas/pontos estilo Bezier)
+                if (pts.length < 10) {
+                    for (let i = 0; i < pts.length; i++) {
+                        const next = (i + 1) % pts.length;
+                        const mpx = ((pts[i].x + pts[next].x) / 2 / 100) * cw;
+                        const mpy = ((pts[i].y + pts[next].y) / 2 / 100) * ch;
+                        ctx.beginPath();
+                        ctx.arc(mpx, mpy, 7, 0, Math.PI * 2);
+                        ctx.fillStyle = 'rgba(6, 182, 212, 0.7)';
+                        ctx.fill();
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                    }
+                }
+
+                // Vértices principais (Círculos azuis para arrastar cada canto livremente)
+                pts.forEach((p, idx) => {
+                    const px = (p.x / 100) * cw;
+                    const py = (p.y / 100) * ch;
+
+                    ctx.beginPath();
+                    ctx.arc(px, py, handleR, 0, Math.PI * 2);
+                    ctx.fillStyle = '#06b6d4';
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 3.2;
+                    ctx.stroke();
+
+                    // Número do ponto (1, 2, 3, 4...)
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 11px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(String(idx + 1), px, py);
+                });
+
+                // Rótulo informativo
+                let minPx = 1000, minPy = 1000;
+                pts.forEach(p => {
+                    const x = (p.x / 100) * cw, y = (p.y / 100) * ch;
+                    if (x < minPx) minPx = x;
+                    if (y < minPy) minPy = y;
+                });
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 12px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'alphabetic';
+                ctx.fillText('👶 ÁREA DO BERÇO (Arraste cada ponto livremente ou centro ✥)', Math.max(10, minPx + 8), Math.max(18, minPy - 10));
+            }
         }
 
         function ensureCribFenceVisible(camId) {
@@ -10291,18 +10968,23 @@
 
             if (!canvas) return;
 
-            let roi = { x: 20, y: 25, w: 60, h: 50 };
+            let roi = {
+                type: 'polygon',
+                points: [
+                    { x: 18, y: 22 },
+                    { x: 78, y: 30 },
+                    { x: 82, y: 70 },
+                    { x: 20, y: 62 }
+                ],
+                x: 18, y: 22, w: 64, h: 48
+            };
+
             const localRoi = localStorage.getItem(`kc_fence_${camId}`);
             const sourceRoi = localRoi || cam.crib_roi_json;
             if (sourceRoi) {
                 try {
                     const parsed = typeof sourceRoi === 'string' ? JSON.parse(sourceRoi) : sourceRoi;
-                    roi = {
-                        x: Number(parsed.x ?? 20),
-                        y: Number(parsed.y ?? 25),
-                        w: Number(parsed.w ?? parsed.width ?? 60),
-                        h: Number(parsed.h ?? parsed.height ?? 50)
-                    };
+                    roi = normalizeCribRoi(parsed);
                 } catch(e) {}
             }
 
@@ -10313,12 +10995,12 @@
                 dragOffset: { x: 0, y: 0 }
             };
 
-            // Monitor de saída do berço roda continuamente em segundo plano
             startFenceMonitor(camId);
 
-            // A marcação VISUAL (retângulo e alças) SÓ é exibida quando o usuário clica na aba "Berço & Bebê"
             const cribNav = document.getElementById(`tab-nav-${camId}-crib`);
             const isCribTab = cribNav ? cribNav.classList.contains('active') : false;
+
+            updateShapeSelectorButtons(camId, roi.type || 'polygon');
 
             if (!isCribTab) {
                 canvas.style.display = 'none';
