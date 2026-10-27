@@ -1093,19 +1093,56 @@ class KingCameraController extends Controller
         $eventType = (string) $request->input('event_type', 'motion');
         $description = (string) $request->input('description', 'Evento detectado na câmera');
 
+        // Sincronização rigorosa: rejeita o evento se o recurso estiver desativado na câmera
+        if ($eventType === 'motion' && ! $camera->motion_detection_enabled) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Detecção de movimento está desativada para esta câmera.',
+            ]);
+        }
+        if ($eventType === 'baby_cry' && ! $camera->baby_cry_enabled) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Detecção de choro está desativada para esta câmera.',
+            ]);
+        }
+        if ($eventType === 'baby_stand' && ! $camera->baby_stand_enabled) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Detecção de bebê em pé está desativada para esta câmera.',
+            ]);
+        }
+        if (in_array($eventType, ['crib_fence', 'fence_breach']) && ! $camera->crib_fence_enabled) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cerca do berço está desativada para esta câmera.',
+            ]);
+        }
+
         // Quando a criança retorna à área segura do berço: limpa o estado de alerta
         if ($eventType === 'crib_fence_cleared') {
             \Illuminate\Support\Facades\Cache::forget("kc_fence_alert_{$camera->id}");
             return response()->json(['success' => true, 'message' => 'Status da cerca seguro e resetado.']);
         }
 
-        $event = \App\Models\KingCameraEvent::create([
-            'camera_id' => $camera->id,
-            'user_id' => $camera->user_id,
-            'event_type' => $eventType,
-            'description' => $description,
-            'notified_telegram' => false,
-        ]);
+        // Evita duplicar registros desnecessários no banco para o mesmo evento em menos de 4 segundos
+        $recentEvent = \App\Models\KingCameraEvent::where('camera_id', $camera->id)
+            ->where('event_type', $eventType)
+            ->where('created_at', '>=', now()->subSeconds(4))
+            ->first();
+
+        if ($recentEvent) {
+            $event = $recentEvent;
+            $event->update(['description' => $description]);
+        } else {
+            $event = \App\Models\KingCameraEvent::create([
+                'camera_id' => $camera->id,
+                'user_id' => $camera->user_id,
+                'event_type' => $eventType,
+                'description' => $description,
+                'notified_telegram' => false,
+            ]);
+        }
 
         $camera->update(['last_event_at' => now()]);
 
@@ -1161,6 +1198,34 @@ class KingCameraController extends Controller
                         $shouldSend = false;
                     } else {
                         \Illuminate\Support\Facades\Cache::put($standCacheKey, $nowTs, 45);
+                    }
+                }
+
+                // Controle inteligente anti-spam de Choro do Bebê (20s de intervalo mínimo)
+                if ($eventType === 'baby_cry') {
+                    $cryCacheKey = "kc_cry_alert_{$camera->id}";
+                    $lastCry = (int) \Illuminate\Support\Facades\Cache::get($cryCacheKey, 0);
+                    $nowTs = time();
+                    if (($nowTs - $lastCry) < 20) {
+                        $shouldSend = false;
+                    } else {
+                        \Illuminate\Support\Facades\Cache::put($cryCacheKey, $nowTs, 45);
+                    }
+                }
+
+                // Controle inteligente de Movimento (apenas se ativado e respeitando intervalo mínimo)
+                if ($eventType === 'motion') {
+                    if (! $camera->motion_detection_enabled) {
+                        $shouldSend = false;
+                    } else {
+                        $motionCacheKey = "kc_motion_alert_{$camera->id}";
+                        $lastMotion = (int) \Illuminate\Support\Facades\Cache::get($motionCacheKey, 0);
+                        $nowTs = time();
+                        if (($nowTs - $lastMotion) < 25) {
+                            $shouldSend = false;
+                        } else {
+                            \Illuminate\Support\Facades\Cache::put($motionCacheKey, $nowTs, 45);
+                        }
                     }
                 }
 

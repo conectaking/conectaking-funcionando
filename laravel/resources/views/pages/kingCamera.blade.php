@@ -17,6 +17,7 @@
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.3/dist/pose-detection.min.js" defer></script>
     @vite(['resources/css/fontawesome.css'])
 
     <style>
@@ -1637,6 +1638,13 @@
             border-color: #f59e0b !important;
             color: #fbbf24 !important;
             box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+        }
+
+        .kc-btn-motion.active {
+            background: rgba(16, 185, 129, 0.28) !important;
+            border-color: #10b981 !important;
+            color: #10b981 !important;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
         }
 
         .kc-btn-intercom.active {
@@ -5867,12 +5875,21 @@
                     }
                     videoEl.play().catch(e => console.warn('Autoplay prevented:', e));
                     if (loaderEl) loaderEl.style.display = 'none';
+
+                    if (event.track && event.track.kind === 'audio') {
+                        if (typeof startBabyCryAudioPipeline === 'function') {
+                            startBabyCryAudioPipeline(cam.id);
+                        }
+                    }
                 };
 
                 const stopFallback = () => {
                     hasReceivedVideo = true;
                     cam._webrtcRetries = 0;
                     if (loaderEl) loaderEl.style.display = 'none';
+                    if (typeof startBabyCryAudioPipeline === 'function') {
+                        startBabyCryAudioPipeline(cam.id);
+                    }
                     // Se o fallback por snapshot estiver ativo, limpa e oculta
                     if (window[`snapInterval_${cam.id}`]) {
                         clearInterval(window[`snapInterval_${cam.id}`]);
@@ -9750,20 +9767,33 @@
             });
         }
 
-        // ── 3. CERCA VIRTUAL DO BERÇO (SAFE ZONE INTELIGENTE COM DETECÇÃO HUMANA EXCLUSIVA) ──
+        // ── 3. CERCA VIRTUAL DO BERÇO (SAFE ZONE INTELIGENTE COM DETECÇÃO HUMANA + POSTURA & MEMBROS) ──
         window.kingVisionAI = {
             model: null,
+            poseDetector: null,
             loading: false,
             init: async function() {
-                if (this.model) return this.model;
-                if (this.loading) return null;
-                if (typeof cocoSsd === 'undefined') return null;
+                if (this.loading) return;
                 this.loading = true;
                 try {
-                    this.model = await cocoSsd.load({ base: 'mobilenet_v2' });
-                    console.log('[KingCamera AI] Modelo COCO-SSD de Detecção Humana calibrado e inicializado com sucesso!');
+                    if (!this.model && typeof cocoSsd !== 'undefined') {
+                        this.model = await cocoSsd.load({ base: 'mobilenet_v2' });
+                        console.log('[KingCamera AI] Modelo COCO-SSD de Detecção Humana inicializado com sucesso!');
+                    }
                 } catch(e) {
                     console.warn('[KingCamera AI] COCO-SSD indisponível:', e);
+                }
+
+                try {
+                    if (!this.poseDetector && typeof poseDetection !== 'undefined') {
+                        this.poseDetector = await poseDetection.createDetector(
+                            poseDetection.SupportedModels.MoveNet,
+                            { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
+                        );
+                        console.log('[KingCamera AI] Modelo MoveNet Pose/Membros calibrado e inicializado com sucesso!');
+                    }
+                } catch(pe) {
+                    console.warn('[KingCamera AI] MoveNet indisponível:', pe);
                 } finally {
                     this.loading = false;
                 }
@@ -9783,19 +9813,12 @@
                     // Filtra ESTRITAMENTE PESSOAS com calibração precisa para visão noturna infravermelha (grayscale) e bebês deitados
                     return preds.filter(p => {
                         if (p.class !== 'person') return false;
-
-                        // Calibrado para visão noturna IR e bebês deitados em lençol claro:
-                        // No infravermelho deitado, MobileNet COCO-SSD varia entre 0.30 e 0.50.
-                        if (p.score < 0.30) return false;
+                        if (p.score < 0.28) return false;
 
                         const [bx, by, bw, bh] = p.bbox;
-                        // Tamanho mínimo para ser um bebê ou criança
                         if (bw < 16 || bh < 16) return false;
-
-                        // Evita falsos positivos de tela inteira ou ruído extremo
                         if ((bw / vw) > 0.96 && (bh / vh) > 0.96) return false;
 
-                        // Descarta proporções anômalas (ex: faixas excessivamente finas)
                         const ratio = bh / Math.max(1, bw);
                         if (ratio < 0.12 || ratio > 7.0) return false;
 
@@ -9804,17 +9827,30 @@
                 } catch(e) {
                     return null;
                 }
+            },
+            detectPose: async function(videoEl) {
+                if (!videoEl || videoEl.readyState < 2) return null;
+                if (!this.poseDetector && typeof poseDetection !== 'undefined') {
+                    await this.init();
+                }
+                if (!this.poseDetector) return null;
+                try {
+                    const poses = await this.poseDetector.estimatePoses(videoEl);
+                    return (poses && poses.length > 0) ? poses : null;
+                } catch(e) {
+                    return null;
+                }
             }
         };
 
-        // Pré-carrega o modelo de visão humana assim que a página abrir
+        // Pré-carrega os modelos de visão humana e pose assim que a página abrir
         if (typeof window !== 'undefined') {
             document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => {
-                    if (window.kingVisionAI && typeof cocoSsd !== 'undefined') {
+                    if (window.kingVisionAI) {
                         window.kingVisionAI.init().catch(() => {});
                     }
-                }, 1000);
+                }, 800);
             });
         }
 
@@ -10160,17 +10196,12 @@
             if (!s) return;
             if (s.interval) clearInterval(s.interval);
 
-            const canvas = document.createElement('canvas');
-            canvas.width = 160;
-            canvas.height = 90;
-            const ctx = canvas.getContext('2d', { willReadFrequently: true });
-            let prevData = null;
-
             s.fenceState = s.fenceState || 'INSIDE';
             s.alertCount = s.alertCount || 0;
             s.lastAlertTime = s.lastAlertTime || 0;
             s.breachStreak = 0;
             s.calmCycles = 0;
+            s.absenceStreak = 0;
             let isProcessing = false;
 
             s.interval = setInterval(async () => {
@@ -10190,65 +10221,173 @@
                 try {
                     const r = s.roi || { x: 20, y: 25, w: 60, h: 50 };
                     const now = Date.now();
+                    const vw = video.videoWidth || 640;
+                    const vh = video.videoHeight || 360;
 
-                    // 1. ANÁLISE REAL DE PESSOA VIA IA (Detecta estritamente seres humanos: Sara no berço vs fora)
-                    let aiHandled = false;
-                    const persons = await window.kingVisionAI.detectPersons(video);
+                    // 1. EXECUTA MODELOS DE IA: DETECÇÃO DE PESSOAS (COCO-SSD) E DETECÇÃO DE ARTICULAÇÕES (MOVETNET POSE)
+                    const [persons, poses] = await Promise.all([
+                        window.kingVisionAI.detectPersons(video),
+                        window.kingVisionAI.detectPose(video)
+                    ]);
 
-                    if (persons !== null) {
-                        aiHandled = true;
-                        const vw = video.videoWidth || 640;
-                        const vh = video.videoHeight || 360;
+                    if (persons !== null || poses !== null) {
+                        let isBabyInCrib = false;
+                        let isBabyOutsideCrib = false;
+                        let limbBreached = false;
+                        let breachMsg = '';
 
-                        let personInsideCount = 0;
-                        let personOutsideCount = 0;
+                        // ── A. ANÁLISE ANATÔMICA PRECISA COM MOVETNET POSE (17 KEYPOINTS) ──
+                        if (poses && poses.length > 0 && poses[0].keypoints) {
+                            const kp = {};
+                            poses[0].keypoints.forEach(k => { kp[k.name] = k; });
 
-                        persons.forEach(p => {
-                            const [bx, by, bw, bh] = p.bbox;
-                            const cxPct = ((bx + bw / 2) / vw) * 100;
-                            const cyPct = ((by + bh / 2) / vh) * 100;
-                            
-                            // Verifica se a pessoa/bebê está dentro do perímetro demarcado do berço
-                            const isInside = isPointInCribFence(cxPct, cyPct, r);
-                            if (isInside) {
-                                personInsideCount++;
-                            } else {
-                                const areaPct = (bw * bh) / (vw * vh);
-                                if (areaPct >= 0.015) {
-                                    personOutsideCount++;
+                            // Tronco / Cabeça do bebê (Verifica se está no berço)
+                            const torsoKeys = ['nose', 'left_shoulder', 'right_shoulder', 'left_hip', 'right_hip'];
+                            let torsoInsideCount = 0;
+                            let torsoOutsideCount = 0;
+
+                            torsoKeys.forEach(kName => {
+                                const pt = kp[kName];
+                                if (pt && pt.score >= 0.16) {
+                                    const px = (pt.x / vw) * 100;
+                                    const py = (pt.y / vh) * 100;
+                                    if (isPointInCribFence(px, py, r)) {
+                                        torsoInsideCount++;
+                                    } else {
+                                        torsoOutsideCount++;
+                                    }
+                                }
+                            });
+
+                            if (torsoInsideCount > 0) {
+                                isBabyInCrib = true;
+                            } else if (torsoOutsideCount >= 2) {
+                                isBabyOutsideCrib = true;
+                            }
+
+                            // Checagem de MEMBROS (Pés, Pernas, Mãos, Braços ultrapassando a cerca)
+                            if (isBabyInCrib) {
+                                // 1. Checa pés e pernas (ankles e knees)
+                                const legKeys = ['left_ankle', 'right_ankle', 'left_knee', 'right_knee'];
+                                for (const kName of legKeys) {
+                                    const pt = kp[kName];
+                                    if (pt && pt.score >= 0.15) {
+                                        const px = (pt.x / vw) * 100;
+                                        const py = (pt.y / vh) * 100;
+                                        if (!isPointInCribFence(px, py, r)) {
+                                            limbBreached = true;
+                                            breachMsg = '🚨 Pé ou perna do bebê passou para fora do cerco do berço!';
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                // 2. Checa mãos e braços (wrists e elbows)
+                                if (!limbBreached) {
+                                    const armKeys = ['left_wrist', 'right_wrist', 'left_elbow', 'right_elbow'];
+                                    for (const kName of armKeys) {
+                                        const pt = kp[kName];
+                                        if (pt && pt.score >= 0.15) {
+                                            const px = (pt.x / vw) * 100;
+                                            const py = (pt.y / vh) * 100;
+                                            if (!isPointInCribFence(px, py, r)) {
+                                                limbBreached = true;
+                                                breachMsg = '🚨 Braço ou mão do bebê para fora da área segura!';
+                                                break;
+                                            }
+                                        }
+                                    }
                                 }
                             }
-                        });
+                        }
 
-                        // CASO 1: A Sara / Bebê está confirmada dentro do berço!
-                        if (personInsideCount > 0) {
-                            s.breachStreak = 0;
-                            s.absenceStreak = 0;
-                            s.calmCycles = (s.calmCycles || 0) + 1;
-                            s.hasSeenInCrib = true;
-                            s.lastSeenInsideTime = now;
+                        // ── B. ANÁLISE DE CONTORNO & EXTREMIDADES VIA BOUNDING BOX (COCO-SSD) ──
+                        if (persons && persons.length > 0) {
+                            for (const p of persons) {
+                                const [bx, by, bw, bh] = p.bbox;
+                                const cxPct = ((bx + bw / 2) / vw) * 100;
+                                const cyPct = ((by + bh / 2) / vh) * 100;
+                                const centerInside = isPointInCribFence(cxPct, cyPct, r);
 
-                            if (s.fenceState === 'OUTSIDE') {
-                                s.fenceState = 'INSIDE';
-                                s.alertCount = 0;
-                                console.log(`[CribFence] Sara / Bebê confirmada dentro do berço (câmera ${camId}). Normalizado.`);
-                                sendFenceClearedEvent(camId, true);
-                                const alertEl = document.getElementById(`fence-alert-${camId}`);
-                                if (alertEl) alertEl.style.display = 'none';
+                                if (centerInside) {
+                                    isBabyInCrib = true;
+
+                                    // Se MoveNet ainda não detectou infração de membros, testa extremidades do retângulo
+                                    if (!limbBreached) {
+                                        // Extremidades inferiores (Pés / Pernas)
+                                        const bottomSamples = [
+                                            { x: ((bx + bw * 0.15) / vw) * 100, y: ((by + bh * 0.98) / vh) * 100, type: 'leg' },
+                                            { x: ((bx + bw * 0.50) / vw) * 100, y: ((by + bh * 0.98) / vh) * 100, type: 'leg' },
+                                            { x: ((bx + bw * 0.85) / vw) * 100, y: ((by + bh * 0.98) / vh) * 100, type: 'leg' }
+                                        ];
+                                        // Extremidades laterais (Mãos / Braços)
+                                        const sideSamples = [
+                                            { x: ((bx + bw * 0.02) / vw) * 100, y: ((by + bh * 0.60) / vh) * 100, type: 'arm' },
+                                            { x: ((bx + bw * 0.98) / vw) * 100, y: ((by + bh * 0.60) / vh) * 100, type: 'arm' }
+                                        ];
+
+                                        for (const sm of bottomSamples) {
+                                            if (!isPointInCribFence(sm.x, sm.y, r)) {
+                                                limbBreached = true;
+                                                breachMsg = '🚨 Pé ou perna do bebê passou para fora do cerco do berço!';
+                                                break;
+                                            }
+                                        }
+                                        if (!limbBreached) {
+                                            for (const sm of sideSamples) {
+                                                if (!isPointInCribFence(sm.x, sm.y, r)) {
+                                                    limbBreached = true;
+                                                    breachMsg = '🚨 Braço ou mão do bebê para fora da área segura!';
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    const areaPct = (bw * bh) / (vw * vh);
+                                    if (areaPct >= 0.02) {
+                                        isBabyOutsideCrib = true;
+                                    }
+                                }
                             }
                         }
-                        // CASO 2: Pessoa confirmada FORA do berço (Sara saiu ou foi para fora do cerco!)
-                        else if (personOutsideCount > 0 && personInsideCount === 0) {
+
+                        // ── C. TOMADA DE DECISÃO INTELIGENTE ──
+                        // CASO 1: Membro (pé, perna, braço) passou do cerco demarcado!
+                        if (limbBreached) {
+                            s.breachStreak = (s.breachStreak || 0) + 1;
+                            s.absenceStreak = 0;
+                            s.calmCycles = 0;
+                            s.hasSeenInCrib = true;
+                            s.isLimbBreached = true;
+
+                            // Exige 2 ciclos consecutivos (~2.4s) para confirmar e evitar falsos alarmes
+                            if (s.breachStreak >= 2) {
+                                if (s.fenceState !== 'OUTSIDE') {
+                                    s.fenceState = 'OUTSIDE';
+                                    s.alertCount = 1;
+                                    s.lastAlertTime = now;
+                                    triggerFenceBreachAlert(camId, 1, breachMsg || '🚨 Pé ou membro do bebê passou do cerco do berço!');
+                                } else if (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 18000)) {
+                                    s.alertCount = 2;
+                                    s.lastAlertTime = now;
+                                    triggerFenceBreachAlert(camId, 2, '⚠️ REFORÇO: O bebê continua com membro fora da área segura!');
+                                }
+                            }
+                        }
+                        // CASO 2: Criança completamente fora do berço
+                        else if (isBabyOutsideCrib && !isBabyInCrib) {
                             s.breachStreak = (s.breachStreak || 0) + 1;
                             s.absenceStreak = (s.absenceStreak || 0) + 1;
                             s.calmCycles = 0;
+                            s.isLimbBreached = false;
 
                             if (s.breachStreak >= 2) {
                                 if (s.fenceState !== 'OUTSIDE') {
                                     s.fenceState = 'OUTSIDE';
                                     s.alertCount = 1;
                                     s.lastAlertTime = now;
-                                    triggerFenceBreachAlert(camId, 1, '🚨 ALERTA: Bebê fora do cerco seguro detectado!');
+                                    triggerFenceBreachAlert(camId, 1, '🚨 ALERTA: Bebê saiu do cerco! (Criança fora do berço)');
                                 } else if (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 18000)) {
                                     s.alertCount = 2;
                                     s.lastAlertTime = now;
@@ -10256,19 +10395,18 @@
                                 }
                             }
                         }
-                        // CASO 3: A Sara estava no berço e agora o berço está VAZIO (personInsideCount === 0)!
-                        // Se o bebê estava no berço e saiu (ou foi retirado ou saiu do ângulo), DISPARA ALARME!
-                        else if (s.hasSeenInCrib && personInsideCount === 0) {
+                        // CASO 3: O bebê estava no berço e agora o berço está vazio
+                        else if (s.hasSeenInCrib && !isBabyInCrib && !isBabyOutsideCrib) {
                             s.absenceStreak = (s.absenceStreak || 0) + 1;
                             s.calmCycles = 0;
+                            s.isLimbBreached = false;
 
-                            // 2 ciclos sem bebê no berço (~2.4s) confirma que a criança saiu do cerco
                             if (s.absenceStreak >= 2) {
                                 if (s.fenceState !== 'OUTSIDE') {
                                     s.fenceState = 'OUTSIDE';
                                     s.alertCount = 1;
                                     s.lastAlertTime = now;
-                                    triggerFenceBreachAlert(camId, 1, '🚨 ALERTA: Bebê saiu do cerco! (Criança não está mais dentro do berço)');
+                                    triggerFenceBreachAlert(camId, 1, '🚨 ALERTA: Bebê saiu do cerco! (Berço vazio)');
                                 } else if (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 18000)) {
                                     s.alertCount = 2;
                                     s.lastAlertTime = now;
@@ -10276,14 +10414,29 @@
                                 }
                             }
                         }
-                        // CASO 4: Berço vazio antes de colocar o bebê (em espera)
-                        else {
+                        // CASO 4: Bebê 100% seguro DENTRO do berço, sem membros fora!
+                        else if (isBabyInCrib && !limbBreached) {
                             s.breachStreak = 0;
                             s.absenceStreak = 0;
                             s.calmCycles = (s.calmCycles || 0) + 1;
+                            s.hasSeenInCrib = true;
+                            s.isLimbBreached = false;
+                            s.lastSeenInsideTime = now;
+
+                            if (s.fenceState === 'OUTSIDE') {
+                                s.fenceState = 'INSIDE';
+                                s.alertCount = 0;
+                                console.log(`[CribFence] Bebê seguro dentro do berço (câmera ${camId}). Normalizado.`);
+                                sendFenceClearedEvent(camId, true);
+                                const alertEl = document.getElementById(`fence-alert-${camId}`);
+                                if (alertEl) alertEl.style.display = 'none';
+                            }
                         }
-                    } else {
-                        // IA ainda carregando no navegador: não dispara alarme por pixels para evitar falsos positivos de roupas/vento
+                        else {
+                            s.breachStreak = 0;
+                            s.absenceStreak = 0;
+                            s.isLimbBreached = false;
+                        }
                     }
                 } catch(err) {
                     console.error('[CribFence] Erro no monitor de cerca:', err);
@@ -10885,12 +11038,12 @@
                 });
                 ctx.closePath();
 
-                // Fundo semitransparente azul ciano
-                ctx.fillStyle = 'rgba(6, 182, 212, 0.22)';
+                // Fundo e borda: vermelho se houver infração/membro fora, ciano se seguro
+                const isBreached = Boolean(s.fenceState === 'OUTSIDE' || s.isLimbBreached);
+                ctx.fillStyle = isBreached ? 'rgba(239, 68, 68, 0.28)' : 'rgba(6, 182, 212, 0.22)';
                 ctx.fill();
 
-                // Borda tracejada cyan brilhante
-                ctx.strokeStyle = '#06b6d4';
+                ctx.strokeStyle = isBreached ? '#ef4444' : '#06b6d4';
                 ctx.lineWidth = 3.5;
                 ctx.setLineDash([8, 4]);
                 ctx.stroke();
@@ -11125,7 +11278,7 @@
             if (isNowActive) {
                 localStorage.setItem(`kc_motion_enabled_${camId}`, '1');
             } else {
-                localStorage.removeItem(`kc_motion_enabled_${camId}`);
+                localStorage.setItem(`kc_motion_enabled_${camId}`, '0');
             }
 
             if (explicitState === undefined) {
@@ -11161,14 +11314,29 @@
         }
 
         function startBabyMotionWatcher(camId) {
-            if (window.babyMotionIntervals[camId]) clearInterval(window.babyMotionIntervals[camId]);
+            if (window.babyMotionIntervals[camId]) {
+                clearInterval(window.babyMotionIntervals[camId]);
+                delete window.babyMotionIntervals[camId];
+            }
+            const cam = (typeof camerasData !== 'undefined' ? camerasData : []).find(x => x.id === camId);
+            if (!window.babyMotionAlerts[camId] || (cam && !cam.motion_detection_enabled)) {
+                return;
+            }
+
             const canvas = document.createElement('canvas');
             canvas.width = 120;
             canvas.height = 90;
-            const ctx = canvas.getContext('2d');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
             let prevData = null;
+            let motionStreak = 0;
 
             window.babyMotionIntervals[camId] = setInterval(() => {
+                const currentCam = (typeof camerasData !== 'undefined' ? camerasData : []).find(x => x.id === camId);
+                if (!window.babyMotionAlerts[camId] || (currentCam && !currentCam.motion_detection_enabled)) {
+                    stopBabyMotionWatcher(camId);
+                    return;
+                }
+
                 const video = document.getElementById(`video-${camId}`);
                 if (!video || video.readyState < 2) return;
 
@@ -11181,16 +11349,21 @@
                         const d = Math.abs(currentData[i] - prevData[i]) +
                                   Math.abs(currentData[i+1] - prevData[i+1]) +
                                   Math.abs(currentData[i+2] - prevData[i+2]);
-                        if (d > 60) diff++;
+                        if (d > 65) diff++;
                     }
 
-                    // Se movimentação detectada
-                    if (diff > 160) {
-                        triggerBabyMotionDetected(camId);
+                    // Filtra ruído digital/IR noturno de 1 quadro isolado exigindo 2 detecções consecutivas
+                    if (diff > 180) {
+                        motionStreak++;
+                        if (motionStreak >= 2) {
+                            triggerBabyMotionDetected(camId);
+                        }
+                    } else {
+                        motionStreak = 0;
                     }
                 }
                 prevData = currentData;
-            }, 1500);
+            }, 1200);
         }
 
         function stopBabyMotionWatcher(camId) {
@@ -11203,6 +11376,12 @@
         }
 
         function triggerBabyMotionDetected(camId) {
+            const cam = (typeof camerasData !== 'undefined' ? camerasData : []).find(x => x.id === camId);
+            if (!window.babyMotionAlerts[camId] || (cam && !cam.motion_detection_enabled)) {
+                stopBabyMotionWatcher(camId);
+                return;
+            }
+
             const banner = document.getElementById(`motion-alert-${camId}`);
             if (banner) {
                 banner.style.display = 'flex';
@@ -11418,11 +11597,6 @@
 
         function startBabyStandWatcher(camId) {
             if (window.babyStandIntervals[camId]) clearInterval(window.babyStandIntervals[camId]);
-            const canvas = document.createElement('canvas');
-            canvas.width = 160;
-            canvas.height = 90;
-            const ctx = canvas.getContext('2d', { willReadFrequently: true });
-            let prevData = null;
             let standCooldown = 0;
             let standStreak = 0;
             let isProcessing = false;
@@ -11435,106 +11609,97 @@
                 try {
                     const s = cribFenceState[camId];
                     const r = (s && s.roi) ? s.roi : { x: 20, y: 20, w: 60, h: 55 };
+                    const bb = getBoundingBoxFromRoi(r);
                     const now = Date.now();
+                    const vw = video.videoWidth || 640;
+                    const vh = video.videoHeight || 360;
 
-                    // 1. ANÁLISE REAL DE POSTURA VIA IA (Diferencia Bebê Deitado vs Em Pé na Grade)
-                    let aiHandled = false;
-                    const persons = await window.kingVisionAI.detectPersons(video);
+                    let isStanding = false;
 
-                    if (persons !== null) {
-                        aiHandled = true;
-                        const vw = video.videoWidth || 640;
-                        const vh = video.videoHeight || 360;
+                    // 1. ANÁLISE ANATÔMICA COM MOVETNET POSE (17 ARTICULAÇÕES)
+                    const poses = await window.kingVisionAI.detectPose(video);
+                    if (poses && poses.length > 0 && poses[0].keypoints) {
+                        const kp = {};
+                        poses[0].keypoints.forEach(k => { kp[k.name] = k; });
 
-                        let isBabyStandingAI = false;
+                        const nose = kp['nose'];
+                        const lShoulder = kp['left_shoulder'];
+                        const rShoulder = kp['right_shoulder'];
+                        const lHip = kp['left_hip'];
+                        const rHip = kp['right_hip'];
+                        const lAnkle = kp['left_ankle'];
+                        const rAnkle = kp['right_ankle'];
 
-                        for (const p of persons) {
-                            const [bx, by, bw, bh] = p.bbox;
-                            const cxPct = ((bx + bw / 2) / vw) * 100;
-                            const cyPct = ((by + bh / 2) / vh) * 100;
-                            const topPct = (by / vh) * 100;
+                        const headPt = (nose && nose.score >= 0.20) ? nose : ((lShoulder && lShoulder.score >= 0.20) ? lShoulder : rShoulder);
 
-                            // Verifica se a pessoa está no berço
-                            const isInsideCrib = (cxPct >= r.x - 8 && cxPct <= r.x + r.w + 8 && 
-                                                  cyPct >= r.y - 8 && cyPct <= r.y + r.h + 8);
+                        if (headPt && headPt.score >= 0.18) {
+                            const headXPct = (headPt.x / vw) * 100;
+                            const headYPct = (headPt.y / vh) * 100;
 
-                            if (isInsideCrib) {
+                            // Cabeça está no alinhamento do berço
+                            const isNearCrib = (headXPct >= bb.x - 8 && headXPct <= bb.x + bb.w + 8);
+                            // Cabeça atinge a faixa superior (topo 38% do berço ou acima da linha superior)
+                            const reachesUpperRail = headYPct <= (bb.y + bb.h * 0.38);
+
+                            if (isNearCrib && reachesUpperRail) {
+                                // Verifica postura vertical do tronco
+                                let isSpineVertical = true;
+                                if (lShoulder && lHip && lShoulder.score >= 0.18 && lHip.score >= 0.18) {
+                                    isSpineVertical = Math.abs(lHip.y - lShoulder.y) >= Math.abs(lHip.x - lShoulder.x) * 0.85;
+                                } else if (rShoulder && rHip && rShoulder.score >= 0.18 && rHip.score >= 0.18) {
+                                    isSpineVertical = Math.abs(rHip.y - rShoulder.y) >= Math.abs(rHip.x - rShoulder.x) * 0.85;
+                                }
+
+                                // Verifica altura em pé se tornozelos visíveis
+                                let hasHeightSpan = true;
+                                const anklePt = (lAnkle && lAnkle.score >= 0.15) ? lAnkle : ((rAnkle && rAnkle.score >= 0.15) ? rAnkle : null);
+                                if (anklePt) {
+                                    const ankleYPct = (anklePt.y / vh) * 100;
+                                    const verticalSpan = ankleYPct - headYPct;
+                                    hasHeightSpan = verticalSpan >= (bb.h * 0.32);
+                                }
+
+                                if (isSpineVertical && hasHeightSpan) {
+                                    isStanding = true;
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. FALLBACK COM BOUNDING BOX (COCO-SSD) SE MOVETNET NÃO DETECTOU
+                    if (!isStanding) {
+                        const persons = await window.kingVisionAI.detectPersons(video);
+                        if (persons && persons.length > 0) {
+                            for (const p of persons) {
+                                const [bx, by, bw, bh] = p.bbox;
+                                const cxPct = ((bx + bw / 2) / vw) * 100;
+                                const topPct = (by / vh) * 100;
+                                const heightPct = (bh / vh) * 100;
                                 const aspectRatio = bh / Math.max(1, bw);
-                                
-                                // POSTURA EM PÉ REAL:
-                                // 1. Cabeça atinge a faixa superior da grade (top 30% do berço)
-                                // 2. Aspect Ratio estritamente vertical (altura > largura * 1.30)
-                                // 3. Altura cobre pelo menos 40% da altura total do berço
-                                const reachesUpperRail = (topPct <= r.y + (r.h * 0.30));
-                                const isVerticalPosture = (aspectRatio >= 1.30);
-                                const tallSpan = (bh / vh) >= ((r.h / 100) * 0.40);
 
-                                if (reachesUpperRail && isVerticalPosture && tallSpan) {
-                                    isBabyStandingAI = true;
+                                const isInsideCrib = (cxPct >= bb.x - 8 && cxPct <= bb.x + bb.w + 8);
+                                const reachesUpperRail = (topPct <= bb.y + (bb.h * 0.38));
+                                const hasStandHeight = (heightPct >= bb.h * 0.35);
+                                const isVertical = (aspectRatio >= 0.85);
+
+                                if (isInsideCrib && reachesUpperRail && hasStandHeight && isVertical) {
+                                    isStanding = true;
                                     break;
                                 }
                             }
                         }
-
-                        if (isBabyStandingAI) {
-                            standStreak++;
-                            // Requer 2 confirmações consecutivas para não alertar falso positivo de braço levantado
-                            if (standStreak >= 2) {
-                                if (now - standCooldown > 18000) {
-                                    standCooldown = now;
-                                    triggerBabyStandAlert(camId);
-                                }
-                            }
-                        } else {
-                            standStreak = 0;
-                        }
                     }
 
-                    // 2. VISÃO COMPUTACIONAL CALIBRADA (Fallback para terço superior exclusivo)
-                    if (!aiHandled) {
-                        ctx.drawImage(video, 0, 0, 160, 90);
-                        const currentData = ctx.getImageData(0, 0, 160, 90).data;
-
-                        if (prevData) {
-                            // ZONA SUPERIOR DA GRADE: APENAS OS PRIMEIROS 22% DO TOPO DO BERÇO!
-                            // O colchão onde o bebê dorme deitado fica nos 70% inferiores e é 100% ignorado.
-                            const topY = Math.max(0, (r.y / 100) * 90);
-                            const standH = Math.max(8, ((r.h * 0.22) / 100) * 90);
-                            const startX = Math.max(0, (r.x / 100) * 160);
-                            const endX = Math.min(160, ((r.x + r.w) / 100) * 160);
-
-                            const minY = Math.floor(topY);
-                            const maxY = Math.min(90, Math.floor(topY + standH));
-                            const minX = Math.floor(startX);
-                            const maxX = Math.min(160, Math.floor(endX));
-
-                            let standDiffCount = 0;
-                            for (let y = minY; y < maxY; y += 1) {
-                                for (let x = minX; x < maxX; x += 1) {
-                                    const idx = (y * 160 + x) * 4;
-                                    const diff = Math.abs(currentData[idx] - prevData[idx]) +
-                                                 Math.abs(currentData[idx+1] - prevData[idx+1]) +
-                                                 Math.abs(currentData[idx+2] - prevData[idx+2]);
-                                    if (diff > 44) {
-                                        standDiffCount++;
-                                    }
-                                }
-                            }
-
-                            // Exige massa substancial de pelo menos 55 pixels na grade superior por 3 segundos seguidos
-                            if (standDiffCount >= 55) {
-                                standStreak++;
-                                if (standStreak >= 3) {
-                                    if (now - standCooldown > 18000) {
-                                        standCooldown = now;
-                                        triggerBabyStandAlert(camId);
-                                    }
-                                }
-                            } else {
-                                standStreak = 0;
+                    if (isStanding) {
+                        standStreak++;
+                        if (standStreak >= 2) {
+                            if (now - standCooldown > 18000) {
+                                standCooldown = now;
+                                triggerBabyStandAlert(camId);
                             }
                         }
-                        prevData = currentData;
+                    } else {
+                        standStreak = 0;
                     }
                 } catch(err) {
                     console.error('[BabyStand] Erro no detector de bebê em pé:', err);
@@ -11741,88 +11906,161 @@
         }
 
         // ── 5. Detector de Choro de Bebê (Baby Cry AI) ───────────────────────────
-        const babyCryMonitors = {};
+        // ── 5. Detector de Choro de Bebê (Baby Cry AI - Sensor Acústico em Tempo Real) ───
+        window.babyCryState = window.babyCryState || {};
+
+        function startBabyCryAudioPipeline(camId) {
+            const video = document.getElementById(`video-${camId}`);
+            if (!video) return;
+            const state = window.babyCryState[camId];
+            if (!state || !state.active) return;
+            if (state.connected && state.analyser) return;
+
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+
+            const stream = video.srcObject;
+            if (!stream || !stream.getAudioTracks || stream.getAudioTracks().length === 0) {
+                if (!state.retryCount) state.retryCount = 0;
+                if (state.retryCount < 25) {
+                    state.retryCount++;
+                    setTimeout(() => startBabyCryAudioPipeline(camId), 1200);
+                }
+                return;
+            }
+
+            try {
+                if (!state.ctx) {
+                    state.ctx = new AudioCtx();
+                }
+                if (state.ctx.state === 'suspended') {
+                    state.ctx.resume().catch(() => {});
+                }
+
+                const src = state.ctx.createMediaStreamSource(stream);
+                const analyser = state.ctx.createAnalyser();
+                analyser.fftSize = 512;
+                analyser.smoothingTimeConstant = 0.80;
+                src.connect(analyser);
+
+                state.analyser = analyser;
+                state.connected = true;
+                state.cryStreak = 0;
+                state.lastCryAlert = 0;
+                state.ambientNoise = 18;
+
+                const sampleRate = state.ctx.sampleRate || 44100;
+                const binResolution = sampleRate / analyser.fftSize;
+                // Faixa acústica típica de choro de bebê: 380 Hz a 2800 Hz
+                const minBin = Math.max(1, Math.floor(380 / binResolution));
+                const maxBin = Math.min(analyser.frequencyBinCount - 1, Math.ceil(2800 / binResolution));
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+                if (state.interval) clearInterval(state.interval);
+                state.interval = setInterval(() => {
+                    if (!state.active) {
+                        clearInterval(state.interval);
+                        return;
+                    }
+                    if (state.ctx.state === 'suspended') {
+                        state.ctx.resume().catch(() => {});
+                        return;
+                    }
+
+                    analyser.getByteFrequencyData(dataArray);
+
+                    let cryEnergy = 0;
+                    let totalEnergy = 0;
+                    for (let i = 0; i < analyser.frequencyBinCount; i++) {
+                        totalEnergy += dataArray[i];
+                        if (i >= minBin && i <= maxBin) {
+                            cryEnergy += dataArray[i];
+                        }
+                    }
+                    const numCryBins = Math.max(1, maxBin - minBin + 1);
+                    const avgCry = cryEnergy / numCryBins;
+                    const avgTotal = totalEnergy / analyser.frequencyBinCount;
+
+                    // Média móvel suave de ruído ambiente do quarto (adaptação ao silêncio da noite)
+                    state.ambientNoise = (state.ambientNoise * 0.94) + (avgCry * 0.06);
+
+                    // Padrão acústico de choro:
+                    // 1. Amplitude significativa na banda de choro (> 28)
+                    // 2. Destaca-se do ruído de fundo do quarto (> ambientNoise * 1.5 + 8)
+                    // 3. Frequência concentrada na faixa de choro
+                    const isCrySound = (avgCry > 28) && (avgCry > state.ambientNoise * 1.5 + 8) && (avgCry >= avgTotal * 1.12);
+
+                    if (isCrySound) {
+                        state.cryStreak = (state.cryStreak || 0) + 1;
+                        // Exige 2 ciclos consecutivos (~1.6s) de choro para evitar alertas por cliques ou tosses breves
+                        if (state.cryStreak >= 2) {
+                            const now = Date.now();
+                            if (now - (state.lastCryAlert || 0) > 25000) {
+                                state.lastCryAlert = now;
+                                triggerCryAlert(camId);
+                            }
+                        }
+                    } else {
+                        state.cryStreak = 0;
+                    }
+                }, 800);
+
+                console.log(`[BabyCry AI] Sensor acústico de choro conectado com sucesso na câmera ${camId} (SampleRate: ${sampleRate}Hz)!`);
+            } catch(e) {
+                console.warn('[BabyCry AI] Erro ao conectar pipeline de áudio:', e);
+            }
+        }
+
+        // Listener global para destravar AudioContext automaticamente no primeiro toque ou clique na tela
+        if (typeof document !== 'undefined') {
+            ['click', 'touchstart', 'pointerdown', 'keydown'].forEach(evtType => {
+                document.addEventListener(evtType, () => {
+                    Object.values(window.babyCryState || {}).forEach(st => {
+                        if (st && st.ctx && st.ctx.state === 'suspended') {
+                            st.ctx.resume().catch(() => {});
+                        }
+                    });
+                }, { passive: true });
+            });
+        }
 
         function toggleBabyCryDetector(camId, explicitState) {
             const btn = document.getElementById(`btn-cry-${camId}`);
-            const video = document.getElementById(`video-${camId}`);
             if (!btn) return;
 
-            const isCurrentlyOn = Boolean(babyCryMonitors[camId] && babyCryMonitors[camId].active);
+            window.babyCryState = window.babyCryState || {};
+            const isCurrentlyOn = Boolean(window.babyCryState[camId] && window.babyCryState[camId].active);
             const shouldEnable = explicitState !== undefined ? Boolean(explicitState) : !isCurrentlyOn;
 
             const cam = (typeof camerasData !== 'undefined' ? camerasData : []).find(c => c.id === camId);
             if (cam) cam.baby_cry_enabled = shouldEnable ? 1 : 0;
 
             if (shouldEnable) {
-                try {
-                    let ctx = null;
-                    let interval = null;
-                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                    if (AudioCtx) {
-                        ctx = new AudioCtx();
-                        if (ctx.state === 'suspended') {
-                            ctx.resume();
-                        }
-                    }
+                window.babyCryState[camId] = { active: true, connected: false, retryCount: 0 };
+                btn.classList.add('active');
+                startBabyCryAudioPipeline(camId);
 
-                    if (video && ctx) {
-                        try {
-                            const stream = video.srcObject || (video.captureStream ? video.captureStream() : null);
-                            if (stream && stream.getAudioTracks().length > 0) {
-                                const src = ctx.createMediaStreamSource(stream);
-                                const analyser = ctx.createAnalyser();
-                                analyser.fftSize = 512;
-                                src.connect(analyser);
-
-                                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                                let cooldown = 0;
-
-                                interval = setInterval(() => {
-                                    analyser.getByteFrequencyData(dataArray);
-                                    let cryEnergy = 0;
-                                    for (let i = 9; i <= 30; i++) cryEnergy += dataArray[i];
-                                    const avg = cryEnergy / 22;
-                                    if (avg > 140) {
-                                        const now = Date.now();
-                                        if (now - cooldown > 20000) {
-                                            cooldown = now;
-                                            triggerCryAlert(camId);
-                                        }
-                                    }
-                                }, 1200);
-                            }
-                        } catch(e) {
-                            console.warn('Audio stream error, running visual/sound cry monitor:', e);
-                        }
-                    }
-
-                    babyCryMonitors[camId] = { ctx, interval, active: true };
-                    btn.classList.add('active');
-
-                    if (explicitState === undefined) {
-                        saveCameraBabyCryConfig(camId, true);
-                        Swal.fire({
-                            toast: true,
-                            position: 'top-end',
-                            icon: 'success',
-                            title: '😭 Monitor de Choro IA Ativado!',
-                            text: 'Você e seu Telegram serão alertados imediatamente se o bebê chorar.',
-                            showConfirmButton: false,
-                            timer: 3500
-                        });
-                    }
-                } catch(e) {
-                    console.warn(e);
+                if (explicitState === undefined) {
+                    saveCameraBabyCryConfig(camId, true);
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: '😭 Monitor de Choro IA Ativado!',
+                        text: 'Você e seu Telegram serão alertados imediatamente se o bebê chorar.',
+                        showConfirmButton: false,
+                        timer: 3500
+                    });
                 }
             } else {
-                if (babyCryMonitors[camId]) {
-                    const m = babyCryMonitors[camId];
-                    if (m.interval) clearInterval(m.interval);
-                    if (m.ctx) {
-                        try { m.ctx.close(); } catch(e) {}
+                if (window.babyCryState[camId]) {
+                    const st = window.babyCryState[camId];
+                    st.active = false;
+                    if (st.interval) clearInterval(st.interval);
+                    if (st.ctx) {
+                        try { st.ctx.close(); } catch(e) {}
                     }
-                    delete babyCryMonitors[camId];
+                    delete window.babyCryState[camId];
                 }
                 btn.classList.remove('active');
                 if (explicitState === undefined) {
@@ -11849,13 +12087,17 @@
             }
             playToneSound(660, 0.4);
 
+            captureAutoSnapshot(camId);
+            const liveSnapshotBase64 = getLiveVideoSnapshotBase64(camId);
+
             fetch(`/api/cameras/${camId}/events`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     event_type: 'baby_cry',
-                    description: 'Choro de bebê detectado pelo sensor acústico IA'
+                    description: '😭 CHORO DETECTADO: Bebê chorando ou emitindo sons de choro no berço!',
+                    snapshot_base64: liveSnapshotBase64
                 })
             }).catch(e => console.warn(e));
         }

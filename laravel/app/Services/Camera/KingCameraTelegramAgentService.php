@@ -44,16 +44,20 @@ class KingCameraTelegramAgentService
         $nowStr = now()->setTimezone('America/Sao_Paulo')->format('d/m/Y H:i:s');
         $header = "⚠️ <b>ALERTA DE SEGURANÇA KING CÂMERA</b>";
         if ($eventType === 'baby_cry') {
-            $header = "😭 <b>ALERTA: CHORO DE BEBÊ DETECTADO!</b>";
+            $header = "😭 <b>ALERTA: CHORO DE BEBÊ DETECTADO!</b>\n<i>(Sensor acústico detectou choro no quarto)</i>";
         } elseif ($eventType === 'baby_stand') {
             $header = "🚨 <b>ALERTA: BEBÊ FICOU EM PÉ NO BERÇO!</b>\n<i>(Criança se levantou ou está apoiada nas grades)</i>";
         } elseif ($eventType === 'crib_fence' || $eventType === 'fence_breach') {
             if (str_contains($description, 'REFORÇO')) {
                 $header = "⚠️ <b>REFORÇO: BEBÊ CONTINUA FORA DO CERCO!</b>\n<i>(Segundo aviso de confirmação)</i>";
+            } elseif (stripos($description, 'Pé') !== false || stripos($description, 'perna') !== false) {
+                $header = "🚨 <b>ALERTA: PÉ OU PERNA DO BEBÊ PASSOU DO CERCO!</b>\n<i>(Membro inferior ultrapassou o limite do berço)</i>";
+            } elseif (stripos($description, 'Mão') !== false || stripos($description, 'braço') !== false) {
+                $header = "🚨 <b>ALERTA: BRAÇO OU MÃO DO BEBÊ FORA DO CERCO!</b>\n<i>(Membro superior ultrapassou a área segura)</i>";
             } elseif (str_contains($description, 'ATENÇÃO') || str_contains($description, '2 minutos')) {
                 $header = "⏳ <b>LEMBRETE: BEBÊ FORA DO CERCO HÁ MAIS DE 2 MIN!</b>\n<i>(Lembrete de segurança)</i>";
             } else {
-                $header = "🚨 <b>ALERTA: BEBÊ SAIU DO CERCO SEGURO!</b>\n<i>(Mão, braço ou corpo fora da área demarcada)</i>";
+                $header = "🚨 <b>ALERTA: BEBÊ SAIU DO CERCO SEGURO!</b>\n<i>(Criança fora da área demarcada do berço)</i>";
             }
         } elseif ($eventType === 'motion') {
             $header = "🏃 <b>ALERTA: MOVIMENTO DETECTADO!</b>";
