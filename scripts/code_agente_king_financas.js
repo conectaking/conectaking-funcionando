@@ -16,39 +16,53 @@ try {
     return 'R$ ' + num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  const self = this;
+
   // Helper HTTP para a API Laravel do Conecta King
   async function ck(method, path, body) {
-    const url = `${base}${path}`;
-    const headers = {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    const opts = {
+      method: method.toUpperCase(),
+      url: `${base}${path}`,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      json: true,
+      returnFullResponse: true,
+      ignoreHttpStatusErrors: true
     };
-    const opts = { method, headers };
-    if (body && ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())) {
-      opts.body = JSON.stringify(body);
+    if (body !== undefined) {
+      opts.body = body;
     }
-    const r = await fetch(url, opts);
-    let data;
-    try { data = await r.json(); } catch { data = await r.text(); }
-    return { ok: r.ok, status: r.status, body: data };
+    try {
+      const res = await self.helpers.httpRequest.call(self, opts);
+      const ok = res.statusCode >= 200 && res.statusCode < 300;
+      return { ok, status: res.statusCode, body: res.body };
+    } catch (e) {
+      return { ok: false, status: 500, body: e.message };
+    }
   }
 
   // Chamada direta à OpenAI com Function Calling
   async function openaiCall(payload) {
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await self.helpers.httpRequest.call(self, {
       method: 'POST',
+      url: 'https://api.openai.com/v1/chat/completions',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${openaiKey}`
       },
-      body: JSON.stringify(payload)
+      body: payload,
+      json: true,
+      returnFullResponse: true,
+      ignoreHttpStatusErrors: true
     });
-    if (!r.ok) {
-      const errTxt = await r.text();
-      throw new Error(`OpenAI API error ${r.status}: ${errTxt}`);
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      const errStr = typeof res.body === 'object' ? JSON.stringify(res.body) : String(res.body);
+      throw new Error(`OpenAI API error ${res.statusCode}: ${errStr}`);
     }
-    return await r.json();
+    return res.body;
   }
 
   async function resolveProfileId() {
@@ -248,7 +262,12 @@ Tom de voz: executivo de altíssimo nível, analítico, seguro, direto e organiz
   let fnName = null;
   let args = {};
 
-  if (/^(saldo|resumo|como\s+t[aá]\s+minhas?\s+finan[cç]as?|resumo\s+financeiro|fluxo\s+de\s+caixa|faturamento)/i.test(lowerMsg)) {
+  if (/^\/(?:start|help|ajuda)/i.test(lowerMsg) || /^(?:oi|ol[aá]|bom dia|boa tarde|boa noite)\b/i.test(lowerMsg)) {
+    const profileId = await resolveProfileId();
+    const s = await fetchRealSummary(profileId);
+    outMessage = `👑 *Olá, Adriano! Eu sou o seu Agente King Finanças.*\n\nEstou 100% pronto para gerenciar suas Finanças, Fluxo de Caixa, Trabalhos e Dívidas com máxima precisão!\n\n${buildSummaryMessage(s, fmt)}\n\n💡 *Comandos que você pode enviar por texto ou áudio:*\n• *Saldo* ou *Resumo* (ver fluxo atual)\n• *Quem me deve?* ou *Trabalhos a receber*\n• *Quem eu devo?* ou *Contas do mês que vem*\n• *Ensaio de [Cliente] R$ [Valor], deu [Entrada] de entrada*\n• *[Cliente] pagou R$ [Valor]* (para abater pagamento)\n• *Gastei R$ [Valor] com [Descrição]* (ex: almoço, combustível)\n• *Recebi R$ [Valor] de [Descrição]*`;
+    fnName = 'greeting';
+  } else if (/^(saldo|resumo|como\s+t[aá]\s+minhas?\s+finan[cç]as?|resumo\s+financeiro|fluxo\s+de\s+caixa|faturamento)/i.test(lowerMsg)) {
     fnName = 'manage_finance';
     args = { action: 'summary' };
   } else if (/quem\s+eu\s+devo|quanto\s+devo|minhas\s+d[ií]vidas|contas\s+a\s+pagar|d[ií]vidas/i.test(lowerMsg)) {
