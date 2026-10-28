@@ -10,13 +10,13 @@ const hadVoice = !!prev.hadVoice;
 let outMessage = '';
 
 try {
+  const self = this;
+
   // Formatador de Moeda R$
   function fmt(val) {
     const num = Number(val || 0);
     return 'R$ ' + num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
-
-  const self = this;
 
   // Helper HTTP para a API Laravel do Conecta King
   async function ck(method, path, body) {
@@ -67,94 +67,96 @@ try {
 
   async function resolveProfileId() {
     try {
-      const meRes = await ck('GET', '/api/finance/me');
-      if (meRes.ok && meRes.body && meRes.body.profile && meRes.body.profile.id) {
-        return meRes.body.profile.id;
-      }
+      const meRes = await ck('GET', '/api/finance/profiles');
+      const list = (meRes.body && (meRes.body.data || meRes.body.profiles || meRes.body)) || [];
+      const arr = Array.isArray(list) ? list : [];
+      const primary = arr.find(p => p && (p.is_primary === true || p.isPrimary === true));
+      const active = arr.find(p => p && (p.is_active !== false && p.isActive !== false));
+      const pick = primary || active || arr[0];
+      return pick ? Number(pick.id) : 1;
     } catch (e) {
-      // fallback
+      return 1;
     }
-    return 1;
-  }
-
-  async function fetchRecentTransactions(limitN) {
-    try {
-      const r = await ck('GET', `/api/finance/transactions?limit=${limitN || 10}`);
-      if (r.ok && r.body && r.body.data) return r.body.data;
-    } catch {}
-    return [];
-  }
-
-  function parseDateInput(str) {
-    if (!str) return null;
-    str = String(str).trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-    const parts = str.split(/[\/\-]/);
-    if (parts.length === 3) {
-      let d = parseInt(parts[0], 10), m = parseInt(parts[1], 10), y = parseInt(parts[2], 10);
-      if (parts[0].length === 4) { y = parseInt(parts[0], 10); m = parseInt(parts[1], 10); d = parseInt(parts[2], 10); }
-      if (y < 100) y += 2000;
-      if (d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 2000) {
-        return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      }
-    }
-    return null;
   }
 
   async function fetchRealSummary(profileId) {
-    const today = new Date();
-    const curYear = today.getFullYear();
-    const curMonth = today.getMonth() + 1;
     let sum = {
       cash_balance: 0,
-      bank_balance: 0,
-      total_balance: 0,
       month_income: 0,
       month_expense: 0,
-      pending_income: 0,
-      pending_expense: 0,
       net_month: 0,
       total_to_receive: 0,
       total_to_pay: 0
     };
+
+    // 1. Dashboard oficial do Conecta King
     try {
-      const r = await ck('GET', `/api/finance/summary?year=${curYear}&month=${curMonth}`);
-      if (r.ok && r.body) {
-        const d = r.body.data || r.body;
-        sum.cash_balance = Number(d.cash_balance || 0);
-        sum.bank_balance = Number(d.bank_balance || 0);
-        sum.total_balance = Number(d.total_balance || (sum.cash_balance + sum.bank_balance));
-        sum.month_income = Number(d.month_income || 0);
-        sum.month_expense = Number(d.month_expense || 0);
-        sum.pending_income = Number(d.pending_income || 0);
-        sum.pending_expense = Number(d.pending_expense || 0);
-        sum.net_month = Number(d.net_month || (sum.month_income - sum.month_expense));
+      const dashRes = await ck('GET', `/api/finance/dashboard?profile_id=${profileId}`);
+      if (dashRes.ok && dashRes.body) {
+        const d = (dashRes.body && dashRes.body.data) || dashRes.body;
+        sum.cash_balance = Number(d.accountBalance ?? d.saldoDisponivel ?? 0);
+        sum.month_income = Number(d.totalIncomePaid ?? d.totalRecebido ?? 0);
+        sum.month_expense = Number(d.totalExpensePaid ?? d.totalPago ?? 0);
+        sum.net_month = Number(d.monthlyBalance ?? (sum.month_income - sum.month_expense));
+        sum.total_to_receive = Number(d.pendenciasReceber ?? 0);
+        sum.total_to_pay = Number(d.pendenciasPagar ?? 0);
       }
-    } catch {}
+    } catch (_) {}
+
+    // 2. King Data oficial (trabalhos e terceiros/dívidas)
     try {
-      const rec = await ck('GET', '/api/finance/receivables');
-      if (rec.ok && rec.body && rec.body.total_receivable !== undefined) {
-        sum.total_to_receive = Number(rec.body.total_receivable);
+      const kdRes = await ck('GET', `/api/finance/king-data?profile_id=${profileId}`);
+      if (kdRes.ok && kdRes.body) {
+        const kd = (kdRes.body && kdRes.body.data) || kdRes.body;
+
+        // Trabalhos a receber
+        if (Array.isArray(kd.trabalhos)) {
+          let rec = 0;
+          for (const t of kd.trabalhos) {
+            const val = Number(t.valor || 0);
+            const pagos = Array.isArray(t.pagamentos) ? t.pagamentos.reduce((acc, p) => acc + Number(p.valor || 0), 0) : 0;
+            const rest = Math.max(0, val - pagos);
+            rec += rest;
+          }
+          if (rec > 0) sum.total_to_receive = rec;
+        }
+
+        // Terceiros e Dívidas a pagar
+        let dev = 0;
+        if (Array.isArray(kd.terceiros)) {
+          for (const terc of kd.terceiros) {
+            if (Array.isArray(terc.contas)) {
+              for (const c of terc.contas) {
+                const cVal = Number(c.valor || 0);
+                const cPagos = Array.isArray(c.pagamentos) ? c.pagamentos.reduce((acc, p) => acc + Number(p.valor || 0), 0) : 0;
+                dev += Math.max(0, cVal - cPagos);
+              }
+            }
+          }
+        }
+        if (Array.isArray(kd.dividas)) {
+          for (const d of kd.dividas) {
+            dev += Number(d.valor || d.amount || 0);
+          }
+        }
+        if (dev > 0) {
+          sum.total_to_pay = dev;
+        }
       }
-    } catch {}
-    try {
-      const deb = await ck('GET', '/api/finance/debts');
-      if (deb.ok && deb.body && deb.body.total_debt !== undefined) {
-        sum.total_to_pay = Number(deb.body.total_debt);
-      }
-    } catch {}
+    } catch (_) {}
+
     return sum;
   }
 
   function buildSummaryMessage(summary, f) {
     return [
       '📊 *Resumo Financeiro em Tempo Real:*',
-      `• *Saldo em Caixa / Banco:* ${f(summary.total_balance)}`,
-      `• *Entradas do Mês:* ${f(summary.month_income)}`,
-      `• *Saídas do Mês:* ${f(summary.month_expense)}`,
-      `• *Resultado do Mês:* ${f(summary.net_month)}`,
+      `• *Patrimônio (Dinheiro em Caixa):* ${f(summary.cash_balance)}`,
+      `• *Receitas do Mês:* ${f(summary.month_income)}`,
+      `• *Despesas do Mês:* ${f(summary.month_expense)}`,
+      `• *Balanço / Resultado Líquido:* ${f(summary.net_month)}`,
       `• *A Receber (Trabalhos/Clientes):* ${f(summary.total_to_receive)}`,
-      `• *A Pagar (Dívidas/Compromissos):* ${f(summary.total_to_pay)}`
+      `• *A Pagar (Dívidas/Terceiros):* ${f(summary.total_to_pay)}`
     ].join('\n');
   }
 
@@ -186,18 +188,16 @@ Tom de voz: executivo de altíssimo nível, analítico, seguro, direto e organiz
    - Classificação precisa: PAID (já pago/recebido hoje) vs PENDING (a pagar/a receber no futuro).
 2. TRABALHOS E FOTOGRAFIA:
    - Criar trabalhos fotográficos ou eventos ('create_trabalho') informando: cliente, valor total, entrada já recebida e saldo pendente.
-   - Atualizar trabalhos ('update_trabalho') e excluir ('delete_trabalho').
-   - Registrar pagamento/abater no valor de trabalho ('record_payment', ex: Katiane pagou R$ 400).
+   - Atualizar trabalhos e registrar pagamento/abater no valor de trabalho ('record_payment', ex: Katiane pagou R$ 400).
    - Listar clientes que devem ('receivables_list').
 3. DÍVIDAS, CARTÕES E TERCEIROS:
    - Consultar pessoas e contas que o Adriano deve ('list_debts', ex: Socorrinha, parcelas, cartões).
    - Suportar filtro por pessoa ou por período ('mes: proximo' / 'mes_que_vem' / 'atual').
-   - Adicionar novas dívidas ou compras parceladas ('add_debt' com parcelas e valor por parcela).
-   - Dar baixa em dívidas ('pay_debt' ou 'mark_paid').
+   - Adicionar novas dívidas ou compras parceladas ('add_debt').
+   - Dar baixa em dívidas ('pay_debt').
 4. CONSULTA E RESUMOS:
    - Resumo em tempo real do caixa, faturamento do mês, saldo atual e projeção ('summary').
-   - Ajustar saldo de caixa ('adjust_cash').
-   - Cancelar último lançamento ou excluir por critérios ('cancel_last', 'delete_by_criteria').
+   - Cancelar último lançamento ('cancel_last').
 
 ════ REGRAS CRÍTICAS DE PRECISÃO ════
 - Se o Adriano disser "quanto fulano falta me pagar" ou "quem me deve", isso é SEMPRE A RECEBER (receivables_list). NUNCA confunda com dívidas que o Adriano deve!
@@ -209,13 +209,13 @@ Tom de voz: executivo de altíssimo nível, analítico, seguro, direto e organiz
       type: 'function',
       function: {
         name: 'manage_finance',
-        description: 'Gerencia finanças completas do Adriano King com poder total: consultar pessoas e contas que eu devo (list_debts), adicionar compras parceladas ou dívidas para o próximo mês (add_debt), dar baixa em dívidas (pay_debt), criar trabalhos/ensaios com entrada e saldo a receber (create_trabalho), abater pagamento em trabalho existente (record_payment), consultar trabalhos a receber (receivables_list), registrar receitas e despesas avulsas do fluxo de caixa (create), ajustar saldo em caixa (adjust_cash), cancelar lançamentos errados (cancel_last, delete_by_criteria) e ver o resumo financeiro atualizado (summary).',
+        description: 'Gerencia finanças completas do Adriano King com poder total: consultar pessoas e contas que eu devo (list_debts), adicionar compras parceladas ou dívidas para o próximo mês (add_debt), dar baixa em dívidas (pay_debt), criar trabalhos/ensaios com entrada e saldo a receber (create_trabalho), abater pagamento em trabalho existente (record_payment), consultar trabalhos a receber (receivables_list), registrar receitas e despesas avulsas do fluxo de caixa (create), cancelar lançamentos errados (cancel_last) e ver o resumo financeiro atualizado (summary).',
         parameters: {
           type: 'object',
           properties: {
             action: {
               type: 'string',
-              enum: ['summary', 'create_trabalho', 'update_trabalho', 'delete_trabalho', 'record_payment', 'receivables_list', 'list_debts', 'add_debt', 'pay_debt', 'mark_paid', 'create', 'cancel_last', 'delete_by_criteria', 'adjust_cash', 'list_recent', 'clear_all', 'advice'],
+              enum: ['summary', 'create_trabalho', 'record_payment', 'receivables_list', 'list_debts', 'add_debt', 'pay_debt', 'create', 'cancel_last'],
               description: 'Ação financeira a executar'
             },
             cliente: { type: 'string', description: 'Nome do cliente para trabalhos ou a receber (ex: Katiane)' },
@@ -226,13 +226,10 @@ Tom de voz: executivo de altíssimo nível, analítico, seguro, direto e organiz
             valor: { type: 'number', description: 'Valor da despesa/receita ou parcela' },
             parcelas: { type: 'number', description: 'Número de parcelas (para compras a prazo)' },
             data_vencimento: { type: 'string', description: 'Data de vencimento YYYY-MM-DD' },
-            dia_vencimento: { type: 'number', description: 'Dia do mês do vencimento (ex: 10)' },
             nome_conta: { type: 'string', description: 'Nome ou título da conta/dívida' },
             descricao: { type: 'string', description: 'Descrição da despesa/receita/trabalho' },
             type: { type: 'string', enum: ['INCOME', 'EXPENSE'], description: 'INCOME (entrada) ou EXPENSE (saída)' },
             status: { type: 'string', enum: ['PAID', 'PENDING'], description: 'PAID (já pago/recebido) ou PENDING (futuro)' },
-            categoria: { type: 'string', description: 'Categoria financeira (Alimentação, Fotografia, Transporte, etc.)' },
-            forma_pagamento: { type: 'string', description: 'PIX, Cartão de Crédito, Dinheiro, etc.' },
             mes: { type: 'string', description: 'Filtro de mês: "proximo", "atual", "2026-11", etc.' },
             transactions: {
               type: 'array',
@@ -243,9 +240,7 @@ Tom de voz: executivo de altíssimo nível, analítico, seguro, direto e organiz
                   amount: { type: 'number' },
                   description: { type: 'string' },
                   status: { type: 'string', enum: ['PAID', 'PENDING'] },
-                  due_date: { type: 'string' },
-                  payment_method: { type: 'string' },
-                  category: { type: 'string' }
+                  due_date: { type: 'string' }
                 },
                 required: ['type', 'amount', 'description']
               }
@@ -258,16 +253,16 @@ Tom de voz: executivo de altíssimo nível, analítico, seguro, direto e organiz
   ];
 
   // Identificação rápida de comandos
-  const lowerMsg = text.toLowerCase();
+  const lowerMsg = text.toLowerCase().trim();
   let fnName = null;
   let args = {};
 
-  if (/^\/(?:start|help|ajuda)/i.test(lowerMsg) || /^(?:oi|ol[aá]|bom dia|boa tarde|boa noite)\b/i.test(lowerMsg)) {
+  if (/^\/(?:start|help|ajuda)/i.test(lowerMsg)) {
     const profileId = await resolveProfileId();
     const s = await fetchRealSummary(profileId);
-    outMessage = `👑 *Olá, Adriano! Eu sou o seu Agente King Finanças.*\n\nEstou 100% pronto para gerenciar suas Finanças, Fluxo de Caixa, Trabalhos e Dívidas com máxima precisão!\n\n${buildSummaryMessage(s, fmt)}\n\n💡 *Comandos que você pode enviar por texto ou áudio:*\n• *Saldo* ou *Resumo* (ver fluxo atual)\n• *Quem me deve?* ou *Trabalhos a receber*\n• *Quem eu devo?* ou *Contas do mês que vem*\n• *Ensaio de [Cliente] R$ [Valor], deu [Entrada] de entrada*\n• *[Cliente] pagou R$ [Valor]* (para abater pagamento)\n• *Gastei R$ [Valor] com [Descrição]* (ex: almoço, combustível)\n• *Recebi R$ [Valor] de [Descrição]*`;
+    outMessage = `👑 *Olá, Adriano! Eu sou o seu Agente King Finanças.*\n\nEstou 100% conectado à sua Gestão Financeira com dados em tempo real!\n\n${buildSummaryMessage(s, fmt)}\n\n💡 *Comandos rápidos que você pode enviar (texto ou áudio):*\n• *Saldo* ou *Resumo* (ver fluxo atual)\n• *Quem me deve?* ou *Trabalhos a receber*\n• *Quem eu devo?* ou *Dívidas do mês que vem*\n• *Ensaio de [Cliente] R$ [Valor], deu [Entrada] de entrada*\n• *[Cliente] pagou R$ [Valor]* (para abater)\n• *Gastei R$ [Valor] com [Descrição]* (almoço, gasolina)\n• *Recebi R$ [Valor] de [Descrição]*`;
     fnName = 'greeting';
-  } else if (/^(saldo|resumo|como\s+t[aá]\s+minhas?\s+finan[cç]as?|resumo\s+financeiro|fluxo\s+de\s+caixa|faturamento)/i.test(lowerMsg)) {
+  } else if (/(?:como\s+t[aá]\s+minhas?\s+finan[cç]as?|minhas?\s+finan[cç]as?|resumo|saldo|fluxo\s+de\s+caixa|faturamento|patrim[oô]nio)/i.test(lowerMsg) && !/(?:devo|deve|pagar|receber|ensaio|trabalho|cliente|gastei|recebi)/i.test(lowerMsg)) {
     fnName = 'manage_finance';
     args = { action: 'summary' };
   } else if (/quem\s+eu\s+devo|quanto\s+devo|minhas\s+d[ií]vidas|contas\s+a\s+pagar|d[ií]vidas/i.test(lowerMsg)) {
@@ -315,78 +310,155 @@ Tom de voz: executivo de altíssimo nível, analítico, seguro, direto e organiz
       const s = await fetchRealSummary(profileId);
       outMessage = `💼 *Agente King Finanças — Resumo Financeiro*\n\n${buildSummaryMessage(s, fmt)}`;
     } else if (action === 'receivables_list') {
-      const r = await ck('GET', '/api/finance/receivables');
-      let items = (r.body && r.body.data) || (Array.isArray(r.body) ? r.body : []);
+      const kdRes = await ck('GET', `/api/finance/king-data?profile_id=${profileId}`);
+      const kd = (kdRes.body && (kdRes.body.data || kdRes.body)) || {};
+      const trabalhos = Array.isArray(kd.trabalhos) ? kd.trabalhos : [];
+
+      let pending = [];
+      for (const t of trabalhos) {
+        const val = Number(t.valor || 0);
+        const pagos = Array.isArray(t.pagamentos) ? t.pagamentos.reduce((acc, p) => acc + Number(p.valor || 0), 0) : 0;
+        const rest = Math.max(0, val - pagos);
+        if (rest > 0) {
+          pending.push({
+            id: t.id,
+            cliente: t.cliente || 'Cliente',
+            servico: t.servico || 'Trabalho Fotográfico',
+            valorTotal: val,
+            pago: pagos,
+            restante: rest,
+            data: t.data || t.dataPrevista || ''
+          });
+        }
+      }
+
       if (args.cliente) {
         const cLower = String(args.cliente).toLowerCase();
-        items = items.filter(it => String(it.client_name || it.title || '').toLowerCase().includes(cLower));
+        pending = pending.filter(it => it.cliente.toLowerCase().includes(cLower));
       }
-      if (!items || items.length === 0) {
+
+      if (pending.length === 0) {
         outMessage = args.cliente
           ? `✅ *Trabalhos a Receber:* Não há valores pendentes para *"${args.cliente}"*!`
           : '✅ *Trabalhos a Receber:* Todos os trabalhos estão quitados! Nada pendente no momento.';
       } else {
-        const lines = items.map(it => `• *Cliente:* ${it.client_name || it.title}\n  Total: ${fmt(it.total_amount)} | Entrada: ${fmt(it.paid_amount)} | *Falta Pagar: ${fmt(it.remaining_amount)}*`);
-        const totalRem = items.reduce((acc, it) => acc + Number(it.remaining_amount || 0), 0);
-        outMessage = `📋 *Trabalhos e Contas a Receber:*\n\n${lines.join('\n\n')}\n\n💰 *Total a Receber: ${fmt(totalRem)}*`;
-      }
-    } else if (action === 'record_payment') {
-      const payload = {
-        client_name: args.cliente,
-        amount: args.valor_pago || args.valor || 0
-      };
-      const r = await ck('POST', '/api/finance/receivables/payment', payload);
-      if (r.ok) {
-        const d = r.body.data || r.body;
-        outMessage = `✅ *Pagamento Abatido com Sucesso!*\n\n👤 *Cliente:* ${args.cliente}\n💵 *Valor Abatido:* ${fmt(payload.amount)}\n📌 *Saldo Restante a Receber:* ${fmt(d.remaining_amount || 0)}`;
-      } else {
-        outMessage = `⚠️ Não foi possível abater o pagamento: ${(r.body && r.body.message) || 'Erro desconhecido'}`;
+        const lines = pending.map(it => `• *Cliente:* ${it.cliente} (${it.servico})\n  Total: ${fmt(it.valorTotal)} | Entrada/Pago: ${fmt(it.pago)} | *Falta Pagar: ${fmt(it.restante)}*`);
+        const totalRem = pending.reduce((acc, it) => acc + it.restante, 0);
+        outMessage = `📋 *Trabalhos a Receber:*\n\n${lines.join('\n\n')}\n\n💰 *Total a Receber: ${fmt(totalRem)}*`;
       }
     } else if (action === 'list_debts') {
-      const q = args.mes ? `?month=${encodeURIComponent(args.mes)}` : '';
-      const r = await ck('GET', '/api/finance/debts' + q);
-      let items = (r.body && r.body.data) || (Array.isArray(r.body) ? r.body : []);
+      const kdRes = await ck('GET', `/api/finance/king-data?profile_id=${profileId}`);
+      const kd = (kdRes.body && (kdRes.body.data || kdRes.body)) || {};
+      const terceiros = Array.isArray(kd.terceiros) ? kd.terceiros : [];
+
+      let debtsList = [];
+      const mesFiltro = String(args.mes || '').toLowerCase();
+      const isProximo = mesFiltro.includes('proximo') || mesFiltro.includes('que vem');
+
+      for (const terc of terceiros) {
+        const pessoaNome = terc.nome || 'Terceiro';
+        if (Array.isArray(terc.contas)) {
+          for (const c of terc.contas) {
+            const val = Number(c.valor || 0);
+            const pagos = Array.isArray(c.pagamentos) ? c.pagamentos.reduce((acc, p) => acc + Number(p.valor || 0), 0) : 0;
+            const rest = Math.max(0, val - pagos);
+            if (rest > 0) {
+              debtsList.push({
+                pessoa: pessoaNome,
+                titulo: c.nomeConta || c.descricao || 'Conta/Parcela',
+                valor: rest,
+                vencimento: c.dataVencimento || ''
+              });
+            }
+          }
+        }
+      }
+
       if (args.pessoa) {
         const pLower = String(args.pessoa).toLowerCase();
-        items = items.filter(it => String(it.person_name || it.title || it.creditor || '').toLowerCase().includes(pLower));
+        debtsList = debtsList.filter(it => it.pessoa.toLowerCase().includes(pLower));
       }
-      if (!items || items.length === 0) {
+
+      if (isProximo) {
+        debtsList = debtsList.filter(it => it.vencimento.startsWith(proximoMesYYYYMM));
+      }
+
+      if (debtsList.length === 0) {
         outMessage = args.pessoa
           ? `✅ *Contas a Pagar:* Você não tem nenhuma dívida pendente com *"${args.pessoa}"*!`
-          : '✅ *Contas a Pagar:* Nenhuma conta ou dívida pendente registrada!';
+          : (isProximo ? '✅ *Contas a Pagar:* Nenhuma conta com vencimento para o próximo mês!' : '✅ *Contas a Pagar:* Nenhuma conta ou dívida pendente registrada!');
       } else {
-        const lines = items.map(it => `• *Conta/Pessoa:* ${it.person_name || it.title || it.creditor}\n  Valor: *${fmt(it.amount)}* | Vencimento: ${it.due_date || 'A combinar'}`);
-        const totalDeb = items.reduce((acc, it) => acc + Number(it.amount || 0), 0);
-        outMessage = `📋 *Contas e Dívidas a Pagar (${args.mes === 'proximo' ? 'Próximo Mês' : 'Geral'}):*\n\n${lines.join('\n\n')}\n\n💸 *Total a Pagar: ${fmt(totalDeb)}*`;
-      }
-    } else if (action === 'add_debt') {
-      const payload = {
-        person_name: args.pessoa || 'Terceiro',
-        title: args.nome_conta || args.descricao || 'Dívida/Parcela',
-        amount: args.valor,
-        installments: args.parcelas || 1,
-        due_date: args.data_vencimento || todayStr
-      };
-      const r = await ck('POST', '/api/finance/debts', payload);
-      if (r.ok) {
-        outMessage = `✅ *Dívida / Parcela Registrada com Sucesso!*\n\n👤 *Credor:* ${payload.person_name}\n📝 *Título:* ${payload.title}\n💵 *Valor:* ${fmt(payload.amount)}\n🗓️ *Parcelas:* ${payload.installments}x\n📅 *Vencimento Inicial:* ${payload.due_date}`;
-      } else {
-        outMessage = `⚠️ Não foi possível registrar a dívida: ${(r.body && r.body.message) || 'Erro ao salvar'}`;
+        const lines = debtsList.map(it => `• *${it.pessoa}:* ${it.titulo}\n  Valor: *${fmt(it.valor)}* | Vencimento: ${it.vencimento || 'A combinar'}`);
+        const totalDeb = debtsList.reduce((acc, it) => acc + it.valor, 0);
+        outMessage = `📋 *Contas e Dívidas a Pagar (${isProximo ? 'Próximo Mês' : 'Geral'}):*\n\n${lines.join('\n\n')}\n\n💸 *Total a Pagar: ${fmt(totalDeb)}*`;
       }
     } else if (action === 'create_trabalho') {
-      const payload = {
-        client_name: args.cliente || 'Cliente Ensaio',
-        total_amount: args.valor_total || args.valor || 0,
-        paid_amount: args.entrada || 0,
-        title: args.descricao || `Ensaio / Trabalho Fotográfico - ${args.cliente || ''}`,
-        event_date: args.data_vencimento || todayStr
+      const kdRes = await ck('GET', `/api/finance/king-data?profile_id=${profileId}`);
+      const kd = (kdRes.body && (kdRes.body.data || kdRes.body)) || {};
+      const trabalhos = Array.isArray(kd.trabalhos) ? kd.trabalhos : [];
+
+      const valTotal = args.valor_total || args.valor || 0;
+      const entrada = args.entrada || 0;
+      const clienteNome = args.cliente || 'Cliente';
+      const servicoNome = args.descricao || 'Fotografia / Ensaio';
+
+      const newTrab = {
+        id: 'trab_' + Date.now(),
+        data: todayStr,
+        valor: valTotal,
+        status: entrada >= valTotal ? 'concluido' : (entrada > 0 ? 'parcial' : 'pendente'),
+        cliente: clienteNome,
+        servico: servicoNome,
+        pagamentos: entrada > 0 ? [{ data: todayStr, hora: '12:00', valor: entrada }] : [],
+        dataPrevista: args.data_vencimento || todayStr
       };
-      const r = await ck('POST', '/api/finance/receivables', payload);
-      if (r.ok) {
-        const remaining = payload.total_amount - payload.paid_amount;
-        outMessage = `📸 *Trabalho Registrado com Sucesso!*\n\n👤 *Cliente:* ${payload.client_name}\n💰 *Valor Total:* ${fmt(payload.total_amount)}\n💵 *Entrada Paga:* ${fmt(payload.paid_amount)}\n⏳ *Saldo a Receber:* ${fmt(remaining)}\n📅 *Data:* ${payload.event_date}`;
+      trabalhos.push(newTrab);
+
+      await ck('PUT', '/api/finance/king-data', {
+        profile_id: profileId,
+        data: {
+          dividas: kd.dividas || [],
+          terceiros: kd.terceiros || [],
+          trabalhos: trabalhos,
+          bens: kd.bens || []
+        }
+      });
+
+      const s = await fetchRealSummary(profileId);
+      const remaining = valTotal - entrada;
+      outMessage = `📸 *Trabalho Registrado com Sucesso!*\n\n👤 *Cliente:* ${clienteNome}\n🎯 *Serviço:* ${servicoNome}\n💰 *Valor Total:* ${fmt(valTotal)}\n💵 *Entrada Paga:* ${fmt(entrada)}\n⏳ *Saldo a Receber:* ${fmt(remaining)}\n\n${buildSummaryMessage(s, fmt)}`;
+    } else if (action === 'record_payment') {
+      const kdRes = await ck('GET', `/api/finance/king-data?profile_id=${profileId}`);
+      const kd = (kdRes.body && (kdRes.body.data || kdRes.body)) || {};
+      const trabalhos = Array.isArray(kd.trabalhos) ? kd.trabalhos : [];
+
+      const cli = String(args.cliente || '').toLowerCase();
+      const trab = trabalhos.find(t => String(t.cliente || '').toLowerCase().includes(cli));
+
+      if (!trab) {
+        outMessage = `⚠️ Não encontrei nenhum trabalho registrado para o cliente *"${args.cliente}"*.`;
       } else {
-        outMessage = `⚠️ Erro ao registrar trabalho: ${(r.body && r.body.message) || 'Falha no servidor'}`;
+        const valPago = Number(args.valor_pago || args.valor || 0);
+        if (!Array.isArray(trab.pagamentos)) trab.pagamentos = [];
+        trab.pagamentos.push({ data: todayStr, hora: '12:00', valor: valPago });
+
+        const tot = Number(trab.valor || 0);
+        const pagos = trab.pagamentos.reduce((acc, p) => acc + Number(p.valor || 0), 0);
+        const rest = Math.max(0, tot - pagos);
+        trab.status = rest === 0 ? 'concluido' : 'parcial';
+
+        await ck('PUT', '/api/finance/king-data', {
+          profile_id: profileId,
+          data: {
+            dividas: kd.dividas || [],
+            terceiros: kd.terceiros || [],
+            trabalhos: trabalhos,
+            bens: kd.bens || []
+          }
+        });
+
+        const s = await fetchRealSummary(profileId);
+        outMessage = `✅ *Pagamento Abatido com Sucesso!*\n\n👤 *Cliente:* ${trab.cliente}\n💵 *Valor Abatido:* ${fmt(valPago)}\n📌 *Saldo Restante a Receber:* ${fmt(rest)}\n\n${buildSummaryMessage(s, fmt)}`;
       }
     } else if (action === 'create') {
       const items = (args.transactions && args.transactions.length > 0)
@@ -407,7 +479,7 @@ Tom de voz: executivo de altíssimo nível, analítico, seguro, direto e organiz
           amount: it.amount || 0,
           description: it.description || 'Lançamento via Agente King Finanças',
           status: it.status || 'PAID',
-          date: it.due_date || todayStr
+          transaction_date: it.due_date || todayStr
         });
         if (r.ok) results.push(it);
       }
@@ -415,16 +487,6 @@ Tom de voz: executivo de altíssimo nível, analítico, seguro, direto e organiz
       const s = await fetchRealSummary(profileId);
       const lines = results.map(it => `${it.type === 'INCOME' ? '💵' : '💸'} *${it.type === 'INCOME' ? 'Receita' : 'Despesa'}:* ${fmt(it.amount)} (${it.status === 'PAID' ? 'Pago/Recebido' : 'Pendente'})\n   📝 _${it.description}_`);
       outMessage = `✅ *Lançamento(s) Realizado(s)!*\n\n${lines.join('\n')}\n\n${buildSummaryMessage(s, fmt)}`;
-    } else if (action === 'adjust_cash') {
-      const r = await ck('POST', '/api/finance/adjust-balance', {
-        new_balance: args.valor || 0
-      });
-      const s = await fetchRealSummary(profileId);
-      outMessage = `⚖️ *Saldo em Caixa Ajustado!*\n\nNovo Saldo: *${fmt(args.valor)}*\n\n${buildSummaryMessage(s, fmt)}`;
-    } else if (action === 'cancel_last') {
-      const r = await ck('DELETE', '/api/finance/transactions/last');
-      const s = await fetchRealSummary(profileId);
-      outMessage = `🗑️ *Último Lançamento Cancelado com Sucesso!*\n\n${buildSummaryMessage(s, fmt)}`;
     }
   }
 
