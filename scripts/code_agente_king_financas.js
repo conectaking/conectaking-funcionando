@@ -487,6 +487,162 @@ Tom de voz: executivo de altíssimo nível, analítico, seguro, direto e organiz
       const s = await fetchRealSummary(profileId);
       const lines = results.map(it => `${it.type === 'INCOME' ? '💵' : '💸'} *${it.type === 'INCOME' ? 'Receita' : 'Despesa'}:* ${fmt(it.amount)} (${it.status === 'PAID' ? 'Pago/Recebido' : 'Pendente'})\n   📝 _${it.description}_`);
       outMessage = `✅ *Lançamento(s) Realizado(s)!*\n\n${lines.join('\n')}\n\n${buildSummaryMessage(s, fmt)}`;
+    } else if (action === 'add_debt') {
+      const kdRes = await ck('GET', `/api/finance/king-data?profile_id=${profileId}`);
+      const kd = (kdRes.body && (kdRes.body.data || kdRes.body)) || {};
+      if (!Array.isArray(kd.terceiros)) kd.terceiros = [];
+
+      const rawPessoa = String(args.pessoa || 'Terceiro').trim();
+      const pLower = rawPessoa.toLowerCase();
+
+      let terc = kd.terceiros.find(t => {
+        const tLower = String(t.nome || '').toLowerCase();
+        return tLower.includes(pLower) || pLower.includes(tLower) || (pLower.includes('socorr') && tLower.includes('socorr'));
+      });
+
+      if (!terc) {
+        terc = {
+          id: 'terc_' + Date.now(),
+          nome: rawPessoa,
+          contas: []
+        };
+        kd.terceiros.push(terc);
+      }
+      if (!Array.isArray(terc.contas)) terc.contas = [];
+
+      const numParcelas = Number(args.parcelas) || 1;
+      const valParcela = Number(args.valor || (args.valor_total ? args.valor_total / numParcelas : 0));
+      const tituloBase = args.nome_conta || args.descricao || 'Parcela';
+
+      let startYear = nowSp.getFullYear();
+      let startMonth = nowSp.getMonth() + 1;
+      let startDay = 10;
+
+      if (args.data_vencimento) {
+        const parts = String(args.data_vencimento).split(/[-/]/);
+        if (parts.length === 3) {
+          if (parts[0].length === 4) {
+            startYear = parseInt(parts[0], 10);
+            startMonth = parseInt(parts[1], 10);
+            startDay = parseInt(parts[2], 10);
+          } else {
+            startDay = parseInt(parts[0], 10);
+            startMonth = parseInt(parts[1], 10);
+            startYear = parseInt(parts[2], 10);
+            if (startYear < 100) startYear += 2000;
+          }
+        }
+      }
+
+      const novasContas = [];
+      for (let i = 0; i < numParcelas; i++) {
+        let m = startMonth + i;
+        let y = startYear;
+        while (m > 12) {
+          m -= 12;
+          y += 1;
+        }
+        const dueStr = `${y}-${String(m).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`;
+        const cNome = numParcelas > 1 ? `${tituloBase} (Parcela ${i + 1}/${numParcelas})` : tituloBase;
+        const newConta = {
+          id: `c_${Date.now()}_${i + 1}`,
+          tipo: numParcelas > 1 ? 'recorrente' : 'unica',
+          valor: valParcela,
+          descricao: `${tituloBase} (${terc.nome})`,
+          nomeConta: cNome,
+          pagamentos: [],
+          dataVencimento: dueStr
+        };
+        terc.contas.push(newConta);
+        novasContas.push(newConta);
+      }
+
+      await ck('PUT', '/api/finance/king-data', {
+        profile_id: profileId,
+        data: {
+          dividas: kd.dividas || [],
+          terceiros: kd.terceiros,
+          trabalhos: kd.trabalhos || [],
+          bens: kd.bens || []
+        }
+      });
+
+      const s = await fetchRealSummary(profileId);
+      const totalDivida = valParcela * numParcelas;
+      const lines = novasContas.map((c, idx) => `  • Parcela ${idx + 1}/${numParcelas}: ${fmt(c.valor)} (Vence em ${c.dataVencimento})`);
+
+      outMessage = `✅ *Dívida / Parcelas Registradas com Sucesso!*\n\n` +
+        `👤 *Pessoa/Credor:* ${terc.nome}\n` +
+        `📝 *Descrição:* ${tituloBase}\n` +
+        `💵 *Valor:* ${numParcelas}x de ${fmt(valParcela)} (Total: *${fmt(totalDivida)}*)\n` +
+        `📅 *Vencimento Inicial:* ${novasContas[0]?.dataVencimento}\n\n` +
+        `📋 *Cronograma das Parcelas:*\n${lines.join('\n')}\n\n` +
+        `${buildSummaryMessage(s, fmt)}`;
+    } else if (action === 'pay_debt') {
+      const kdRes = await ck('GET', `/api/finance/king-data?profile_id=${profileId}`);
+      const kd = (kdRes.body && (kdRes.body.data || kdRes.body)) || {};
+      const terceiros = Array.isArray(kd.terceiros) ? kd.terceiros : [];
+
+      const rawPessoa = String(args.pessoa || '').toLowerCase();
+      let terc = terceiros.find(t => String(t.nome || '').toLowerCase().includes(rawPessoa) || (rawPessoa.includes('socorr') && String(t.nome || '').toLowerCase().includes('socorr')));
+
+      if (!terc || !Array.isArray(terc.contas) || terc.contas.length === 0) {
+        outMessage = `⚠️ Nenhuma conta ou parcela pendente encontrada para *"${args.pessoa || 'esta pessoa'}"*.`;
+      } else {
+        const pendentes = terc.contas.filter(c => {
+          const val = Number(c.valor || 0);
+          const pagos = Array.isArray(c.pagamentos) ? c.pagamentos.reduce((acc, p) => acc + Number(p.valor || 0), 0) : 0;
+          return (val - pagos) > 0;
+        });
+
+        if (pendentes.length === 0) {
+          outMessage = `✅ Todas as contas de *"${terc.nome}"* já estão quitadas!`;
+        } else {
+          const targetConta = pendentes[0];
+          const valPago = Number(args.valor_pago || args.valor || targetConta.valor);
+          if (!Array.isArray(targetConta.pagamentos)) targetConta.pagamentos = [];
+          targetConta.pagamentos.push({ data: todayStr, hora: '12:00', valor: valPago });
+
+          await ck('POST', '/api/finance/transactions', {
+            profile_id: profileId,
+            type: 'EXPENSE',
+            amount: valPago,
+            description: `Pagamento: ${targetConta.nomeConta} (${terc.nome})`,
+            status: 'PAID',
+            transaction_date: todayStr
+          });
+
+          await ck('PUT', '/api/finance/king-data', {
+            profile_id: profileId,
+            data: {
+              dividas: kd.dividas || [],
+              terceiros: kd.terceiros,
+              trabalhos: kd.trabalhos || [],
+              bens: kd.bens || []
+            }
+          });
+
+          const s = await fetchRealSummary(profileId);
+          outMessage = `✅ *Baixa na Dívida Registrada com Sucesso!*\n\n` +
+            `👤 *Credor:* ${terc.nome}\n` +
+            `📝 *Conta:* ${targetConta.nomeConta}\n` +
+            `💵 *Valor Pago:* ${fmt(valPago)}\n\n` +
+            `${buildSummaryMessage(s, fmt)}`;
+        }
+      }
+    } else if (action === 'cancel_last') {
+      const recent = await ck('GET', '/api/finance/transactions?limit=1&orderDir=DESC&orderBy=created_at');
+      const list = (recent.body && (recent.body.data || recent.body)) || [];
+      const arr = Array.isArray(list) ? list : (list && Array.isArray(list.data) ? list.data : []);
+      if (arr.length > 0) {
+        await ck('DELETE', `/api/finance/transactions/${arr[0].id}`);
+        const s = await fetchRealSummary(profileId);
+        outMessage = `🗑️ *Último Lançamento Cancelado com Sucesso!*\n\n` +
+          `Foi excluído: *${arr[0].description}* (${fmt(arr[0].amount)})\n\n` +
+          `${buildSummaryMessage(s, fmt)}`;
+      } else {
+        outMessage = '⚠️ Nenhuma transação recente encontrada para cancelar.';
+      }
     }
   }
 
