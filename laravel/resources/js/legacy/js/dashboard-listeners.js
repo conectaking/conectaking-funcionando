@@ -2574,8 +2574,34 @@ function _setupEventListenersBody() {
     window.__ckSwitchEditorTab = switchEditorTab;
 
     // Listener delegado em document: garante que clique/toque nas abas funcione sempre,
-    // mesmo em conexões lentas ou se setupEventListeners demorar
+    // mesmo em conexões lentas, telas de 120Hz/240Hz ou se setupEventListeners demorar
+    let _lastEditorNavTouchTime = 0;
+    let _editorTouchStartX = 0;
+    let _editorTouchStartY = 0;
+
+    document.addEventListener('touchstart', function(e) {
+        if (!e.touches || !e.touches[0]) return;
+        _editorTouchStartX = e.touches[0].clientX;
+        _editorTouchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    document.addEventListener('touchend', function(e) {
+        if (!e.changedTouches || !e.changedTouches[0]) return;
+        const dx = Math.abs(e.changedTouches[0].clientX - _editorTouchStartX);
+        const dy = Math.abs(e.changedTouches[0].clientY - _editorTouchStartY);
+        if (dx < 14 && dy < 14) {
+            const link = e.target && e.target.closest ? e.target.closest('.editor-nav-link') : null;
+            if (link) {
+                _lastEditorNavTouchTime = Date.now();
+                e.preventDefault();
+                const targetId = link.getAttribute('data-editor-target');
+                if (targetId) switchEditorTab(targetId);
+            }
+        }
+    }, { passive: false });
+
     document.addEventListener('click', function(e) {
+        if (Date.now() - _lastEditorNavTouchTime < 350) return;
         const link = e.target && e.target.closest ? e.target.closest('.editor-nav-link') : null;
         if (!link) return;
         e.preventDefault();

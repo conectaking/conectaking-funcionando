@@ -5645,3 +5645,95 @@ body.expiration-banner-visible { padding-top: 54px; }
     min-height: 48px;
   }
 }
+
+/* ==========================================================================
+   MOBILE TOUCH & HIGH-REFRESH RATE (120Hz/240Hz) COMPATIBILITY
+   Garante funcionamento imediato de toques no Poco X6 Pro, Xiaomi e Android
+   ========================================================================== */
+.finance-tabs-container,
+.editor-nav,
+.sidebar-tabs {
+  touch-action: pan-x pan-y !important;
+  -webkit-overflow-scrolling: touch !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.finance-unified-tab,
+.editor-nav-link,
+.sidebar-tab,
+#finance-content button,
+.finance-header-actions button,
+.finance-period-buttons button,
+#finance-pane button,
+.kf-card button,
+#novo-lancamento-choice-overlay button,
+#month-selector-modal button,
+#finance-profiles-modal button,
+#king-finance-modal button {
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.finance-unified-tab {
+  flex-shrink: 0 !important;
+  min-height: 42px !important;
+}
+
+.finance-unified-tab * {
+  pointer-events: none !important;
+}
+
+.editor-nav-link {
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
+  min-height: 44px !important;
+}
+
+.editor-nav-link * {
+  pointer-events: none !important;
+}
+
+.sidebar-tab {
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
+  min-height: 40px !important;
+}
+
+@media (max-width: 768px) {
+  .finance-tabs-container {
+    display: flex !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 16px !important;
+    gap: 8px !important;
+  }
+  .finance-tabs-container::-webkit-scrollbar {
+    display: none !important;
+  }
+  .finance-unified-tab {
+    padding: 10px 16px !important;
+    font-size: 0.85rem !important;
+    white-space: nowrap !important;
+  }
+  .finance-header-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .finance-header-actions > * {
+    flex: 1 1 auto !important;
+  }
+  .finance-header-actions button {
+    min-height: 42px !important;
+    justify-content: center !important;
+  }
+}
+

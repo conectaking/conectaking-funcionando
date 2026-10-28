@@ -970,13 +970,13 @@ window.initFinancePane = async function () {
             
             <!-- Abas unificadas: Resumo, Fluxo, Trabalhos, Quem Eu Devo, Cartões, Metas, Serasa -->
             <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px;" class="finance-tabs-container">
-                <button type="button" class="finance-unified-tab active" data-finance-tab="resumo" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-indigo); color: white; font-weight: 700; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-chart-pie"></i> Resumo</button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="fluxo" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-exchange-alt"></i> Fluxo</button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="trabalhos" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-briefcase"></i> A Receber (Trabalhos)</button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="terceiros" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-hand-holding-usd"></i> Quem Eu Devo</button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="cartoes" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-credit-card"></i> Cartões</button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="meta" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-bullseye"></i> Metas</button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="serasa" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-university"></i> Serasa / Dívidas</button>
+                <button type="button" class="finance-unified-tab active" data-finance-tab="resumo" onclick="window.switchUnifiedFinanceTab('resumo')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-indigo); color: white; font-weight: 700; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-chart-pie" style="pointer-events: none;"></i> <span style="pointer-events: none;">Resumo</span></button>
+                <button type="button" class="finance-unified-tab" data-finance-tab="fluxo" onclick="window.switchUnifiedFinanceTab('fluxo')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-exchange-alt" style="pointer-events: none;"></i> <span style="pointer-events: none;">Fluxo</span></button>
+                <button type="button" class="finance-unified-tab" data-finance-tab="trabalhos" onclick="window.switchUnifiedFinanceTab('trabalhos')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-briefcase" style="pointer-events: none;"></i> <span style="pointer-events: none;">A Receber (Trabalhos)</span></button>
+                <button type="button" class="finance-unified-tab" data-finance-tab="terceiros" onclick="window.switchUnifiedFinanceTab('terceiros')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-hand-holding-usd" style="pointer-events: none;"></i> <span style="pointer-events: none;">Quem Eu Devo</span></button>
+                <button type="button" class="finance-unified-tab" data-finance-tab="cartoes" onclick="window.switchUnifiedFinanceTab('cartoes')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-credit-card" style="pointer-events: none;"></i> <span style="pointer-events: none;">Cartões</span></button>
+                <button type="button" class="finance-unified-tab" data-finance-tab="meta" onclick="window.switchUnifiedFinanceTab('meta')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-bullseye" style="pointer-events: none;"></i> <span style="pointer-events: none;">Metas</span></button>
+                <button type="button" class="finance-unified-tab" data-finance-tab="serasa" onclick="window.switchUnifiedFinanceTab('serasa')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-university" style="pointer-events: none;"></i> <span style="pointer-events: none;">Serasa / Dívidas</span></button>
             </div>
             <div id="finance-resumo-content">
             ${(function() {
@@ -1339,8 +1339,67 @@ window.initFinancePane = async function () {
             if (typeof window.applyFinanceTheme === 'function') window.applyFinanceTheme();
         };
         document.querySelectorAll('.finance-unified-tab').forEach(btn => {
-            btn.addEventListener('click', () => window.switchUnifiedFinanceTab(btn.getAttribute('data-finance-tab')));
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.switchUnifiedFinanceTab(btn.getAttribute('data-finance-tab'));
+            });
         });
+
+        // Se havia uma aba ativa diferente de resumo, ativa ela de imediato
+        if (window._financeActiveTab && window._financeActiveTab !== 'resumo') {
+            window.switchUnifiedFinanceTab(window._financeActiveTab);
+        }
+
+        // Delegação de toque para 120Hz/240Hz (Poco X6 Pro / Android)
+        if (!window._financeTouchDelegated) {
+            window._financeTouchDelegated = true;
+            let _startX = 0, _startY = 0, _startTime = 0, _lastTouchTabTime = 0;
+            document.addEventListener('touchstart', function (e) {
+                if (!e.touches || !e.touches[0]) return;
+                _startX = e.touches[0].clientX;
+                _startY = e.touches[0].clientY;
+                _startTime = Date.now();
+            }, { passive: true });
+
+            document.addEventListener('touchend', function (e) {
+                if (!e.changedTouches || !e.changedTouches[0]) return;
+                const dx = Math.abs(e.changedTouches[0].clientX - _startX);
+                const dy = Math.abs(e.changedTouches[0].clientY - _startY);
+                const elapsed = Date.now() - _startTime;
+
+                if (elapsed < 450 && dx < 14 && dy < 14) {
+                    const tabBtn = e.target && e.target.closest ? e.target.closest('.finance-unified-tab') : null;
+                    if (tabBtn) {
+                        const tabId = tabBtn.getAttribute('data-finance-tab');
+                        if (tabId && typeof window.switchUnifiedFinanceTab === 'function') {
+                            _lastTouchTabTime = Date.now();
+                            e.preventDefault();
+                            window.switchUnifiedFinanceTab(tabId);
+                            return;
+                        }
+                    }
+                    const actionBtn = e.target && e.target.closest ? e.target.closest('.finance-header-actions button, .finance-period-buttons button, #choice-close-x, #choice-cancel, #choice-entrada, #choice-saida, #choice-trabalho, #choice-terceiro') : null;
+                    if (actionBtn && !actionBtn.disabled) {
+                        _lastTouchTabTime = Date.now();
+                        e.preventDefault();
+                        actionBtn.click();
+                        return;
+                    }
+                }
+            }, { passive: false });
+
+            document.addEventListener('click', function (e) {
+                if (Date.now() - _lastTouchTabTime < 350) return;
+                const tabBtn = e.target && e.target.closest ? e.target.closest('.finance-unified-tab') : null;
+                if (tabBtn) {
+                    const tabId = tabBtn.getAttribute('data-finance-tab');
+                    if (tabId && typeof window.switchUnifiedFinanceTab === 'function') {
+                        e.preventDefault();
+                        window.switchUnifiedFinanceTab(tabId);
+                    }
+                }
+            }, true);
+        }
 
         // Renderizar conteúdo das abas King no painel unificado
         function escapeHtmlFinance(s) {
@@ -7779,27 +7838,45 @@ window.showNovoLancamentoChoiceModal = function () {
     `;
     document.body.appendChild(overlay);
 
-    overlay.querySelector('#choice-close-x').onclick = function () { overlay.remove(); };
-    overlay.querySelector('#choice-cancel').onclick = function () { overlay.remove(); };
+    const bindTapChoice = (btnId, fn) => {
+        const el = overlay.querySelector(btnId);
+        if (!el) return;
+        let tTime = 0;
+        el.style.touchAction = 'manipulation';
+        el.style.webkitTapHighlightColor = 'transparent';
+        el.style.userSelect = 'none';
+        el.addEventListener('touchend', function (e) {
+            tTime = Date.now();
+            e.preventDefault();
+            fn();
+        }, { passive: false });
+        el.addEventListener('click', function () {
+            if (Date.now() - tTime < 350) return;
+            fn();
+        });
+    };
 
-    overlay.querySelector('#choice-entrada').onclick = function () {
+    bindTapChoice('#choice-close-x', function () { overlay.remove(); });
+    bindTapChoice('#choice-cancel', function () { overlay.remove(); });
+
+    bindTapChoice('#choice-entrada', function () {
         overlay.remove();
         if (window.openAddTransactionModal) window.openAddTransactionModal('income');
-    };
-    overlay.querySelector('#choice-saida').onclick = function () {
+    });
+    bindTapChoice('#choice-saida', function () {
         overlay.remove();
         if (window.openAddTransactionModal) window.openAddTransactionModal('expense');
-    };
-    overlay.querySelector('#choice-trabalho').onclick = function () {
+    });
+    bindTapChoice('#choice-trabalho', function () {
         overlay.remove();
         if (window.switchUnifiedFinanceTab) window.switchUnifiedFinanceTab('trabalhos');
         if (window._kingFinanceOpenModal) window._kingFinanceOpenModal('trabalho');
-    };
-    overlay.querySelector('#choice-terceiro').onclick = function () {
+    });
+    bindTapChoice('#choice-terceiro', function () {
         overlay.remove();
         if (window.switchUnifiedFinanceTab) window.switchUnifiedFinanceTab('terceiros');
         if (window._kingFinanceOpenModal) window._kingFinanceOpenModal('terceiro');
-    };
+    });
 
     overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
     document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', esc); } });

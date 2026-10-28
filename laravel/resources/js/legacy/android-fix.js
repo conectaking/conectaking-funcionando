@@ -32,4 +32,72 @@
             });
         }).catch(function () { /* ignore */ });
     }
+
+    // Suporte a telas de alta taxa de amostragem de toque (120Hz/240Hz/Xiaomi Poco/Redmi/Samsung)
+    // Previne que micro-movimentos involuntários de 1-2px em containers scrolláveis cancelem cliques de botões e abas
+    let _touchStartX = 0;
+    let _touchStartY = 0;
+    let _touchStartTime = 0;
+    let _lastHandledTapTime = 0;
+
+    document.addEventListener('touchstart', function (e) {
+        if (!e.touches || !e.touches[0]) return;
+        _touchStartX = e.touches[0].clientX;
+        _touchStartY = e.touches[0].clientY;
+        _touchStartTime = Date.now();
+    }, { passive: true });
+
+    document.addEventListener('touchend', function (e) {
+        if (!e.changedTouches || !e.changedTouches[0]) return;
+        const dx = Math.abs(e.changedTouches[0].clientX - _touchStartX);
+        const dy = Math.abs(e.changedTouches[0].clientY - _touchStartY);
+        const elapsed = Date.now() - _touchStartTime;
+
+        // Se o toque durou menos de 450ms e o dedo moveu menos de 14px (tap intencional e não scroll)
+        if (elapsed < 450 && dx < 14 && dy < 14) {
+            const target = e.target;
+            if (!target) return;
+
+            // 1. Abas da Gestão Financeira
+            const financeTab = target.closest ? target.closest('.finance-unified-tab') : null;
+            if (financeTab) {
+                const tabId = financeTab.getAttribute('data-finance-tab');
+                if (tabId && typeof window.switchUnifiedFinanceTab === 'function') {
+                    _lastHandledTapTime = Date.now();
+                    e.preventDefault();
+                    window.switchUnifiedFinanceTab(tabId);
+                    return;
+                }
+            }
+
+            // 2. Abas do Editor (.editor-nav-link)
+            const editorTab = target.closest ? target.closest('.editor-nav-link') : null;
+            if (editorTab) {
+                const targetId = editorTab.getAttribute('data-editor-target');
+                if (targetId && typeof window.__ckSwitchEditorTab === 'function') {
+                    _lastHandledTapTime = Date.now();
+                    e.preventDefault();
+                    window.__ckSwitchEditorTab(targetId);
+                    return;
+                }
+            }
+
+            // 3. Abas do Sidebar (Perfis / Empresa)
+            const sidebarTab = target.closest ? target.closest('.sidebar-tab') : null;
+            if (sidebarTab && !sidebarTab.disabled) {
+                _lastHandledTapTime = Date.now();
+                e.preventDefault();
+                sidebarTab.click();
+                return;
+            }
+
+            // 4. Botões no container de abas ou de ações do financeiro
+            const tabBtn = target.closest ? target.closest('.finance-tabs-container button, .finance-header-actions button, .finance-period-buttons button') : null;
+            if (tabBtn && !tabBtn.disabled) {
+                _lastHandledTapTime = Date.now();
+                tabBtn.click();
+                return;
+            }
+        }
+    }, { passive: false });
 })();
