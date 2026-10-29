@@ -19,6 +19,7 @@ class KingCameraController extends Controller
         private readonly KingCameraService $cameraService,
         private readonly KingCameraTelegramAgentService $telegramAgent,
         private readonly ModulesService $modulesService,
+        private readonly KingCameraAiVisionService $aiVision,
     ) {
     }
 
@@ -1157,6 +1158,46 @@ class KingCameraController extends Controller
                     $decoded = base64_decode($rawBase64);
                     if ($decoded && strlen($decoded) > 300) {
                         $jpegBinary = $decoded;
+                    }
+                }
+
+                // ── VALIDAÇÃO DE ALTA PRECISÃO COM IA VISION (OPENAI / GEMINI) ──
+                if ($jpegBinary && in_array($eventType, ['baby_stand', 'crib_fence', 'fence_breach']) && $this->aiVision->isAvailable()) {
+                    $aiAnalysis = $this->aiVision->analyzeBabySafetySnapshot($jpegBinary, $eventType);
+                    if ($aiAnalysis['evaluated']) {
+                        // Caso 1: Bebê em pé (elimina falso positivo quando o bebê está deitado dormindo)
+                        if ($eventType === 'baby_stand') {
+                            if (! $aiAnalysis['is_standing'] && $aiAnalysis['is_lying_down']) {
+                                \Illuminate\Support\Facades\Log::info('kc.recordEvent.ai_stand_filtered', [
+                                    'camera_id' => $camera->id,
+                                    'desc' => $aiAnalysis['description'] ?: 'Bebê está deitado dormindo, não em pé.',
+                                ]);
+                                $shouldSend = false; // Bloqueia o falso alarme no Telegram!
+                                $description = 'Bebê está deitado dormindo tranquilamente no berço (Alarme falso de bebê em pé evitado pela IA).';
+                                $event->update(['description' => $description]);
+                            } elseif ($aiAnalysis['is_standing']) {
+                                $description = '🚨 ALERTA: Bebê ficou em pé no berço! (' . ($aiAnalysis['description'] ?: 'Confirmado por IA Vision') . ')';
+                                $event->update(['description' => $description]);
+                            }
+                        }
+
+                        // Caso 2: Cerca do berço (membro ou corpo fora vs cobertor/lençol inanimado)
+                        if (in_array($eventType, ['crib_fence', 'fence_breach'])) {
+                            if ($aiAnalysis['is_blanket_or_empty'] && ! $aiAnalysis['is_limb_outside'] && ! $aiAnalysis['is_baby_outside']) {
+                                \Illuminate\Support\Facades\Log::info('kc.recordEvent.ai_fence_blanket_filtered', [
+                                    'camera_id' => $camera->id,
+                                    'desc' => $aiAnalysis['description'] ?: 'Apenas cobertor/lençol detectado.',
+                                ]);
+                                $shouldSend = false; // Bloqueia falso alarme de lençol!
+                                $description = 'Apenas cobertor/lençol estático no berço (Filtrado com sucesso pela IA).';
+                                $event->update(['description' => $description]);
+                            } elseif ($aiAnalysis['is_limb_outside'] || $aiAnalysis['is_baby_outside']) {
+                                if (! empty($aiAnalysis['description'])) {
+                                    $description = '🚨 ' . $aiAnalysis['description'];
+                                    $event->update(['description' => $description]);
+                                }
+                            }
+                        }
                     }
                 }
 

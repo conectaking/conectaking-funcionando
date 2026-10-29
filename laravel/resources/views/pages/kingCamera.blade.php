@@ -10274,13 +10274,13 @@
                         let limbBreached = false;
                         let breachMsg = '';
 
-                        // ── A. ANÁLISE ANATÔMICA COM MOVENET POSE (17 KEYPOINTS) ──
+                        // ── A. ANÁLISE ANATÔMICA COM MOVENET POSE (17 ARTICULAÇÕES DETALHADAS) ──
                         if (poses && poses.length > 0 && poses[0].keypoints) {
                             const kps = poses[0].keypoints;
                             let pointsInside = 0;
 
                             for (const pt of kps) {
-                                if (pt.score >= 0.12) {
+                                if (pt.score >= 0.10) {
                                     const px = (pt.x / vw) * 100;
                                     const py = (pt.y / vh) * 100;
                                     if (isPointInCribFence(px, py, r)) {
@@ -10293,70 +10293,97 @@
                                 isBabyInCrib = true;
                             }
 
-                            // Checagem de membros para fora: SOMENTE articulações reais de extremidade (tornozelo/punho) com boa confiança
-                            if (isBabyInCrib) {
-                                const limbKeys = ['left_ankle', 'right_ankle', 'left_wrist', 'right_wrist'];
-                                for (const pt of kps) {
-                                    if (limbKeys.includes(pt.name) && pt.score >= 0.28) {
+                            // Checagem de membros para fora: analisa pernas, pés, joelhos, braços, mãos, ombros e cabeça
+                            const allLimbCheck = [
+                                { keys: ['left_ankle', 'right_ankle'], label: 'Pé do bebê' },
+                                { keys: ['left_knee', 'right_knee'], label: 'Perna/Joelho do bebê' },
+                                { keys: ['left_wrist', 'right_wrist'], label: 'Mão/Braço do bebê' },
+                                { keys: ['left_elbow', 'right_elbow'], label: 'Braço/Cotovelo do bebê' },
+                                { keys: ['left_shoulder', 'right_shoulder'], label: 'Ombro do bebê' },
+                                { keys: ['nose'], label: 'Cabeça do bebê' }
+                            ];
+
+                            for (const limbGroup of allLimbCheck) {
+                                for (const keyName of limbGroup.keys) {
+                                    const pt = kps.find(k => k.name === keyName);
+                                    // Sensibilidade alta calibrada para visão noturna e penumbra (score >= 0.12)
+                                    if (pt && pt.score >= 0.12) {
                                         const px = (pt.x / vw) * 100;
                                         const py = (pt.y / vh) * 100;
-                                        // Tolerância de 5% além da borda para não disparar se o pé/mão apenas encostar na grade
+                                        // Tolerância estrita de 0.8% além da borda demarcada
                                         const insidePoly = (r.type === 'circle' && r.circle)
-                                            ? isPointInCircle(px, py, r.circle, 5.0)
-                                            : isPointInsidePolygonWithTolerance(px, py, r.points || [], 5.0);
+                                            ? isPointInCircle(px, py, r.circle, 0.8)
+                                            : isPointInsidePolygonWithTolerance(px, py, r.points || [], 0.8);
 
                                         if (!insidePoly) {
                                             limbBreached = true;
-                                            breachMsg = pt.name.includes('ankle')
-                                                ? '🚨 Pé ou perna do bebê passou para fora do cerco!'
-                                                : '🚨 Braço ou mão do bebê para fora da área segura!';
+                                            breachMsg = `🚨 ${limbGroup.label} passou para fora do cerco do berço!`;
                                             break;
                                         }
                                     }
                                 }
+                                if (limbBreached) break;
                             }
                         }
 
-                        // ── B. ANÁLISE VIA BOUNDING BOX (COCO-SSD) COM FILTRO DE MOVIMENTO REAL ──
+                        // ── B. ANÁLISE VIA BOUNDING BOX (COCO-SSD): PARTE DO CORPO ULTRAPASSANDO A BORDA ──
                         if (persons && persons.length > 0) {
                             for (const p of persons) {
                                 const [bx, by, bw, bh] = p.bbox;
-                                const cxPct = ((bx + bw / 2) / vw) * 100;
-                                const cyPct = ((by + bh / 2) / vh) * 100;
-                                const centerInside = isPointInCribFence(cxPct, cyPct, r);
+                                const x1 = (bx / vw) * 100;
+                                const y1 = (by / vh) * 100;
+                                const x2 = ((bx + bw) / vw) * 100;
+                                const y2 = ((by + bh) / vh) * 100;
+                                const cx = (x1 + x2) / 2;
+                                const cy = (y1 + y2) / 2;
+
+                                const centerInside = isPointInCribFence(cx, cy, r);
 
                                 if (centerInside) {
                                     isBabyInCrib = true;
-                                } else {
-                                    // Detecção FORA do berço (ex: cama de casal ao lado com cobertor dobrado)
-                                    // IMPRESCINDÍVEL: Validar se há MOVIMENTO REAL na caixa!
-                                    // Cobertores, lençóis e travesseiros são 100% estáticos (motion < 2.5%)
-                                    const boxX1 = (bx / vw) * 100;
-                                    const boxY1 = (by / vh) * 100;
-                                    const boxX2 = ((bx + bw) / vw) * 100;
-                                    const boxY2 = ((by + bh) / vh) * 100;
-                                    const boxMotion = getRegionMotionPct(boxX1, boxY1, boxX2, boxY2);
-                                    const areaPct = (bw * bh) / (vw * vh);
+                                    // Testa se as bordas ou cantos do corpinho ultrapassam o cerco demarcado
+                                    const bodyTestPts = [
+                                        { x: x1, y: y1 }, { x: x2, y: y1 },
+                                        { x: x1, y: y2 }, { x: x2, y: y2 },
+                                        { x: cx, y: y1 }, { x: cx, y: y2 },
+                                        { x: x1, y: cy }, { x: x2, y: cy }
+                                    ];
+                                    let outsideCount = 0;
+                                    for (const tp of bodyTestPts) {
+                                        const inFence = (r.type === 'circle' && r.circle)
+                                            ? isPointInCircle(tp.x, tp.y, r.circle, 1.0)
+                                            : isPointInsidePolygonWithTolerance(tp.x, tp.y, r.points || [], 1.0);
+                                        if (!inFence) outsideCount++;
+                                    }
 
-                                    // Para ser uma criança fora do berço: confiança >= 0.42, movimento real >= 3.0% e área condizente
-                                    if (p.score >= 0.42 && boxMotion >= 3.0 && areaPct >= 0.03) {
+                                    // Se 2 ou mais pontos da caixa da criança ultrapassarem o cerco
+                                    if (outsideCount >= 2 && p.score >= 0.25) {
+                                        limbBreached = true;
+                                        if (!breachMsg) {
+                                            breachMsg = '🚨 Parte do corpo do bebê passou para fora do cerco do berço!';
+                                        }
+                                    }
+                                } else {
+                                    // Criança com o centro fora do berço (ex: no chão ou cama ao lado)
+                                    const boxMotion = getRegionMotionPct(x1, y1, x2, y2);
+                                    const areaPct = (bw * bh) / (vw * vh);
+                                    if (p.score >= 0.30 && (boxMotion >= 2.0 || areaPct >= 0.04)) {
                                         isBabyOutsideCrib = true;
                                     }
                                 }
                             }
                         }
 
-                        // ── C. PERSISTÊNCIA INTELIGENTE DE BEBÊ DORMINDO (ZERO FALSOS ALARMES) ──
-                        // Se o bebê já estava no berço e não há pessoa se movendo fora e o berço está calmo/dormindo:
-                        // O bebê NÃO desapareceu; está simplesmente dormindo imóvel!
-                        if (!isBabyInCrib && !isBabyOutsideCrib && s.hasSeenInCrib) {
-                            if (cribMotion < 6.0) {
-                                isBabyInCrib = true; // Bebê dormindo tranquilamente no berço
+                        // ── C. PERSISTÊNCIA INTELIGENTE DE BEBÊ DORMINDO (SEM FALSOS ALARMES) ──
+                        // Apenas se NENHUM membro ou parte do corpo estiver para fora!
+                        if (!isBabyInCrib && !isBabyOutsideCrib && s.hasSeenInCrib && !limbBreached) {
+                            if (cribMotion < 5.0) {
+                                isBabyInCrib = true; // Bebê dormindo seguro no berço
                             }
                         }
 
-                        // ── D. TOMADA DE DECISÃO INTELIGENTE ──
-                        // CASO 1: Membro real (pé, perna, braço) passou do cerco
+                        // ── D. TOMADA DE DECISÃO INTELIGENTE E IMEDIATA ──
+                        // CASO 1: Membro real ou pedaço do bebê passou do cerco
                         if (limbBreached) {
                             s.breachStreak = (s.breachStreak || 0) + 1;
                             s.absenceStreak = 0;
@@ -10364,18 +10391,18 @@
                             s.hasSeenInCrib = true;
                             s.isLimbBreached = true;
 
-                            // Exige 3 ciclos consecutivos (~3.6s) de confirmação
-                            if (s.breachStreak >= 3) {
+                            // Exige apenas 2 ciclos consecutivos (~2.0s) para notificação rápida e precisa
+                            if (s.breachStreak >= 2) {
                                 if (s.fenceState !== 'OUTSIDE') {
                                     s.fenceState = 'OUTSIDE';
                                     s.alertCount = 1;
                                     s.lastAlertTime = now;
-                                    triggerFenceBreachAlert(camId, 1, breachMsg || '🚨 Pé ou membro do bebê passou do cerco do berço!');
+                                    triggerFenceBreachAlert(camId, 1, breachMsg || '🚨 Pedaço ou membro do bebê passou do cerco do berço!');
                                     drawCribBox(camId);
-                                } else if (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 18000)) {
+                                } else if (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 15000)) {
                                     s.alertCount = 2;
                                     s.lastAlertTime = now;
-                                    triggerFenceBreachAlert(camId, 2, '⚠️ REFORÇO: O bebê continua com membro fora da área segura!');
+                                    triggerFenceBreachAlert(camId, 2, '⚠️ REFORÇO: O bebê continua com parte do corpo fora da área segura!');
                                 }
                             }
                         }
@@ -10386,15 +10413,14 @@
                             s.calmCycles = 0;
                             s.isLimbBreached = false;
 
-                            // Exige 4 ciclos consecutivos (~4.8s) de movimento confirmado fora
-                            if (s.breachStreak >= 4) {
+                            if (s.breachStreak >= 2) {
                                 if (s.fenceState !== 'OUTSIDE') {
                                     s.fenceState = 'OUTSIDE';
                                     s.alertCount = 1;
                                     s.lastAlertTime = now;
                                     triggerFenceBreachAlert(camId, 1, '🚨 ALERTA: Bebê saiu do cerco! (Criança fora do berço)');
                                     drawCribBox(camId);
-                                } else if (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 18000)) {
+                                } else if (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 15000)) {
                                     s.alertCount = 2;
                                     s.lastAlertTime = now;
                                     triggerFenceBreachAlert(camId, 2, '⚠️ REFORÇO: A criança continua fora do cerco seguro!');
@@ -11601,84 +11627,107 @@
                 isProcessing = true;
 
                 try {
-                    const s = cribFenceState[camId];
+                    const s = cribFenceState[camId] || {};
                     const r = (s && s.roi) ? s.roi : { x: 20, y: 20, w: 60, h: 55 };
                     const bb = getBoundingBoxFromRoi(r);
                     const now = Date.now();
                     const vw = video.videoWidth || 640;
                     const vh = video.videoHeight || 360;
 
-                    let isStanding = false;
+                    // 0. VERIFICAÇÃO DE MOVIMENTO REAL NO BERÇO
+                    // Bebê imóvel ou dormindo deitado NUNCA está ficando em pé!
+                    if (!s._standMotionCanvas) {
+                        s._standMotionCanvas = document.createElement('canvas');
+                        s._standMotionCanvas.width = 160;
+                        s._standMotionCanvas.height = 90;
+                        s._standMotionCtx = s._standMotionCanvas.getContext('2d', { willReadFrequently: true });
+                        s._standPrevData = null;
+                    }
+                    s._standMotionCtx.drawImage(video, 0, 0, 160, 90);
+                    const curFrame = s._standMotionCtx.getImageData(0, 0, 160, 90);
+                    const curPixels = curFrame.data;
 
-                    // 1. ANÁLISE ANATÔMICA COM MOVETNET POSE (17 ARTICULAÇÕES)
-                    const poses = await window.kingVisionAI.detectPose(video);
-                    if (poses && poses.length > 0 && poses[0].keypoints) {
-                        const kp = {};
-                        poses[0].keypoints.forEach(k => { kp[k.name] = k; });
-
-                        const nose = kp['nose'];
-                        const lShoulder = kp['left_shoulder'];
-                        const rShoulder = kp['right_shoulder'];
-                        const lHip = kp['left_hip'];
-                        const rHip = kp['right_hip'];
-                        const lAnkle = kp['left_ankle'];
-                        const rAnkle = kp['right_ankle'];
-
-                        const headPt = (nose && nose.score >= 0.20) ? nose : ((lShoulder && lShoulder.score >= 0.20) ? lShoulder : rShoulder);
-
-                        if (headPt && headPt.score >= 0.18) {
-                            const headXPct = (headPt.x / vw) * 100;
-                            const headYPct = (headPt.y / vh) * 100;
-
-                            // Cabeça está no alinhamento do berço
-                            const isNearCrib = (headXPct >= bb.x - 8 && headXPct <= bb.x + bb.w + 8);
-                            // Cabeça atinge a faixa superior (topo 38% do berço ou acima da linha superior)
-                            const reachesUpperRail = headYPct <= (bb.y + bb.h * 0.38);
-
-                            if (isNearCrib && reachesUpperRail) {
-                                // Verifica postura vertical do tronco
-                                let isSpineVertical = true;
-                                if (lShoulder && lHip && lShoulder.score >= 0.18 && lHip.score >= 0.18) {
-                                    isSpineVertical = Math.abs(lHip.y - lShoulder.y) >= Math.abs(lHip.x - lShoulder.x) * 0.85;
-                                } else if (rShoulder && rHip && rShoulder.score >= 0.18 && rHip.score >= 0.18) {
-                                    isSpineVertical = Math.abs(rHip.y - rShoulder.y) >= Math.abs(rHip.x - rShoulder.x) * 0.85;
-                                }
-
-                                // Verifica altura em pé se tornozelos visíveis
-                                let hasHeightSpan = true;
-                                const anklePt = (lAnkle && lAnkle.score >= 0.15) ? lAnkle : ((rAnkle && rAnkle.score >= 0.15) ? rAnkle : null);
-                                if (anklePt) {
-                                    const ankleYPct = (anklePt.y / vh) * 100;
-                                    const verticalSpan = ankleYPct - headYPct;
-                                    hasHeightSpan = verticalSpan >= (bb.h * 0.32);
-                                }
-
-                                if (isSpineVertical && hasHeightSpan) {
-                                    isStanding = true;
-                                }
+                    let cribMotion = 0;
+                    if (s._standPrevData) {
+                        const startX = Math.max(0, Math.min(159, Math.floor((bb.x / 100) * 160)));
+                        const endX = Math.max(0, Math.min(160, Math.ceil(((bb.x + bb.w) / 100) * 160)));
+                        const startY = Math.max(0, Math.min(89, Math.floor((bb.y / 100) * 90)));
+                        const endY = Math.max(0, Math.min(90, Math.ceil(((bb.y + bb.h) / 100) * 90)));
+                        let movingPixels = 0, total = 0;
+                        for (let y = startY; y < endY; y++) {
+                            for (let x = startX; x < endX; x++) {
+                                const idx = (y * 160 + x) * 4;
+                                const diff = Math.abs(curPixels[idx] - s._standPrevData[idx])
+                                           + Math.abs(curPixels[idx + 1] - s._standPrevData[idx + 1])
+                                           + Math.abs(curPixels[idx + 2] - s._standPrevData[idx + 2]);
+                                if (diff > 35) movingPixels++;
+                                total++;
                             }
                         }
+                        cribMotion = total > 0 ? (movingPixels / total) * 100 : 0;
                     }
+                    s._standPrevData = new Uint8ClampedArray(curPixels);
 
-                    // 2. FALLBACK COM BOUNDING BOX (COCO-SSD) SE MOVETNET NÃO DETECTOU
-                    if (!isStanding) {
-                        const persons = await window.kingVisionAI.detectPersons(video);
-                        if (persons && persons.length > 0) {
-                            for (const p of persons) {
-                                const [bx, by, bw, bh] = p.bbox;
-                                const cxPct = ((bx + bw / 2) / vw) * 100;
-                                const topPct = (by / vh) * 100;
-                                const heightPct = (bh / vh) * 100;
-                                const aspectRatio = bh / Math.max(1, bw);
+                    let isStanding = false;
 
-                                const isInsideCrib = (cxPct >= bb.x - 8 && cxPct <= bb.x + bb.w + 8);
-                                const reachesUpperRail = (topPct <= bb.y + (bb.h * 0.38));
-                                const hasStandHeight = (heightPct >= bb.h * 0.35);
-                                const isVertical = (aspectRatio >= 0.85);
+                    // Se a área do berço estiver calma (movimento < 2.5%), o bebê está DORMINDO/DEITADO!
+                    // Jamais acusa "bebê em pé" em berço com criança imóvel ou dormindo!
+                    if (cribMotion >= 2.5) {
+                        // 1. ANÁLISE ANATÔMICA COM MOVENET POSE (17 ARTICULAÇÕES)
+                        const poses = await window.kingVisionAI.detectPose(video);
+                        if (poses && poses.length > 0 && poses[0].keypoints) {
+                            const kp = {};
+                            poses[0].keypoints.forEach(k => { kp[k.name] = k; });
 
-                                if (isInsideCrib && reachesUpperRail && hasStandHeight && isVertical) {
-                                    isStanding = true;
-                                    break;
+                            const nose = kp['nose'];
+                            const lShoulder = kp['left_shoulder'];
+                            const rShoulder = kp['right_shoulder'];
+                            const lWrist = kp['left_wrist'];
+                            const rWrist = kp['right_wrist'];
+                            const lHip = kp['left_hip'];
+                            const rHip = kp['right_hip'];
+                            const lAnkle = kp['left_ankle'];
+                            const rAnkle = kp['right_ankle'];
+
+                            // Identifica cabeça
+                            const headPt = (nose && nose.score >= 0.20) ? nose : ((lShoulder && lShoulder.score >= 0.20) ? lShoulder : rShoulder);
+
+                            if (headPt && headPt.score >= 0.18) {
+                                const headXPct = (headPt.x / vw) * 100;
+                                const isNearCrib = (headXPct >= bb.x - 8 && headXPct <= bb.x + bb.w + 8);
+
+                                if (isNearCrib) {
+                                    // SINAL 1: MÃOS/PULSOS NA GRADE SUPERIOR (Criança segurando nas bordas para ficar em pé)
+                                    let handsOnRail = false;
+                                    const wristPt = (lWrist && lWrist.score >= 0.18) ? lWrist : ((rWrist && rWrist.score >= 0.18) ? rWrist : null);
+                                    if (wristPt) {
+                                        const wristYPct = (wristPt.y / vh) * 100;
+                                        if (wristYPct <= (bb.y + bb.h * 0.35)) {
+                                            handsOnRail = true;
+                                        }
+                                    }
+
+                                    // SINAL 2: ELEVAÇÃO VERTICAL COM APOIO DOS PÉS
+                                    let verticalStandingSpan = false;
+                                    const anklePt = (lAnkle && lAnkle.score >= 0.18) ? lAnkle : ((rAnkle && rAnkle.score >= 0.18) ? rAnkle : null);
+                                    const hipPt = (lHip && lHip.score >= 0.18) ? lHip : ((rHip && rHip.score >= 0.18) ? rHip : null);
+
+                                    if (anklePt && hipPt && headPt) {
+                                        const ankleY = anklePt.y;
+                                        const hipY = hipPt.y;
+                                        const headY = headPt.y;
+                                        if (ankleY > hipY && hipY > headY) {
+                                            const torsoHeight = Math.abs(hipY - headY);
+                                            const legHeight = Math.abs(ankleY - hipY);
+                                            if (torsoHeight >= (vh * 0.15) && legHeight >= (vh * 0.10) && handsOnRail) {
+                                                verticalStandingSpan = true;
+                                            }
+                                        }
+                                    }
+
+                                    if (handsOnRail || verticalStandingSpan) {
+                                        isStanding = true;
+                                    }
                                 }
                             }
                         }
