@@ -8,6 +8,7 @@ use App\Models\KingCameraShare;
 use App\Services\Account\ModulesService;
 use App\Services\Camera\KingCameraService;
 use App\Services\Camera\KingCameraTelegramAgentService;
+use App\Services\Camera\KingCameraAiVisionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
