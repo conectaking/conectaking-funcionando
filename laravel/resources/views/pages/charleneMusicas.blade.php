@@ -1518,11 +1518,18 @@
         <div id="section-historias" class="section-panel">
             <div class="voice-hints" style="background: rgba(139, 92, 246, 0.1); border-color: rgba(139, 92, 246, 0.3);">
                 <div class="voice-hints-title" style="color: #c4b5fd;">
-                    ✨ Charlene Superdotada na Bíblia • Rastreamento Anti-Repetição:
+                    ✨ Charlene Superdotada na Bíblia • Neurociência & Cognição Infantil (10m a 7 anos):
                 </div>
-                <p style="font-size: 0.88rem; color: #e2e8f0; line-height: 1.4;">
-                    A Charlene conhece a Bíblia inteira de Gênesis ao Apocalipse e <strong>nunca repete uma história</strong> para a Sarah antes de contar todas as 45 histórias sagradas! Quando o catálogo terminar, a IA da Charlene busca novas passagens bíblicas profundas e inéditas. Ela <strong>só repete</strong> se a Sarah ou você pedirem expressamente por ela (ex: <em>"Alexa, pede para a Charlene contar a história de Davi e Golias"</em>).
+                <p style="font-size: 0.88rem; color: #e2e8f0; line-height: 1.5; margin-bottom: 8px;">
+                    A Charlene integra <strong>Bíblia Sagrada + Neurociência + PNL + Pedagogia Afetiva</strong>. Cada história estimula sinapses com respiração vagal para calma, riqueza sensorial, raciocínio rápido para expansão de QI, micro-movimentos psicomotores (palminhas/coração), afirmações de identidade vencedora e ensino exemplar de <strong>amor e obediência ao papai Adrian King e mamãe Samara</strong>!
                 </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+                    <span style="background: rgba(139, 92, 246, 0.2); border: 1px solid rgba(139, 92, 246, 0.4); padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; color: #c4b5fd; font-weight: 700;">🧠 Neurociência & QI</span>
+                    <span style="background: rgba(236, 72, 153, 0.2); border: 1px solid rgba(236, 72, 153, 0.4); padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; color: #f472b6; font-weight: 700;">💖 Honra aos Pais</span>
+                    <span style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; color: #6ee7b7; font-weight: 700;">🤸 Psicomotricidade</span>
+                    <span style="background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.4); padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; color: #fde68a; font-weight: 700;">🌟 Rima de Ouro Mnemônica</span>
+                    <span style="background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; color: #93c5fd; font-weight: 700;">🚫 Anti-Repetição (45 Histórias)</span>
+                </div>
             </div>
 
             <!-- Stats Grid -->
@@ -1554,7 +1561,7 @@
             </div>
 
             <!-- Lista de Histórias do Catálogo Mestre -->
-            <h3 style="font-size: 1.1rem; margin-bottom: 14px; font-weight: 800;">Catálogo de Histórias Bíblicas da Sarah</h3>
+            <h3 style="font-size: 1.1rem; margin-bottom: 14px; font-weight: 800;">Catálogo de Histórias Bíblicas com Neurociência</h3>
             <div class="memory-grid">
                 @php
                     $ouvidasMap = ($historiasOuvidas ?? collect())->keyBy('subject');
@@ -1579,7 +1586,12 @@
                             </div>
                             <div class="memory-subject" style="margin-top: 8px;">{{ $h['titulo'] }}</div>
                             <div style="font-size: 0.8rem; color: #c4b5fd; margin-bottom: 4px;"><strong>Personagem:</strong> {{ $h['personagem'] }}</div>
-                            <div class="memory-content"><strong>Lição:</strong> {{ $h['licoes'] }}</div>
+                            <div class="memory-content" style="margin-bottom: 8px;"><strong>Lição:</strong> {{ $h['licoes'] }}</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                <span style="background: rgba(139, 92, 246, 0.15); font-size: 0.68rem; padding: 2px 5px; border-radius: 4px; color: #ddd6fe;">🧠 QI & Vagal</span>
+                                <span style="background: rgba(236, 72, 153, 0.15); font-size: 0.68rem; padding: 2px 5px; border-radius: 4px; color: #fbcfe8;">💖 Honra aos Pais</span>
+                                <span style="background: rgba(16, 185, 129, 0.15); font-size: 0.68rem; padding: 2px 5px; border-radius: 4px; color: #a7f3d0;">🤸 Movimento</span>
+                            </div>
                         </div>
                     </div>
                 @endforeach
@@ -1589,7 +1601,7 @@
         <!-- ================= SEÇÃO 3: COMANDOS DE VOZ ================= -->
         <div id="section-comandos" class="section-panel">
             <div class="memory-form-card">
-                <h3 style="font-size: 1.2rem; margin-bottom: 16px; font-weight: 800; color: #c4b5fd;">🗣️ Guia de Voz da Charlene para a Sarah</h3>
+                <h3 style="font-size: 1.2rem; margin-bottom: 16px; font-weight: 800; color: #c4b5fd;">🗣️ Guia de Voz da Charlene para a Sarah & Família King</h3>
                 
                 <div style="display: flex; flex-direction: column; gap: 14px; font-size: 0.92rem;">
                     <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
@@ -1603,6 +1615,28 @@
                     </div>
 
                     <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
+                        <strong style="color: #f59e0b;">🌙 Ativação da Sabedoria Noturna (Provérbios 1 a 31 • Do Fracasso ao Legado):</strong>
+                        <p style="margin-top: 4px; color: var(--text-muted);">• <em>"Alexa, pede para a Charlene a ativação de hoje"</em></p>
+                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Alexa, fala com a Charlene: ativação antes de dormir"</em></p>
+                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Charlene, faz a ativação da sabedoria de hoje"</em></p>
+                    </div>
+
+                    <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
+                        <strong style="color: #fbbf24;">🙏 Intercessão Pastoral com Autoridade Espiritual & Orações:</strong>
+                        <p style="margin-top: 4px; color: var(--text-muted);">• <em>"Alexa, fala com a Charlene para orar pelo <strong>Bispo Fernando</strong>"</em> (oração fervorosa cobrindo com o Sangue de Jesus, saúde, vigor, vitória e bênção familiar!)</p>
+                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Alexa, fala com a Charlene para orar pela minha família / pelo papai / pela mamãe"</em></p>
+                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Alexa, fala com a Charlene para orar para dormir"</em> (bênção doce com anjos no quartinho da Sarah)</p>
+                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Alexa, fala com a Charlene: você conhece o Bispo Fernando / titio Marcos / vovó Socorro?"</em></p>
+                    </div>
+
+                    <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
+                        <strong style="color: #34d399;">📖 Histórias da Bíblia com Neurociência & Cognição (45 Histórias Sem Repetir):</strong>
+                        <p style="margin-top: 4px; color: var(--text-muted);">• <em>"Alexa, pede para a Charlene contar uma história da Bíblia"</em> (condução com respiração vagal, estímulo de QI, psicomotricidade e honra aos pais)</p>
+                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Alexa, pede para a Charlene contar a história de Davi e Golias"</em></p>
+                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Alexa, pede para a Charlene contar a história da Arca de Noé / Daniel / Ester / Jesus"</em></p>
+                    </div>
+
+                    <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
                         <strong style="color: #60a5fa;">🎵 Tocar músicas por pasta:</strong>
                         <p style="margin-top: 4px; color: var(--text-muted);">• <em>"Alexa, fala com a Charlene e toca louvores de adoração"</em></p>
                         <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Alexa, fala com a Charlene e toca músicas para dormir"</em></p>
@@ -1610,39 +1644,15 @@
                     </div>
 
                     <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
-                        <strong style="color: #34d399;">📖 Histórias da Bíblia Dinâmicas (Mais de 20 histórias):</strong>
-                        <p style="margin-top: 4px; color: var(--text-muted);">• <em>"Alexa, pede para a Charlene contar uma história da Bíblia"</em> (ela escolhe uma história emocionante)</p>
-                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Alexa, pede para a Charlene contar a história de Davi e Golias"</em></p>
-                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Alexa, pede para a Charlene contar a história da Arca de Noé / Daniel / Ester / Jesus"</em></p>
-                    </div>
-
-                    <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
-                        <strong style="color: #fbbf24;">🙏 Orações e Pessoas Especiais (Memória):</strong>
-                        <p style="margin-top: 4px; color: var(--text-muted);">• <em>"Alexa, fala com a Charlene: você conhece o Bispo Fernando?"</em></p>
-                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Alexa, fala com a Charlene para orar pelo Bispo Fernando"</em></p>
-                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Alexa, fala com a Charlene para orar pela minha família / dormir"</em></p>
-                    </div>
-
-                    <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
-                        <strong style="color: #ec4899;">⏭️ Passar Música / Próxima Faixa:</strong>
-                        <p style="margin-top: 4px; color: var(--text-muted);">• <em>"Alexa, passa a música"</em> ou <em>"Alexa, próxima música"</em></p>
-                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Charlene, pula essa música"</em> ou <em>"Charlene, avança"</em></p>
-                    </div>
-
-                    <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
-                        <strong style="color: #10b981;">🔂 Repetir Música / Tocar de Novo:</strong>
-                        <p style="margin-top: 4px; color: var(--text-muted);">• <em>"Alexa, repete a música"</em> ou <em>"Alexa, repita"</em></p>
-                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Charlene, toca de novo essa música"</em> ou <em>"Charlene, repete"</em></p>
-                    </div>
-
-                    <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
-                        <strong style="color: #38bdf8;">⏮️ Voltar Música Anterior:</strong>
-                        <p style="margin-top: 4px; color: var(--text-muted);">• <em>"Alexa, volta a música"</em> ou <em>"Alexa, música anterior"</em></p>
-                    </div>
-
-                    <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
-                        <strong style="color: #a78bfa;">📜 Devocional do Papai Adrian King:</strong>
+                        <strong style="color: #a78bfa;">📜 Devocional Diário do Conecta King:</strong>
                         <p style="margin-top: 4px; color: var(--text-muted);"><em>"Alexa, pede para a Charlene tocar o devocional de hoje"</em></p>
+                    </div>
+
+                    <div style="background: #0e1320; padding: 14px; border-radius: 10px; border: 1px solid var(--card-border);">
+                        <strong style="color: #ec4899;">⏭️ Controles de Faixa na Alexa:</strong>
+                        <p style="margin-top: 4px; color: var(--text-muted);">• <em>"Alexa, passa a música"</em> / <em>"Alexa, próxima música"</em></p>
+                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Alexa, volta a música"</em> / <em>"Alexa, anterior"</em></p>
+                        <p style="margin-top: 2px; color: var(--text-muted);">• <em>"Alexa, repete a música"</em> / <em>"Alexa, toca de novo"</em></p>
                     </div>
                 </div>
             </div>

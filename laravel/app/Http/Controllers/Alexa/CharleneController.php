@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Alexa;
 use App\Http\Controllers\Controller;
 use App\Models\CharleneMemory;
 use App\Services\CartaoVirtual\BibleDevotionalService;
+use App\Services\CartaoVirtual\BibleProsperidadeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class CharleneController extends Controller
 {
@@ -534,14 +536,18 @@ class CharleneController extends Controller
             case 'OracaoDormirIntent':
             case 'FazerOracaoIntent':
                 $pedido = $slots['motivo']['value'] ?? $slots['pessoa']['value'] ?? $slots['mensagem']['value'] ?? null;
-                // PROTEÇÃO: Se a frase contiver perguntas sobre pessoas ("conhece", "quem é", etc.), redireciona para a conversa inteligente!
-                if ($pedido && preg_match('/(?:conhece|quem [ée]|lembra|sabe quem|fala d[oa]|amig|tio|tia|vov|myrla|arthur|gustavo|bispo)/ui', $pedido)) {
+                // PROTEÇÃO: Apenas redireciona se for pergunta explícita sobre a pessoa ("quem é", "você conhece"), NÃO se for pedido de oração!
+                if ($pedido && preg_match('/^(?:voc[eê]\s+)?(?:conhece|quem [ée]|lembra de|sabe quem [ée]|fala d[oa])\s+/ui', trim($pedido))) {
                     return $this->handleIntelligentChat($pedido, $payload);
                 }
                 return $this->handlePrayer($pedido);
 
             case 'TocarDevocionalIntent':
                 return $this->handleDevocional();
+
+            case 'AtivacaoNoiteIntent':
+            case 'AtivacaoProsperidadeIntent':
+                return $this->handleAtivacaoNoite();
 
             case 'MenuOpcoesIntent':
                 return $this->handleMenuOpcoes();
@@ -1002,14 +1008,18 @@ class CharleneController extends Controller
         // A Charlene busca passagens bíblicas profundas e menos comuns via IA
         $totalOuvidas = count($ouvidasSlugs);
         if ($totalOuvidas < (count(self::HISTORIAS_CATALOGO) + 35)) {
-            $promptInedita = "Você é a Charlene, especialista e superdotada em toda a Bíblia Sagrada (do Gênesis ao Apocalipse). "
-                . "A princesinha Sarah já ouviu todas as histórias tradicionais da Bíblia (Davi, Noé, Jonas, Moisés, etc.). "
-                . "Agora, escolha uma NOVA passagem bíblica linda, inspiradora e menos contada (ex: O jovem rei Josias, a menina cativa de Naamã, Dorcas a costureira bondosa de Jope, a viúva de Sarepta, o cântico de Ana, o profeta Habacuque, o jovem Timóteo e sua vovó Lóide, a generosa Sunamita, o centurião de grande fé, etc.). "
-                . "Não repita histórias comuns. "
-                . "Conte de forma doce, infantil e encantadora com 180 a 240 palavras. "
-                . "Comece dizendo: 'Sarahzinha, como você já conhece tantas histórias lindas, hoje o Espírito Santo me inspirou uma passagem muito especial e preciosa da Bíblia Sagrada para você!' "
-                . "Termine com uma lição prática de fé e amor para a Sarahzinha e sua família (papai Adrian King e mamãe Samara). "
-                . "Pergunte no final se ela quer ouvir outra história ou colocar uma musiquinha.";
+            $promptInedita = "Você é a Charlene, mentora cristã doce, alegre e amorosa da princesinha Sarah (filha do Adrian King e da Samara). "
+                . "Você aplica neurociência infantil, psicologia do desenvolvimento (faixa de 10 meses a 7 anos), PNL positiva e pedagogia bíblica afetiva.\n"
+                . "A princesinha Sarah já ouviu todas as histórias tradicionais. Agora, escolha uma NOVA passagem bíblica linda, inspiradora e menos contada (ex: O jovem rei Josias, a menina cativa de Naamã, Dorcas a costureira bondosa de Jope, a viúva de Sarepta, o cântico de Ana, o jovem Timóteo e sua vovó Lóide, a generosa Sunamita, o centurião de grande fé, etc.).\n"
+                . "ESTRUTURA PEDAGÓGICA E NEUROCIENTÍFICA OBRIGATÓRIA:\n"
+                . "1. VAGAL & CALMA: Comece: 'Sarahzinha, como você já conhece tantas histórias lindas, hoje o Espírito Santo me inspirou uma passagem preciosa! Antes de começar, vamos respirar bem fundo... enche a barriguinha de ar e solta devagarzinho... que paz gostosa!'\n"
+                . "2. NARRATIVA SENSORIAL: Conte a passagem com cores vívidas, detalhes táteis e onomatopeias suaves ('toc-toc', 'vuush', 'tchibum').\n"
+                . "3. RACIOCÍNIO RÁPIDO & QI: Faça um desafio cognitivo lúdico rápido (estimulação sináptica adaptada de 10 meses a 7 anos).\n"
+                . "4. MOVIMENTO PSICOMOTOR: Peça uma micro-ação (bater palminhas ou pôr a mão no coraçãozinho).\n"
+                . "5. HONRA E OBEDIÊNCIA AOS PAIS: Ensine que obedecer ao papai Adrian King e à mamãe Samara é o segredo dos grandes heróis de Deus!\n"
+                . "6. PNL & IDENTIDADE: Declare que a Sarah é sábia, genial, forte e princesa do Altíssimo!\n"
+                . "7. RIMA DE OURO: Finalize com uma riminha mnemônica de 2 versos para fixação na memória de longo prazo.\n"
+                . "Tamanho: de 220 a 280 palavras. Finalize perguntando se ela quer outra historinha ou uma musiquinha linda.";
 
             $novaHistoria = $this->callAiWithMemory($promptInedita, 'historia_inedita');
             if ($novaHistoria) {
@@ -1034,28 +1044,39 @@ class CharleneController extends Controller
     }
 
     /**
-     * Narra uma história bíblica usando IA com fallback para a história base
+     * Narra uma história bíblica usando IA com neurociência, cognição (10m - 7 anos), PNL e honra aos pais
      */
     private function narrarHistoria(array $item, string $instrucaoExtra, string $prefixo = ''): JsonResponse
     {
-        $prompt = "Você é a Charlene, uma contadora de histórias cristã doce, entusiasmada, alegre, amorosa e cativante para a princesinha Sarah (filha do Adrian King e da Samara). "
-            . "Você é superdotada e especialista em toda a Bíblia Sagrada. "
-            . "Conte a seguinte história bíblica com encanto infantil: {$item['titulo']} (Personagem: {$item['personagem']}). "
-            . "{$instrucaoExtra} "
-            . "Use onomatopeias suaves e divertidas (ex: 'tchibum', 'toc toc', 'glup', 'uau'). Fale com muita doçura, entusiasmo e calor humano. "
-            . "Tamanho: de 180 a 240 palavras. "
-            . "Termine com uma lição prática e emocionante de fé, coragem e o amor de Jesus para o coraçãozinho da Sarahzinha. "
-            . "Pergunte carinhosamente no final se ela quer ouvir outra história da Bíblia ou colocar uma de suas músicas.";
+        $prompt = "Você é a Charlene, mentora e contadora de histórias cristã doce, entusiasmada, amorosa e cativante para a princesinha Sarah (filha do Adrian King e da Samara). "
+            . "Você aplica neurociência infantil, psicologia do desenvolvimento (faixa de 10 meses a 7 anos), PNL positiva e pedagogia bíblica do afeto.\n"
+            . "História: {$item['titulo']} (Personagem: {$item['personagem']}). Tema: {$item['tema']}. Lições: {$item['licoes']}.\n"
+            . "{$instrucaoExtra}\n"
+            . "ESTRUTURA PEDAGÓGICA E NEUROCIENTÍFICA OBRIGATÓRIA DA HISTÓRIA:\n"
+            . "1. ACOLHIMENTO E VAGAL / CALMA: Comece convidando a Sarahzinha para respirar fundo com a barriguinha cheia de paz e amor ('Vamos respirar bem fundo... enche a barriguinha e solta devagarzinho...').\n"
+            . "2. NARRATIVA VÍVIDA E SENSORIAL: Conte a história bíblica com riqueza de detalhes visuais, cores brilhantes, texturas, sons e onomatopeias suaves e divertidas (ex: 'tchibum', 'toc-toc', 'vuush', 'ploc-ploc'). Conte o que Deus fez de grandioso e sobrenatural!\n"
+            . "3. ESTÍMULO COGNITIVO / QI E RACIOCÍNIO RÁPIDO: Faça uma perguntinha de raciocínio lógico rápida e lúdica para desafiar e expandir o cérebro dela (ex: contar elementos, notar cores, identificar o poder de Deus).\n"
+            . "4. MOVIMENTO PSICOMOTOR INTERATIVO: Peça uma micro-ação física alegre (ex: 'bate duas palminhas bem rápido com a Charlene!', 'levanta as mãozinhas pro céu', 'põe a mãozinha no coraçãozinho').\n"
+            . "5. HONRA E OBEDIÊNCIA AOS PAIS (Adrian King e Samara): Destaque como o herói bíblico ouviu e obedeceu com amor, ensinando que a criança sábia obedece e honra com alegria o papai e a mamãe, pois isso traz a bênção e a proteção de Deus!\n"
+            . "6. PNL E IDENTIDADE VENCEDORA: Declare a identidade da Sarah ('Você tem mente de Cristo, é inteligente, brilhante, forte e princesa de Deus!').\n"
+            . "7. RIMA DE OURO MNEMÔNICA: Finalize com uma riminha fofa de 2 versos para fixação na memória de longo prazo.\n"
+            . "8. Tamanho: de 220 a 280 palavras. Fale com muita doçura, entusiasmo e calor humano.\n"
+            . "Termine perguntando carinhosamente se ela quer ouvir outra história da Bíblia ou uma musiquinha linda.";
 
         $story = $this->callAiWithMemory($prompt, 'historia_biblica');
 
         if (!$story) {
-            $story = $item['historia_base'] ?? (
+            $base = $item['historia_base'] ?? (
                 "Era uma vez na Bíblia Sagrada uma história linda sobre {$item['personagem']}! "
                 . "O Papai do Céu fez grandes maravilhas para mostrar que Ele sempre cuida com amor de quem confia Nele. "
-                . "Sarahzinha, o mesmo Deus de poder que cuidou de {$item['personagem']} é quem cuida de você, do papai Adrian King e da mamãe Samara todos os dias! "
-                . "Você é uma princesa muito preciosa para Jesus! Quer ouvir mais uma historinha linda agora?"
+                . "Sarahzinha, o mesmo Deus de poder que cuidou de {$item['personagem']} é quem cuida de você, do papai Adrian King e da mamãe Samara todos os dias!"
             );
+            $story = "Sarahzinha, vamos respirar fundo e encher a barriguinha de paz... Que delícia! "
+                . $base . " "
+                . "Bate duas palminhas com a Charlene! A criança sábia e inteligente obedece com amor ao papai Adrian King e à mamãe Samara! "
+                . "Você tem mente brilhante e é a princesinha de Jesus! "
+                . "Guarde no coraçãozinho a nossa rima de ouro: Coração obediente e mente genial, com Jesus eu venço todo mal! "
+                . "Quer ouvir mais uma historinha linda ou colocar uma musiquinha agora?";
         }
 
         $speechText = $prefixo ? ($prefixo . ' ' . $story) : $story;
@@ -1063,33 +1084,76 @@ class CharleneController extends Controller
     }
 
     /**
-     * Oração com suporte a pedidos específicos (ex: orar pelo Bispo Fernando, família, sono)
+     * Oração com autoridade espiritual: diferencia intercessão por pessoas vs oração de dormir da Sarah
      */
     private function handlePrayer(?string $pedido = null): JsonResponse
     {
-        // Carrega memórias de família e oração
-        $familyMemories = CharleneMemory::whereIn('category', ['familia', 'pedido_oracao', 'pessoa'])->get();
-        $memText = $familyMemories->pluck('content')->implode(' | ');
+        // Detecta se é intercessão por alguém específico (ex: Bispo Fernando, pastores, amigos, parentes, enfermos)
+        $isIntercession = false;
+        $targetPerson = null;
 
-        $prompt = "Você é a Charlene, amiguinha cristã doce da princesinha Sarah. "
-            . "Faça uma oração linda, amorosa e cheia de fé (cerca de 80 a 120 palavras). "
-            . ($pedido ? "Motivo especial da oração pedido agora: {$pedido}. " : "Oração para abençoar a vida da Sarah, a hora de dormir e trazer paz e anjos de Deus no quartinho dela. ")
-            . "Lembre-se da família amada dela: o papai Adrian King, a mamãe Samara, os vovôs Socorro e Ciço, os titios Marcos, Priscila e Pompom. "
-            . ($memText ? "Contexto de memórias conhecidas: {$memText}. " : "")
-            . "Fale com carinho maternal e infantil: 'Querido Papai do Céu...', termine em nome de Jesus com amém, e diga 'Durma com os anjinhos Sarahzinha, a Charlene te ama muito!'.";
+        if (!empty($pedido)) {
+            $cleaned = preg_replace('/^(?:ore|orar|fa[cç]a uma ora[cç][aã]o|ora[cç][aã]o|interceda|aben[cç]oe?)\s+(?:por|pela|pelo|pra|para)?\s*/ui', '', trim($pedido));
+            if (!empty($cleaned) && !preg_match('/^(?:dormir|noite|sono|sarah|mim)$/ui', $cleaned)) {
+                $isIntercession = true;
+                $targetPerson = $cleaned;
+            }
+        }
 
-        $prayer = $this->callAiWithMemory($prompt, 'oracao');
+        // Carrega memórias de família, pessoas e oração
+        $memories = CharleneMemory::whereIn('category', ['familia', 'pedido_oracao', 'pessoa'])->get();
+
+        // Se for intercessão por alguém específico, busca contexto de memórias
+        if ($isIntercession && $targetPerson) {
+            $matched = $memories->filter(function ($m) use ($targetPerson) {
+                return str_contains(mb_strtolower($m->content), mb_strtolower($targetPerson))
+                    || str_contains(mb_strtolower($m->subject), mb_strtolower($targetPerson));
+            });
+            $personContext = $matched->isNotEmpty()
+                ? ("CONTEXTO CONHECIDO SOBRE ESSA PESSOA: " . $matched->pluck('content')->implode(' | '))
+                : "";
+
+            $prompt = "Você é a Charlene, companheira cristã cheia de fé e ousadia espiritual da princesinha Sarah e da família do Adrian King e da Samara.\n"
+                . "Faça uma ORAÇÃO DE INTERCESSÃO PODEROSA, FERVOROSA E COM AUTORIDADE ESPIRITUAL em favor de: {$targetPerson}.\n"
+                . ($personContext ? "{$personContext}\n" : "")
+                . "REGRAS OBRIGATÓRIAS:\n"
+                . "1. NÃO diga 'durma com os anjinhos' e NÃO trate como oração de dormir (esta é uma intercessão com autoridade pastoral por essa pessoa).\n"
+                . "2. Clame pelo sangue precioso de Jesus sobre a vida, a saúde, o vigor, o lar, o ministério e a família de {$targetPerson}.\n"
+                . "3. Declare sabedoria divina, vitória sobre todo impedimento, portas abertas e unção redobrada do Espírito Santo sobre ele.\n"
+                . "4. Fale com calor humano, reverência e forte autoridade de fé (de 90 a 130 palavras).\n"
+                . "5. Encerre dizendo: 'Em nome de Jesus! Sarahzinha e família, digam com fé: Amém!' e pergunte em seguida se desejam mais alguma oração ou louvor.";
+
+            $prayer = $this->callAiWithMemory($prompt, 'oracao_intercessao');
+
+            if (!$prayer) {
+                $prayer = "Pai Celestial, em nome do Teu Filho amado Jesus Cristo, nós levantamos a nossa voz com autoridade e muita fé para interceder pela vida preciosa de {$targetPerson}! "
+                    . "Derrama da Tua graça abundante, da Tua cura, vigor renovado e proteção angelical sobre ele, seu lar, sua família e todos os seus passos! "
+                    . "Repreendemos todo mal e cobrimos a vida dele com o sangue poderoso de Jesus! Que haja portas abertas de prosperidade, paz e sabedoria todos os dias! "
+                    . "Em nome de Jesus! Sarahzinha e família, digam com fé: Amém!";
+            }
+
+            $this->rememberEntity('pedido_oracao', 'oracao_' . substr(md5($targetPerson), 0, 8), "Oração de intercessão realizada por: {$targetPerson}");
+
+            return $this->respondSsml($prayer, false, '<speak>Sarahzinha, tem mais alguém por quem você quer que a Charlene ore agora?</speak>');
+        }
+
+        // Caso B: ORAÇÃO DE BENÇÃO E PROTEÇÃO PARA A SARAH E FAMÍLIA (NOITE / GERAL)
+        $memText = $memories->where('category', 'familia')->pluck('content')->implode(' | ');
+        $prompt = "Você é a Charlene, amiguinha cristã doce e protetora da princesinha Sarah (filha do Adrian King e da Samara).\n"
+            . "Faça uma oração doce, cheia de paz e carinho maternal (cerca de 80 a 120 palavras).\n"
+            . "Abençoe a princesinha Sarah, cubra seu bercinho e quartinho com anjos de luz, abençoe sua mente brilhante, saúde e soninho tranquilo.\n"
+            . "Abençoe com amor e gratidão o papai Adrian King, a mamãe Samara e toda a família linda.\n"
+            . ($memText ? "Contexto da família: {$memText}\n" : "")
+            . "Finalize com amor: 'Em nome de Jesus, amém! Durma em paz com os anjinhos, Sarahzinha! A Charlene te ama muito!'.";
+
+        $prayer = $this->callAiWithMemory($prompt, 'oracao_sono');
 
         if (!$prayer) {
             $prayer = "Querido Papai do Céu, muito obrigada por esse dia tão lindo e abençoado! "
-                . "Abençoe a princesinha Sarah, o papai Adrian King, a mamãe Samara e toda a nossa família com muita paz, saúde e amor. "
-                . "Envia Teus anjos de luz para guardarem o quartinho da Sarahzinha com sonhos lindos. "
+                . "Abençoe a princesinha Sarah com uma noite de sono cheia de paz, saúde e sonhos doces. "
+                . "Abençoe o papai Adrian King, a mamãe Samara e toda a nossa família linda com Tua proteção perfeita. "
+                . "Envia Teus anjos de luz para guardarem o bercinho da Sarahzinha com muito amor. "
                 . "Em nome de Jesus, amém! Durma com os anjinhos, Sarahzinha! A Charlene te ama muito!";
-        }
-
-        // Se orou por alguém novo, salva na memória
-        if ($pedido) {
-            $this->rememberEntity('pedido_oracao', 'oracao_' . substr(md5($pedido), 0, 8), "Oração realizada por: {$pedido}");
         }
 
         return $this->respondSsml($prayer, false, '<speak>Sarahzinha, você quer que eu conte uma historinha ou toque um louvorzinho para dormir agora?</speak>');
@@ -1134,7 +1198,28 @@ class CharleneController extends Controller
             return $this->handleMenuOpcoes();
         }
 
-        // 3. Busca memórias permanentes priorizando toda a família, pessoas e orações
+        // 3. Checa se pediu a Ativação da Noite / Sabedoria / Prosperidade antes de dormir
+        if (preg_match('/(?:ativação|ativacao|prosperidade|decreto)\s*(?:da noite|de hoje|noturna|antes de dormir)?/iu', $userUtterance)) {
+            return $this->handleAtivacaoNoite();
+        }
+
+        // 4. Checa se pediu o Devocional do dia
+        if (preg_match('/(?:devocional|palavra do dia)\s*(?:de hoje|do papai)?/iu', $userUtterance)) {
+            return $this->handleDevocional();
+        }
+
+        // 5. Checa se pediu oração ou intercessão por alguém
+        if (preg_match('/(?:ora|orar|ore|oração|oracao|interceda|interceder|abençoa|abencoa|abençoe|abencoe)\s+(?:por|pela|pelo|pra|para)?\s*(.+)/iu', $userUtterance, $mPray)) {
+            return $this->handlePrayer(trim($mPray[1]));
+        }
+
+        // 6. Checa se pediu para contar uma história bíblica
+        if (preg_match('/(?:conta|conte|ouvir|quero)\s*(?:uma\s+)?(?:hist[oó]ria|historinha)\s*(?:b[ií]blica)?\s*(?:sobre|de|do|da)?\s*(.*)/iu', $userUtterance, $mStory)) {
+            $storyTopic = trim($mStory[1] ?? '');
+            return $this->handleBibleStory($storyTopic ?: null);
+        }
+
+        // 7. Busca memórias permanentes priorizando toda a família, pessoas e orações
         $familyMemories = CharleneMemory::where('category', 'familia')->orderBy('id', 'asc')->get();
         $otherMemories = CharleneMemory::whereIn('category', ['pessoa', 'pedido_oracao'])->orderBy('updated_at', 'desc')->take(20)->get();
         $allMemories = $familyMemories->merge($otherMemories);
@@ -1454,7 +1539,7 @@ class CharleneController extends Controller
     }
 
     /**
-     * Devocional do dia do papai Adrian King
+     * Devocional do dia do papai Adrian King (Conecta King)
      */
     private function handleDevocional(): JsonResponse
     {
@@ -1465,21 +1550,70 @@ class CharleneController extends Controller
             if ($dev && !empty($dev['reflexao'])) {
                 $titulo = $dev['titulo'] ?? 'Devocional de Hoje';
                 $versiculo = $dev['versiculo_texto'] ?? $dev['versiculo_ref'] ?? '';
-                $reflexao = mb_substr(strip_tags($dev['reflexao']), 0, 320);
+                $reflexaoPura = trim(strip_tags((string) $dev['reflexao']));
+                if (mb_strlen($reflexaoPura) > 360) {
+                    $posPonto = mb_strrpos(mb_substr($reflexaoPura, 0, 360), '.');
+                    $reflexaoPura = ($posPonto !== false && $posPonto > 140)
+                        ? mb_substr($reflexaoPura, 0, $posPonto + 1)
+                        : (mb_substr($reflexaoPura, 0, 360) . '...');
+                }
 
-                $speech = '<speak>Aqui está o devocional de hoje, Sarahzinha! '
+                $speech = '<speak>Aqui está o devocional de hoje do Conecta King, Sarahzinha e família! '
                     . htmlspecialchars($titulo) . '. '
                     . ($versiculo ? 'A palavra diz: ' . htmlspecialchars($versiculo) . '. ' : '')
-                    . htmlspecialchars($reflexao) . ' '
-                    . 'Que linda mensagem de Deus para abençoar o nosso dia!</speak>';
+                    . htmlspecialchars($reflexaoPura) . ' '
+                    . 'Que mensagem abençoada para encher o coração de fé e paz!</speak>';
 
-                return $this->respondSsml($speech, false, '<speak>Sarahzinha, quer ouvir uma música de adoração agora?</speak>');
+                return $this->respondSsml($speech, false, '<speak>Sarahzinha, quer ouvir uma música de adoração ou uma história da Bíblia agora?</speak>');
             }
         } catch (\Throwable $e) {
             Log::warning('alexa.devocional.err', ['msg' => $e->getMessage()]);
         }
 
         return $this->respondSpeech('Hoje o dia está muito abençoado! O papai Adrian King preparou devocionais lindos no Conecta King para você ouvir e crescer na fé!', false);
+    }
+
+    /**
+     * Ativação Diária de Sabedoria e Prosperidade antes de dormir (Provérbios 1 a 31 - Do Fracasso ao Legado)
+     */
+    private function handleAtivacaoNoite(): JsonResponse
+    {
+        try {
+            $ativService = app(BibleProsperidadeService::class);
+            $hoje = $ativService->getHoje();
+
+            if (!empty($hoje['ok']) && !empty($hoje['data'])) {
+                $d = $hoje['data'];
+                $titulo = $d['titulo'] ?? 'Sabedoria Diária';
+                $proverbsRef = $d['proverbs_ref'] ?? 'Provérbios';
+                $sentenca = !empty($d['sentenca_ativacao']) ? trim($d['sentenca_ativacao']) : '';
+                $novaMente = !empty($d['nova_mentalidade']) ? trim($d['nova_mentalidade']) : '';
+
+                $blocoSentenca = $sentenca ?: $novaMente ?: 'Eu tenho a mente de Cristo e caminho em sabedoria, paz e prosperidade!';
+                if (mb_strlen($blocoSentenca) > 280) {
+                    $pos = mb_strrpos(mb_substr($blocoSentenca, 0, 280), '.');
+                    if ($pos !== false && $pos > 120) {
+                        $blocoSentenca = mb_substr($blocoSentenca, 0, $pos + 1);
+                    }
+                }
+
+                $speech = '<speak>Sarahzinha e papai Adrian! Chegou a hora da nossa Ativação Diária de Sabedoria e Prosperidade de hoje, fundamentada em '
+                    . htmlspecialchars($proverbsRef) . '! '
+                    . 'Tema: ' . htmlspecialchars($titulo) . '. '
+                    . 'Vamos respirar bem fundo, acalmar o coração e declarar com autoridade e fé para reprogramar a nossa mente esta noite: '
+                    . htmlspecialchars($blocoSentenca) . ' '
+                    . 'Amém! Sarahzinha, você foi criada para reinar em vida com a sabedoria e inteligência de Deus! Durmam na mais perfeita paz do Senhor Jesus!</speak>';
+
+                return $this->respondSsml($speech, false, '<speak>Sarahzinha, quer que eu toque um louvorzinho suave para você dormir agora?</speak>');
+            }
+        } catch (\Throwable $e) {
+            Log::warning('alexa.ativacao_noite.err', ['msg' => $e->getMessage()]);
+        }
+
+        $fallback = '<speak>Sarahzinha e papai Adrian, vamos declarar nossa ativação de sabedoria desta noite: '
+            . 'O Senhor é o meu pastor e nada me faltará! Eu tenho a mente de Cristo, sou próspera, sábia e guardada pelo amor do Pai! '
+            . 'Durmam em perfeita paz debaixo das asas do Altíssimo! Amém!</speak>';
+        return $this->respondSsml($fallback, false, '<speak>Quer uma musiquinha bem suave para dormir agora, Sarahzinha?</speak>');
     }
 
     /**

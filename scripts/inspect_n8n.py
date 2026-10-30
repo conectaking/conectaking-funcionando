@@ -1,25 +1,23 @@
-import sqlite3
-import json
+import subprocess
+
+remote_py = """
+import sqlite3, json
 
 conn = sqlite3.connect('/var/lib/docker/volumes/ck-agent_n8n_data/_data/database.sqlite')
-cursor = conn.cursor()
-
-print("=== WORKFLOW: CK Agent Telegram IA Boot (mkK244lveO0N1qPR) ===")
-cursor.execute("SELECT id, name, active, nodes FROM workflow_entity WHERE id = 'mkK244lveO0N1qPR';")
-row = cursor.fetchone()
+c = conn.cursor()
+c.execute("SELECT id, name, active, nodes, connections, settings FROM workflow_entity WHERE active=1 LIMIT 1")
+row = c.fetchone()
 if row:
-    print(f"Name: {row[1]} | Active: {row[2]}")
+    print("ID:", row[0])
+    print("Name:", row[1])
+    print("Active:", row[2])
     nodes = json.loads(row[3])
+    print("Nodes:", len(nodes))
     for n in nodes:
-        if 'telegram' in n.get('type', '').lower():
-            print("  Node:", n.get('name'), "->", n.get('parameters'), "credentials:", n.get('credentials'))
+        print(" - Node:", n.get('name'), "Type:", n.get('type'))
+"""
 
-print("\n=== LATEST EXECUTIONS (All) ===")
-cursor.execute("SELECT id, workflowId, status, mode, startedAt, stoppedAt FROM execution_entity ORDER BY id DESC LIMIT 10;")
-for r in cursor.fetchall():
-    print(r)
-
-print("\n=== WEBHOOK REGISTRATIONS ===")
-cursor.execute("SELECT * FROM webhook_entity LIMIT 10;")
-for r in cursor.fetchall():
-    print(r)
+proc = subprocess.run(["ssh", "-o", "StrictHostKeyChecking=no", "root@46.225.100.64", "python3"], input=remote_py, text=True, capture_output=True)
+print(proc.stdout)
+if proc.stderr:
+    print("ERR:", proc.stderr)
