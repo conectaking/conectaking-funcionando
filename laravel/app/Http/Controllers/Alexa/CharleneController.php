@@ -1367,7 +1367,7 @@ class CharleneController extends Controller
     /**
      * Chama OpenAI com memória contextual
      */
-    private function callAiWithMemory(string $userPrompt, string $contextType): ?string
+    private function callAiWithMemory(string $userPrompt, string $contextType, int $maxTokens = 420): ?string
     {
         $memories = CharleneMemory::whereIn('category', ['familia', 'pessoa', 'pedido_oracao'])
             ->orderBy('updated_at', 'desc')
@@ -1380,13 +1380,13 @@ class CharleneController extends Controller
             . "Contexto e memórias da família:\n{$memText}\n"
             . "Fale sempre com linguagem infantil, acolhedora, cheia de fé e amor de Deus.";
 
-        return $this->callOpenAiChat($system, $userPrompt);
+        return $this->callOpenAiChat($system, $userPrompt, $maxTokens);
     }
 
     /**
      * Chamada direta à OpenAI GPT-4o-mini
      */
-    private function callOpenAiChat(string $systemPrompt, string $userMessage): ?string
+    private function callOpenAiChat(string $systemPrompt, string $userMessage, int $maxTokens = 350): ?string
     {
         $apiKey = trim((string) (env('OPENAI_API_KEY') ?: ''));
         if (!$apiKey) {
@@ -1397,10 +1397,10 @@ class CharleneController extends Controller
             $res = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $apiKey,
                 'Content-Type' => 'application/json',
-            ])->timeout(6)->post('https://api.openai.com/v1/chat/completions', [
+            ])->timeout(7)->post('https://api.openai.com/v1/chat/completions', [
                 'model' => 'gpt-4o-mini',
                 'temperature' => 0.72,
-                'max_tokens' => 280,
+                'max_tokens' => $maxTokens,
                 'messages' => [
                     ['role' => 'system', 'content' => $systemPrompt],
                     ['role' => 'user', 'content' => $userMessage],
