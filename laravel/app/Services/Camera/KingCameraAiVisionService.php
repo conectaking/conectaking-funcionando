@@ -7,12 +7,14 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Serviço de Inteligência Artificial com Visão Computacional (OpenAI Vision / Gemini)
- * Especializado em Monitoramento e Segurança Infantil King Câmera.
+ * Especializado em Monitoramento e Segurança Infantil Pediátrica King Câmera.
  *
  * Responsável por:
- * 1. Diferenciar com precisão cirúrgica bebê deitado/dormindo vs bebê em pé na grade.
- * 2. Reconhecer membros ou partes do bebê (pés, pernas, braços, tronco) para fora do berço/cerco.
- * 3. Filtrar lençóis, cobertores dobrados, roupas e travesseiros inanimados (zero falsos alarmes).
+ * 1. Diferenciação biológica: bebê humano (pele, rosto, cabelinho, membros) vs travesseiro, lençol e almofadas.
+ * 2. Detecção de Cuidador/Adulto (Pai ou Mãe): identifica quando um adulto se aproxima para ajeitar a coberta, ninar ou pegar o bebê.
+ * 3. Compreensão 3D de postura: bebê deitado dormindo (costas, bruços, lado) vs em pé na grade.
+ * 4. Validação anatômica de cerca: confirma se um membro ou corpo do bebê realmente ultrapassou as grades do berço.
+ * 5. Detecção de risco de sufocamento: alerta se o rostinho da criança foi coberto por pano ou travesseiro.
  */
 class KingCameraAiVisionService
 {
@@ -40,7 +42,7 @@ class KingCameraAiVisionService
     }
 
     /**
-     * Analisa com IA Vision o snapshot da câmera quando há um alerta candidato.
+     * Analisa com IA Vision o snapshot da câmera quando há um alerta candidato ou consulta do usuário.
      *
      * @return array{
      *   evaluated: bool,
@@ -49,6 +51,11 @@ class KingCameraAiVisionService
      *   is_limb_outside: bool,
      *   is_baby_outside: bool,
      *   is_blanket_or_empty: bool,
+     *   adult_present: bool,
+     *   adult_label: string,
+     *   adult_action: string,
+     *   is_face_covered: bool,
+     *   baby_posture: string,
      *   confidence: float,
      *   description: string,
      *   source: string
@@ -58,13 +65,18 @@ class KingCameraAiVisionService
     {
         $defaultFallback = [
             'evaluated' => false,
-            'is_standing' => ($candidateEvent === 'baby_stand'),
-            'is_lying_down' => false,
-            'is_limb_outside' => in_array($candidateEvent, ['crib_fence', 'fence_breach']),
-            'is_baby_outside' => in_array($candidateEvent, ['crib_fence', 'fence_breach']),
+            'is_standing' => false,
+            'is_lying_down' => true,
+            'is_limb_outside' => false,
+            'is_baby_outside' => false,
             'is_blanket_or_empty' => false,
+            'adult_present' => false,
+            'adult_label' => '',
+            'adult_action' => '',
+            'is_face_covered' => false,
+            'baby_posture' => 'sleeping_back',
             'confidence' => 0.5,
-            'description' => '',
+            'description' => 'Bebê no berço (análise preliminar)',
             'source' => 'fallback'
         ];
 
@@ -89,39 +101,65 @@ class KingCameraAiVisionService
         return $defaultFallback;
     }
 
-    private function analyzeWithOpenAi(string $jpegBinary, string $candidateEvent): array
+    private function getSpecialistPrompt(string $candidateEvent): string
     {
-        $base64 = base64_encode($jpegBinary);
-        $dataUrl = "data:image/jpeg;base64,{$base64}";
+        return <<<PROMPT
+Você é o sistema especialista de visão computacional pediátrica da King Câmera.
+Sua missão é supervisionar a segurança do bebê no berço através da imagem da câmera (pode estar em visão noturna infravermelha em tons de cinza ou colorida).
+O sistema local de sensores pré-sinalizou o seguinte evento candidato: "{$candidateEvent}".
 
-        $systemPrompt = <<<PROMPT
-Você é um sistema especialista de visão computacional da King Câmera para segurança de bebês e crianças em berços.
-Analise a imagem da câmera (visão do quarto/berço, pode estar em visão noturna infravermelha em tons de cinza ou colorida).
-O sistema local pré-detectou um possível evento: "{$candidateEvent}".
+Analise a cena com rigor e máxima atenção biológica e espacial:
 
-Sua missão é classificar a cena com rigor e verdade anatômica:
-1) BEBÊ EM PÉ vs DEITADO:
-   - Se o bebê está DEITADO no colchão (de costas, de bruços, de lado, dormindo ou acordado no colchão), 'is_standing' DEVE ser FALSE e 'is_lying_down' DEVE ser TRUE! Mesmo que a cabeça esteja na cabeceira ou o berço esteja visto na vertical, um bebê deitado NUNCA está em pé.
-   - Para 'is_standing' ser TRUE, a criança DEVE estar fisicamente levantada sobre as pernas/pés OU erguida apoiando o tronco e as mãos na grade superior do berço.
-2) MEMBRO OU CORPO FORA DO BERÇO (CERCO):
-   - 'is_limb_outside': TRUE se uma perna, pé, braço, mão ou tronco da criança passou para fora das grades/limite do berço.
-   - 'is_baby_outside': TRUE se a criança saiu do berço e está no chão ou cama ao lado.
-3) LENÇÓIS / ROUPAS / COBERTORES / BERÇO VAZIO:
-   - Se for apenas um cobertor amassado, lençol ou travesseiro sem criança em situação de risco, marque 'is_blanket_or_empty': TRUE.
+1) SER HUMANO REAL vs TRAVESSEIRO / COBERTOR / BICHOS:
+- Diferencie com precisão tecido/lençol dobrado, almofada ou travesseiro de partes do corpo humano (cabeça com cabelinho, rostinho, perninhas, braços, pezinhos e mãos).
+- Uma dobra de lençol branca no infravermelho NÃO é um pé nem um ombro!
+- Se a cama estiver vazia ou com apenas panos e travesseiros: 'is_blanket_or_empty': true.
 
-Responda APENAS em JSON válido com as seguintes chaves:
+2) PRESENÇA DE ADULTO / CUIDADOR (PAI OU MÃE):
+- Verifique se há uma pessoa adulta (pai, mãe ou cuidador) no berço ou debruçada sobre o berço.
+- Se houver um braço grande de adulto ajeitando a coberta, colocando a chupeta, acalmando o bebê ou pegando a criança no colo:
+  * 'adult_present': true
+  * 'adult_label': "Pai" (se homem adulto), "Mãe" (se mulher adulta) ou "Pai/Mãe (Cuidador)"
+  * 'adult_action': ex: "ajeitando o cobertor do bebê", "colocando a chupeta e acalmando", "segurando a criança no colo"
+  * IMPORTANTE: Se o braço visto for de um ADULTO cuidando do bebê, NUNCA considere que o bebê 'saiu do cerco'!
+
+3) POSTURA REAL DO BEBÊ (DEITADO vs EM PÉ):
+- Visão zenital/inclinada comprime a altura. O bebê deitado no colchão (de costas, de lado ou de bruços) tem a cabeça no topo e pés embaixo na foto, mas ele está 100% DEITADO!
+- Para 'is_standing' ser TRUE, a criança DEVE estar fisicamente levantada sobre os dois pés OU em pé erguida segurando na grade superior do berço. Se o corpinho estiver sobre o colchão, 'is_standing' DEVE ser FALSE e 'is_lying_down' DEVE ser TRUE.
+
+4) MEMBRO OU CORPO PARA FORA DO BERÇO (CERCO):
+- 'is_limb_outside': TRUE SOMENTE SE uma perna, pé, braço ou mão real do bebê ultrapassou fisicamente para fora das grades/limite do berço.
+- Se o bebê está completamente dentro do perímetro do berço e do colchão, 'is_limb_outside' DEVE ser FALSE!
+- 'is_baby_outside': TRUE SOMENTE se a criança saiu do berço (ex: no chão ou cama ao lado).
+
+5) RISCO DE SUFOCAMENTO:
+- 'is_face_covered': TRUE se o rostinho da criança estiver coberto por cobertor grosso, pano ou travesseiro impedindo a respiração livre.
+
+Responda ESTRITAMENTE em formato JSON com estas chaves:
 {
   "is_standing": boolean,
   "is_lying_down": boolean,
   "is_limb_outside": boolean,
   "is_baby_outside": boolean,
   "is_blanket_or_empty": boolean,
+  "adult_present": boolean,
+  "adult_label": string,
+  "adult_action": string,
+  "is_face_covered": boolean,
+  "baby_posture": string ("sleeping_back"|"sleeping_stomach"|"sleeping_side"|"awake_moving"|"standing"|"empty"),
   "confidence": float (0.0 a 1.0),
-  "description": string (ex: "Bebê está deitado dormindo tranquilamente sob o cobertor" ou "Bebê está em pé se apoiando na grade" ou "Perna do bebê está passando para fora da grade do berço")
+  "description": string (descrição humanizada e detalhada, ex: "Bebê está deitado dormindo tranquilamente de barriga para cima, totalmente seguro dentro do berço" ou "Pai/Mãe está no berço ajeitando o cobertor da neném" ou "Pé do bebê passou para fora da grade lateral do berço")
 }
 PROMPT;
+    }
 
-        $res = Http::timeout(4.5)
+    private function analyzeWithOpenAi(string $jpegBinary, string $candidateEvent): array
+    {
+        $base64 = base64_encode($jpegBinary);
+        $dataUrl = "data:image/jpeg;base64,{$base64}";
+        $systemPrompt = $this->getSpecialistPrompt($candidateEvent);
+
+        $res = Http::timeout(5.5)
             ->withToken($this->getOpenAiKey())
             ->post(self::OPENAI_CHAT_URL, [
                 'model' => $this->getOpenAiModel(),
@@ -130,13 +168,13 @@ PROMPT;
                     [
                         'role' => 'user',
                         'content' => [
-                            ['type' => 'text', 'text' => "Classifique o estado da criança nesta imagem do berço. Responda apenas JSON."],
-                            ['type' => 'image_url', 'image_url' => ['url' => $dataUrl, 'detail' => 'low']],
+                            ['type' => 'text', 'text' => "Classifique com rigor especialista o estado do bebê e a presença de cuidadores nesta cena do berço. Responda apenas JSON."],
+                            ['type' => 'image_url', 'image_url' => ['url' => $dataUrl, 'detail' => 'high']],
                         ],
                     ],
                 ],
                 'temperature' => 0.05,
-                'max_tokens' => 200,
+                'max_tokens' => 280,
                 'response_format' => ['type' => 'json_object'],
             ]);
 
@@ -151,31 +189,18 @@ PROMPT;
             throw new \RuntimeException("Resposta OpenAI não é JSON válido: " . $content);
         }
 
-        return [
-            'evaluated' => true,
-            'is_standing' => (bool) ($json['is_standing'] ?? false),
-            'is_lying_down' => (bool) ($json['is_lying_down'] ?? false),
-            'is_limb_outside' => (bool) ($json['is_limb_outside'] ?? false),
-            'is_baby_outside' => (bool) ($json['is_baby_outside'] ?? false),
-            'is_blanket_or_empty' => (bool) ($json['is_blanket_or_empty'] ?? false),
-            'confidence' => (float) ($json['confidence'] ?? 0.9),
-            'description' => trim((string) ($json['description'] ?? '')),
-            'source' => 'openai'
-        ];
+        return $this->formatNormalizedResult($json, 'openai');
     }
 
     private function analyzeWithGemini(string $jpegBinary, string $candidateEvent): array
     {
         $apiKey = $this->getGeminiKey();
         $base64 = base64_encode($jpegBinary);
-
-        $prompt = "Você é o sistema de visão inteligente da King Câmera para segurança de berço. Analise esta foto do berço/quarto da criança. O evento candidato é '{$candidateEvent}'.\n"
-            . "Determine: se o bebê está deitado dormindo (is_lying_down: true, is_standing: false); se está em pé na grade (is_standing: true); se há membro/perna/braço para fora das grades (is_limb_outside: true); se é apenas cobertor/lençol vazio (is_blanket_or_empty: true).\n"
-            . "Responda SOMENTE JSON no formato: {\"is_standing\": bool, \"is_lying_down\": bool, \"is_limb_outside\": bool, \"is_baby_outside\": bool, \"is_blanket_or_empty\": bool, \"confidence\": float, \"description\": string}";
+        $prompt = $this->getSpecialistPrompt($candidateEvent);
 
         $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$apiKey}";
 
-        $res = Http::timeout(4.5)
+        $res = Http::timeout(5.5)
             ->post($url, [
                 'contents' => [
                     [
@@ -207,16 +232,26 @@ PROMPT;
             throw new \RuntimeException("Gemini Vision não retornou JSON: " . $rawText);
         }
 
+        return $this->formatNormalizedResult($json, 'gemini');
+    }
+
+    private function formatNormalizedResult(array $json, string $source): array
+    {
         return [
             'evaluated' => true,
             'is_standing' => (bool) ($json['is_standing'] ?? false),
-            'is_lying_down' => (bool) ($json['is_lying_down'] ?? false),
+            'is_lying_down' => (bool) ($json['is_lying_down'] ?? true),
             'is_limb_outside' => (bool) ($json['is_limb_outside'] ?? false),
             'is_baby_outside' => (bool) ($json['is_baby_outside'] ?? false),
             'is_blanket_or_empty' => (bool) ($json['is_blanket_or_empty'] ?? false),
-            'confidence' => (float) ($json['confidence'] ?? 0.9),
+            'adult_present' => (bool) ($json['adult_present'] ?? false),
+            'adult_label' => trim((string) ($json['adult_label'] ?? 'Pai ou Mãe')),
+            'adult_action' => trim((string) ($json['adult_action'] ?? 'interagindo com o bebê no berço')),
+            'is_face_covered' => (bool) ($json['is_face_covered'] ?? false),
+            'baby_posture' => trim((string) ($json['baby_posture'] ?? 'sleeping_back')),
+            'confidence' => (float) ($json['confidence'] ?? 0.92),
             'description' => trim((string) ($json['description'] ?? '')),
-            'source' => 'gemini'
+            'source' => $source
         ];
     }
 }

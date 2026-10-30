@@ -10306,14 +10306,14 @@
                             for (const limbGroup of allLimbCheck) {
                                 for (const keyName of limbGroup.keys) {
                                     const pt = kps.find(k => k.name === keyName);
-                                    // Sensibilidade alta calibrada para visão noturna e penumbra (score >= 0.12)
-                                    if (pt && pt.score >= 0.12) {
+                                    // Calibração especialista: ignora ruído térmico/dobras de lençol (score >= 0.36)
+                                    if (pt && pt.score >= 0.36) {
                                         const px = (pt.x / vw) * 100;
                                         const py = (pt.y / vh) * 100;
-                                        // Tolerância estrita de 0.8% além da borda demarcada
+                                        // Tolerância estável de 2.5% para acomodar imprecisão milimétrica do desenho manual
                                         const insidePoly = (r.type === 'circle' && r.circle)
-                                            ? isPointInCircle(px, py, r.circle, 0.8)
-                                            : isPointInsidePolygonWithTolerance(px, py, r.points || [], 0.8);
+                                            ? isPointInCircle(px, py, r.circle, 2.5)
+                                            : isPointInsidePolygonWithTolerance(px, py, r.points || [], 2.5);
 
                                         if (!insidePoly) {
                                             limbBreached = true;
@@ -10351,13 +10351,13 @@
                                     let outsideCount = 0;
                                     for (const tp of bodyTestPts) {
                                         const inFence = (r.type === 'circle' && r.circle)
-                                            ? isPointInCircle(tp.x, tp.y, r.circle, 1.0)
-                                            : isPointInsidePolygonWithTolerance(tp.x, tp.y, r.points || [], 1.0);
+                                            ? isPointInCircle(tp.x, tp.y, r.circle, 2.0)
+                                            : isPointInsidePolygonWithTolerance(tp.x, tp.y, r.points || [], 2.0);
                                         if (!inFence) outsideCount++;
                                     }
 
-                                    // Se 2 ou mais pontos da caixa da criança ultrapassarem o cerco
-                                    if (outsideCount >= 2 && p.score >= 0.25) {
+                                    // Se 3 ou mais pontos da caixa da criança ultrapassarem o cerco com boa confiança
+                                    if (outsideCount >= 3 && p.score >= 0.40) {
                                         limbBreached = true;
                                         if (!breachMsg) {
                                             breachMsg = '🚨 Parte do corpo do bebê passou para fora do cerco do berço!';
@@ -10367,7 +10367,7 @@
                                     // Criança com o centro fora do berço (ex: no chão ou cama ao lado)
                                     const boxMotion = getRegionMotionPct(x1, y1, x2, y2);
                                     const areaPct = (bw * bh) / (vw * vh);
-                                    if (p.score >= 0.30 && (boxMotion >= 2.0 || areaPct >= 0.04)) {
+                                    if (p.score >= 0.35 && (boxMotion >= 2.0 || areaPct >= 0.04)) {
                                         isBabyOutsideCrib = true;
                                     }
                                 }
@@ -10391,8 +10391,8 @@
                             s.hasSeenInCrib = true;
                             s.isLimbBreached = true;
 
-                            // Exige apenas 2 ciclos consecutivos (~2.0s) para notificação rápida e precisa
-                            if (s.breachStreak >= 2) {
+                            // Exige 3 ciclos consecutivos (~3.6s) de persistência para evitar glitches momentâneos
+                            if (s.breachStreak >= 3) {
                                 if (s.fenceState !== 'OUTSIDE') {
                                     s.fenceState = 'OUTSIDE';
                                     s.alertCount = 1;

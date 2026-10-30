@@ -43,7 +43,11 @@ class KingCameraTelegramAgentService
 
         $nowStr = now()->setTimezone('America/Sao_Paulo')->format('d/m/Y H:i:s');
         $header = "⚠️ <b>ALERTA DE SEGURANÇA KING CÂMERA</b>";
-        if ($eventType === 'baby_cry') {
+        if ($eventType === 'adult_caregiver') {
+            $header = "🍼 <b>ALERTA DE CUIDADO: PAI/MÃE JUNTO AO BERÇO!</b>\n<i>(Presença de adulto prestando assistência ao bebê)</i>";
+        } elseif ($eventType === 'face_covered') {
+            $header = "🚨 <b>ALERTA DE SEGURANÇA: ROSTINHO DO BEBÊ COBERTO!</b>\n<i>(Possível risco de sufocamento por pano ou cobertor)</i>";
+        } elseif ($eventType === 'baby_cry') {
             $header = "😭 <b>ALERTA: CHORO DE BEBÊ DETECTADO!</b>\n<i>(Sensor acústico detectou choro no quarto)</i>";
         } elseif ($eventType === 'baby_stand') {
             $header = "🚨 <b>ALERTA: BEBÊ FICOU EM PÉ NO BERÇO!</b>\n<i>(Criança se levantou ou está apoiada nas grades)</i>";
@@ -299,9 +303,10 @@ class KingCameraTelegramAgentService
         if (str_starts_with($text, '/start')) {
             $reply = "👋 <b>Olá! Agente King Câmera Autenticado</b>\n\n"
                    . "Seu Telegram está vinculado com segurança às suas câmeras.\n\n"
-                   . "• /foto - Receber foto em tempo real\n"
-                   . "• /status - Ver status das câmeras\n"
-                   . "• /bloquear - Bloquear o acesso deste Telegram";
+                   . "• <b>/bebe</b> - Análise completa do bebê com IA em tempo real\n"
+                   . "• <b>/foto</b> - Receber foto em tempo real\n"
+                   . "• <b>/status</b> - Ver status das câmeras\n"
+                   . "• <b>/bloquear</b> - Bloquear o acesso deste Telegram";
 
             Http::timeout(5)->post("https://api.telegram.org/bot{$token}/sendMessage", [
                 'chat_id' => $chatId,
@@ -309,6 +314,94 @@ class KingCameraTelegramAgentService
                 'parse_mode' => 'HTML',
             ]);
             return ['status' => 'start_handled'];
+        }
+
+        // Comando /bebe ou perguntas naturais ("como tá o bebê", "ela tá dormindo", "neném", "berço")
+        $isBabyQuery = str_starts_with($text, '/bebe')
+            || str_starts_with($text, '/bebé')
+            || str_starts_with($text, '/nenem')
+            || str_starts_with($text, '/neném')
+            || stripos($text, 'como tá') !== false
+            || stripos($text, 'como esta') !== false
+            || stripos($text, 'como está') !== false
+            || stripos($text, 'bebe') !== false
+            || stripos($text, 'bebê') !== false
+            || stripos($text, 'nenem') !== false
+            || stripos($text, 'neném') !== false
+            || stripos($text, 'dormindo') !== false
+            || stripos($text, 'berço') !== false
+            || stripos($text, 'berco') !== false;
+
+        if ($isBabyQuery) {
+            $camera = KingCamera::where('telegram_chat_id', $chatId)->first();
+            if (! $camera) {
+                Http::timeout(5)->post("https://api.telegram.org/bot{$token}/sendMessage", [
+                    'chat_id' => $chatId,
+                    'text' => "Nenhuma câmera ativa encontrada para verificar o bebê.",
+                ]);
+                return ['status' => 'no_cam'];
+            }
+
+            $snap = $this->cameraService->getSnapshot($camera);
+            if (! $snap) {
+                Http::timeout(5)->post("https://api.telegram.org/bot{$token}/sendMessage", [
+                    'chat_id' => $chatId,
+                    'text' => "⚠️ Não foi possível obter imagem da câmera no momento para analisar o bebê.",
+                ]);
+                return ['status' => 'no_snap'];
+            }
+
+            /** @var KingCameraAiVisionService $aiVision */
+            $aiVision = app(KingCameraAiVisionService::class);
+            $ai = $aiVision->analyzeBabySafetySnapshot($snap, 'telegram_query');
+
+            if ($ai['is_standing']) {
+                $postureStr = '🚨 <b>Em pé na grade do berço</b>';
+            } elseif ($ai['is_lying_down']) {
+                $postureStr = '🛌 <b>Deitado(a) no colchão</b>';
+            } else {
+                $postureStr = '🧸 <b>No berço</b>';
+            }
+
+            $fenceStr = ($ai['is_limb_outside'] || $ai['is_baby_outside'])
+                ? '⚠️ <b>Atenção: Parte do corpo fora da área segura</b>'
+                : '✅ <b>100% protegido dentro do cerco</b>';
+
+            $caregiverStr = $ai['adult_present']
+                ? "🍼 <b>{$ai['adult_label']} presente ({$ai['adult_action']})</b>"
+                : '🛡️ Nenhum adulto no berço no momento';
+
+            $faceStr = $ai['is_face_covered']
+                ? '⚠️ <b>ALERTA: Rostinho parece coberto!</b>'
+                : '✅ <b>Vias respiratórias e rosto desobstruídos</b>';
+
+            $caption = "👶 <b>SUPERVISÃO KING CÂMERA (IA ESPECIALISTA)</b>\n\n"
+                     . "🔍 <b>Diagnóstico:</b> " . ($ai['description'] ?: 'Bebê no berço') . "\n\n"
+                     . "• <b>Postura:</b> {$postureStr}\n"
+                     . "• <b>Cerco Seguro:</b> {$fenceStr}\n"
+                     . "• <b>Cuidador/Adulto:</b> {$caregiverStr}\n"
+                     . "• <b>Respiração:</b> {$faceStr}\n\n"
+                     . "📹 <i>Câmera {$camera->name} às " . now()->format('H:i:s') . "</i>";
+
+            $pin = env('KING_CAMERA_PIN', 'King');
+            $webUrl = "https://www.conectaking.com.br/kingCamera?pin={$pin}";
+            $keyboard = [
+                'inline_keyboard' => [
+                    [
+                        ['text' => '🎥 Abrir Câmera ao Vivo', 'url' => $webUrl],
+                        ['text' => '📸 Atualizar Foto', 'callback_data' => "snap_{$camera->id}"],
+                    ],
+                ],
+            ];
+
+            Http::timeout(12)->attach('photo', $snap, 'bebe.jpg')->post("https://api.telegram.org/bot{$token}/sendPhoto", [
+                'chat_id' => $chatId,
+                'caption' => $caption,
+                'parse_mode' => 'HTML',
+                'reply_markup' => json_encode($keyboard),
+            ]);
+
+            return ['status' => 'bebe_query_handled'];
         }
 
         // Comando /status

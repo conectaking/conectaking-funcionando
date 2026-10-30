@@ -1166,31 +1166,69 @@ class KingCameraController extends Controller
                 if ($jpegBinary && in_array($eventType, ['baby_stand', 'crib_fence', 'fence_breach']) && $this->aiVision->isAvailable()) {
                     $aiAnalysis = $this->aiVision->analyzeBabySafetySnapshot($jpegBinary, $eventType);
                     if ($aiAnalysis['evaluated']) {
+                        // Caso 0: Presença de Adulto/Cuidador (Pai ou Mãe) ajeitando o bebê
+                        if ($aiAnalysis['adult_present']) {
+                            $caregiverCacheKey = "kc_caregiver_alert_{$camera->id}";
+                            $lastCaregiver = (int) \Illuminate\Support\Facades\Cache::get($caregiverCacheKey, 0);
+                            $nowTs = time();
+                            if (($nowTs - $lastCaregiver) >= 20) {
+                                \Illuminate\Support\Facades\Cache::put($caregiverCacheKey, $nowTs, 45);
+                                $eventType = 'adult_caregiver';
+                                $description = "🍼 {$aiAnalysis['adult_label']} no berço: {$aiAnalysis['adult_action']} (" . ($aiAnalysis['description'] ?: 'Interação segura com o bebê') . ')';
+                                $event->update(['event_type' => 'adult_caregiver', 'description' => $description]);
+                                $shouldSend = true;
+                            } else {
+                                $shouldSend = false;
+                            }
+                        }
+                        // Caso 0.1: Risco de Sufocamento / Rosto Coberto
+                        elseif ($aiAnalysis['is_face_covered']) {
+                            $faceCacheKey = "kc_face_covered_{$camera->id}";
+                            $lastFace = (int) \Illuminate\Support\Facades\Cache::get($faceCacheKey, 0);
+                            $nowTs = time();
+                            if (($nowTs - $lastFace) >= 15) {
+                                \Illuminate\Support\Facades\Cache::put($faceCacheKey, $nowTs, 45);
+                                $eventType = 'face_covered';
+                                $description = '⚠️ URGÊNCIA: Rostinho do bebê parece coberto por cobertor/tecido! (' . ($aiAnalysis['description'] ?: 'Verifique imediatamente') . ')';
+                                $event->update(['event_type' => 'face_covered', 'description' => $description]);
+                                $shouldSend = true;
+                            } else {
+                                $shouldSend = false;
+                            }
+                        }
                         // Caso 1: Bebê em pé (elimina falso positivo quando o bebê está deitado dormindo)
-                        if ($eventType === 'baby_stand') {
+                        elseif ($eventType === 'baby_stand') {
                             if (! $aiAnalysis['is_standing'] && $aiAnalysis['is_lying_down']) {
                                 \Illuminate\Support\Facades\Log::info('kc.recordEvent.ai_stand_filtered', [
                                     'camera_id' => $camera->id,
                                     'desc' => $aiAnalysis['description'] ?: 'Bebê está deitado dormindo, não em pé.',
                                 ]);
                                 $shouldSend = false; // Bloqueia o falso alarme no Telegram!
-                                $description = 'Bebê está deitado dormindo tranquilamente no berço (Alarme falso de bebê em pé evitado pela IA).';
+                                $description = 'Bebê está deitado dormindo no colchão (Alarme falso de bebê em pé evitado pela IA).';
                                 $event->update(['description' => $description]);
                             } elseif ($aiAnalysis['is_standing']) {
                                 $description = '🚨 ALERTA: Bebê ficou em pé no berço! (' . ($aiAnalysis['description'] ?: 'Confirmado por IA Vision') . ')';
                                 $event->update(['description' => $description]);
                             }
                         }
-
-                        // Caso 2: Cerca do berço (membro ou corpo fora vs cobertor/lençol inanimado)
-                        if (in_array($eventType, ['crib_fence', 'fence_breach'])) {
-                            if ($aiAnalysis['is_blanket_or_empty'] && ! $aiAnalysis['is_limb_outside'] && ! $aiAnalysis['is_baby_outside']) {
+                        // Caso 2: Cerca do berço (membro ou corpo fora vs cobertor/lençol vs bebê seguro dentro)
+                        elseif (in_array($eventType, ['crib_fence', 'fence_breach'])) {
+                            if ($aiAnalysis['is_blanket_or_empty']) {
                                 \Illuminate\Support\Facades\Log::info('kc.recordEvent.ai_fence_blanket_filtered', [
                                     'camera_id' => $camera->id,
                                     'desc' => $aiAnalysis['description'] ?: 'Apenas cobertor/lençol detectado.',
                                 ]);
                                 $shouldSend = false; // Bloqueia falso alarme de lençol!
                                 $description = 'Apenas cobertor/lençol estático no berço (Filtrado com sucesso pela IA).';
+                                $event->update(['description' => $description]);
+                            } elseif (! $aiAnalysis['is_limb_outside'] && ! $aiAnalysis['is_baby_outside']) {
+                                // O BEBÊ ESTÁ NO BERÇO, MAS TOTALMENTE DENTRO! NENHUM MEMBRO FORA!
+                                \Illuminate\Support\Facades\Log::info('kc.recordEvent.ai_fence_inside_filtered', [
+                                    'camera_id' => $camera->id,
+                                    'desc' => $aiAnalysis['description'] ?: 'Bebê totalmente seguro dentro do berço.',
+                                ]);
+                                $shouldSend = false; // BLOQUEIA O FALSO ALARME!
+                                $description = 'Bebê seguro dentro do berço (' . ($aiAnalysis['description'] ?: 'IA confirmou bebê protegido') . '). Falso alerta evitado.';
                                 $event->update(['description' => $description]);
                             } elseif ($aiAnalysis['is_limb_outside'] || $aiAnalysis['is_baby_outside']) {
                                 if (! empty($aiAnalysis['description'])) {
