@@ -1198,6 +1198,117 @@
                 min-height: 24px !important;
             }
         }
+
+        /* Estilos do Leitor de Histórias Bíblicas */
+        .story-catalog-card {
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+        }
+        .story-catalog-card:hover {
+            border-color: rgba(139, 92, 246, 0.4);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+        }
+        .story-read-toggle-btn:hover {
+            filter: brightness(1.15);
+            transform: translateY(-1px);
+        }
+        .story-narrative-text {
+            font-size: 0.9rem;
+            line-height: 1.7;
+            color: #f1f5f9;
+        }
+        .story-ministracao-text {
+            font-size: 0.9rem;
+            line-height: 1.7;
+            color: #fdf2f8;
+        }
+        .filter-pill {
+            transition: all 0.2s;
+        }
+        .filter-pill:hover {
+            filter: brightness(1.2);
+        }
+        
+        /* Modal do Leitor de Histórias */
+        .story-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(7, 10, 18, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 99999;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+        .story-modal-overlay.active {
+            display: flex;
+        }
+        .story-modal-container {
+            background: #131927;
+            border: 1px solid #232d42;
+            border-radius: 18px;
+            width: 100%;
+            max-width: 820px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            overflow: hidden;
+            animation: modalFadeIn 0.25s ease-out;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.96) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .story-modal-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            background: #171f32;
+        }
+        .story-modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .story-modal-footer {
+            padding: 14px 24px;
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #171f32;
+        }
+        .story-modal-close-btn {
+            background: rgba(148, 163, 184, 0.15);
+            border: 1px solid var(--card-border);
+            color: #cbd5e1;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+        }
+        .story-modal-close-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border-color: #ef4444;
+        }
+
     </style>
 </head>
 @php
@@ -1561,16 +1672,49 @@
             </div>
 
             <!-- Lista de Histórias do Catálogo Mestre -->
-            <h3 style="font-size: 1.1rem; margin-bottom: 14px; font-weight: 800;">Catálogo de Histórias Bíblicas com Neurociência</h3>
-            <div class="memory-grid">
+                        <!-- Cabeçalho do Catálogo com Barra de Ações -->
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px;">
+                <div>
+                    <h3 style="font-size: 1.25rem; font-weight: 800; color: #f8fafc; margin-bottom: 4px;">📖 Catálogo de Histórias Bíblicas & Ministrações para a Sarah</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Clique em <strong>"Ler História & Ministração"</strong> para ver todo o texto da história em estilo professora e a ministração profética dos pais.</p>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" class="action-btn" onclick="toggleAllStories(true)" style="background: rgba(139, 92, 246, 0.2); border: 1px solid #8b5cf6; color: #ddd6fe; padding: 7px 12px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; cursor: pointer;">
+                        📖 Expandir Todas
+                    </button>
+                    <button type="button" class="action-btn" onclick="toggleAllStories(false)" style="background: rgba(148, 163, 184, 0.15); border: 1px solid var(--card-border); color: #cbd5e1; padding: 7px 12px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; cursor: pointer;">
+                        📕 Recolher Todas
+                    </button>
+                </div>
+            </div>
+
+            <!-- Barra de Pesquisa e Filtros Rápidos -->
+            <div style="background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px 16px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 250px;">
+                    <span style="font-size: 1.1rem;">🔍</span>
+                    <input type="text" id="storySearchInput" onkeyup="filterStoriesCatalog()" placeholder="Pesquisar por história, personagem, tema ou lição..." style="width: 100%; background: #0e1320; border: 1px solid var(--card-border); border-radius: 8px; padding: 9px 14px; color: #fff; font-size: 0.9rem; outline: none;">
+                </div>
+                <div style="display: flex; gap: 6px; align-items: center; font-size: 0.8rem; flex-wrap: wrap;">
+                    <button type="button" class="filter-pill active" id="filter-pill-todas" onclick="setStoryFilter('todas', this)" style="padding: 6px 12px; border-radius: 20px; border: 1px solid #8b5cf6; background: #8b5cf6; color: white; cursor: pointer; font-weight: 700;">Todas ({{ count($historiasCatalogo ?? []) }})</button>
+                    <button type="button" class="filter-pill" id="filter-pill-pendentes" onclick="setStoryFilter('pendentes', this)" style="padding: 6px 12px; border-radius: 20px; border: 1px solid var(--card-border); background: #0e1320; color: var(--text-muted); cursor: pointer; font-weight: 600;">⏳ Próximas</button>
+                    <button type="button" class="filter-pill" id="filter-pill-ouvidas" onclick="setStoryFilter('ouvidas', this)" style="padding: 6px 12px; border-radius: 20px; border: 1px solid var(--card-border); background: #0e1320; color: var(--text-muted); cursor: pointer; font-weight: 600;">✅ Já Ouvidas</button>
+                </div>
+                <div id="storiesCountBadge" style="font-size: 0.82rem; color: #a78bfa; font-weight: 700;">
+                    Exibindo {{ count($historiasCatalogo ?? []) }} histórias
+                </div>
+            </div>
+
+            <!-- Grid de Histórias com Leitor Expansível -->
+            <div class="memory-grid" id="storiesCatalogGrid">
                 @php
                     $ouvidasMap = ($historiasOuvidas ?? collect())->keyBy('subject');
                 @endphp
                 @foreach(($historiasCatalogo ?? []) as $h)
                     @php
                         $foiOuvida = isset($ouvidasMap[$h['slug']]);
+                        $searchableText = strtolower(($h['titulo'] ?? '') . ' ' . ($h['personagem'] ?? '') . ' ' . ($h['tema'] ?? '') . ' ' . ($h['licoes'] ?? ''));
                     @endphp
-                    <div class="memory-card" style="{{ $foiOuvida ? 'border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.04);' : '' }}">
+                    <div class="memory-card story-catalog-card" id="card-story-{{ $h['slug'] }}" data-slug="{{ $h['slug'] }}" data-ouvida="{{ $foiOuvida ? '1' : '0' }}" data-search="{{ $searchableText }}" style="{{ $foiOuvida ? 'border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.04);' : '' }}">
                         <div>
                             <div class="memory-top">
                                 @if($foiOuvida)
@@ -1583,14 +1727,71 @@
                                         ⏳ Próxima
                                     </span>
                                 @endif
+                                <span style="font-size: 0.75rem; color: #a78bfa; font-weight: 700;">#{{ $loop->iteration }}</span>
                             </div>
-                            <div class="memory-subject" style="margin-top: 8px;">{{ $h['titulo'] }}</div>
-                            <div style="font-size: 0.8rem; color: #c4b5fd; margin-bottom: 4px;"><strong>Personagem:</strong> {{ $h['personagem'] }}</div>
-                            <div class="memory-content" style="margin-bottom: 8px;"><strong>Lição:</strong> {{ $h['licoes'] }}</div>
-                            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
-                                <span style="background: rgba(139, 92, 246, 0.15); font-size: 0.68rem; padding: 2px 5px; border-radius: 4px; color: #ddd6fe;">🧠 QI & Vagal</span>
-                                <span style="background: rgba(236, 72, 153, 0.15); font-size: 0.68rem; padding: 2px 5px; border-radius: 4px; color: #fbcfe8;">💖 Honra aos Pais</span>
-                                <span style="background: rgba(16, 185, 129, 0.15); font-size: 0.68rem; padding: 2px 5px; border-radius: 4px; color: #a7f3d0;">🤸 Movimento</span>
+
+                            <div class="memory-subject" style="margin-top: 8px; font-size: 1.05rem; line-height: 1.35;">{{ $h['titulo'] }}</div>
+                            <div style="font-size: 0.85rem; color: #c4b5fd; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                <span>👤 <strong>Personagem:</strong> {{ $h['personagem'] }}</span>
+                                @if(!empty($h['tema']))
+                                    <span style="color: var(--text-muted); font-size: 0.75rem;">• {{ $h['tema'] }}</span>
+                                @endif
+                            </div>
+                            <div class="memory-content" style="margin-bottom: 10px; font-size: 0.86rem; color: #94a3b8; line-height: 1.4;">
+                                <strong>Lição de Ouro:</strong> {{ $h['licoes'] }}
+                            </div>
+
+                            <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px;">
+                                <span style="background: rgba(139, 92, 246, 0.15); font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; color: #ddd6fe;">🧠 Neurociência & QI</span>
+                                <span style="background: rgba(236, 72, 153, 0.15); font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; color: #fbcfe8;">💖 Honra aos Pais</span>
+                                <span style="background: rgba(245, 158, 11, 0.15); font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; color: #fde68a;">👑 Sabedoria Sarah</span>
+                            </div>
+
+                            <!-- Botões de Ação de Leitura -->
+                            <div style="display: flex; gap: 8px; margin-top: 6px;">
+                                <button type="button" class="story-read-toggle-btn" id="btn-toggle-{{ $h['slug'] }}" onclick="toggleStoryBox('{{ $h['slug'] }}')" style="flex: 1; background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(236, 72, 153, 0.2)); border: 1px solid rgba(139, 92, 246, 0.5); color: #f8fafc; padding: 9px 12px; border-radius: 8px; font-size: 0.84rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
+                                    <span class="story-toggle-icon" id="icon-toggle-{{ $h['slug'] }}">📖</span>
+                                    <span class="story-toggle-text" id="text-toggle-{{ $h['slug'] }}">Ler História & Ministração</span>
+                                </button>
+                                <button type="button" title="Abrir em Tela Cheia Focada" onclick="openStoryModal('{{ $h['slug'] }}')" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); color: #93c5fd; padding: 9px 12px; border-radius: 8px; font-size: 0.84rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                    🔍 Modal
+                                </button>
+                            </div>
+
+                            <!-- Caixa Expansível com Conteúdo Completo -->
+                            <div id="story-box-{{ $h['slug'] }}" class="story-expandable-box" style="display: none; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--card-border);">
+                                
+                                <!-- Bloco 1: A História Narrada da Professora -->
+                                <div style="background: rgba(11, 15, 25, 0.7); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 10px; padding: 14px; margin-bottom: 12px;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                                        <span style="font-size: 0.82rem; font-weight: 800; color: #a78bfa; text-transform: uppercase; letter-spacing: 0.5px;">
+                                            📜 A História Bíblica Completa (Contada como Professora)
+                                        </span>
+                                        <span style="font-size: 0.7rem; color: var(--text-muted);">Diálogos vivos, cores e emoção</span>
+                                    </div>
+                                    <div class="story-narrative-text" id="raw-story-{{ $h['slug'] }}" style="white-space: pre-line;">{{ $h['historia_base'] ?? 'História bíblica detalhada.' }}</div>
+                                </div>
+
+                                <!-- Bloco 2: Mini Ministração na Vida da Sarah -->
+                                <div style="background: linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(245, 158, 11, 0.08)); border: 1px solid rgba(236, 72, 153, 0.35); border-radius: 10px; padding: 14px; margin-bottom: 12px;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                                        <span style="font-size: 0.82rem; font-weight: 800; color: #f472b6; text-transform: uppercase; letter-spacing: 0.5px;">
+                                            👑 Mini Ministração & Declaração Profética para a Sarah
+                                        </span>
+                                        <span style="font-size: 0.7rem; color: #fde68a;">Adrian King & Samara</span>
+                                    </div>
+                                    <div class="story-ministracao-text" id="raw-ministracao-{{ $h['slug'] }}" style="white-space: pre-line;">{{ $h['ministracao_sarah'] ?? 'Ministração profética na vida da Sarah.' }}</div>
+                                </div>
+
+                                <!-- Ações da Caixa -->
+                                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+                                    <button type="button" onclick="copyStoryText('{{ $h['slug'] }}')" style="background: rgba(148, 163, 184, 0.15); border: 1px solid var(--card-border); color: #cbd5e1; padding: 6px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer;">
+                                        📋 Copiar História & Ministração
+                                    </button>
+                                    <button type="button" onclick="openStoryModal('{{ $h['slug'] }}')" style="background: rgba(139, 92, 246, 0.25); border: 1px solid #8b5cf6; color: #ddd6fe; padding: 6px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer;">
+                                        🔍 Ler em Tela Cheia
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2806,6 +3007,232 @@
                 alert('Erro de conexão ao reiniciar ciclo.');
             }
         }
+
+        // ================= FUNÇÕES DO LEITOR DE HISTÓRIAS BÍBLICAS =================
+        let currentModalStorySlug = null;
+        let currentStoryFilter = 'todas';
+
+        function toggleStoryBox(slug) {
+            const box = document.getElementById('story-box-' + slug);
+            const icon = document.getElementById('icon-toggle-' + slug);
+            const text = document.getElementById('text-toggle-' + slug);
+            if (!box) return;
+
+            const isHidden = box.style.display === 'none' || !box.style.display;
+            if (isHidden) {
+                box.style.display = 'block';
+                if (icon) icon.innerText = '📕';
+                if (text) text.innerText = 'Recolher História';
+            } else {
+                box.style.display = 'none';
+                if (icon) icon.innerText = '📖';
+                if (text) text.innerText = 'Ler História & Ministração';
+            }
+        }
+
+        function toggleAllStories(expand) {
+            const boxes = document.querySelectorAll('.story-expandable-box');
+            boxes.forEach(box => {
+                const slug = box.id.replace('story-box-', '');
+                const icon = document.getElementById('icon-toggle-' + slug);
+                const text = document.getElementById('text-toggle-' + slug);
+                if (expand) {
+                    box.style.display = 'block';
+                    if (icon) icon.innerText = '📕';
+                    if (text) text.innerText = 'Recolher História';
+                } else {
+                    box.style.display = 'none';
+                    if (icon) icon.innerText = '📖';
+                    if (text) text.innerText = 'Ler História & Ministração';
+                }
+            });
+        }
+
+        function filterStoriesCatalog() {
+            const q = (document.getElementById('storySearchInput')?.value || '').toLowerCase().trim();
+            const cards = document.querySelectorAll('.story-catalog-card');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const searchData = card.getAttribute('data-search') || '';
+                const isOuvida = card.getAttribute('data-ouvida') === '1';
+
+                let matchFilter = true;
+                if (currentStoryFilter === 'pendentes' && isOuvida) matchFilter = false;
+                if (currentStoryFilter === 'ouvidas' && !isOuvida) matchFilter = false;
+
+                const matchQuery = !q || searchData.includes(q);
+
+                if (matchFilter && matchQuery) {
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            const badge = document.getElementById('storiesCountBadge');
+            if (badge) {
+                badge.innerText = `Exibindo ${visibleCount} de ${cards.length} histórias`;
+            }
+        }
+
+        function setStoryFilter(filter, btn) {
+            currentStoryFilter = filter;
+            document.querySelectorAll('.filter-pill').forEach(b => {
+                b.style.background = '#0e1320';
+                b.style.borderColor = 'var(--card-border)';
+                b.style.color = 'var(--text-muted)';
+                b.style.fontWeight = '600';
+            });
+            if (btn) {
+                btn.style.background = '#8b5cf6';
+                btn.style.borderColor = '#8b5cf6';
+                btn.style.color = 'white';
+                btn.style.fontWeight = '700';
+            }
+            filterStoriesCatalog();
+        }
+
+        function openStoryModal(slug) {
+            const card = document.getElementById('card-story-' + slug);
+            if (!card) return;
+
+            currentModalStorySlug = slug;
+            const title = card.querySelector('.memory-subject')?.innerText || '';
+            const meta = card.querySelector('div[style*="color: #c4b5fd"]')?.innerText || '';
+            const licao = card.querySelector('.memory-content')?.innerText.replace('Lição de Ouro:', '').trim() || '';
+            const narrative = document.getElementById('raw-story-' + slug)?.innerText || '';
+            const ministracao = document.getElementById('raw-ministracao-' + slug)?.innerText || '';
+            const isOuvida = card.getAttribute('data-ouvida') === '1';
+
+            document.getElementById('modalStoryTitle').innerText = title;
+            document.getElementById('modalStoryMeta').innerText = meta;
+            document.getElementById('modalStoryLicao').innerText = licao;
+            document.getElementById('modalStoryNarrative').innerText = narrative;
+            document.getElementById('modalStoryMinistracao').innerText = ministracao;
+
+            const badge = document.getElementById('modalStoryBadge');
+            if (badge) {
+                if (isOuvida) {
+                    badge.innerText = '✅ História Já Ouvida no Ciclo';
+                    badge.style.background = 'rgba(16, 185, 129, 0.2)';
+                    badge.style.borderColor = '#10b981';
+                    badge.style.color = '#6ee7b7';
+                } else {
+                    badge.innerText = '⏳ Próxima História do Ciclo';
+                    badge.style.background = 'rgba(139, 92, 246, 0.2)';
+                    badge.style.borderColor = '#8b5cf6';
+                    badge.style.color = '#ddd6fe';
+                }
+            }
+
+            const modal = document.getElementById('storyReaderModal');
+            if (modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeStoryModal() {
+            const modal = document.getElementById('storyReaderModal');
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        function handleStoryModalBackdrop(e) {
+            if (e.target.id === 'storyReaderModal') {
+                closeStoryModal();
+            }
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeStoryModal();
+            }
+        });
+
+        async function copyStoryText(slug) {
+            const card = document.getElementById('card-story-' + slug);
+            const title = card?.querySelector('.memory-subject')?.innerText || '';
+            const narrative = document.getElementById('raw-story-' + slug)?.innerText || '';
+            const ministracao = document.getElementById('raw-ministracao-' + slug)?.innerText || '';
+
+            const fullText = `${title}
+
+[HISTÓRIA BÍBLICA]
+${narrative}
+
+[MINI MINISTRAÇÃO PARA A SARAH]
+${ministracao}`;
+            try {
+                await navigator.clipboard.writeText(fullText);
+                alert('História e Ministração copiadas para a área de transferência com sucesso!');
+            } catch (e) {
+                alert('Não foi possível copiar automaticamente.');
+            }
+        }
+
+        async function copyCurrentModalStory() {
+            if (currentModalStorySlug) {
+                await copyStoryText(currentModalStorySlug);
+            }
+        }
+
     </script>
+
+    <!-- MODAL DE LEITURA COMPLETA DE HISTÓRIA BÍBLICA & MINISTRAÇÃO -->
+    <div id="storyReaderModal" class="story-modal-overlay" onclick="handleStoryModalBackdrop(event)">
+        <div class="story-modal-container" onclick="event.stopPropagation()">
+            <div class="story-modal-header">
+                <div>
+                    <span id="modalStoryBadge" style="background: rgba(139, 92, 246, 0.2); border: 1px solid #8b5cf6; color: #ddd6fe; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;">História Bíblica</span>
+                    <h2 id="modalStoryTitle" style="font-size: 1.35rem; font-weight: 800; color: #fff; margin-top: 6px; line-height: 1.3;">Título da História</h2>
+                    <div id="modalStoryMeta" style="font-size: 0.85rem; color: #c4b5fd; margin-top: 2px;">Personagem & Tema</div>
+                </div>
+                <button type="button" class="story-modal-close-btn" onclick="closeStoryModal()" title="Fechar (Esc)">✕</button>
+            </div>
+            <div class="story-modal-body">
+                <!-- Lição de Ouro -->
+                <div style="background: rgba(139, 92, 246, 0.1); border-left: 4px solid #8b5cf6; border-radius: 6px; padding: 12px 16px;">
+                    <strong style="color: #c4b5fd; font-size: 0.82rem; text-transform: uppercase;">💡 Lição de Ouro para a Vida:</strong>
+                    <div id="modalStoryLicao" style="color: #e2e8f0; font-size: 0.92rem; margin-top: 4px; font-weight: 600;"></div>
+                </div>
+
+                <!-- A História Narrada -->
+                <div style="background: #0e1320; border: 1px solid var(--card-border); border-radius: 12px; padding: 18px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 8px;">
+                        <span style="font-size: 0.85rem; font-weight: 800; color: #a78bfa; text-transform: uppercase; letter-spacing: 0.5px;">
+                            📜 A História Narrada (Estilo Professora)
+                        </span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">Com detalhes pedagógicos vivos</span>
+                    </div>
+                    <div id="modalStoryNarrative" class="story-narrative-text" style="font-size: 0.95rem; line-height: 1.75; color: #f1f5f9; white-space: pre-line;"></div>
+                </div>
+
+                <!-- Mini Ministração -->
+                <div style="background: linear-gradient(135deg, rgba(236, 72, 153, 0.12), rgba(245, 158, 11, 0.1)); border: 1px solid rgba(236, 72, 153, 0.4); border-radius: 12px; padding: 18px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid rgba(236, 72, 153, 0.25); padding-bottom: 8px;">
+                        <span style="font-size: 0.85rem; font-weight: 800; color: #f472b6; text-transform: uppercase; letter-spacing: 0.5px;">
+                            👑 Mini Ministração & Identidade na Vida da Sarah
+                        </span>
+                        <span style="font-size: 0.75rem; color: #fde68a;">Honra ao Papai Adrian King & Mamãe Samara</span>
+                    </div>
+                    <div id="modalStoryMinistracao" class="story-ministracao-text" style="font-size: 0.95rem; line-height: 1.75; color: #fdf2f8; white-space: pre-line;"></div>
+                </div>
+            </div>
+            <div class="story-modal-footer">
+                <button type="button" id="modalCopyBtn" onclick="copyCurrentModalStory()" style="background: rgba(148, 163, 184, 0.15); border: 1px solid var(--card-border); color: #cbd5e1; padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    📋 Copiar Texto Completo
+                </button>
+                <button type="button" onclick="closeStoryModal()" style="background: #8b5cf6; border: none; color: white; padding: 8px 20px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer;">
+                    Fechar Leitor
+                </button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
