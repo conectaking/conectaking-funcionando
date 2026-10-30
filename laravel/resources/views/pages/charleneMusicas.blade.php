@@ -1688,6 +1688,52 @@
                 </div>
             </div>
 
+                        <!-- ================= PAINEL DO GERADOR INFINITO DA BÍBLIA (CHARLENE TEÓLOGA SUPREMA) ================= -->
+            <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(245, 158, 11, 0.1)); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 16px; padding: 20px; margin-bottom: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 16px;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                            <span style="background: linear-gradient(135deg, #f59e0b, #ec4899); color: #fff; font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px;">👑 Teóloga Suprema & Expert Bíblica</span>
+                            <span style="font-size: 0.75rem; color: #a78bfa; font-weight: 700;">Geração Infinita de Gênesis ao Apocalipse</span>
+                        </div>
+                        <h4 style="font-size: 1.25rem; font-weight: 800; color: #fff; line-height: 1.3;">Gerador Contínuo de Histórias Bíblicas Profundas</h4>
+                        <p style="font-size: 0.86rem; color: #cbd5e1; margin-top: 4px; max-width: 780px; line-height: 1.5;">
+                            A IA Charlene analisa todo o cânon sagrado da Bíblia e gera histórias completas <strong>na íntegra</strong> (sem resumos curtos), com narrativa histórica rica e <strong>Ministração Profética Sacerdotal</strong> profunda para a Sarah, incluindo a honra ao <strong>papai Adrian King</strong>, amor à <strong>mamãe Samara</strong> e a poderosa cobertura de oração da <strong>vovó Socorro</strong>!
+                        </p>
+                    </div>
+                    <div style="text-align: right; min-width: 160px;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Histórias no Catálogo:</span>
+                        <span id="headerTotalHistoriasBadge" style="font-size: 1.5rem; font-weight: 800; color: #fde68a;">{{ $totalCatalogo ?? 45 }}</span>
+                        <span style="font-size: 0.72rem; color: #a78bfa; display: block;">(Base + {{ $historiasIaCount ?? 0 }} da IA)</span>
+                    </div>
+                </div>
+
+                <!-- Formulário de Ação Rápida de Geração -->
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: rgba(11, 15, 25, 0.7); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px 14px;">
+                    <div style="flex: 1; min-width: 260px; display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 1.1rem;">✍️</span>
+                        <input type="text" id="customStoryPromptInput" placeholder="Quer uma passagem específica? Ex: Enoque, Eliseu e o machado, Apocalipse 21..." style="width: 100%; background: transparent; border: none; outline: none; color: #fff; font-size: 0.88rem;">
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button type="button" id="btnGerarEspecifica" onclick="gerarHistoriaComIa(true)" style="background: rgba(139, 92, 246, 0.3); border: 1px solid #8b5cf6; color: #ddd6fe; padding: 9px 16px; border-radius: 8px; font-size: 0.84rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                            <span>✨ Gerar Passagem Específica</span>
+                        </button>
+                        <button type="button" id="btnGerarProxima" onclick="gerarHistoriaComIa(false)" style="background: linear-gradient(135deg, #8b5cf6, #ec4899); border: none; color: #fff; padding: 9px 18px; border-radius: 8px; font-size: 0.85rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4); transition: all 0.2s;">
+                            <span>⚡ Gerar Próxima da Bíblia</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Barra de Status / Progresso da IA -->
+                <div id="aiGenerationStatusBar" style="display: none; margin-top: 12px; background: rgba(14, 19, 32, 0.9); border: 1px solid #8b5cf6; border-radius: 8px; padding: 10px 14px; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="spinner" style="width: 18px; height: 18px; border: 2px solid rgba(139, 92, 246, 0.3); border-top-color: #8b5cf6; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                        <span id="aiGenerationStatusText" style="font-size: 0.85rem; color: #ddd6fe; font-weight: 600;">Charlene Teóloga Suprema está analisando as Escrituras e redigindo a história bíblica na íntegra...</span>
+                    </div>
+                    <span style="font-size: 0.72rem; color: #fde68a;">Aguarde 10 a 20 seg</span>
+                </div>
+            </div>
+
             <!-- Barra de Pesquisa e Filtros Rápidos -->
             <div style="background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px 16px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 250px;">
@@ -1726,6 +1772,14 @@
                                     <span class="memory-cat" style="background: rgba(148, 163, 184, 0.1); color: var(--text-muted); border-color: var(--card-border);">
                                         ⏳ Próxima
                                     </span>
+                                @endif
+                                @if(!empty($h['gerada_por_ia']))
+                                    <span style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(236, 72, 153, 0.25)); border: 1px solid #f59e0b; color: #fde68a; font-size: 0.68rem; font-weight: 800; padding: 2px 6px; border-radius: 4px;">
+                                        ✨ IA Teóloga
+                                    </span>
+                                    <button type="button" title="Excluir história da IA" onclick="excluirHistoriaIa('{{ $h['id_banco'] ?? '' }}', '{{ $h['slug'] }}')" style="background: transparent; border: none; color: #ef4444; font-size: 0.85rem; cursor: pointer; padding: 0 4px; margin-left: 4px;">
+                                        🗑️
+                                    </button>
                                 @endif
                                 <span style="font-size: 0.75rem; color: #a78bfa; font-weight: 700;">#{{ $loop->iteration }}</span>
                             </div>
@@ -3178,6 +3232,90 @@ ${ministracao}`;
         async function copyCurrentModalStory() {
             if (currentModalStorySlug) {
                 await copyStoryText(currentModalStorySlug);
+            }
+        }
+
+
+        // ================= GERAÇÃO INFINITA DE HISTÓRIAS BÍBLICAS PELA IA TEÓLOGA =================
+        async function gerarHistoriaComIa(isEspecifica) {
+            const input = document.getElementById('customStoryPromptInput');
+            const tema = isEspecifica ? (input?.value || '').trim() : '';
+            if (isEspecifica && !tema) {
+                alert('Por favor, digite o nome de um personagem, livro ou passagem bíblica (ex: Enoque, Elias e a carruagem de fogo, Apocalipse 21).');
+                input?.focus();
+                return;
+            }
+
+            const btnProxima = document.getElementById('btnGerarProxima');
+            const btnEsp = document.getElementById('btnGerarEspecifica');
+            const statusBar = document.getElementById('aiGenerationStatusBar');
+            const statusText = document.getElementById('aiGenerationStatusText');
+
+            if (btnProxima) btnProxima.disabled = true;
+            if (btnEsp) btnEsp.disabled = true;
+            if (statusBar) statusBar.style.display = 'flex';
+            if (statusText) {
+                statusText.innerText = isEspecifica
+                    ? `Charlene Teóloga Suprema está analisando e redigindo a história bíblica de "${tema}" na íntegra...`
+                    : 'Charlene Teóloga Suprema está identificando a próxima história essencial da Bíblia e redigindo na íntegra...';
+            }
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+
+            try {
+                const res = await fetch('/api/alexa/charlene/historias/gerar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-CK-CSRF': getCkCsrfCookie()
+                    },
+                    body: JSON.stringify({ tema: tema })
+                });
+
+                const j = await res.json();
+                if (j.success && j.historia) {
+                    alert('Glória a Deus! ' + j.message);
+                    if (input) input.value = '';
+                    location.reload();
+                } else {
+                    alert('Aviso: ' + (j.message || 'Erro ao gerar história'));
+                }
+            } catch (err) {
+                alert('Erro de conexão ao gerar história com IA: ' + err.message);
+            } finally {
+                if (btnProxima) btnProxima.disabled = false;
+                if (btnEsp) btnEsp.disabled = false;
+                if (statusBar) statusBar.style.display = 'none';
+            }
+        }
+
+        async function excluirHistoriaIa(id, slug) {
+            if (!confirm('Deseja excluir esta história gerada pela IA do catálogo?')) return;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+
+            try {
+                const res = await fetch('/api/alexa/charlene/historias/delete-ia', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-CK-CSRF': getCkCsrfCookie()
+                    },
+                    body: JSON.stringify({ id: id, slug: slug })
+                });
+
+                const j = await res.json();
+                if (j.success) {
+                    const card = document.getElementById('card-story-' + slug);
+                    if (card) card.remove();
+                    alert(j.message);
+                    location.reload();
+                } else {
+                    alert('Erro: ' + j.message);
+                }
+            } catch (err) {
+                alert('Erro ao excluir história.');
             }
         }
 

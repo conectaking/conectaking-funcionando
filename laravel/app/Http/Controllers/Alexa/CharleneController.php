@@ -21,413 +21,271 @@ class CharleneController extends Controller
     // Categorias de músicas suportadas
     public const CATEGORIAS = ['adoracao', 'dormir', 'animadas', 'geral'];
 
-    // Catálogo mestre com 45 histórias da Bíblia Sagrada (Antigo e Novo Testamento)
     public const HISTORIAS_CATALOGO = [
         [
-            'slug' => 'davi_golias',
-            'titulo' => 'Davi e o Gigante Golias',
-            'personagem' => 'Davi',
-            'tema' => 'Davi e o Gigante Golias',
-            'licoes' => 'coragem, fé e que quem confia em Deus vence qualquer gigante',
-            'historia_base' => 'Era uma vez um jovem pastorzinho chamado Davi. Ele cuidava das ovelhinhas do seu pai nos campos verdes, dedilhando sua harpa com som suave, plim-plim, cantando louvores ao Senhor! Um dia, um gigante muito alto chamado Golias, com mais de três metros e uma armadura pesada de bronze que reluzia ao sol, começou a desafiar o exército de Deus com uma voz que tremia a terra: \'MUAHAHA! Quem tem coragem de lutar contra mim?!\' Todos os soldados tremiam de medo! Mas Davi, mesmo sendo jovem e pequeno, olhou com os olhos cheios de fé e disse: \'Você vem contra mim com espada e lança, mas eu vou contra você em nome do Senhor dos Exércitos!\' Davi correu até o riacho de águas cristalinas, escolheu cinco pedrinhas bem lisinhas e colocou na sua bolsa de pastor. Pegou sua funda, mirou no gigante e girou no ar: zun-zun-zun-zun! Soltou a pedrinha, e ela voou veloz como o vento e... PLOC! Acertou em cheio a testa do gigante! O gigante Golias balançou para a frente e caiu estatelado no chão, BUM! Todos os israelitas gritaram de alegria e comemoraram a vitória!',
-            'ministracao_sarah' => 'Sarahzinha, meu amor, vem cá com a Charlene! Sabe o que essa história ensina para o seu coraçãozinho? Que para o nosso Deus não existe nenhum gigante impossível! Você não precisa ter medo de nada, nem do escuro, nem de barulho, porque o mesmo Deus que deu força e pontaria para Davi mora dentro de você! E olha que segredo precioso: a criança que tem mente brilhante escuta com amor e obedece com alegria ao papai Adrian King e à mamãe Samara! Quando você honra seus papais, os anjos de Deus formam um escudo de proteção ao redor do seu bercinho! Você é uma princesa corajosa, inteligente e vitoriosa em Jesus! Guarda no coraçãozinho a nossa Rima de Ouro: \'Coração obediente e fé sem igual, com Jesus eu venço todo mal!\'',
-        ],
-        [
-            'slug' => 'arca_noe',
-            'titulo' => 'A Arca de Noé, os Animais e o Arco-Íris',
-            'personagem' => 'Noé',
-            'tema' => 'A Arca de Noé e o Arco-Íris',
-            'licoes' => 'obediência, proteção de Deus aos animais e a promessa do arco-íris',
-            'historia_base' => 'Noé era um homem justo e muito amigo de Deus. Um dia, o Papai do Céu falou com Noé e deu uma ordem bem diferente: construir um barco gigantesco de madeira, a Arca! Noé pegou as ferramentas e começou a trabalhar com dedicação: toc-toc-toc, ploc-ploc-ploc! Os vizinhos achavam estranho, pois nem chovia, mas Noé obedeceu em tudo. Quando a arca ficou pronta, Deus fez um desfile lindo de animais entrando de dois em dois: leõezinhos balançando a juba, elefantes fazendo trombeta, girafas de pescoço comprido e coelhinhos saltitantes! Todos entraram em paz. Deus fechou a porta com Sua própria mão. E a chuva começou a cair: chuá-chuá, plip-plop! As águas subiram, mas dentro da arca todos estavam seguros, quentinhos e alimentados por Deus. Quando a tempestade passou, Noé soltou uma pombinha que voltou com uma folha verde de oliveira no bico. A terra secou, a porta se abriu e Deus pintou no céu um arco-íris maravilhoso com cores vibrantes — vermelho, amarelo, azul e violeta — como a aliança eterna de amor e cuidado com Seus filhos!',
-            'ministracao_sarah' => 'Sarahzinha, olha que revelação linda para a sua vida! Noé obedeceu a Deus mesmo quando ninguém entendia, e a obediência salvou toda a família dele! Assim também, quando você escuta e obedece com um sorriso lindo ao papai Adrian King e à mamãe Samara, a sua vida fica guardada e quentinha debaixo da arca do amor de Deus! O Papai do Céu nunca quebra uma promessa feita para você. Você é a promessa mais preciosa da família King! Vamos bater duas palminhas de alegria? Nossa Rima de Ouro: \'Na arca do amor eu vou caminhar, ouvindo o papai e a mamãe sem vacilar!\'',
-        ],
-        [
-            'slug' => 'daniel_leoes',
-            'titulo' => 'Daniel na Cova dos Leões Famintos',
-            'personagem' => 'Daniel',
-            'tema' => 'Daniel na Cova dos Leões Famintos',
-            'licoes' => 'oração fiel diária e como o anjo do Senhor fechou a boca dos leões',
-            'historia_base' => 'Daniel morava num grande palácio na Babilônia e era o homem mais sábio de todo o reino, porque o Espírito do Deus Santo habitava nele! Todos os dias, três vezes ao dia, Daniel abria a janela do seu quarto virada para Jerusalém, dobrava seus joelhinhos e orava com gratidão. Homens invejosos armaram um plano ruim e convenceram o rei a criar uma lei proibindo qualquer um de orar a outro deus. Mas Daniel não teve medo: continuou orando e louvando! Os homens pegaram Daniel e o jogaram numa cova funda, escura e cheia de leões rugindo de fome: ROOOAR! O rei não conseguiu dormir de tristeza. Mas sabe o que aconteceu no fundo daquela cova? Deus enviou um anjo de luz celestial que fez carinho nos leões e fechou a boca de cada um deles! Os leões viraram gatinhinhos mansos e dormiram encostados em Daniel a noite inteira! Logo ao amanhecer, o rei correu à cova e gritou: \'Daniel, servo do Deus vivo, o teu Deus pôde te livrar?!\' E Daniel respondeu com voz firme e alegre: \'Ó rei, vive para sempre! O meu Deus enviou o Seu anjo e fechou a boca dos leões!\' Daniel saiu sem um único arranhão!',
-            'ministracao_sarah' => 'Sarahzinha, minha princesinha! Olha o poder da oração diária! Quando você junta suas mãozinhas para orar com o papai Adrian e a mamãe Samara, o Céu se move e anjos protetores são enviados para acampar ao redor do seu quartinho! Nenhum leão, nenhum perigo e nenhum mal pode tocar na vida de uma criança que ama e ora a Deus. Você é guardada pelo Altíssimo e tem a sabedoria de Daniel! Nossa Rima de Ouro: \'De joelhos dobrados eu vou orar, anjos de Deus vêm me guardar!\'',
-        ],
-        [
-            'slug' => 'moises_mar_vermelho',
-            'titulo' => 'Moisés e a Grande Travessia do Mar Vermelho',
-            'personagem' => 'Moisés',
-            'tema' => 'Moisés e a Travessia do Mar Vermelho',
-            'licoes' => 'o poder de Deus abrindo caminhos onde parecia não ter saída',
-            'historia_base' => 'Moisés estava liderando o povo de Deus saindo da escravidão em direção à Terra Prometida. Depois de marcharem pelo deserto, chegaram diante de uma barreira imensa: as águas profundas e azuis do Mar Vermelho! De repente, ouviu-se ao longe um barulho assustador: pocotó-pocotó-pocotó! Eram os carros de guerra e os cavalos do Faraó perseguindo o povo! As pessoas começaram a chorar de medo: \'Moisés, não temos para onde correr! O mar está na frente e o exército atrás!\' Mas Moisés, com o coração cheio da fé de Deus, disse ao povo: \'Não tenham medo! Fiquem firmes e vejam a salvação do Senhor! O Senhor lutará por vocês!\' Deus disse a Moisés: \'Levanta o teu cajado e estende a mão sobre as águas!\' Moisés estendeu o cajado, e Deus enviou um vento oriental fortíssimo durante toda a noite: shhhhh, vuuuush! As águas do mar se dividiram milagrosamente, subindo como duas muralhas gigantescas de água cristalina, uma à direita e outra à esquerda! E no meio do mar, o chão ficou sequinho! O povo de Deus atravessou a pé enxuto com seus filhos, ovelhinhas e pertences, louvando o Senhor!',
-            'ministracao_sarah' => 'Sarahzinha, que grandiosidade! Quando parecer que não tem caminho ou que algo é difícil demais, lembre-se do Deus de Moisés: Ele abre o mar para você passar a pé enxuto! O papai Adrian King e a mamãe Samara te ensinam o caminho de Deus, e quando você segue esse caminho com obediência e coração doce, o mar se abre diante dos seus passinhos! Você é uma menina de milagres e nada vai te parar! Nossa Rima de Ouro: \'O mar se abre com grande poder, com meu Jesus eu nasci pra vencer!\'',
-        ],
-        [
-            'slug' => 'jonas_grande_peixe',
-            'titulo' => 'Jonas e o Grande Peixe',
-            'personagem' => 'Jonas',
-            'tema' => 'Jonas e o Grande Peixe',
-            'licoes' => 'obedecer a voz do Senhor e a segunda chance que Deus nos dá',
-            'historia_base' => 'Deus chamou o profeta Jonas e disse com amor: \'Vá até a grande cidade de Nínive e diga que Eu quero perdoar o povo!\' Mas Jonas ficou com medo e tentou fugir para bem longe num navio que ia para Társis. Enquanto o navio navegava, Deus enviou um vento forte no mar e uma tempestade enorme balançava o barco: o mar fazia \'chuááá\' e as ondas batiam nas tábuas, creck-creck! Os marinheiros estavam apavorados. Jonas reconheceu que estava fugindo da voz de Deus e disse: \'Me joguem no mar e a tempestade vai se acalmar.\' Quando jogaram Jonas na água: tchibum! Na mesma hora o mar ficou tão lisinho quanto um espelho. E sabe o que Deus preparou? Um grande peixe, do tamanho de uma casa, que engoliu Jonas num só bocado: glup! Lá dentro da barriguinha escura do peixe, Jonas se ajoelhou e orou com todo o seu coração, pedindo perdão e louvando a Deus pela Sua bondade. Três dias depois, Deus falou com o peixe, e o peixe nadou até a beira da praia e colocou Jonas suavemente na areia quentinha! Jonas foi depressa a Nínive, pregou a Palavra e a cidade inteira se arrependeu e foi salva!',
-            'ministracao_sarah' => 'Sarahzinha, veja o quanto o nosso Deus é misericordioso! Mesmo quando Jonas errou, Deus deu uma nova oportunidade cheia de amor. Na sua vida com o papai Adrian King e a mamãe Samara, obedecer logo de primeira é sempre o melhor e mais gostoso caminho! Mas se um dia você ficar tristinha ou fizer uma travessura, você pode pedir perdão e abraçar seus papais, porque o amor deles e o amor de Jesus sempre te acolhem e te levantam! Você tem um coraçãozinho puro e ensinável! Nossa Rima de Ouro: \'Ouço com amor e obedeço ligeiro, o plano de Deus é o mais verdadeiro!\'',
-        ],
-        [
-            'slug' => 'multiplicacao_paes',
-            'titulo' => 'A Multiplicação dos Pães e Peixinhos',
-            'personagem' => 'Jesus e o menino dos pães',
-            'tema' => 'A Multiplicação dos Pães e Peixinhos',
-            'licoes' => 'generosidade, partilha e como Jesus faz o milagre com o pouco que temos',
-            'historia_base' => 'Uma multidão imensa de mais de cinco mil pessoas passou o dia todo num gramado verdinho ouvindo Jesus ensinar sobre o Reino de Deus com tanto amor que ninguém queria ir embora! Quando o sol começou a se pôr, as barriguinhas das crianças e dos adultos começaram a roncar de fome: ronc-ronc! Os discípulos disseram a Jesus: \'Mestre, manda o povo embora para as aldeias comprarem comida.\' Mas Jesus disse: \'Não precisam ir embora; deem vocês mesmos de comer a eles!\' André olhou e falou: \'Tem aqui um menininho que tem cinco pãezinhos de cevada e dois peixinhos assados... Mas o que é isso para tanta gente?\' O menininho entregou seu lanchinho inteiro nas mãos de Jesus com um coração generoso. Jesus pegou os pãezinhos, olhou para o Céu, abençoou e deu graças ao Pai. E quando começou a partir e entregar aos discípulos, o pão e o peixe iam brotando e multiplicando sem parar! Quanto mais repartiam, mais comida aparecia! Todos comeram com fartura até ficarem saciados, e no final ainda recolheram doze cestos transbordando de sobras!',
-            'ministracao_sarah' => 'Sarahzinha, que história fascinante! Sabe o que Jesus nos ensina aqui? Que a generosidade abre as portas do Céu! Quando você compartilha seus brinquedinhos, seu carinho e seu amor com seus amiguinhos e com a sua família, Jesus pega o seu pouquinho e transforma num montão de bênçãos! O papai Adrian King e a mamãe Samara te ensinam a ser uma menina generosa e abençoadora. Nas mãos de Jesus, a sua vida vai alimentar e abençoar milhares de pessoas com a sabedoria de Deus! Nossa Rima de Ouro: \'Com coração bondoso vou compartilhar, e as bênçãos de Deus vão se multiplicar!\'',
-        ],
-        [
-            'slug' => 'jesus_acalma_tempestade',
-            'titulo' => 'Jesus Acalma a Tempestade no Mar',
-            'personagem' => 'Jesus',
-            'tema' => 'Jesus Acalma a Tempestade no Mar',
-            'licoes' => 'paz, segurança e que mesmo quando o vento sopra forte, Jesus está no nosso barquinho',
-            'historia_base' => 'Ao final da tarde, Jesus disse aos discípulos: \'Vamos passar para o outro lado do lago.\' Eles entraram no barquinho de madeira e começaram a remar suavemente pelas águas do Mar da Galileia. Jesus estava tão cansado do Seu dia de amor que deitou a cabecinha num travesseiro na popa do barco e dormiu em paz profunda: zzz... De repente, o céu escureceu, os trovões rugiram — CABUM! — e um vendaval violento se levantou! As ondas gigantescas batiam contra o barquinho, plof, plof, e a água começou a entrar no convés! Os discípulos, que eram pescadores experientes, entraram em desespero e foram acordar Jesus: \'Mestre! O Senhor não se importa que nós vamos afundar?!\' Jesus abriu Seus olhos serenos, levantou-se com majestade no meio do vento furioso, estendeu a Sua mão soberana sobre as ondas e ordenou: \'Acalma-te! Emudece!\' Na mesma hora, o vento parou de soprar, as ondas se aquietaram e veio uma bonança e paz tão perfeita que se podia ouvir o sussurro da brisa! Os discípulos maravilhados disseram: \'Quem é este que até o vento e o mar Lhe obedecem?\'',
-            'ministracao_sarah' => 'Sarahzinha, respira fundo comigo... Que paz maravilhosa! Sabe o que essa história traz para o seu coraçãozinho? Jesus está no barquinho da sua vida todos os dias! Quando qualquer ventinho de medo, dorzinha de dente ou chorinho tentar tirar a sua paz, você pode descansar nos braços do papai Adrian King e da mamãe Samara, porque Jesus traz paz perfeita para o seu quartinho! Você tem a paz que excede todo o entendimento! Nossa Rima de Ouro: \'O vento e o mar a Jesus obedecem, no meu barquinho as dores esquecem!\'',
-        ],
-        [
-            'slug' => 'nascimento_jesus',
-            'titulo' => 'O Nascimento do Bebê Jesus em Belém',
-            'personagem' => 'Jesus, Maria e José',
-            'tema' => 'O Nascimento do Bebê Jesus em Belém',
-            'licoes' => 'o maior presente de amor que o Papai do Céu deu ao mundo',
-            'historia_base' => 'Numa noite tranquila e iluminada por um céu repleto de estrelas brilhantes como diamantes, Maria e José viajaram até a cidadezinha de Belém. Como todas as hospedarias estavam cheias de viajantes, um bondoso senhor cedeu um estábulo aconchegante, onde havia palha macia, ovelhinhas mansas e vaquinhas descansando. E foi ali, na simplicidade mais pura do amor de Deus, que o Salvador do mundo nasceu: o bebê Jesus! Maria o envolveu com muito carinho em panos quentinhos e o deitou com doçura numa manjedoura de madeira. Lá nos campos, pastores vigiavam suas ovelhas quando de repente uma luz celestial radiante brilhou e um anjo do Senhor disse: \'Não temais! Trago novas de grande alegria: nasceu hoje o Salvador, Cristo o Senhor!\' E subitamente uma multidão de anjos celestiais cantou com vozes sublimes: \'Glória a Deus nas maiores alturas e paz na terra entre os homens a quem Ele quer bem!\' Os pastores correram e encontraram o lindo bebezinho Jesus, adorando-o com lágrimas de gratidão e alegria!',
-            'ministracao_sarah' => 'Sarahzinha, meu tesouro! Jesus também foi um bebezinho lindo, cuidado com tanto amor por Maria e José, assim como você é amada, cuidada e beijada com todo o carinho pelo papai Adrian King e pela mamãe Samara! Você é um presente de Deus para a sua família, uma joia rara enviada do Céu. O mesmo amor e luz que brilharam na manjedoura brilham nos seus olhinhos e na sua vida hoje! Nossa Rima de Ouro: \'Jesus nasceu e me encheu de amor, sou princesinha do meu Salvador!\'',
-        ],
-        [
-            'slug' => 'rainha_ester',
-            'titulo' => 'A Corajosa Rainha Ester',
-            'personagem' => 'Rainha Ester',
-            'tema' => 'A Rainha Ester, Cheia de Coragem',
-            'licoes' => 'coragem de uma princesa de Deus para salvar o seu povo com oração e jejum',
-            'historia_base' => 'Ester era uma jovem órfã de coração doce, muito bondosa, temente a Deus e de uma beleza radiante que brilhava de dentro para fora. Ela foi criada pelo seu sábio tio Mordecai, a quem ela sempre honrava e obedecia com amor exemplar! Deus abençoou Ester de tal maneira que o rei da Pérsia a escolheu para ser a nova rainha, colocando uma coroa de ouro na sua cabeça! Um dia, um homem arrogante e mau chamado Hamã armou um decreto injusto para destruir todo o povo judeu. Mordecai mandou um recado para Ester: \'Quem sabe se não foi exatamente para um momento decisivo como este que você chegou ao reino?\' Ester não recuou! Com grande coragem espiritual, pediu que todo o povo se unisse em oração por três dias. No terceiro dia, vestiu seus trajes reais mais belos e entrou na presença do rei. Ao vê-la, o rei estendeu com graça o seu cetro de ouro para ela! Ester revelou a maldade de Hamã com sabedoria, o rei revogou o plano maligno e todo o povo foi salvo com grande honra, banquete e festa de vitória!',
-            'ministracao_sarah' => 'Sarahzinha, que exemplo lindo para a sua vida! Ester era uma menina obediente ao tio Mordecai que a criou, e a obediência e o amor dela a transformaram numa rainha sábia e cheia de poder! Você, Sarahzinha, nasceu para ser uma princesa de Deus nesta terra! Você tem a coragem, a nobreza e a autoridade do Espírito Santo. Ouvindo com doçura e respeito o papai Adrian King e a mamãe Samara, Deus vai te colocar em lugares altos para abençoar milhares de vidas! Nossa Rima de Ouro: \'Com oração e coragem no olhar, como princesa eu vou governar!\'',
-        ],
-        [
-            'slug' => 'zaqueu_arvore',
-            'titulo' => 'Zaqueu, o Homem Pequenino na Árvore',
-            'personagem' => 'Zaqueu',
-            'tema' => 'Zaqueu, o Homem Pequenino na Árvore',
-            'licoes' => 'Jesus enxerga a todos com amor e transforma o coração de quem O recebe',
-            'historia_base' => 'Na cidade ensolarada de Jericó morava um homem chamado Zaqueu. Ele era muito rico e cobrava impostos, mas não tinha amigos verdadeiros e seu coração se sentia vazio. Além disso, Zaqueu era bem baixinho de estatura! Um dia, um grande alvoroço tomou conta das ruas: \'Jesus de Nazaré está passando por aqui!\' Zaqueu correu querendo muito ver Jesus, mas a multidão de pessoas altas ficava na frente dele e ele não enxergava nada. Mas Zaqueu teve uma ideia genial e rápida: correu na frente e subiu nos galhos de uma grande figueira brava! De lá de cima, olhava com olhos atentos. Quando Jesus passou por debaixo da árvore, parou, olhou para cima com um sorriso cheio de ternura e disse: \'Zaqueu, desce depressa, pois hoje me convém ficar na sua casa!\' O coração de Zaqueu deu um pulo de tanta alegria! Ele desceu correndo e recebeu Jesus com festa. Diante do amor de Jesus, a vida de Zaqueu foi transformada para sempre: ele devolveu quatro vezes mais o que tinha pegado e deu metade dos seus bens aos pobres!',
-            'ministracao_sarah' => 'Sarahzinha, que lição tão preciosa! Jesus não olha para a altura do nosso corpo, Ele olha para o tamanho do nosso coração! Não importa se você tem apenas dez meses e é pequenininha: Jesus te conhece pelo nome e ama habitar no seu lar junto com o papai Adrian King e a mamãe Samara! Quando Jesus está em nossa casa, a nossa casa se enche de risadas, abraços, paz e bondade! Você é profundamente amada por Jesus! Nossa Rima de Ouro: \'Pequenina de corpo mas grande na fé, Jesus está comigo onde eu estiver!\'',
-        ],
-        [
-            'slug' => 'jose_egito',
-            'titulo' => 'José do Egito e a Túnica Colorida',
-            'personagem' => 'José',
-            'tema' => 'José do Egito e a Túnica Colorida',
-            'licoes' => 'perdão, fidelidade nos sonhos e como Deus transforma o mal em grande bênção',
-            'historia_base' => 'José era um jovem bondoso que amava a Deus e ao seu pai Jacó. Seu pai lhe deu de presente uma linda túnica colorida com mangas compridas e faixas de cores brilhantes: vermelho, azul, amarelo e dourado! Mas seus irmãos ficaram com ciúmes e o venderam como escravo para o Egito. Mesmo longe de casa e enfrentando dias difíceis, José nunca perdeu a fé e nunca desobedeceu aos mandamentos de Deus. Deus deu a José uma sabedoria maravilhosa para interpretar sonhos! Um dia, o Faraó sonhou com sete vacas gordas e sete vacas magras. Ninguém no reino sabia explicar, mas José disse: \'Deus está mostrando que teremos sete anos de muita fartura e depois sete anos de seca; devemos guardar alimentos!\' O Faraó viu o Espírito de Deus em José e o nomeou governador de todo o Egito! Quando a fome veio, José tinha celeiros abarrotados de trigo. Seus irmãos foram comprar comida e José, com lágrimas de perdão e abraço caloroso, os perdoou e salvou toda a sua família!',
-            'ministracao_sarah' => 'Sarahzinha, veja que lição grandiosa de amor e perdão! José nunca guardou rancor e sempre honrou a Deus e a sua família. Quando você cresce com um coração puro, obedecendo ao papai Adrian King e à mamãe Samara, Deus transforma qualquer situação difícil num degrau para o seu propósito! Você foi feita para liderar, abençoar e alimentar muitas vidas com a sabedoria do Alto! Guarda a nossa Rima de Ouro: \'Coração que sabe perdoar e amar, o Senhor Jesus sempre vai honrar!\'',
-        ],
-        [
-            'slug' => 'cura_cego_bartimeu',
-            'titulo' => 'A Cura do Cego Bartimeu',
-            'personagem' => 'Bartimeu',
-            'tema' => 'A Cura do Cego Bartimeu',
-            'licoes' => 'clamar a Jesus com perseverança e receber a luz do Senhor',
-            'historia_base' => 'Na beira da estrada que levava à cidade de Jericó, estava sentado um homem cego chamado Bartimeu. Ele não podia enxergar as cores das flores, o azul do céu e nem o rosto das pessoas, e vivia pedindo esmolas. Mas um dia, ele ouviu o barulho de uma multidão se aproximando: passos apressados e vozes animadas! Bartimeu perguntou: \'O que está acontecendo?\' E responderam: \'Jesus de Nazaré está passando!\' Bartimeu sentiu seu coração arder de esperança e começou a gritar com toda a força da sua voz: \'Jesus, Filho de Davi, tem misericórdia de mim!\' As pessoas ao redor diziam: \'Cala a boca, Bartimeu! Não incomode o Mestre!\' Mas ele gritava ainda mais alto: \'Filho de Davi, socorre-me!\' Jesus parou no mesmo instante e disse com meiguice: \'Chamem-no aqui!\' Bartimeu deu um salto de alegria, jogou sua capa pesada de lado e correu até Jesus. Jesus olhou com ternura e perguntou: \'O que você quer que Eu te faça?\' Bartimeu respondeu: \'Mestre, que eu volte a ver!\' Jesus disse: \'Vai, a tua fé te salvou!\' No mesmo instante, seus olhos se abriram, a luz inundou sua visão e ele viu o sorriso de Jesus, começando a pular e a seguir o Mestre com louvores!',
-            'ministracao_sarah' => 'Sarahzinha, que história emocionante! Bartimeu não se calou diante do barulho das pessoas, ele clamou por Jesus com fé sincera! Quando você aprende a orar e a chamar pelo nome de Jesus desde pequenininha, junto com o papai Adrian King e a mamãe Samara, Jesus para para ouvir a sua oração! Ele tem cuidado de cada detalhe da sua saúde, da sua visão e do seu corpinho. Nossa Rima de Ouro: \'Eu chamo por Jesus com muita fé, Ele abre os meus olhos e me põe de pé!\'',
-        ],
-        [
-            'slug' => 'o_bom_samaritano',
-            'titulo' => 'O Bom Samaritano',
-            'personagem' => 'O Bom Samaritano',
-            'tema' => 'O Bom Samaritano',
-            'licoes' => 'amor ao próximo, cuidar de quem precisa e ter um coração bondoso',
-            'historia_base' => 'Jesus contou uma história inesquecível para ensinar o valor do amor ao próximo. Um viajante descia pela estrada perigosa de Jerusalém para Jericó quando homens malvados o atacaram, levaram tudo e o deixaram machucado na beira do caminho. Passou por ali um sacerdote religioso, olhou de longe e foi embora pelo outro lado. Depois, passou um levita, viu o homem no chão e também seguiu adiante sem ajudar. Mas então, veio um homem samaritano montado em seu jumentinho, trote-trote, trote-trote. Quando viu o homem ferido, seu coração se encheu de profunda compaixão! Ele desceu do jumentinho, ajoelhou-se na poeira, limpou os machucados com azeite e vinho suave e colocou faixas com muito cuidado. Depois, colocou o homem sobre o seu próprio animal, levou-o a uma hospedaria aconchegante e cuidou dele a noite toda. No dia seguinte, entregou moedas de prata ao hospedeiro e disse: \'Cuide bem dele, e tudo o que você gastar a mais, eu pagarei quando voltar!\' Que coração generoso e cheio do verdadeiro amor!',
-            'ministracao_sarah' => 'Sarahzinha, meu amor! Jesus nos ensina que o maior mandamento é amar a Deus e amar o próximo com atitudes de verdade! Você tem um coraçãozinho doce e carinhoso que vai espalhar o perfume de Jesus onde quer que você passe. O papai Adrian King e a mamãe Samara te ensinam a acolher, ajudar e ser amiga leal de todos! A criança bondosa é a alegria da casa e dos Céus! Nossa Rima de Ouro: \'Com mãos estendidas e amor sem fim, o amor de Jesus vive dentro de mim!\'',
-        ],
-        [
-            'slug' => 'sansao_forca',
-            'titulo' => 'Sansão e a Grande Força que Vem de Deus',
-            'personagem' => 'Sansão',
-            'tema' => 'Sansão e a Força que Vem de Deus',
-            'licoes' => 'nossa verdadeira força vem do Espírito de Deus quando somos fiéis a Ele',
-            'historia_base' => 'Manoá e sua esposa não podiam ter filhos, mas um anjo do Senhor apareceu e anunciou o nascimento de um menino especial: Sansão! Ele seria consagrado a Deus como nazireu desde o ventre da sua mãe. Enquanto Sansão crescia, o Espírito do Senhor descia sobre ele com um poder extraordinário! Um dia, um leão rugidor saltou contra ele no meio das vinhas, e Sansão, pelo Espírito de Deus, venceu o leão apenas com as mãos limpas! Outra vez, pegou os portões pesadíssimos de bronze de uma cidade inteira, colocou nas costas e subiu até o topo do monte! A força de Sansão não vinha de músculos comuns, vinha da presença e da consagração a Deus. Quando Sansão errou e perdeu o foco, ele se arrependeu de coração e orou a Deus: \'Senhor Deus, lembra-Te de mim e fortalece-me só mais esta vez!\' Deus ouviu sua oração sincera, renovou a força de Sansão e ele libertou todo o seu povo dos opressores!',
-            'ministracao_sarah' => 'Sarahzinha, a verdadeira força não é a força dos braços, é a força do Espírito Santo dentro do coração! Quando você obedece ao papai Adrian King e à mamãe Samara, você se mantém debaixo da consagração e da bênção de Deus, ficando espiritualmente forte, sábia e protegida contra todo mal! Você é uma princesa forte em Deus! Nossa Rima de Ouro: \'Minha força e vitória vêm lá do Céu, sou filha amada do Deus tão fiel!\'',
-        ],
-        [
-            'slug' => 'rute_noemi',
-            'titulo' => 'Rute e Noemi: A Amizade Fiel',
-            'personagem' => 'Rute e Noemi',
-            'tema' => 'Rute e a Amizade Fiel',
-            'licoes' => 'lealdade, companheirismo e cuidado amoroso com a família',
-            'historia_base' => 'Noemi estava muito triste em uma terra distante, pois havia perdido seu marido e seus filhos. Ela decidiu voltar para sua terra natal em Belém e disse às suas noras que voltassem para suas famílias. Mas Rute, com lágrimas nos olhos e um abraço cheio de lealdade, segurou Noemi com força e disse uma das frases mais lindas da Bíblia: \'Não me impeça de te seguir! Onde você for, eu irei; onde você morar, eu morarei; o seu povo será o meu povo, e o seu Deus será o meu Deus!\' Rute viajou junto com Noemi até Belém. Para sustentar a sogra querida com honra, Rute ia todos os dias trabalhar debaixo do sol nos campos de trigo, recolhendo grãozinhos caídos. Um homem bom e nobre chamado Boaz viu o carinho e a fidelidade de Rute e a abençoou com fartura! Mais tarde, Boaz e Rute se casaram, tiveram um lindo bebezinho chamado Obede, que foi o vovô do rei Davi e fez parte da família de Jesus!',
-            'ministracao_sarah' => 'Sarahzinha, que história fascinante sobre amizade, carinho e lealdade familiar! Rute cuidou de Noemi com tanto respeito e doçura que Deus a honrou ricamente. Assim é você na sua casa: uma fonte de alegria, carinho e cuidado para o papai Adrian King, para a mamãe Samara e para todos os vovôs e tios! A sua lealdade à sua família traz sobre você o favor de Deus! Nossa Rima de Ouro: \'Com amor e amizade que nunca têm fim, a bênção de Deus vai cuidar bem de mim!\'',
-        ],
-        [
-            'slug' => 'pescaria_maravilhosa',
-            'titulo' => 'A Pescaria Maravilhosa de Pedro',
-            'personagem' => 'Pedro e Jesus',
-            'tema' => 'A Pescaria Milagrosa de Pedro',
-            'licoes' => 'confiar na palavra de Jesus mesmo quando parecia que nada daria certo',
-            'historia_base' => 'Simão Pedro e seus amigos eram pescadores habilidosos no Mar da Galileia. Eles passaram a noite inteira lançando suas redes na água escura, jogando para cá e para lá: tchibum, tchibum! Mas não conseguiram pescar nem um único peixinho! De manhã cedo, estavam na praia cansados e desanimados, lavando as redes vazias. Jesus se aproximou com uma multidão e subiu no barquinho de Pedro para ensinar. Quando terminou de falar, Jesus olhou para Pedro e disse: \'Leve o barco para águas mais profundas e lancem as redes para pescar!\' Pedro disse: \'Mestre, nós trabalhamos a noite inteira e não pegamos nada! Mas, sob a Tua Palavra, eu lançarei as redes!\' Pedro obedeceu. E assim que jogou a rede, aconteceu um milagre inacreditável: milhares de peixes grandes e prateados começaram a pular dentro da rede, flapt-flapt-flapt! Eram tantos peixes que a rede começou a se rasgar! Eles chamaram o outro barco para ajudar, e os dois barcos ficaram tão cheios que quase afundavam de tanta fartura! Pedro se prostrou diante de Jesus maravilhado, e Jesus disse: \'Não temas, de agora em diante você será pescador de homens!\'',
-            'ministracao_sarah' => 'Sarahzinha, veja o milagre que acontece quando ouvimos e obedecemos à Palavra de Jesus! Mesmo quando parecia impossível, a obediência de Pedro transformou redes vazias em barcos transbordando de peixes! Quando você obedece com amor ao papai Adrian King e à mamãe Samara, as suas redes na vida vão se encher de bênçãos, sabedoria, alegria e inteligência! Nossa Rima de Ouro: \'Sob a Tua Palavra a rede vou lançar, e muitas vitórias eu vou alcançar!\'',
-        ],
-        [
-            'slug' => 'ressurreicao_jesus',
-            'titulo' => 'A Ressurreição de Jesus: Ele Vive!',
-            'personagem' => 'Jesus Ressuscitado',
-            'tema' => 'A Ressurreição e o Amor Vivo de Jesus',
-            'licoes' => 'Jesus está vivo para sempre, nos ama e cuida de nós todos os dias',
-            'historia_base' => 'Depois de dar a Sua vida por amor a nós na cruz, Jesus foi sepultado num túmulo esculpido na rocha, e soldados rolaram uma grande pedra pesada para fechar a entrada. O céu estava triste e parecia o fim de tudo. Mas no domingo bem cedinho, ao raiar do sol, a terra tremeu com força: BUM! Um anjo resplandecente do Senhor desceu do Céu com vestes brancas como a neve e um rosto reluzente como o relâmpago! Ele rolou a pedra pesada e sentou-se sobre ela! As mulheres chegaram trazendo perfumes suaves e viram o túmulo aberto e vazio! O anjo olhou com ternura e anunciou a notícia mais feliz de toda a história: \'Não tenham medo! Por que vocês procuram entre os mortos Aquele que vive? Ele não está aqui; RESSUSCITOU!\' Pouco depois, o próprio Jesus apareceu vivo, glorioso e com marcas de amor nas mãos, dizendo: \'A paz seja convosco!\' A morte foi vencida para sempre, e Jesus vive pelos séculos dos séculos!',
-            'ministracao_sarah' => 'Sarahzinha, celebra com palminhas bem animadas! Jesus está VIVO! Ele não ficou no túmulo, Ele ressuscitou e está assentado no trono de glória, cuidando de você, do papai Adrian King e da mamãe Samara a cada segundo! Porque Jesus vive, o seu futuro é brilhante, cheio de paz, vitória e vida eterna! Você é a princesinha do Rei ressurreto! Nossa Rima de Ouro: \'Jesus ressuscitou e a morte venceu, sou herdeira da vida que Ele me deu!\'',
-        ],
-        [
-            'slug' => 'paulo_silas_prisao',
-            'titulo' => 'Paulo e Silas Cantando Louvores na Prisão',
-            'personagem' => 'Paulo e Silas',
-            'tema' => 'Paulo e Silas Cantando Louvores na Prisão',
-            'licoes' => 'o poder do louvor e da oração que quebra qualquer corrente e abre portas',
-            'historia_base' => 'Paulo e Silas estavam na cidade de Filipos anunciando o amor de Jesus, mas pessoas contrárias os acusaram falsamente e os jogaram na prisão mais escura e fria do calabouço, prendendo seus pés em troncos pesados de madeira. O lugar era úmido e doía o corpo, mas o coração deles estava transbordando do Espírito Santo! Por volta da meia-noite, no meio daquela escuridão, em vez de chorarem ou reclamarem, Paulo e Silas começaram a orar e a cantar louvores a Deus em alta voz! As canções de fé ecoavam pelos corredores de pedra e todos os presos ouviam atentos. De repente, veio um terremoto tão violento que abalou os próprios alicerces da prisão: tremelique, BUM! No mesmo instante, todas as portas de ferro se abriram sozinhas e as correntes que prendiam todos os presos caíram no chão! O carcereiro acordou apavorado, mas Paulo disse: \'Não tenha medo, estamos todos aqui!\' O carcereiro caiu de joelhos e perguntou: \'O que devo fazer para ser salvo?\' Paulo respondeu: \'Crê no Senhor Jesus Cristo e serás salvo, tu e a tua casa!\' Naquela mesma noite, o carcereiro e toda a sua família creram em Jesus e se alegraram com um banquete festivo!',
-            'ministracao_sarah' => 'Sarahzinha, que poder maravilhoso tem o louvor! Mesmo na noite mais escura, quando você louva e agradece a Jesus junto com o papai Adrian King e a mamãe Samara, as correntes caem e as prisões se abrem com o poder do Espírito Santo! Faça do seu coraçãozinho um altar de louvor todos os dias! Você é uma adoradora que move os Céus! Nossa Rima de Ouro: \'Cantando louvores no meio da dor, correntes se quebram no amor do Senhor!\'',
-        ],
-        [
             'slug' => 'criacao_mundo',
-            'titulo' => 'A Criação do Mundo, dos Mares e das Estrelas',
-            'personagem' => 'Deus Criador',
-            'tema' => 'A Criação do Mundo e das Flores',
-            'licoes' => 'o carinho com que Deus fez as estrelas, as borboletas e cada um de nós',
-            'historia_base' => 'No princípio, não existia nada: tudo era escuro e vazio. Mas o Espírito de Deus se movia sobre a face das águas com poder criador. Então Deus disse com Sua voz majestosa: \'Haja luz!\' E a luz reluzente surgiu, separando o dia da noite! No segundo dia, Deus estendeu o firmamento do céu azul. No terceiro dia, juntou as águas nos mares e fez brotar a terra seca, cobrindo tudo de verde: graminhas macias, árvores frutíferas com maçãs doces, mangueiras frondosas e flores coloridas e perfumadas! No quarto dia, Deus pintou o céu: colocou o sol dourado para brilhar de dia, e a lua prateada com milhões de estrelas reluzentes para iluminar a noite! No quinto dia, encheu os mares de golfinhos e peixinhos ligeiros, e o ar com passarinhos cantadores, piu-piu! No sexto dia, Deus criou os animaizinhos terrestres e fez a Sua obra-prima mais amada: o ser humano, homem e mulher, feitos à Sua imagem e semelhança para viverem em amor e harmonia com Ele! E Deus olhou para tudo o que havia feito e disse: \'Tudo é muito bom!\'',
-            'ministracao_sarah' => 'Sarahzinha, respira fundo e olha quanta beleza Deus criou! E sabe qual é a criação mais linda e especial de Deus? É VOCÊ! O mesmo Deus que contou as estrelas do céu desenhou cada dedinho, cada fiozinho de cabelo e colocou um cérebro brilhante e inteligente dentro de você! O papai Adrian King e a mamãe Samara te amam como o maior presente que Deus lhes deu. Você foi feita com perfeição e carinho divino! Nossa Rima de Ouro: \'O mundo Deus fez com tanto primor, e me desenhou com todo o Seu amor!\'',
+            'titulo' => 'A Criação do Mundo e o Jardim do Éden',
+            'personagem' => 'Deus Criador, Adão e Eva',
+            'tema' => 'A Soberania e a Perfeição do Criador',
+            'licoes' => 'Deus planejou cada detalhe com perfeição e soprou vida para sermos Sua imagem e semelhança.',
+            'historia_base' => 'No princípio de tudo, antes que existisse o tempo, o céu azul ou o chão firme sob nossos pés, não havia nada além do silêncio e de uma escuridão sem fim sobre a profundeza das águas. Mas o Espírito de Deus pairava sobre as águas com amor eterno. Então, com o poder infinito de Sua voz majestosa, Deus disse: \'Haja luz!\'. E imediatamente, um clarão radiante cortou as trevas, trazendo as cores mais deslumbrantes que já existiram! Deus separou o dia da noite e chamou a luz de \'Dia\' e as trevas de \'Noite\'. 
+
+No segundo dia, Deus estendeu a abóboda celeste, criando o firmamento que chamou de Céu. No terceiro dia, ordenou que as águas debaixo dos céus se juntassem num só lugar, surgindo os oceanos majestosos e a porção seca, a Terra! Apenas pela palavra do Senhor, brotaram do solo campos verdes, flores perfumadas de todas as cores e árvores frondosas carregadas de frutos doces e deliciosos. No quarto dia, o Senhor acendeu as lâmpadas celestes: o sol dourado e resplandecente para governar o dia, a lua prateada e bilhões de estrelas cintilantes para iluminar a noite.
+
+No quinto dia, as águas se encheram de cardumes nadando velozes, desde os peixinhos dourados até as grandes baleias, e o céu se povoou com pássaros de penas coloridas voando e cantando melodias de louvor. No sexto dia, Deus criou os animais da terra: leões fortes, cavalos velozes, cordeiros mansinhos e coelhinhos saltitantes. Mas faltava a obra-prima de todo o universo! Deus então moldou o homem do pó da terra com Suas próprias mãos e soprou em suas narinas o fôlego da vida, criando também a mulher para andarem juntos em amor, amizade e comunhão no Jardim do Éden! Deus contemplou tudo o que havia feito e viu que era muito bom!',
+            'ministracao_sarah' => 'Princesa Sarah, feche os seus olhinhos e sinta essa verdade sobrenatural no seu espírito: o mesmo Deus Todo-Poderoso que acendeu as estrelas com a ponta dos dedos e pintou as asas das borboletas desenhou você com carinho no ventre da sua mamãe Samara! Você não é fruto do acaso; você é a obra-prima mais preciosa do Criador nesta terra!
+
+Eu ministro sobre você uma inteligência brilhante, mente de Cristo e um coração cheio da paz de Deus. Honre, ame e obedeça todos os dias ao seu papai Adrian King, a quem Deus deu autoridade para cuidar e guardar a sua vida, e à sua amada mamãe Samara, que é fonte de graça e carinho sobre você. E lembre-se: a sua preciosa vovó Socorro, uma mulher de Deus que ama o Senhor, dobra os joelhos no chão e ora todos os dias derramando lágrimas de intercessão para que a bênção de Deus nunca se aparte de você! Guarde nossa rima de ouro no coração: \'Deus fez as estrelas e o lindo luar, e me fez para o papai, a mamãe e a vovó amar!\'',
         ],
         [
-            'slug' => 'elias_carro_fogo',
-            'titulo' => 'O Profeta Elias e a Carruagem de Fogo no Céu',
-            'personagem' => 'Profeta Elias',
-            'tema' => 'Elias e a Carruagem de Fogo no Céu',
-            'licoes' => 'o Deus dos milagres que responde com fogo e cuida dos seus profetas',
-            'historia_base' => 'O profeta Elias era um homem de Deus valoroso e corajoso que andou em fidelidade profunda ao Senhor. Quando chegou o momento de Deus levá-lo para o Céu, Elias estava caminhando com seu fiel discípulo Eliseu perto do rio Jordão. Elias pegou a sua capa, bateu nas águas do rio: ploc! E as águas se dividiram de um lado e do outro, e os dois atravessaram a pé enxuto! Eliseu disse: \'Meu pai, eu quero que a porção dobrada do teu espírito esteja sobre mim!\' Elias respondeu: \'Se você me vir quando eu for tirado de você, assim será!\' Enquanto caminhavam e conversavam com o coração cheio de reverência, de repente, desceu do Céu um espetáculo grandioso e sobrenatural: uma carruagem resplandecente toda feita de fogo, puxada por cavalos de fogo brilhantes como o sol! A carruagem separou os dois, e Elias subiu ao Céu num redemoinho poderoso de glória! Eliseu viu tudo, pegou a capa que havia caído de Elias, bateu nas águas do Jordão e o rio se abriu novamente! Deus continuou operando grandes milagres através de Eliseu!',
-            'ministracao_sarah' => 'Sarahzinha, olha como Deus honra aqueles que andam com fidelidade e coração puro! Elias e Eliseu tinham uma aliança linda de mestre e discípulo, assim como você tem com o papai Adrian King e a mamãe Samara, que são seus mentores espirituais cheios da bênção de Deus! Escutando e aprendendo com seus papais, você vai receber porção dobrada de sabedoria, discernimento e inteligência! Você é herdeira das carruagens de fogo do Senhor! Nossa Rima de Ouro: \'No fogo da glória eu vou caminhar, a capa da bênção eu vou carregar!\'',
+            'slug' => 'noe_arca',
+            'titulo' => 'Noé, a Arca de Madeira e o Arco-Íris da Aliança',
+            'personagem' => 'Noé e sua Família',
+            'tema' => 'Fidelidade, Obediência e Aliança Eterna',
+            'licoes' => 'A obediência completa a Deus protege a nossa família das tempestades do mundo.',
+            'historia_base' => 'Num tempo em que o mundo havia se esquecido de Deus e as pessoas praticavam apenas maldades e injustiças, havia um homem reto, justo e temente ao Senhor chamado Noé. Ele andava diariamente com Deus, ouvindo Sua voz e guardando Seus mandamentos. Certo dia, o Senhor falou a Noé: \'O fim de toda carne é chegado perante mim. Faze para ti uma arca de madeira de gofer; farás compartimentos na arca e a betumarás por dentro e por fora\'. Deus deu a Noé as medidas exatas: trezentos côvados de comprimento, cinquenta de largura e trinta de altura, com três andares espaçosos e uma janela no topo.
+
+Durante anos, sob o sol quente, Noé, sua esposa e seus filhos Sem, Cam e Jafé cortaram troncos gigantescos, aplainaram tábuas e martelaram dia após dia: toc-toc-toc! As pessoas da época riam e zombavam de Noé, dizendo que ele era tolo por construir um barco gigante no meio da terra seca onde nunca havia chovido. Mas Noé não se importou com a zombaria; sua fé estava firmada na Palavra do Deus Altíssimo. Quando a arca ficou pronta, Deus fez vir aos pares todos os tipos de animais: leões mansos, elefantes imponentes, girafas de pescoço longo, passarinhos cantores e cordeirinhos saltitantes.
+
+Quando todos entraram com provisões suficientes para a viagem, o próprio Deus fechou a porta por fora com Sua mão poderosa! Então as fontes do grande abismo se romperam e as comportas dos céus se abriram, caindo chuva torrencial por quarenta dias e quarenta noites. As águas cobriram até as montanhas mais altas, mas a arca flutuava segura, guardada pelo Senhor. Depois de muitos meses, Noé soltou uma pomba que voltou trazendo no bico uma folha verde de oliveira: a terra havia secado! Ao saírem em terra firme, Noé ergueu um altar de adoração a Deus, e o Senhor colocou no céu um arco-íris radiante com sete cores vivas, selando Sua aliança de que nunca mais destruiria a terra por águas!',
+            'ministracao_sarah' => 'Sarahzinha, assim como Noé protegeu sua casa inteira pela fé e pela obediência, o seu lar é uma arca de proteção e bênção guardada pelo Sangue do Cordeiro! O papai Adrian King foi levantado por Deus como o sacerdote sábio e protetor da sua vida; obedeça sempre às suas instruções com alegria no coração. A mamãe Samara é a mulher graciosa que enche sua vida de amor, afeto e oração. 
+
+E você tem um escudo espiritual poderosíssimo: a sua vovó Socorro, que é uma verdadeira mulher de Deus, intercessora fervorosa, que não se cansa de dobrar os joelhos perante o altar celestial para clamar pela sua saúde, pela sua inteligência e pelo seu futuro grandioso! Quando as tempestades da vida soprarem, você estará firme e segura na Rocha que é Jesus! Nossa rima de ouro: \'Como a arca de Noé sobre as águas a flutuar, a bênção de Deus na minha casa vai sempre reinar!\'',
         ],
         [
-            'slug' => 'samuel_chamado',
-            'titulo' => 'O Menino Samuel Ouvindo a Doce Voz de Deus',
-            'personagem' => 'Samuel e Deus',
-            'tema' => 'O Chamado do Menino Samuel',
-            'licoes' => 'ter um coração sensível para escutar e obedecer a voz de Deus desde criança',
-            'historia_base' => 'Ana desejava muito ter um filhinho e orou com lágrimas a Deus no templo. Deus ouviu a sua oração e lhe deu o menino Samuel. Quando Samuel era ainda pequeno, sua mãe o levou para servir na casa do Senhor junto com o sacerdote Eli. O menino Samuel vestia uma túnica branquinha feita pela sua mamãe com muito amor e ajudava no tabernáculo com alegria e reverência. Uma noite, quando a lâmpada de Deus ainda estava acesa e Samuel estava deitadinho no seu bercinho para dormir, uma voz suave e cristalina o chamou pelo nome no silêncio da noite: \'Samuel! Samuel!\' O garotinho acordou, correu até Eli e disse: \'Eis-me aqui, o senhor me chamou?\' Eli respondeu: \'Eu não chamei, meu filho; volte a se deitar.\' Isso aconteceu três vezes! Na terceira vez, Eli entendeu que era o próprio Deus que estava chamando a criança! Eli ensinou Samuel: \'Se a voz te chamar de novo, você deve responder: Fala, Senhor, porque o Teu servo ouve!\' Samuel voltou para a sua caminha. E o Senhor veio, parou ao lado do seu leito e chamou como das outras vezes: \'Samuel, Samuel!\' E o menino com o coraçãozinho transbordando de reverência respondeu: \'Fala, Senhor, porque o Teu servo ouve!\' E Deus revelou a Samuel Seus segredos e o tornou um dos maiores profetas de Israel!',
-            'ministracao_sarah' => 'Sarahzinha, que coisa mais doce! Deus fala com criancinhas pequeninas! O Senhor conhece o seu nominho e já colocou os olhos de amor sobre você no seu bercinho. Quando o papai Adrian King e a mamãe Samara oram e cantam para você, é a voz do Céu te ensinando o caminho do bem. Aprenda a dizer todos os dias no seu coraçãozinho: \'Fala, Senhor, a Sarahzinha te ouve!\' Você tem ouvidos atentos e mente sábia para os desígnios de Deus! Nossa Rima de Ouro: \'A voz do Senhor eu quero escutar, e com meu coração sempre O adorar!\'',
-        ],
-        [
-            'slug' => 'abraao_estrelas',
-            'titulo' => 'Abraão e a Promessa das Estrelas do Céu',
+            'slug' => 'abraao_chamado',
+            'titulo' => 'Abraão: O Chamado de Ur e a Promessa das Estrelas',
             'personagem' => 'Abraão e Sara',
-            'tema' => 'A Fé de Abraão e as Estrelas',
-            'licoes' => 'confiar nas promessas do Senhor mesmo quando parecem impossíveis aos olhos humanos',
-            'historia_base' => 'Abraão era um homem idoso e sua esposa Sara também, e eles não tinham nenhum filhinho. Um dia, Deus chamou Abraão para fora da sua tenda no meio da noite fresca do deserto. O céu estava limpo, de um preto profundo, cravejado com bilhões de estrelas reluzentes e cintilantes! Deus disse a Abraão: \'Olha agora para o Céu e conte as estrelas, se é que você pode contá-las!\' Abraão olhou: uma, duas, dez, cem, milhares de estrelas faiscando no firmamento! Então Deus disse com amor solene: \'Assim será a tua descendência! Você será pai de multidões e de ti sairão reis!\' Abraão creu no Senhor de todo o coração, e essa fé foi creditada a ele como justiça. E na velhice, o milagre aconteceu: Sara deu à luz um lindo bebezinho de bochechas coradas chamado Isaque, cujo nome significa \'sorriso e riso de alegria\'! A casa de Abraão se encheu de festa e celebração porque nada é impossível para o Senhor!',
-            'ministracao_sarah' => 'Sarahzinha, que história tão linda para você, que leva o mesmo nome da mamãe de Isaque! Você é o sorriso e a alegria da casa do papai Adrian King e da mamãe Samara! Deus prometeu a Abraão uma descendência brilhante como as estrelas, e você faz parte dessa promessa santa de bênção e multiplicação! Você nasceu para brilhar alto no céu da vida com a luz de Cristo! Guarda no coração a nossa Rima de Ouro: \'Contando as estrelas eu vejo a lição, a fé no meu Deus traz a bênção na mão!\'',
+            'tema' => 'A Fé Que Sai do Conforto e a Aliança das Promessas',
+            'licoes' => 'Quando confiamos na voz de Deus, Ele nos conduz a um destino maior do que tudo o que conhecemos.',
+            'historia_base' => 'Na próspera e antiga cidade de Ur dos Caldeus, cercada por grandes templos e torres imponentes, vivia um homem chamado Abrão e sua esposa Sarai. Naquela terra, as pessoas adoravam a lua, o sol e ídolos feitos de pedra e ouro que não podiam falar, ouvir nem socorrer. Porém, o Deus Vivo e Verdadeiro apareceu a Abrão e lhe fez um chamado surpreendente: \'Sai da tua terra, da tua parentela e da casa de teu pai, para a terra que eu te mostrarei. Farei de ti uma grande nação, e te abençoarei, e engrandecerei o teu nome; e tu serás uma bênção!\'.
+
+Abrão tinha setenta e cinco anos de idade, possuía terras e riquezas em Ur, mas não hesitou nem duvidou. Ele dobrou suas tendas, reuniu seus rebanhos, colocou sua esposa Sarai e seu sobrinho Ló a caminho e partiu em direção ao desconhecido, confiando unicamente na promessa invisível de Deus! A caminhada pelo deserto durou muitos meses, enfrentando o calor do dia e o frio da noite. Mas onde quer que Abrão armasse sua tenda, ele erguia um altar de pedras e invocava o nome do Senhor.
+
+Anos se passaram e Abrão e Sarai continuavam sem filhos, já avançados em idade. Certa noite de céu limpo e escuro, Deus chamou Abrão para fora da tenda e disse: \'Olha agora para os céus e conta as estrelas, se as podes contar. Assim será a tua descendência!\'. Abrão olhou para aquele oceano de luzes cintilantes na noite do deserto e creu no Senhor no mais íntimo do seu coração; e Deus imputou-lhe isso como justiça! O Senhor mudou seu nome para Abraão, que significa \'pai de muitas nações\', selando uma aliança eterna que atravessaria todas as gerações da terra!',
+            'ministracao_sarah' => 'Querida Sarah, filha amada do Adrian King e da Samara: a aliança e a fé de Abraão estão sobre você hoje! Você carrega no seu espírito o DNA da promessa de Deus! Nunca tenha medo de sonhar alto, porque o Deus que contou as estrelas para Abraão tem planos muito maiores para você do que você possa imaginar!
+
+Seja uma menina de honra e respeito absoluto ao seu papai Adrian King, pois a honra aos pais é o primeiro mandamento com promessa de longevidade e prosperidade. Ame e seja o consolo doce da sua mamãe Samara em todos os momentos. E celebre no seu coração o privilégio de ter a vovó Socorro, uma serva fiel de Deus, coluna de oração que batalha espiritualmente em jejum e clamor pela sua vitória, pelo seu crescimento saudável e pelo seu brilho! Nossa rima de ouro: \'Como as estrelas no céu a brilhar, as promessas de Deus na minha vida vão se cumprir e jamais falhar!\'',
+        ],
+        [
+            'slug' => 'abraao_moria',
+            'titulo' => 'Abraão, Isaque e o Monte Moriá: O Deus Que Provê',
+            'personagem' => 'Abraão, Isaque e o Anjo do Senhor',
+            'tema' => 'A Prova Suprema da Fé e o Cordeiro da Provisão (Yahweh Jireh)',
+            'licoes' => 'Deus nunca nos tira nada sem nos dar algo infinitamente maior; Ele é o nosso provedor perfeito.',
+            'historia_base' => 'Após anos de espera e oração, a promessa de Deus se cumpriu de forma milagrosa: Sarai, aos noventa anos, e Abraão, aos cem anos de idade, deram à luz um lindo bebê chamado Isaque, cujo nome significa \'riso e alegria\'! O menino cresceu saudável, forte, inteligente e temente a Deus, sendo a menina dos olhos e a maior alegria daquele lar. Mas Deus quis provar a fidelidade de Abraão para demonstrar a todas as gerações a força do verdadeiro amor que confia cegamente no Altíssimo.
+
+Deus chamou: \'Abraão!\'. E ele respondeu com prontidão: \'Eis-me aqui!\'. O Senhor lhe disse: \'Toma agora teu filho, o teu único filho, Isaque, a quem amas, e vai-te à terra de Moriá, e oferece-o ali em holocausto sobre um dos montes que eu te indicarei\'. O coração de Abraão deve ter estremecido, mas sua fé em Deus era inabalável: ele sabia que Deus tinha poder até para ressuscitar os mortos! Bem cedo pela manhã, Abraão albardou seu jumento, rachou a lenha para o fogo, chamou dois moços e o jovem Isaque, e iniciou a caminhada de três dias rumo à montanha.
+
+No terceiro dia, ao avistar o monte de longe, Abraão disse aos servos: \'Ficai-vos aqui; eu e o moço iremos até ali e, havendo adorado, voltaremos a vós\'. Enquanto subiam a montanha, Isaque carregava a lenha nos ombros e Abraão levava o fogo e o cutelo. Então Isaque olhou para seu pai com olhos doces e perguntou: \'Meu pai, eis aqui o fogo e a lenha, mas onde está o cordeiro para o holocausto?\'. Com lágrimas de fé nos olhos, Abraão respondeu profeticamente: \'Deus proverá para si o cordeiro para o holocausto, meu filho!\'. 
+
+Chegando ao topo, Abraão ergueu o altar de pedras, arrumou a lenha e amarrou seu filho com reverência. Mas no exato momento em que levantava a mão com a faca, a voz do Anjo do Senhor bradou dos céus: \'Abraão, Abraão! Não estendas a tua mão sobre o moço, e não lhe faças nada; porquanto agora sei que temes a Deus, e não me negaste o teu filho, o teu único filho!\'. Abraão levantou os olhos e viu, preso pelos chifres num arbusto, um carneiro que Deus havia providenciado! Abraão ofereceu o carneiro e chamou àquele lugar \'Yahweh Jireh\' — O Senhor Proverá!',
+            'ministracao_sarah' => 'Sarahzinha, receba no seu coração a revelação de Yahweh Jireh: o Senhor que tudo provê! Nunca faltará paz, alegria, saúde, sabedoria e vitória na sua jornada, pois o Deus de Abraão supre todas as suas necessidades em glória!
+
+Olhe para o seu papai Adrian King como um sacerdote de fé e coragem, que zela pelo seu futuro e ama você com amor incondicional; honre o papai em cada palavra e gesto. Ame a mamãe Samara com doces beijinhos e obediência fiel. E guarde com gratidão no seu coração as orações de fogo da sua vovó Socorro, mulher valorosa de joelhos calejados diante de Deus que ora pela sua proteção dia e noite! Nossa rima de ouro: \'No monte do Senhor a provisão vai chegar, e a bênção de Deus nunca vai me faltar!\'',
+        ],
+        [
+            'slug' => 'isaque_pocos',
+            'titulo' => 'Isaque e os Poços da Paz no Vale de Gerar',
+            'personagem' => 'Isaque e Rebeca',
+            'tema' => 'A Mansidão, a Paciência e a Prosperidade que Vem do Alto',
+            'licoes' => 'Quem não briga e busca a paz colhe a cem por um e herda a bênção de Reobote.',
+            'historia_base' => 'Houve uma grande fome naquela terra, como nos dias de Abraão, e Isaque pensou em descer para o Egito em busca de comida e água. Mas o Senhor apareceu a Isaque e lhe disse: \'Não desças ao Egito; habita na terra que eu te disser. Peregrina nesta terra, e serei contigo e te abençoarei; porque a ti e à tua descendência darei todas estas terras\'. Isaque confiou plenamente na palavra de Deus e permaneceu no vale de Gerar.
+
+Naquele mesmo ano de seca intensa, enquanto a terra dos outros estava árida e sem fruto, Isaque semeou nos campos e o Senhor o abençoou de tal maneira que ele colheu naquele mesmo ano a cem por um! Seus rebanhos de ovelhas e bois se multiplicaram extraordinariamente, e ele tinha uma multidão de servos, de modo que os filisteus daquela região começaram a ter inveja dele. Para prejudicá-lo, os pastores locais entupiram com terra e pedras todos os poços de água que os servos de seu pai Abraão haviam cavado.
+
+Isaque não revidou nem brigou. Ele desentulhou os poços com paciência. Quando seus servos cavaram no vale e acharam um manancial de água pura e cristalina, os pastores de Gerar disputaram e disseram: \'Esta água é nossa!\'. Isaque chamou o poço de Eseque (que significa contenda) e foi-se dali. Cavaram outro poço, e também sobre este brigaram; por isso chamou seu nome Sitna (inimizade). Mais uma vez, sem gritar nem contender, Isaque mudou-se dali e cavou outro poço. Desta vez, ninguém disputou por ele! Então Isaque se alegrou e disse: \'Porque agora o Senhor nos deu espaço largo e prosperaremos nesta terra!\'. E chamou o poço de Reobote! Naquela mesma noite, Deus lhe apareceu e confirmou Sua aliança perpétua de paz!',
+            'ministracao_sarah' => 'Princesa Sarah, a virtude mais linda de uma filha do Rei é a mansidão e a paz! O Espírito Santo coloca no seu coração uma sabedoria celestial para nunca entrar em brigas ou murmurações, mas sempre ser uma pacificadora que espalha luz por onde passa!
+
+Deus já preparou poços de água viva e lugares largos de prosperidade para a sua vida! Ouça sempre com doçura os conselhos do seu papai Adrian King e da sua mamãe Samara; a obediência aos pais abre caminhos de vitória que ninguém pode fechar. E receba o aroma suave das orações da sua vovó Socorro, que é uma sentinela de Deus clamando para que os rios do Espírito Santo reguem o seu coração com sabedoria e saúde! Nossa rima de ouro: \'Com paz e paciência eu aprendo a vencer, e nos poços de Deus água viva vou ter!\'',
+        ],
+        [
+            'slug' => 'jaco_betel_peniel',
+            'titulo' => 'Jacó: A Escada dos Anjos em Betel e o Encontro de Peniel',
+            'personagem' => 'Jacó (Israel) e o Anjo de Deus',
+            'tema' => 'A Transformação de Caráter e a Aliança do Nome Israel',
+            'licoes' => 'Deus não desiste de nós; Ele transforma nossas fragilidades em autoridade de príncipe.',
+            'historia_base' => 'Jacó teve que partir de Berseba rumo a Harã, numa longa e solitária caminhada pelo deserto. Ao pôr do sol, exausto da jornada, parou para passar a noite num lugar descampado. Tomou uma das pedras daquele chão áspero, colocou-a como travesseiro debaixo da cabeça e adormeceu sob o manto escuro da noite. E sonhou: eis que uma escada monumental estava apoiada na terra, e o seu topo tocava as alturas do céu! Por ela, os anjos de Deus subiam e desciam em feixes de luz celestial, e o próprio Senhor estava acima dela, dizendo: \'Eu sou o Senhor, o Deus de Abraão teu pai, e o Deus de Isaque; esta terra em que estás deitado, te darei a ti e à tua semente. Eis que estou contigo, e te guardarei por onde quer que fores!\'.
+
+Ao acordar de manhã, com o coração cheio de santa reverência, Jacó exclamou: \'Na verdade o Senhor está neste lugar, e eu não o sabia! Quão terrível é este lugar! Este não é outro lugar senão a casa de Deus, e esta é a porta dos céus!\'. Ele pegou a pedra do travesseiro, erigiu-a como coluna comemorativa, derramou azeite perfumado sobre ela e chamou àquele lugar \'Betel\' — que significa \'Casa de Deus\'!
+
+Vinte anos depois, Jacó retornava para sua terra com esposas, filhos e grandes mananciais de gado, mas enfrentava o medo de encontrar seu irmão Esaú. Ao passar o ribeiro de Jaboque na calada da noite, Jacó ficou sozinho. Ali, um Homem celestial lutou com ele até o romper da alva! Vendo o Homem que não prevalecia contra Jacó, tocou-lhe a juntura da coxa, que se deslocou. O Anjo disse: \'Deixa-me ir, porque já rompe o dia\'. Mas Jacó, segurando-O com todas as suas forças e lágrimas de súplica, declarou: \'Não te deixarei ir, se não me abençoares!\'. O Anjo então lhe perguntou: \'Qual é o teu nome?\'. Ele respondeu: \'Jacó\' (o suplantador). O Anjo declarou com poder: \'Não te chamarás mais Jacó, mas Israel; pois como príncipe lutaste com Deus e com os homens, e prevaleceste!\'. Jacó chamou àquele lugar Peniel, porque viu a Deus face a face e sua vida foi salva! O sol nasceu sobre ele enquanto caminhava com novo caráter e nova unção!',
+            'ministracao_sarah' => 'Princesa Sarah, você não é comum; você é uma princesa que prevalece em Deus! Anjos sobem e descem sobre o seu quarto todas as noites para guardar o seu soninho e afastar todo medo da sua mente!
+
+Deus colocou sobre você um espírito excelente e mente de vencedora! Honre e ame o papai Adrian King, homem que trabalha e luta pelo seu bem-estar, e abrace com todo amor a sua mamãe Samara, que é bênção diária nos seus dias. E louve a Deus pela vida da sua vovó Socorro, que é como Jacó em Peniel: perseverante na oração, lutando espiritualmente de madrugada diante do trono de Deus até que a bênção desça sobre a sua cabecinha! Nossa rima de ouro: \'Com anjos do céu a me guardar e guiar, na Casa de Deus eu vou sempre morar!\'',
+        ],
+        [
+            'slug' => 'jose_egito_completo',
+            'titulo' => 'José do Egito: A Túnica de Cores, a Prisão e o Trono',
+            'personagem' => 'José, Faraó e seus Irmãos',
+            'tema' => 'A Soberania da Providência Divina e o Perdão Supremo',
+            'licoes' => 'O que o inimigo intentou para o mal, Deus transforma em bem para salvar muitas vidas.',
+            'historia_base' => 'Israel amava a José mais do que a todos os seus filhos, porque era o filho da sua velhice, e mandou fazer para ele uma túnica especial, de mangas compridas e rica em muitas cores vivas: azul, escarlate, dourado e púrpura. Mas seus irmãos mais velhos tinham ciúmes e não conseguiam falar-lhe pacificamente. Certa noite, José teve um sonho profético de Deus e contou aos irmãos: \'Estávamos atando feixes no meio do campo, e eis que o meu feixe se levantou e ficou em pé, e os vossos feixes o rodeavam e se inclinavam perante o meu feixe!\'. Depois sonhou que o sol, a lua e onze estrelas se prostravam diante dele. A inveja dos irmãos aumentou tanto que, quando José foi procurá-los nos pastos de Dotã, eles o agarraram, rasgaram sua linda túnica, jogaram-no numa cisterna seca e profunda e depois o venderam por vinte moedas de prata para mercadores ismaelitas a caminho do Egito!
+
+No Egito, José foi comprado por Potifar, capitão da guarda do Faraó. Mesmo longe de sua casa e de seu pai, José não murmurou nem pecou; o Senhor era com ele, e tudo o que José fazia prosperava em suas mãos! Acusado injustamente pela esposa de Potifar, José foi parar na masmorra do rei. Mas até na prisão o Senhor estendeu sobre ele Sua misericórdia e lhe deu graça perante o carcereiro, que colocou todos os prisioneiros sob seus cuidados. Na prisão, José interpretou os sonhos misteriosos do copeiro-chefe e do padeiro com exatidão revelada pelo Espírito de Deus.
+
+Dois anos inteiros se passaram até que o próprio Faraó teve dois sonhos perturbadores: sete vacas gordas e formosas saindo do rio Nilo sendo devoradas por sete vacas magras e feias; e sete espigas cheias devoradas por sete espigas mirradas pelo vento oriental. Nenhum dos sábios do Egito pôde interpretar. O copeiro lembrou-se de José, que foi tirado da masmorra às pressas, barbeou-se, mudou de roupa e compareceu perante o Faraó. Com profunda humildade, José disse: \'Isso não está em mim; Deus dará resposta de paz ao Faraó!\'. José revelou que haveria sete anos de fartura sem igual seguidos de sete anos de fome severa sobre a terra, e aconselhou o rei a nomear um homem prudente para armazenar mantimentos. O Faraó ficou maravilhado e disse: \'Poderíamos achar outro homem como este, em quem haja o Espírito de Deus?\'. O rei tirou o anel de selar de sua mão, colocou-o no dedo de José, vestiu-o com roupas de linho fino, pôs-lhe um colar de ouro no pescoço e o declarou governador de todo o Egito, abaixo apenas do próprio Faraó!
+
+Quando a grande fome assolou o mundo, os irmãos de José vieram do deserto comprar comida no Egito e prostraram-se com o rosto em terra diante de José, sem reconhecê-lo! José não buscou vingança nem guardou rancor; pelo contrário, seu coração se derreteu em compaixão, chorou em alta voz nos braços de seus irmãos e lhes disse: \'Eu sou José, vosso irmão! Não vos entristeçais por me haverdes vendido para cá; porque para conservação da vida, Deus me enviou adiante de vós! Vós intentastes o mal contra mim, porém Deus o transformou em bem!\' E sustentou toda a sua família na melhor terra do Egito!',
+            'ministracao_sarah' => 'Princesa Sarah, guarde este segredo profundo no seu coraçãozinho: não importa o que aconteça ao seu redor, ninguém pode roubar os sonhos que Deus plantou no seu espírito! O Senhor é com você em todo tempo e transforma qualquer desafio em degrau de promoção e vitória!
+
+Aprenda desde pequenina a ter um coração puro e cheio de perdão, como José. Honre sempre com palavras doces e carinho imenso o seu papai Adrian King, que cuida de você com amor de pai fiel, e a sua mamãe Samara, que é o seu porto seguro e ternura diária. E bendiga a Deus pela sua vovó Socorro, mulher de joelhos dobrados no chão e orações fervorosas que cobrem a sua vida, para que você cresça sábia, próspera e cheia do Espírito Santo como José foi no palácio! Nossa rima de ouro: \'Os sonhos de Deus ninguém pode apagar, do poço ao palácio o Senhor vai me honrar!\'',
+        ],
+        [
+            'slug' => 'moises_nilo_mar',
+            'titulo' => 'Moisés: Do Cestinho no Rio Nilo à Glória do Mar Vermelho',
+            'personagem' => 'Moisés, Joquebede, Miriã e o Povo de Israel',
+            'tema' => 'Libertação, Proteção dos Pequeninos e o Poder Soberano',
+            'licoes' => 'Deus cuida dos Seus filhos desde o berço e abre caminhos onde não há caminho.',
+            'historia_base' => 'No Egito, o povo hebreu havia crescido muito, e um novo Faraó cruel, com medo de perder seu poder, decretou uma lei horrível: todo menino hebreu recém-nascido deveria ser jogado nas águas do rio Nilo. Naquele tempo perigoso, uma mãe de fé inabalável chamada Joquebede e seu esposo Anrão tiveram um lindo bebê. Vendo que ele era formoso aos olhos de Deus, esconderam-no secretamente em casa durante três meses. Quando já não podia mais escondê-lo, Joquebede tomou um cestinho de junco, calafetou-o com betume e pez para que a água não entrasse, colocou o bebezinho dentro com muito amor e oração, e o pôs cuidadosamente entre os juncos à margem do rio Nilo. Sua irmãzinha Miriã ficou de longe, atenta, para ver o que aconteceria.
+
+A filha do Faraó desceu ao rio para se banhar com suas donzelas. Ao avistar o cestinho no meio dos juncos, mandou sua criada buscá-lo. Ao abrir a cestinha, a princesa viu o bebezinho chorando, e seu coração se encheu de profunda compaixão: \'Este é um dos meninos dos hebreus!\', disse ela. Miriã aproximou-se com coragem e perguntou: \'Queres que eu vá chamar uma ama das hebreias para criar o menino para ti?\'. A princesa respondeu: \'Vai!\'. Miriã correu e chamou a própria mãe do bebê, Joquebede! A princesa do Egito pagou a própria mãe para amamentar e cuidar do seu filhinho com toda a segurança sob a proteção do palácio! E deu-lhe o nome de Moisés, que significa \'Tirado das águas\'.
+
+Moisés cresceu, foi instruído em toda a ciência do Egito, mas seu coração pertencia ao Deus de seus pais. Aos oitenta anos, após o encontro glorioso com o fogo da Sarça Ardente no deserto de Midiã, onde Deus revelou Seu nome eterno \'EU SOU O QUE SOU\', Moisés voltou ao Egito com o cajado de Deus na mão. Após dez pragas poderosas demonstrarem que os ídolos do Egito eram pó diante do Criador, o Faraó finalmente deixou o povo de Israel sair!
+
+Mas quando o povo chegou às margens do bravio Mar Vermelho, o Faraó endureceu o coração e marchou furioso com centenas de carros de guerra e guerreiros armados para destruí-los. O povo estava encurralado: à frente, águas profundas; atrás, o exército inimigo; dos lados, montanhas intransponíveis! O povo gritou de pavor, mas Moisés bradou com autoridade dos céus: \'Não temais! Aquietai-vos e vede o livramento do Senhor que hoje vos fará; porque aos egípcios que hoje vistes, nunca mais os tornareis a ver! O Senhor pelejará por vós, e vós vos calareis!\'. O Senhor disse a Moisés: \'Por que clamas a mim? Dize aos filhos de Israel que marchem! E tu, levanta o teu cajado, estende a mão sobre o mar e fende-o!\'. Moisés estendeu a mão sobre o mar, e o Senhor fez soprar um vento oriental fortíssimo a noite inteira, dividindo as águas em duas muralhas gigantescas à direita e à esquerda! E os filhos de Israel passaram a pé enxuto pelo meio do mar! Do outro lado, Miriã tomou o tamboril e todo o povo cantou dançando em triunfo ao Deus de Israel!',
+            'ministracao_sarah' => 'Princesa Sarah, declare com o seu coraçãozinho: o Deus que cuidou de Moisés no cestinho é o mesmo Deus que cerca você com anjos protetores todos os dias da sua vida! Nenhuma seta maligna, nenhuma enfermidade e nenhum perigo pode tocar na sua vida, pois você é guardada no esconderijo do Altíssimo!
+
+Aprenda a ouvir com reverência as palavras do seu papai Adrian King, homem que Deus colocou como sentinela de fé e liderança na sua família, e aconchegue-se no carinho da sua mamãe Samara, que zela pelo seu sono e pelos seus passinhos. E sinta o abraço das orações da sua vovó Socorro, serva santa de Deus que ora como Joquebede orou por Moisés: colocando você nas mãos do Senhor para que você seja uma mulher de grande autoridade e salvação nesta geração! Nossa rima de ouro: \'Como o mar se abriu para o povo passar, Deus abre o caminho pra eu triunfar!\'',
+        ],
+        [
+            'slug' => 'davi_golias_completo',
+            'titulo' => 'Davi e o Gigante Golias: A Pedra da Fé e o Nome do Senhor',
+            'personagem' => 'Davi, Golias e o Rei Saul',
+            'tema' => 'A Coragem que Nasce da Fé e a Vitória Sobrenatural',
+            'licoes' => 'A batalha não é pela força humana, mas pelo Espírito do Deus dos Exércitos.',
+            'historia_base' => 'Nos campos verdes e montanhosos de Belém de Judá, o jovem Davi, o filho mais novo de Jessé, cuidava com carinho e dedicação das ovelhas de seu pai. Enquanto pastoreava o rebanho sob o sol e as estrelas, Davi afinava sua harpa, entoava cânticos de adoração ao Deus de Israel e exercitava sua pontaria com a funda. Quando um leão feroz e um urso faminto atacaram as ovelhas, o jovem Davi não fugiu: correu atrás das feras no poder do Senhor, livrou o cordeirinho de suas garras e derrotou os predadores com suas próprias mãos! Ele aprendeu na solidão do pasto que o Senhor é um refúgio e fortaleza presente na hora da angústia.
+
+Enquanto isso, no Vale de Elá, o exército dos filisteus e o exército de Israel liderado pelo rei Saul estavam acampados em montanhas opostas, separados pelo vale. Todos os dias, pela manhã e ao entardecer, saía do acampamento inimigo um gigante guerreiro de Gate chamado Golias! Ele media quase três metros de altura, vestia uma couraça de bronze que pesava cinquenta quilos, caneleiras de bronze nas pernas e carregava uma lança cuja ponta de ferro pesava seis quilos! Com voz de trovão arrogante, Golias zombava dos soldados de Israel durante quarenta dias seguidos: \'Escolhei dentre vós um homem, e desça a mim! Se ele puder pelejar comigo e me matar, seremos vossos servos; porém, se eu prevalecer e o matar, sereis nossos servos!\'. Todo o exército de Israel, inclusive o rei Saul, tremia de medo e ninguém ousava dar um passo à frente.
+
+Jessé enviou o jovem Davi ao campo de batalha para levar pães e queijos aos seus irmãos mais velhos e saber como estavam. Ao chegar e ouvir os insultos de Golias afrontando o Deus Vivo, o espírito de Davi se acendeu de santa indignação: \'Quem é este filisteu incircunciso, para afrontar os exércitos do Deus vivo?\'. Seus irmãos o repreenderam com ciúmes, mas suas palavras chegaram aos ouvidos de Saul. Davi foi levado à tenda real e declarou com convicção: \'Não desfaleça o coração de ninguém por causa dele; teu servo irá e pelejará contra este filisteu!\'. Saul tentou vesti-lo com sua própria armadura de bronze e sua espada pesada, mas Davi não conseguia nem andar e disse: \'Não posso andar com isto, pois nunca o experimentei\'.
+
+Davi despiu a armadura pesada, pegou seu cajado de pastor na mão, escolheu no ribeiro cinco pedras lisas e redondas, colocou-as no alforje e, segurando sua funda de couro, marchou confiante em direção ao gigante! Quando Golias olhou para Davi e viu apenas um jovem ruivo, formoso e sem armadura, desprezou-o e amaldiçoou-o pelos seus deuses: \'Sou eu algum cão, para tu vires a mim com paus? Vem a mim, e darei a tua carne às aves do céu e às feras do campo!\'. Mas Davi não se intimidou nem deu um passo para trás; pelo contrário, correu em direção a Golias e bradou aos quatro ventos: \'Tu vens a mim com espada, e com lança, e com escudo; porém eu vou a ti em nome do Senhor dos Exércitos, o Deus dos exércitos de Israel, a quem tens afrontado! Hoje mesmo o Senhor te entregará na minha mão! E saberá toda esta congregação que o Senhor salva, não com espada, nem com lança; porque do Senhor é a guerra!\'.
+
+Davi enfiou a mão no alforje, tirou uma única pedra, colocou-a na funda, girou-a veloz pelo ar e atirou! A pedra voou com precisão milimétrica guiada pela mão invisível de Deus e encravou-se na testa de Golias! O gigante cambaleou e caiu com estrondo com o rosto no chão! Davi correu, tomou a espada do próprio gigante e selou a grande vitória! O exército de Israel deu um grande brado de júbilo e perseguiu os inimigos até as portas de Ecrom! Naquele dia, toda a terra soube que há Deus em Israel!',
+            'ministracao_sarah' => 'Princesa Sarah, você tem a ousadia, a coragem e a unção de Davi no seu coração! Nenhum gigante de medo, nenhuma tristeza e nenhum obstáculo poderá prevalecer contra a sua vida, porque você não anda pelas suas forças, mas em Nome do Senhor dos Exércitos!
+
+Olhe com honra para o seu papai Adrian King, homem valente que Deus colocou como escudo sobre o seu lar, e para a sua mamãe Samara, que cuida da sua vida com carinho e sabedoria. E celebre a fortaleza espiritual da sua vovó Socorro, mulher de Deus perseverante na oração que atira as pedras da fé através dos seus clamores no chão do quarto, derrubando todo mal diante de você! Nossa rima de ouro: \'Com a pedra da fé e em nome do Senhor, eu venço o gigante e sou mais que vencedor!\'',
+        ],
+        [
+            'slug' => 'daniel_cova_leoes',
+            'titulo' => 'Daniel na Cova dos Leões e a Fornalha Ardente',
+            'personagem' => 'Daniel, Sadraque, Mesaque, Abede-Nego e o Rei Dario',
+            'tema' => 'A Integridade Inegociável e o Livramento dos Anjos',
+            'licoes' => 'Quem é fiel a Deus no secreto é honrado publicamente com o livramento dos céus.',
+            'historia_base' => 'Na grandiosa Babilônia, durante o reinado do rei Dario dos medos e persas, Daniel destacava-se entre todos os presidentes e príncipes do império, porque nele havia um espírito excelente de sabedoria, justiça e temor a Deus. O rei planejava colocá-lo sobre todo o reino. Com profunda inveja, os outros líderes conspiraram para derrubá-lo, mas não conseguiam achar nele nenhum motivo de culpa ou erro, pois Daniel era totalmente honesto e leal. Disseram então entre si: \'Nunca acharemos ocasião alguma contra este Daniel, a não ser no que diz respeito à lei do seu Deus\'.
+
+Eles bajularam o rei Dario e o convenceram a assinar um decreto real irrevogável: durante trinta dias, qualquer pessoa que fizesse uma petição ou oração a qualquer deus ou homem, a não ser ao próprio rei, seria imediatamente atirada na cova dos leões famintos! O rei, lisonjeado, assinou o decreto. Daniel soube que o documento havia sido assinado, mas não teve medo nem escondeu sua fé. Entrou em sua casa, subiu ao seu quarto no andar superior onde as janelas estavam abertas em direção a Jerusalém, pôs-se de joelhos três vezes ao dia, orou e deu graças diante do seu Deus, exatamente como costumava fazer todos os dias!
+
+Os conspiradores espiaram, viram Daniel orando com fervor e correram para denunciá-lo ao rei. O rei Dario ficou profundamente triste, pois amava Daniel, e trabalhou até o pôr do sol para salvá-lo, mas as leis dos medos e persas não podiam ser alteradas. Com o coração pesaroso, o rei ordenou que trouxessem Daniel e o lançassem na cova escura e profunda cheia de leões ferozes. O rei disse a Daniel: \'O teu Deus, a quem tu continuamente serves, Ele te livrará!\'. Trouxeram uma grande pedra, colocaram-na sobre a boca da cova e selaram-na com o anel real. O rei foi para o palácio, passou a noite inteira em jejum, recusou qualquer entretenimento e não conseguiu pregar os olhos.
+
+Pela manhã, ao primeiro romper da alva, o rei levantou-se apressado e foi correndo à cova dos leões. Chegando perto da boca da cova, chamou por Daniel com voz triste e aflita: \'Daniel, servo do Deus vivo! Dar-se-ia o caso que o teu Deus, a quem tu continuamente serves, tenha podido livrar-te dos leões?\'. Do fundo da cova escura, ecoou a voz calma, firme e serena de Daniel: \'Ó rei, vive para sempre! O meu Deus enviou o Seu anjo, e fechou a boca dos leões, para que não me fizessem dano algum, porque foi achada em mim inocência diante Dele; e também contra ti, ó rei, não tenho cometido delito algum!\'. O rei se alegrou sobremaneira, mandou tirar Daniel da cova imediatamente, e não se achou nele ferimento algum, porque crera no seu Deus! O rei Dario publicou um novo decreto a todas as nações da terra ordenando que todos temessem e reverenciassem o Deus de Daniel, pois Ele é o Deus Vivo que permanece para sempre e opera milagres nos céus e na terra!',
+            'ministracao_sarah' => 'Princesa Sarah, assim como o anjo do Senhor desceu na cova escura e fechou a boca dos leões famintos para guardar Daniel, o Senhor envia Seus anjos celestiais para blindar a sua vida contra todo mal! Você terá uma mente brilhante, integridade inabalável e nunca terá medo de nada nem de ninguém!
+
+Honre sempre o seu papai Adrian King e ouça seus conselhos sábios, pois ele zela pela sua proteção como um rei justo; abrace com carinho a sua mamãe Samara e receba a doçura do amor dela todos os dias. E sinta o poder das orações da sua vovó Socorro, mulher de Deus de clamor incansável que ora como Daniel três vezes ao dia no secreto, cobrindo o seu sono, a sua saúde e o seu crescimento com a glória de Deus! Nossa rima de ouro: \'O anjo do Senhor a boca do leão fechou, e a minha vida inteira com Sua paz guardou!\'',
+        ],
+        [
+            'slug' => 'ressurreicao_jesus_vida',
+            'titulo' => 'A Ressurreição Triunfal de Jesus: O Sepulcro Vazio e a Vitória Eterna',
+            'personagem' => 'Jesus Cristo, Maria Madalena e os Apóstolos',
+            'tema' => 'A Vitória Sobre a Morte, a Vida Eterna e o Amor Infinito',
+            'licoes' => 'Jesus vive para sempre e nos deu a vitória eterna sobre todo medo e tristeza.',
+            'historia_base' => 'Após dar Sua vida na cruz do Calvário por amor infinito à humanidade, o corpo bendito do Senhor Jesus foi envolvido em lençóis de linho fino e aromas suaves por José de Arimateia e Nicodemos, e sepultado num túmulo novo cavado na rocha, no meio de um belo jardim. Os líderes religiosos contrários a Jesus colocaram guardas romanos armados de vigília e rolaram uma pedra gigantesca na entrada do túmulo, selando-a com o selo imperial para que ninguém pudesse entrar nem sair. Aquele sábado foi um dia de silêncio, choro e aparente tristeza para os discípulos.
+
+Mas a morte não podia deter o Autor da Vida! No domingo bem cedinho, ao despontar dos primeiros raios dourados da manhã, a terra tremeu violentamente com um grande terremoto! Um anjo do Senhor desceu do céu em glória resplandecente, com vestes brancas como a neve e rosto brilhante como o relâmpago! O anjo desceu, rolou a enorme pedra da entrada do sepulcro e assentou-se sobre ela! Os soldados romanos de vigília tremeram de pavor e ficaram como mortos!
+
+Maria Madalena e outras mulheres fiéis chegaram ao túmulo trazendo perfumes e perguntavam entre si: \'Quem nos revolverá a pedra da porta do sepulcro?\'. Ao levantarem os olhos, viram que a pedra já havia sido removida! Entrando no túmulo, não acharam o corpo do Senhor Jesus. De repente, dois homens celestiais com roupas resplandecentes apareceram e lhes disseram com alegria triunfal: \'Por que buscais o Vivente entre os mortos? Ele não está aqui, mas ressuscitou! Lembrai-vos de como vos falou, estando ainda na Galileia!\'. As mulheres saíram correndo com grande temor e indizível alegria para anunciar aos apóstolos. 
+
+Pedro e João correram ao túmulo, entraram e viram os lençóis de linho caídos no chão e o lenço que estivera sobre Sua cabeça dobrado à parte num lugar só: o sepulcro estava completamente vazio! Jesus apareceu vivo e glorificado a Maria Madalena, aos discípulos no caminho de Emaús e depois a todos os apóstolos reunidos no cenáculo, dizendo: \'Paz seja convosco! Vede as minhas mãos e os meus pés, que sou eu mesmo; apalpai-me e vede!\'. Jesus venceu a morte, o inferno e a escuridão, subiu aos céus em glória e prometeu estar conosco todos os dias, até a consumação dos séculos!',
+            'ministracao_sarah' => 'Sarahzinha, receba a maior e mais doce verdade de todo o universo: O SEU JESUS ESTÁ VIVO! Ele não está numa cruz nem num túmulo frio; Ele vive para sempre, reina no trono da glória e mora dentro do seu coraçãozinho!
+
+Por causa da ressurreição de Jesus, você tem vida abundante, saúde transbordante, mente genial e um futuro cheio de alegria e paz! Ame e honre de todo o coração o seu papai Adrian King e a sua mamãe Samara, sendo uma luz radiante dentro de casa. E abençoe a vida preciosa da sua vovó Socorro, serva de Deus que adora a Jesus ressurreto e que derrama orações fervorosas todos os dias para que você caminhe sempre na vitória e na presença de Cristo! Nossa rima de ouro: \'O túmulo está vazio, Jesus ressuscitou, e com amor eterno a minha vida abençoou!\'',
+        ],
+        [
+            'slug' => 'jose_perdao_irmaos',
+            'titulo' => 'José do Egito e o Perdão aos Irmãos: O Triunfo da Graça',
+            'personagem' => 'José do Egito e seus Irmãos',
+            'tema' => 'O Perdão Supremo e a Reconciliação Familiar',
+            'licoes' => 'O amor e o perdão curam qualquer ferida e transformam o mal em bênção de salvação.',
+            'historia_base' => 'Quando a fome extrema castigava todo o mundo antigo, os irmãos de José desceram de Canaã ao Egito para comprar trigo. Eles não imaginavam que o governador poderoso a quem se curvavam era o irmão que haviam vendido como escravo vinte anos antes! José testou o coração de seus irmãos para ver se haviam mudado e se amavam a Benjamim, o filho mais novo de seu pai Jacó. Ao ver que Judá se ofereceu para ficar preso como escravo no lugar de Benjamim por amor ao velho pai, José não conseguiu mais conter a emoção.
+
+Com lágrimas nos olhos, José ordenou: \'Fazei sair a todos da minha presença!\'. Quando ficou sozinho com seus irmãos, José começou a chorar tão alto que os egípcios e a casa de Faraó ouviram. Ele disse: \'Eu sou José! Meu pai ainda vive?\'. Os irmãos ficaram mudos, paralisados de espanto e terror! Mas José lhes disse com imensa doçura: \'Chegai-vos a mim, peço-vos. Eu sou José, vosso irmão, a quem vendestes para o Egito. Agora, pois, não vos entristeçais nem vos pese o me haverdes vendido para cá; porque para conservação da vida, Deus me enviou adiante de vós! Deus me enviou adiante de vós, para conservar vossa sucessão na terra e para guardar-vos em vida por um grande livramento!\'.
+
+José abraçou o pescoço de Benjamim e chorou; e Benjamim chorou no pescoço dele. Beijou a todos os seus irmãos e chorou sobre eles; e depois seus irmãos falaram com ele em profunda paz. Faraó mandou carruagens reais carregadas de mantimentos e vestes finas para buscar o patriarca Jacó. Quando o velho Jacó soube que seu filho José estava vivo e reinava no Egito, seu espírito reviveu e exclamou: \'Basta! Meu filho José ainda vive; irei e o verei antes que morra!\'. Toda a família foi salva e habitou na fértil terra de Gósen sob a proteção de Deus!',
+            'ministracao_sarah' => 'Princesa Sarah, receba a unção do perdão e da graça de Deus! O coração que perdoa é um coração livre, sábio e poderoso como o de José! Nunca guarde mágoas nem birras no seu coraçãozinho; seja sempre uma fonte de abraço, carinho e alegria dentro da sua casa!
+
+Ame, respeite e honre o seu papai Adrian King e a sua mamãe Samara com todo o afeto da sua alma, pois Deus uniu a família King para ser um farol de bênção nesta terra! E bendiga ao Senhor pela vida da sua vovó Socorro, mulher de Deus que derrama orações fervorosas e intercessão contínua por você, profetizando que a graça e a paz de Deus reinarão sempre na sua vida! Nossa rima de ouro: \'Com amor e perdão no meu coração, na graça de Deus eu vivo em união!\'',
         ],
         [
             'slug' => 'gideao_trezentos',
-            'titulo' => 'Gideão e o Exército dos Trezentos com Tochas e Cântaros',
-            'personagem' => 'Gideão',
-            'tema' => 'A Vitória de Gideão e os Trezentos',
-            'licoes' => 'a vitória não depende da quantidade de pessoas, mas do poder de Deus ao nosso lado',
-            'historia_base' => 'Gideão achava que era o menor de sua família, mas um anjo do Senhor apareceu debaixo de um carvalho e declarou: \'O Senhor é com você, homem valente!\' Um exército gigantesco de inimigos como gafanhotos cercava Israel. Gideão reuniu trinta e dois mil soldados, mas Deus disse: \'Tem gente demais! Eu não quero que vocês pensem que venceram pela força humana!\' Deus mandou os que tinham medo voltarem para casa. Depois, levou os soldados à beira da água para beberem. Aqueles que ficaram atentos, levando a água à boca com a mão enquanto vigiavam, foram escolhidos: apenas trezentos homens corajosos! Deus disse: \'Com estes trezentos Eu vou te dar a vitória!\' No meio da noite escura, Gideão dividiu os trezentos em três grupos. Cada soldado segurava numa mão uma tocha acesa escondida dentro de um cântaro de barro, e na outra mão uma trombeta de chifre! Quando Gideão deu o sinal, todos quebraram os cântaros ao mesmo tempo: CRACK! As tochas brilharam como labaredas reluzentes e todos tocaram as trombetas em uníssono: FOOOOM! E gritaram com autoridade: \'Pelo Senhor e por Gideão!\' Os inimigos ficaram confusos, fugiram apavorados e o povo de Deus venceu sem precisar disparar uma só flecha!',
-            'ministracao_sarah' => 'Sarahzinha, que lição extraordinária de fé e estratégia de Deus! Para vencer, a gente não precisa de multidão nem de gritos; a gente precisa da presença de Deus e da obediência aos Seus mandamentos! Quando você obedece ao papai Adrian King e à mamãe Samara, você se torna parte do exército de valentes de Cristo, iluminando o mundo como uma tocha viva de amor e verdade! Você é forte e vencedora! Nossa Rima de Ouro: \'O cântaro quebra, a tocha reluz, a minha vitória pertence a Jesus!\'',
+            'titulo' => 'Gideão e os 300 Homens de Fé: Tochas, Cântaros e o Shofar',
+            'personagem' => 'Gideão e os 300 Homens',
+            'tema' => 'A Vitória Pela Fé e Não Pela Força Numérica',
+            'licoes' => 'Quando Deus está conosco, a minoria com Ele se torna maioria invencível.',
+            'historia_base' => 'Israel sofria sob a opressão impiedosa dos midianitas, que invadiam as plantações como gafanhotos, destruindo as colheitas e os rebanhos. O jovem Gideão estava malhando trigo no lagar de uvas, escondido para que os midianitas não o vissem, quando o Anjo do Senhor lhe apareceu sob um carvalho e declarou: \'O Senhor é contigo, homem valente!\'. Gideão respondeu com humildade: \'Ai, Senhor meu, com que livrarei a Israel? Eis que a minha família é a mais pobre em Manassés, e eu o menor na casa de meu pai\'. Mas o Senhor lhe garantiu: \'Porquanto eu hei de ser contigo, tu ferirás os midianitas como a um só homem!\'.
+
+Gideão reuniu trinta e dois mil soldados para lutar contra cento e trinta e cinco mil midianitas. Mas o Senhor disse a Gideão: \'Muito é o povo que está contigo, para eu entregar os midianitas em sua mão; para que Israel não se glorie contra mim, dizendo: A minha mão me livrou!\'. Deus mandou proclamar: \'Quem for tímido e medroso, volte!\'. Vinte e dois mil homens voltaram para casa com medo, restando apenas dez mil. Mas Deus disse: \'Ainda há povo demais! Leva-os às águas e ali os provarei\'. 
+
+Na beira do rio, a maioria ajoelhou-se e enfiou a boca na água para beber sem vigiar. Mas trezentos homens pegaram a água com as mãos em concha e lamberam como cão, mantendo os olhos erguidos e atentos ao redor! O Senhor disse: \'Com estes trezentos homens que lamberam a água vos livrarei!\'. Naquela noite, Gideão dividiu os trezentos homens em três companhias, colocou na mão de cada um uma buzina de chifre de carneiro (shofar) e um cântaro de barro vazio com uma tocha de fogo acesa dentro.
+
+À meia-noite, no início da vigília, os trezentos homens cercaram o acampamento inimigo em silêncio. De repente, ao sinal de Gideão, todos tocaram as trombetas em uníssono, quebraram os cântaros de barro estalando alto e levantaram as tochas ardentes com a mão esquerda e as buzinas com a mão direita, bradando em alta voz: \'Espada pelo Senhor e por Gideão!\'. O barulho das trombetas e a luz repentina das tochas causaram tamanho pânico nos midianitas que o Senhor pôs a espada de um contra o outro em todo o acampamento, e os inimigos fugiram em debandada! Deus deu uma vitória monumental sem que Israel precisasse disparar uma única flecha!',
+            'ministracao_sarah' => 'Sarahzinha, declare com autoridade: você é uma valente do Senhor! Não importa o tamanho dos desafios; quando Deus está do seu lado, você é mais que vencedora! Tenha sempre coragem e vigilância, mantendo os seus olhinhos atentos às coisas de Deus.
+
+Honre de todo o coração o seu papai Adrian King, homem que lidera sua casa com sabedoria, e ame a sua mamãe Samara com doces sorrisos e carinho. E receba o manto de oração da sua amada vovó Socorro, serva santa de Deus que toca o shofar da intercessão no altar divino todos os dias pela sua vitória e saúde! Nossa rima de ouro: \'Com a tocha da fé e o poder do Senhor, a vitória é certa com Cristo Salvador!\'',
         ],
         [
-            'slug' => 'muralhas_jerico',
-            'titulo' => 'As Muralhas de Jericó Caindo com Som de Louvor',
-            'personagem' => 'Josué e o Povo',
-            'tema' => 'A Queda das Muralhas de Jericó',
-            'licoes' => 'obedecer às instruções do Senhor e o poder do louvor coletivo',
-            'historia_base' => 'A cidade de Jericó era cercada por muralhas de pedra altíssimas e tão largas que carruagens podiam andar por cima delas! Os portões de bronze estavam trancados a sete chaves. Josué olhava para as pedras e sabia que com força humana ninguém conseguiria entrar. Mas o Capitão do Exército do Senhor apareceu a Josué com uma espada desembainhada na mão e deu a estratégia do Céu: marchar com a Arca da Aliança! Durante seis dias, os soldados e os sacerdotes deram uma volta completa ao redor da cidade em absoluto silêncio, ouvindo apenas o som ritmado dos passos: tum, tum, tum, e o som solene das trombetas! No sétimo dia, acordaram bem cedinho e marcharam não apenas uma, mas sete voltas ao redor de Jericó! Na sétima volta, quando as trombetas tocaram um toque longo e estrondoso: FOOOOOM! Josué ordenou: \'Gritem, pois o Senhor entregou a cidade a vocês!\' Todo o povo soltou um grande brado de louvor e júbilo! Na mesma hora, a terra tremeu e aquelas muralhas gigantescas de pedra desabaram inteirinhas no chão: CRASH, BUM! O povo avançou e conquistou a cidade com grande triunfo!',
-            'ministracao_sarah' => 'Sarahzinha, que maravilha de milagre! Quando a gente confia e louva a Deus com perseverança, muralhas de impedimentos, medos e dificuldades desabam por terra diante de você! O papai Adrian King e a mamãe Samara te ensinam a marchar com fé e alegria todos os dias. O seu louvor é uma arma poderosa contra o mal! Bate duas palminhas com a Charlene e grava a nossa Rima de Ouro: \'Ao som do louvor as muralhas vão cair, com passos de fé eu nasci pra subir!\'',
+            'slug' => 'elias_carmelo',
+            'titulo' => 'Elias e os Profetas de Baal no Monte Carmelo: O Fogo do Céu',
+            'personagem' => 'Profeta Elias e o Deus Vivo de Israel',
+            'tema' => 'A Soberania do Deus Verdadeiro Sobre Todos os Ídolos',
+            'licoes' => 'Só o Senhor é Deus; Ele responde ao clamor da fé com fogo e poder.',
+            'historia_base' => 'Israel havia se desviado dos mandamentos de Deus sob a influência do rei Acabe e da rainha Jezabel, adorando a estátuas de Baal e postes de Aserá. Durante três anos e seis meses não choveu na terra, cumprindo a profecia de Elias. Então o profeta Elias desafiou todo o povo e quatrocentos e cinquenta profetas de Baal para subirem ao topo do Monte Carmelo. Perante uma multidão de milhares de pessoas, Elias clamou: \'Até quando coxeareis entre dois pensamentos? Se o Senhor é Deus, segui-o; e se Baal, segui-o!\'. O povo permaneceu em silêncio.
+
+Elias propôs a prova definitiva: \'Eu fiquei só dos profetas do Senhor, e os profetas de Baal são quatrocentos e cinquenta homens. Dêem-se-nos dois bezerros; escolham para si um, cortem-no em pedaços e ponham-no sobre a lenha, porém não lhe metam fogo; e eu prepararei o outro bezerro, e o porei sobre a lenha, e não lhe meterei fogo. Então invocai o nome do vosso deus, e eu invocarei o nome do Senhor; e o Deus que responder por meio de fogo, esse será Deus!\'. Todo o povo respondeu: \'É boa esta palavra!\'.
+
+Os profetas de Baal clamaram desde a manhã até o meio-dia: \'Ah, Baal, responde-nos!\'. Saltavam ao redor do altar e retalhavam-se com facas, mas não houve voz nem resposta. Ao meio-dia, Elias zombava deles dizendo: \'Clamai em altas vozes, porque ele é um deus; pode ser que esteja meditando, ou em viagem, ou talvez esteja dormindo e despertará!\'. Até a hora do sacrifício da tarde, nenhum sinal de fogo apareceu.
+
+Então Elias disse a todo o povo: \'Chegai-vos a mim!\'. Ele restaurou o altar do Senhor que estava quebrado, tomou doze pedras segundo o número das tribos de Israel e edificou o altar em nome do Senhor. Fez ao redor uma vala profunda, arrumou a lenha e o bezerro, e ordenou: \'Enchei quatro cântaros de água e derramai sobre o holocausto e sobre a lenha!\'. Fizeram isso uma, duas e três vezes! A água corria ao redor do altar e encheu a vala até transbordar!
+
+À hora da oferta da tarde, o profeta Elias deu um passo à frente e orou com calma e santa autoridade: \'Ó Senhor, Deus de Abraão, de Isaque e de Israel, manifeste-se hoje que Tu és Deus em Israel, e que eu sou Teu servo, e que conforme a Tua palavra fiz todas estas coisas. Responde-me, Senhor, responde-me, para que este povo conheça que Tu, Senhor, és Deus!\'. No mesmo instante, caiu fogo do céu dos céus e consumiu o holocausto, a lenha, as pedras e o pó, e ainda lambeu toda a água que estava na vala! Vendo isso, todo o povo caiu com o rosto em terra e bradou em adoração: \'O Senhor é Deus! O Senhor é Deus!\'. Logo depois, o céu se cobriu de nuvens escuras e caiu uma chuva abundante sobre a terra ressecada!',
+            'ministracao_sarah' => 'Princesa Sarah, receba a chama do fogo santo do Espírito Santo no seu coraçãozinho! O Deus de Elias é o seu Deus; Ele responde às suas orações e manifesta a Sua presença de glória em toda a sua vida!
+
+Honre sempre o seu papai Adrian King como o sacerdote do seu lar, que busca a Deus para abençoar a sua família; ame e abrace a sua mamãe Samara, que enche o seu dia a dia de oração e ternura. E lembre-se das orações cheias do poder de Deus da sua vovó Socorro, mulher de joelhos no altar que clama para que o fogo do Espírito Santo queime todas as enfermidades e acenda uma sabedoria celestial na sua mente! Nossa rima de ouro: \'O Deus que responde com fogo dos céus, cuida de mim pois eu sou dos Seus!\'',
         ],
         [
-            'slug' => 'magos_oriente',
-            'titulo' => 'Os Três Reis Magos e a Estrela Guia',
-            'personagem' => 'Os Reis Magos e o Menino Jesus',
-            'tema' => 'A Visita dos Reis Magos',
-            'licoes' => 'adorar a Jesus de coração e entregar o melhor que temos a Ele',
-            'historia_base' => 'Lá nas terras distantes do Oriente, sábios astrônomos estudiosos olhavam o céu noturno quando de repente avistaram uma estrela magnífica, brilhante e misteriosa que nunca tinham visto antes! Eles sabiam pelas profecias que aquela estrela sinalizava o nascimento do Rei dos Reis. Montaram em seus camelos e começaram uma longa jornada pelo deserto, seguindo o brilho da estrela guia noite após noite: ploc-ploc, ploc-ploc pelo areal. A estrela foi brilhando e guiando seus passos até que parou exatamente sobre a casa simples em Belém onde estava o menino Jesus com Sua mãe Maria! Quando os magos entraram e viram o bebezinho real, caíram de joelhos com profundo respeito e O adoraram com lágrimas de reverência. Abriram seus tesouros mais preciosos e Lhe ofereceram presentes dignos de um Rei divino: ouro reluzente para Sua realeza, incenso perfumado para Sua divindade e mirra santa para Seu sacrifício redentor! Depois, voltaram por outro caminho com o coração transbordando da glória de Deus!',
-            'ministracao_sarah' => 'Sarahzinha, que cena encantadora! Os homens mais sábios do mundo viajaram de tão longe só para se prostrar e entregar o melhor de seus corações ao menino Jesus! Você também é uma princesinha sábia que aprende desde o colinho a adorar a Jesus. O papai Adrian King e a mamãe Samara te dedicam a Cristo todos os dias como a joia mais preciosa da família! A estrela de Jesus sempre vai guiar os seus passinhos no caminho da paz e da honra! Nossa Rima de Ouro: \'A estrela me guia com graça e luz, eu entrego meu ouro aos pés de Jesus!\'',
+            'slug' => 'ester_rainha_coragem',
+            'titulo' => 'A Rainha Ester: \'Se Perecer, Pereci\' e o Livramento de Israel',
+            'personagem' => 'Rainha Ester e Mordecai',
+            'tema' => 'A Coragem Feminina, o Jejum e a Intercessão que Salva Vidas',
+            'licoes' => 'Deus nos coloca em lugares de honra para sermos instrumentos de salvação e proteção.',
+            'historia_base' => 'Na gloriosa cidadela de Susã, capital do vasto império persa que se estendia da Índia até a Etiópia, vivia uma jovem judia órfã chamada Hadassa, cujo nome persa era Ester. Criada com profundo amor e temor a Deus por seu primo mais velho Mordecai, Ester era de porte formoso e semblante gracioso. Quando o rei Assuero procurou uma nova rainha para o império, Ester foi levada ao palácio real. Ela alcançou graça e favor aos olhos do rei acima de todas as outras donzelas, e o rei colocou sobre a cabeça dela a coroa real de ouro, fazendo-a rainha de todo o império!
+
+Porém, um homem arrogante chamado Hamã tornou-se primeiro-ministro e odiava o povo judeu porque Mordecai não se prostrava nem se inclinava diante dele, mas adorava unicamente ao Deus de Israel. Com astúcia e mentira, Hamã convenceu o rei a emitir um decreto irrevogável com o selo real ordenando a destruição de todos os judeus em um único dia. Houve grande pranto, clamor e cinzas em todas as províncias. Mordecai enviou uma cópia do decreto à rainha Ester e lhe disse: \'Não imagines em teu ânimo que escaparás na casa do rei mais do que todos os judeus. Porque, se de todo te calares neste tempo, socorro e livramento de outra parte virá para os judeus, mas tu e a casa de teu pai perecereis. E quem sabe se para tal tempo como este chegaste a este reino?\'.
+
+Ester sentiu o peso da responsabilidade sagrada. A lei do império determinava pena de morte para qualquer pessoa que entrasse na presença do rei no pátio interior sem ser chamada, a menos que o rei estendesse para ela o seu cetro de ouro. Ester respondeu a Mordecai: \'Vai, ajunta a todos os judeus que se acham em Susã, e jejuai por mim, e não comais nem bebais por três dias, nem de dia nem de noite; eu e as minhas donzelas também assim jejuaremos. E depois irei ter com o rei, ainda que não seja segundo a lei; e se perecer, pereci!\'.
+
+No terceiro dia de jejum e fervorosa oração, Ester vestiu seus trajes reais mais belos, radiante de unção e graça de Deus, e colocou-se no pátio interior diante da sala do trono. Quando o rei Assuero a viu de pé, seu coração se derreteu em favor e ele estendeu o cetro de ouro que tinha na mão! Ester aproximou-se e tocou a ponta do cetro. O rei disse: \'Que tens, rainha Ester, e qual é a tua petição? Até metade do reino se te dará!\'. Com extrema sabedoria, Ester preparou dois banquetes e desmascarou os planos cruéis de Hamã diante do rei! O povo judeu foi salvo, Mordecai foi promovido a governador e a coragem da rainha Ester entrou para a história eterna como prova do poder do jejum e da oração!',
+            'ministracao_sarah' => 'Princesa Sarah, assim como a Rainha Ester, você nasceu para um tempo de glória e realeza espiritual! Deus colocou uma coroa de sabedoria, beleza interior, autoridade e inteligência sobre a sua cabecinha desde o berço!
+
+Ame e honre o seu papai Adrian King, homem sábio que Deus colocou como um mentor e protetor da sua vida como Mordecai foi para Ester; e honre a sua doce mamãe Samara com abraços e obediência fiel. E celebre a cobertura de intercessão da sua vovó Socorro, que é uma mulher de jejum e joelhos dobrados no altar de Deus, clamando para que a graça e o cetro de ouro do Rei dos Reis estejam sempre estendidos sobre você! Nossa rima de ouro: \'Como a rainha Ester com graça e oração, eu sou princesa de Deus e venço na unção!\'',
         ],
         [
-            'slug' => 'menino_jesus_templo',
-            'titulo' => 'O Menino Jesus aos Doze Anos no Templo',
-            'personagem' => 'Menino Jesus, Maria e José',
-            'tema' => 'O Menino Jesus no Templo',
-            'licoes' => 'amor pela casa de Deus, estudo da Palavra e obediência aos pais',
-            'historia_base' => 'Quando Jesus tinha doze anos de idade, viajou com Maria e José para Jerusalém para celebrar a grande festa da Páscoa. As ruas estavam cheias de peregrinos alegres cantando louvores. Quando a festa terminou e a caravana da família iniciou a viagem de volta para Nazaré, Maria e José pensavam que Jesus estava no meio dos parentes e amiguinhos. Mas depois de um dia de viagem, procuraram por Ele e não O encontraram! Cheios de preocupação maternal, voltaram correndo a Jerusalém procurando por todos os lados. Três dias depois, encontraram o menino Jesus no lugar mais especial de todos: dentro do sagrado Templo! Ele estava sentado no meio dos grandes doutores e mestres da Lei de Deus, ouvindo com atenção e fazendo perguntas tão profundas que todos os mestres ficavam boquiabertos e maravilhados com a Sua inteligência, discernimento e respostas geniais! Maria disse: \'Filho, por que Você fez isso conosco? Estávamos aflitos Te procurando!\' E Jesus com serenidade amorosa respondeu: \'Por que me procuravam? Não sabiam que me convém cuidar dos negócios de Meu Pai celestial?\' Depois, Jesus desceu com eles para Nazaré e continuou sendo obediente aos Seus pais em tudo, crescendo em sabedoria, estatura e na graça diante de Deus e dos homens!',
-            'ministracao_sarah' => 'Sarahzinha, que exemplo lindo o Senhor Jesus nos deixou! Mesmo tendo toda a sabedoria divina e sendo o Filho de Deus, Ele honrava, respeitava e obedecia com amor a Maria e a José! A verdadeira inteligência e o aumento de QI se manifestam no respeito e no amor aos pais! Quando você escuta com meiguice o papai Adrian King e a mamãe Samara, o Espírito Santo faz você crescer em sabedoria, mente brilhante, saúde e graça divina diante de todo mundo! Nossa Rima de Ouro: \'Em sabedoria e graça eu vou crescer, aos meus pais queridos sempre obedecer!\'',
-        ],
-        [
-            'slug' => 'batismo_jesus',
-            'titulo' => 'O Batismo de Jesus no Rio Jordão',
-            'personagem' => 'Jesus e João Batista',
-            'tema' => 'O Batismo de Jesus',
-            'licoes' => 'humildade, obediência e o Espírito Santo como pomba de paz',
-            'historia_base' => 'João Batista estava pregando no deserto da Judeia e batizando as pessoas nas águas frescas do rio Jordão, anunciando que o Reino dos Céus estava próximo. De repente, Jesus se aproximou com mansidão e pediu para ser batizado por João. João disse com reverência: \'Eu é que preciso ser batizado por Ti, e Tu vens a mim?!\' Mas Jesus respondeu com doçura: \'Deixa por agora, pois assim convém que cumpramos toda a justiça!\' Jesus desceu às águas límpidas do rio Jordão e foi batizado: tchibum! E no momento exato em que Jesus saía da água, os Céus se abriram de forma gloriosa e o Espírito Santo de Deus desceu em forma corpórea suave como uma pombinha branca, repousando sobre a cabeça de Jesus! E ouviu-se do Céu a voz poderosa, calorosa e cheia de amor do Pai celestial dizendo: \'Este é o Meu Filho amado, em quem Eu tenho todo o Meu prazer!\' Toda a Trindade Santa se manifestou com glória e majestade naquele momento santo!',
-            'ministracao_sarah' => 'Sarahzinha, meu amor! Sabe o que o Pai do Céu disse sobre Jesus? \'Este é o meu filho amado!\' E hoje o Pai do Céu olha para você, para a sua vidinha no bercinho, e diz com alegria infinita: \'A Sarahzinha é a minha princesinha amada, o Meu tesouro precioso!\' O Espírito Santo repousa sobre a sua cabecinha trazendo unção, pureza e inteligência. O papai Adrian King e a mamãe Samara têm todo o prazer e orgulho em você! Você é filha amada do Rei celestial! Nossa Rima de Ouro: \'O Céu se abre com voz de amor, sou filha amada do meu Senhor!\'',
-        ],
-        [
-            'slug' => 'bodas_cana',
-            'titulo' => 'O Primeiro Milagre: A Água Transformada em Vinho',
-            'personagem' => 'Jesus e Maria',
-            'tema' => 'O Milagre nas Bodas de Caná',
-            'licoes' => 'fazer tudo o que Jesus mandar traz o melhor sabor para a nossa vida',
-            'historia_base' => 'Na charmosa aldeia de Caná da Galileia, estava acontecendo uma linda festa de casamento, com mesas decoradas, música alegre e muitos convidados. Jesus, Seus discípulos e Sua mãe Maria foram convidados para a celebração. No meio do banquete festivo, aconteceu um problema delicado: o vinho acabou! Naquela época, isso causaria grande vergonha aos noivos. Maria, que conhecia o poder do seu Filho, aproximou-se de Jesus e contou a situação. Depois, Maria olhou para os garçons e servos da festa e deu a instrução mais sábia de toda a história: \'Façam tudo o que Ele vos disser!\' Havia ali seis grandes talhas de pedra para purificação, cada uma com capacidade para quase cem litros de água. Jesus disse aos servos: \'Encham as talhas de água até a borda!\' Os servos obedeceram prontamente e encheram até o topo, chuá-chuá! Então Jesus ordenou: \'Tirem um pouco e levem ao mestre de cerimônias da festa!\' Quando o homem provou, a água havia se transformado no vinho mais doce, nobre e saboroso de todos! Ele chamou o noivo surpreso e disse: \'Todos servem o melhor vinho no início, mas você guardou o melhor vinho até agora!\' Esse foi o primeiro milagre de Jesus, e Seus discípulos creram Nele!',
-            'ministracao_sarah' => 'Sarahzinha, que segredo tremendo Maria ensinou: \'Façam tudo o que Jesus disser!\' A obediência abre as portas para os maiores milagres da nossa vida! Quando você escuta os conselhos do papai Adrian King e da mamãe Samara e obedece com um coração doce, Jesus transforma o comum em algo extraordinário na sua história! O melhor de Deus na sua vida sempre está por vir! Nossa Rima de Ouro: \'Tudo o que Jesus mandar eu vou fazer, o melhor milagre eu vou viver!\'',
-        ],
-        [
-            'slug' => 'jesus_anda_aguas',
-            'titulo' => 'Jesus Anda Sobre as Águas do Mar',
-            'personagem' => 'Jesus e Pedro',
-            'tema' => 'Jesus Anda Sobre o Mar',
-            'licoes' => 'manter os olhos fixos em Jesus para nunca afundar no medo',
-            'historia_base' => 'Depois de alimentar a multidão, Jesus subiu ao monte sozinho para orar ao Pai na tranquilidade da noite. Os discípulos pegaram o barco e foram navegando pelo mar da Galileia. Mas no meio da noite, o vento soprou contrário com força e as ondas chicoteavam o barco furiosamente: plof, plof, chuááá! Os discípulos remavam com dificuldade e estavam exaustos. Por volta das quatro horas da madrugada, quando a névoa cobria as águas, eles olharam e viram uma figura caminhando suavemente sobre a superfície das ondas agitadas! Eles gritaram apavorados: \'É um fantasma!\' Mas imediatamente a voz firme e doce de Jesus soou sobre o mar: \'Coragem! Sou Eu; não tenham medo!\' Pedro, entusiasmado, respondeu do barco: \'Senhor, se é Você mesmo, manda-me ir ter contigo por cima das águas!\' E Jesus disse uma única palavra: \'Vem!\' Pedro saiu do barco, colocou os pés sobre a água e começou a andar sobre as águas em direção a Jesus, passo a passo, sentindo a água firme como chão sob seus pés! Mas quando Pedro olhou para a força do vento ao redor, sentiu medo e começou a afundar: \'Senhor, salva-me!\' No mesmo instante, Jesus estendeu a Sua mão poderosa, segurou Pedro com força e disse com carinho: \'Homem de pequena fé, por que você duvidou?\' Os dois subiram no barco e o vento cessou na hora!',
-            'ministracao_sarah' => 'Sarahzinha, que história cheia de adrenalina santa! Sabe o que essa passagem nos ensina? Que enquanto mantemos os nossos olhinhos fixos em Jesus, nós andamos por cima de qualquer tempestade! Não olhe para o medo nem para as dificuldades: olhe para Jesus e segure na mãozinha protetora do papai Adrian King e da mamãe Samara! Quando você segura na mão de quem te ama, você nunca afunda! Jesus te sustenta com a destra da Sua justiça! Nossa Rima de Ouro: \'Olhando pra Cristo por cima do mar, com mãos estendidas eu vou caminhar!\'',
-        ],
-        [
-            'slug' => 'ressurreicao_filha_jairo',
-            'titulo' => 'Menina, Levanta-te! A Filha de Jairo',
-            'personagem' => 'Jesus e a Menina',
-            'tema' => 'A Ressurreição da Filha de Jairo',
-            'licoes' => 'a autoridade de Jesus sobre a doença e a vida, e a importância de crer',
-            'historia_base' => 'Jairo era um líder respeitado da sinagoga que amava profundamente sua filhinha de doze anos. Mas a garotinha ficou gravemente doente e estava muito fraquinha na cama. Jairo correu até Jesus, caiu de joelhos com lágrimas e suplicou: \'Minha filhinha está à morte! Vem, por favor, impõe as mãos sobre ela para que viva!\' Jesus foi com ele. No caminho, chegaram pessoas da casa de Jairo dizendo: \'A sua filha faleceu; não incomode mais o Mestre!\' O coração de Jairo ia se despedaçar de dor, mas Jesus ouviu e disse na mesma hora: \'Não tenha medo; tão somente creia!\' Chegando à casa, havia muitas pessoas chorando e lamentando. Jesus entrou no quartinho da menina levando apenas os pais dela e três discípulos. Jesus se aproximou do leito, segurou com ternura a mãozinha fria da menina e disse com doce autoridade em aramaico: \'Talita cumi!\', que significa: \'Menina, a ti te digo: levanta-te!\' No mesmo instante, o fôlego da vida voltou ao corpinho dela, o sangue aqueceu suas bochechinhas, ela abriu os olhos, levantou-se da cama e começou a andar pelo quarto cheia de saúde! Os pais ficaram radiantes de alegria, e Jesus com carinho recomendou que dessem algo gostoso para ela comer!',
-            'ministracao_sarah' => 'Sarahzinha, minha princesinha! Olha o carinho infinito de Jesus pelas menininhas! O mesmo Jesus que segurou na mão da filha de Jairo e disse \'Levanta-te!\' segura na sua mãozinha todos os dias! Ele cura todo dodói, enche o seu corpinho de saúde perfeita, energia e apetite gostoso! E olha que amor o papai Jairo tinha por sua filha: assim é o amor do papai Adrian King e da mamãe Samara por você, sempre orando e cuidando com zelo! Você tem a vida abundante de Cristo! Nossa Rima de Ouro: \'Jesus me segura pela minha mão, com vida e saúde no meu coração!\'',
-        ],
-        [
-            'slug' => 'o_filho_prodigo',
-            'titulo' => 'O Filho Pródigo e o Abraço do Pai Amoroso',
-            'personagem' => 'O Pai Amoroso e o Filho',
-            'tema' => 'A Parábola do Filho Pródigo',
-            'licoes' => 'o perdão incondicional do Pai Celestial para quando nos arrependemos',
-            'historia_base' => 'Jesus contou a história de um pai que tinha dois filhos e muito amor no coração. O filho mais jovem pediu a sua parte da herança e foi para uma terra bem distante gastar tudo em festas e diversões vazias. Quando o dinheiro acabou, veio uma terrível fome naquela terra e o rapaz ficou sem nada, tendo que trabalhar cuidando de porquinhos e sentindo tanta fome que desejava comer a comidinha deles! Ele pensou com tristeza: \'Quantos trabalhadores do meu pai têm pão com fartura, e eu aqui morrendo de fome! Vou me levantar, voltar para o meu pai e dizer: Pai, pequei contra o Céu e diante de ti; não sou mais digno de ser chamado teu filho, trata-me como um dos teus empregados!\' Ele se levantou e foi. Mas quando ele ainda vinha longe, na curva da estrada, o pai — que todos os dias olhava esperando o filho voltar — o avistou! Cheio de amor e compaixão profunda, o pai não esperou: correu de braços abertos pela estrada, abraçou o pescoço do filho e o beijou com lágrimas de alegria! O filho começou a se desculpar, mas o pai ordenou aos servos: \'Tragam depressa a melhor túnica e vistam-no! Coloquem um anel no seu dedo e sandálias nos seus pés! Vamos fazer uma festa com banquete, porque este meu filho estava perdido e foi achado!\'',
-            'ministracao_sarah' => 'Sarahzinha, que amor infinito! Essa história mostra o coração do Papai do Céu para com os Seus filhos. Ele nunca desiste de nós! E reflete também o abraço aconchegante, quentinho e perdoador do papai Adrian King e da mamãe Samara quando te pegam no colo! Em casa, nos braços dos seus pais, você sempre encontra acolhimento, beijinhos, segurança e amor incondicional! Você é a filha querida e amada da família King! Nossa Rima de Ouro: \'Nos braços do Pai encontro perdão, sou filha querida do Seu coração!\'',
-        ],
-        [
-            'slug' => 'ressurreicao_lazaro',
-            'titulo' => 'Lázaro, Vem Para Fora!',
-            'personagem' => 'Jesus, Marta, Maria e Lázaro',
-            'tema' => 'A Ressurreição de Lázaro',
-            'licoes' => 'Jesus é a ressurreição e a vida; nada é tarde demais para Ele',
-            'historia_base' => 'Em Betânia moravam três irmãos muito amigos de Jesus: Marta, Maria e Lázaro. Um dia, Lázaro ficou gravemente enfermo e partiu, sendo sepultado numa caverna com uma pedra pesada fechando a entrada. Quatro dias depois, Jesus chegou à cidade. Marta correu ao encontro de Jesus e disse: \'Senhor, se estivesses aqui, meu irmão não teria morrido! Mas eu sei que tudo quanto pedires a Deus, Ele te dará!\' Jesus disse: \'O teu irmão vai ressuscitar! Eu sou a Ressurreição e a Vida; quem crê em Mim, ainda que morra, viverá!\' Maria também se prostrou aos pés de Jesus chorando. Jesus, vendo o choro de todos, comoveu-se profundamente no Seu espírito e chorou com lágrimas de compaixão e afeto sincero. Depois foram ao sepulcro. Jesus ordenou: \'Tirem a pedra!\' Marta alertou: \'Senhor, já faz quatro dias!\' Jesus respondeu com majestade: \'Não te disse Eu que, se creres, verás a glória de Deus?\' Tiraram a pedra. Jesus olhou para o Céu, orou ao Pai e clamou com voz potente de autoridade: \'Lázaro, vem para fora!\' E o homem que havia partido saiu de dentro da caverna vivo, com as mãos e pés enfaixados! Jesus disse: \'Desatem-no e deixem-no ir!\' Que milagre espetacular!',
-            'ministracao_sarah' => 'Sarahzinha, veja o poder sem limites do nosso Senhor! Para Jesus não existe situação atrasada nem causa perdida; Ele tem poder sobre a vida e a morte! O mesmo Jesus que chamou Lázaro para fora chama a sua vida para viver em plenitude, saúde, sabedoria e luz! Com o papai Adrian King e a mamãe Samara te ensinando a crer, você vai ver a glória de Deus se manifestando em todos os seus dias! Bate palminha de vitória! Nossa Rima de Ouro: \'A pedra rolou, a vida venceu, milagres sem fim opera o meu Deus!\'',
-        ],
-        [
-            'slug' => 'entrada_triunfal',
-            'titulo' => 'A Entrada Triunfal: Hosana ao Rei!',
-            'personagem' => 'Jesus no Jumentinho',
-            'tema' => 'A Entrada Triunfal em Jerusalém',
-            'licoes' => 'louvar a Jesus como nosso Rei e Salvador com alegria sincera',
-            'historia_base' => 'Jesus estava chegando a Jerusalém para a festa, e pediu aos discípulos que trouxessem um jumentinho novo no qual ninguém jamais havia montado. Quando trouxeram o animalzinho manso, colocaram seus mantos sobre ele e Jesus montou com mansidão e nobreza real. Uma multidão imensa começou a estender suas capas na estrada para Jesus passar como um Rei! Outros cortavam ramos verdes de palmeiras, balançavam no ar e estendiam pelo caminho fazendo uma passarela triunfal! As pessoas e especialmente as criancinhas no templo começaram a cantar em festa contagiante: \'Hosana ao Filho de Davi! Bendito o que vem em nome do Senhor! Hosana nas maiores alturas!\' A cidade inteira estremeceu de júbilo e adoração! Quando alguns homens quiseram calar os louvores das crianças, Jesus disse: \'Se eles se calarem, as próprias pedras clamarão! Da boca dos pequeninos e das criancinhas de peito sai o perfeito louvor!\'',
-            'ministracao_sarah' => 'Sarahzinha, você ouviu o que Jesus disse sobre você? \'Da boca das criancinhas sai o perfeito louvor!\' O seu balbucio, os seus risinhos, as suas canções e as suas palminhas são o louvor mais puro e perfeito que sobe ao trono de Deus! Quando você canta louvores no colinho do papai Adrian King e da mamãe Samara, os anjos no Céu fazem festa! Você é uma adoradora consagrada ao Rei Jesus! Nossa Rima de Ouro: \'Hosana ao Rei, meu canto é louvor, com flores e palmas ao meu Salvador!\'',
-        ],
-        [
-            'slug' => 'ascensao_jesus',
-            'titulo' => 'A Subida Triunfante de Jesus ao Céu',
-            'personagem' => 'Jesus e os Discípulos',
-            'tema' => 'A Ascensão de Jesus ao Céu',
-            'licoes' => 'Jesus está no Céu intercedendo por nós e prometeu que voltará',
-            'historia_base' => 'Depois de ressuscitar vitorioso da morte, Jesus passou quarenta dias maravilhosos ensinando Seus discípulos sobre o Reino de Deus e dando-lhes provas irrefutáveis de que estava vivo! Ele os levou até o Monte das Oliveiras, perto de Betânia. Lá em cima, com o vento suave soprando, Jesus disse com autoridade soberana: \'Toda a autoridade me foi dada no Céu e na terra! Vão pelo mundo e façam discípulos de todas as nações! E eis que Eu estou com vocês todos os dias, até a consumação dos séculos!\' Então, Jesus levantou as Suas mãos santas e começou a abençoá-los com muito amor. E enquanto os abençoava, foi se elevando suavemente no ar, subindo em direção ao Céu! Uma nuvem brilhante e luminosa O envolveu e O ocultou aos olhos deles. Enquanto todos olhavam extasiados para o alto, subitamente dois anjos com vestes alvas reluzentes apareceram e disseram: \'Homens da Galileia, por que vocês estão olhando para o céu? Esse mesmo Jesus, que dentre vocês foi recebido no Céu, assim virá do mesmo modo como O viram subir!\' Cheios de paz e grande alegria, eles voltaram louvando a Deus no templo!',
-            'ministracao_sarah' => 'Sarahzinha, olha que esperança grandiosa! Jesus subiu ao Céu, mas Ele não nos deixou sozinhos: Ele enviou o Consolador, o Espírito Santo, e prometeu estar com você todos os dias! Ele está no Céu preparando um lugar lindo para nós e intercedendo pelo seu nominho diante do Pai! O papai Adrian King e a mamãe Samara guardam essa esperança viva na família. Você caminha debaixo de um Céu aberto de bênçãos! Nossa Rima de Ouro: \'Ao Céu Ele subiu mas comigo está, a Sua vitória nunca vai faltar!\'',
-        ],
-        [
-            'slug' => 'pentecostes',
-            'titulo' => 'O Dia de Pentecostes e o Fogo do Espírito Santo',
-            'personagem' => 'Os Apóstolos e Maria',
-            'tema' => 'O Derramamento do Espírito Santo',
-            'licoes' => 'o poder, a alegria e a coragem que o Espírito Santo coloca no nosso coração',
-            'historia_base' => 'Cerca de cento e vinte discípulos, incluindo Maria e os apóstolos, estavam reunidos no cenáculo em Jerusalém, orando juntos com um só coração e uma só mente. De repente, veio do Céu um som impressionante como de um vento impetuoso e forte: VUUUUSH! Que encheu toda a casa onde estavam sentados! E apareceram sobre eles línguas repartidas como que de fogo, pousando suavemente sobre a cabeça de cada um deles! Todos ficaram instantaneamente cheios do Espírito Santo de Deus e começaram a falar em outras línguas e a proclamar as grandezas do Senhor com grande júbilo e ousadia santa! Pedro se levantou no meio da multidão e pregou com autoridade do Alto, e naquele único dia mais de três mil pessoas creram em Jesus e foram batizadas, nascendo a gloriosa Igreja de Cristo na terra!',
-            'ministracao_sarah' => 'Sarahzinha, o mesmo Espírito Santo de Pentecostes que desceu como vento e fogo santo mora dentro do seu coraçãozinho! Ele te enche de coragem, alegria, inteligência rápida e amor pelos outros. Quando o papai Adrian King e a mamãe Samara oram em línguas e louvam ao Senhor na sua casa, o ambiente fica cheio da presença do Espírito Santo! Você é o templo vivo de Deus! Nossa Rima de Ouro: \'O vento soprou, o fogo desceu, o Espírito Santo em mim já viveu!\'',
-        ],
-        [
-            'slug' => 'pedro_liberto_prisao',
-            'titulo' => 'O Anjo que Tirou Pedro da Prisão de Noite',
-            'personagem' => 'Pedro e o Anjo',
-            'tema' => 'A Libertação de Pedro da Prisão',
-            'licoes' => 'o poder da igreja que ora unida e como os anjos de Deus nos guardam',
-            'historia_base' => 'O rei mandou prender Pedro por pregar sobre Jesus e o acorrentou com duas correntes pesadas de ferro entre dois soldados sentinelas dentro de uma prisão escura com quatro guardas vigiando os portões. Mas a igreja de Jesus não parava de fazer contínua e fervorosa oração a Deus por ele dia e noite! Na noite antes de ser julgado, Pedro estava dormindo tranquilamente com o coração em paz. De repente, uma luz celestial radiante resplandeceu na prisão escura! Um anjo do Senhor tocou o lado de Pedro, acordando-o: \'Levanta-te depressa!\' Na mesma hora, as correntes pesadas caíram sozinhas dos braços de Pedro, plim-plam! O anjo disse: \'Calça as tuas sandálias e põe a tua capa e segue-me!\' Pedro foi seguindo o anjo achando que era um sonho lindo. Passaram pela primeira guarda, pela segunda guarda e chegaram ao grande portão de ferro que dava para a cidade: o portão se abriu sozinho diante deles como por encanto! O anjo o levou até a rua e partiu. Pedro caiu em si e disse: \'Agora sei verdadeiramente que o Senhor enviou o Seu anjo e me livrou!\' Pedro correu à casa dos irmãos que estavam orando e bateu na porta, trazendo festa e celebração a todos!',
-            'ministracao_sarah' => 'Sarahzinha, olha o poder da igreja e da família que ora unida! As portas de ferro se abrem sozinhas e as correntes caem por terra diante da oração! Quando o papai Adrian King e a mamãe Samara oram por você, anjos de livramento são destacados para abrir todos os caminhos da sua vida e te proteger de qualquer tropeço! Você é livre e guardada pelo Altíssimo! Nossa Rima de Ouro: \'Correntes no chão, portões a se abrir, os anjos de Deus vêm me conduzir!\'',
-        ],
-        [
-            'slug' => 'paulo_estrada_damasco',
-            'titulo' => 'A Grande Luz na Estrada de Damasco',
-            'personagem' => 'Saulo / Paulo',
-            'tema' => 'A Conversão do Apóstolo Paulo',
-            'licoes' => 'o poder transformador de Jesus que perdoa e dá um coração novo a qualquer pessoa',
-            'historia_base' => 'Saulo era um homem muito rígido que não compreendia o amor de Jesus e perseguia os primeiros cristãos. Um dia, ele viajava a cavalo na estrada poeirenta em direção à cidade de Damasco para prender mais pessoas. Ao meio-dia, de repente, resplandeceu ao redor dele uma luz vinda do Céu tão brilhante e ofuscante que era mais forte que o próprio sol do meio-dia! Saulo caiu por terra no chão e ouviu uma voz amorosa e majestosa que dizia: \'Saulo, Saulo, por que você me persegue?\' Tremendo e surpreso, Saulo perguntou: \'Quem és Tu, Senhor?\' E a voz respondeu: \'Eu sou Jesus, a quem você persegue!\' Saulo levantou-se e ficou sem enxergar por três dias, jejuando e orando. Jesus enviou um discípulo bondoso chamado Ananias, que impôs as mãos sobre Saulo dizendo: \'Irmão Saulo, o Senhor Jesus me enviou para que você recupere a vista e seja cheio do Espírito Santo!\' Imediatamente caíram dos olhos de Saulo algo como escamas, ele voltou a enxergar perfeitamente, foi batizado e se transformou no grande apóstolo Paulo, viajando por nações inteiras para pregar o evangelho da graça e do amor!',
-            'ministracao_sarah' => 'Sarahzinha, que poder transformador tem o encontro com Jesus! Jesus é a Luz do mundo que ilumina qualquer escuridão e transforma corações. A mesma luz brilhante de Jesus que tocou Paulo brilha no seu rostinho lindo e na sua mente! O papai Adrian King e a mamãe Samara te ensinam a amar a Jesus acima de tudo. Você nasceu para levar essa luz aos corações das pessoas! Nossa Rima de Ouro: \'A luz de Jesus brilhou no meu ser, com Ele na estrada eu vou florescer!\'',
-        ],
-        [
-            'slug' => 'joao_nova_jerusalem',
-            'titulo' => 'A Linda Cidade Celestial: A Nova Jerusalém',
-            'personagem' => 'Apóstolo João no Apocalipse',
-            'tema' => 'A Visão da Nova Jerusalém',
-            'licoes' => 'a maravilhosa esperança do Céu onde não há choro, tristeza ou dor',
-            'historia_base' => 'O apóstolo João foi levado em espírito até o topo de um grande monte e teve a visão mais deslumbrante de toda a história: a Cidade Santa, a Nova Jerusalém, descendo do Céu da parte de Deus! A cidade resplandecia com a glória brilhante do Criador, como uma joia raríssima de jaspe cristalino! Ao redor havia um grande e alto muro adornado com doze pedras preciosas de todas as cores: esmeraldas verdes reluzentes, safiras azuis celestes, topázios dourados e ametistas roxas deslumbrantes! As doze portas eram doze pérolas perfeitas e gigantes! A praça central da cidade e suas ruas eram de ouro puro, transparente como vidro límpido! No meio da praça corria o rio cristalino da água da vida, claro como cristal, brotando do trono de Deus e do Cordeiro. De cada lado do rio estava a árvore da vida, que dá doze frutos deliciosos, um a cada mês, e suas folhinhas curam todas as nações! Ali nunca haverá noite, nem choro, nem tristeza, nem dor, porque o Senhor Deus ilumina tudo com Seu amor para todo o sempre!',
-            'ministracao_sarah' => 'Sarahzinha, olha o lar maravilhoso e eterno que o nosso Deus preparou para nós! Uma cidade onde não existe dor, nem choro, nem dodói, apenas ruas de ouro, frutos deliciosos e paz eterna com Jesus! Saber que o nosso destino é a Nova Jerusalém enche o coraçãozinho do papai Adrian King, da mamãe Samara e o seu de uma esperança radiante! Você é cidadã dos Céus! Nossa Rima de Ouro: \'Na linda cidade de ouro e cristal, com Cristo eu vivo no lar celestial!\'',
-        ],
-        [
-            'slug' => 'eliseu_machado',
-            'titulo' => 'O Profeta Eliseu e o Machado que Boiou',
-            'personagem' => 'Eliseu e o Jovem Discípulo',
-            'tema' => 'O Machado Flutuante',
-            'licoes' => 'Deus se importa com os pequenos detalhes do nosso dia a dia e responde com carinho',
-            'historia_base' => 'Os jovens discípulos dos profetas estavam crescendo em número e disseram a Eliseu: \'O lugar onde moramos com você é pequeno demais! Vamos até o rio Jordão cortar madeira para construirmos uma casa maior!\' Eliseu disse com carinho: \'Podem ir, e eu irei com vocês!\' Quando chegaram à beira do rio sombreado por árvores frondosas, cada um começou a cortar troncos com vigor: poft, poft, poft! De repente, enquanto um jovem golpeava uma árvore com força, o ferro pesado do machado escapou do cabo de madeira, voou pelo ar e caiu no fundo escuro e lamacento do rio: TCHIBUM! O jovem gritou desesperado: \'Ai, meu senhor Eliseu! O machado era emprestado!\' O profeta Eliseu perguntou com calma: \'Onde caiu?\' O jovem apontou para as águas turvas. Eliseu cortou um pedaço de galho de pau seco, jogou exatamente naquele lugar na água e, milagre sobrenatural! O ferro pesado do machado boiou na superfície da água como se fosse uma folhinha leve de flor! O jovem estendeu a mão, pegou o machado e todos glorificaram a Deus com grande alegria!',
-            'ministracao_sarah' => 'Sarahzinha, que história tão doce e especial! Sabe o que ela nos ensina? Que Deus se importa com as pequenas coisas do nosso dia a dia! Até quando você perde uma chupetinha, um brinquedinho ou fica preocupada com alguma coisinha, o Papai do Céu cuida de você! O papai Adrian King e a mamãe Samara sempre te mostram que Deus faz o impossível boiar na sua vida com leveza e graça! Você é muito cuidada por Deus! Nossa Rima de Ouro: \'O ferro boiou no rio Jordão, o Deus do milagre me traz proteção!\'',
-        ],
-        [
-            'slug' => 'naama_mergulhos',
-            'titulo' => 'Naamã e os Sete Mergulhos no Rio Jordão',
-            'personagem' => 'Naamã e a Menininha de Israel',
-            'tema' => 'A Cura de Naamã',
-            'licoes' => 'a humildade de obedecer e como a fé de uma criancinha pode ajudar os adultos',
-            'historia_base' => 'Naamã era um comandante muito respeitado do exército da Síria, um homem de grande valor e vitórias. Mas ele tinha um grande sofrimento secreto: tinha lepra na sua pele, uma doença terrível que não tinha cura pelos médicos da época. Na casa dele morava uma menininha israelita que amava a Deus. Ela disse à patroa: \'Se o meu senhor fosse ao profeta que está em Samaria, ele seria curado!\' Naamã viajou com carruagens e cavalos até a casa do profeta Eliseu. Mas Eliseu nem saiu à porta; mandou um mensageiro dizer: \'Vá até o rio Jordão e mergulhe sete vezes, e a sua pele será restaurada limpinha!\' Naamã achou simples demais e quase foi embora indignado, mas seus servos disseram com sabedoria: \'Meu pai, se o profeta pedisse algo difícil você não faria? Quanto mais dizendo apenas: lava-te e serás limpo!\' Naamã foi humilde, desceu ao rio Jordão e começou a mergulhar: um... dois... três... quatro... cinco... seis... Na sétima vez que emergiu das águas: TCHIBUM! A sua pele estava completamente limpa, suave, lisinha e saudável como a pele de um bebezinho recém-nascido! Naamã voltou emocionado e proclamou: \'Agora sei que não há outro Deus em toda a terra a não ser o Deus de Israel!\'',
-            'ministracao_sarah' => 'Sarahzinha, veja que lição linda sobre obediência e humildade! Às vezes o que Deus pede parece simples, mas a obediência completa no sétimo mergulho trouxe a cura total! Quando o papai Adrian King e a mamãe Samara te pedem para fazer coisas simples do dia a dia, obedecer de coração atrai a saúde e a bênção de Deus para a sua vida! Você tem uma pele lisinha e uma saúde blindada por Jesus! Nossa Rima de Ouro: \'Mergulho na bênção e na redenção, a cura de Deus sara o coração!\'',
-        ],
-        [
-            'slug' => 'menina_cativa',
-            'titulo' => 'A Menininha Cativa que Teve Grande Fé',
-            'personagem' => 'A Pequena Menina Israelita',
-            'tema' => 'A Fé da Menina Cativa',
-            'licoes' => 'mesmo sendo pequenina, você pode fazer uma enorme diferença e falar do amor de Deus',
-            'historia_base' => 'Longe de sua terra natal, morava uma garotinha israelita servindo na casa do grande general Naamã. Mesmo estando longe da sua casa, aquela menininha nunca esqueceu os louvores, as histórias e o amor do Deus de Israel que seus pais lhe ensinaram! Quando ela viu que seu patrão Naamã estava doente com lepra sofrendo dores, ela não teve mágoa, nem medo, nem rancor. Pelo contrário: seu coraçãozinho se encheu de compaixão e fé corajosa! Com uma voz doce e respeitosa, ela falou para a esposa de Naamã: \'Ah, se o meu senhor estivesse com o profeta de Deus em Samaria! Ele o curaria da lepra!\' Aquela declaração cheia de fé de uma criancinha tocou o coração do general mais poderoso da terra! Naamã ouviu o conselho da menininha, viajou ao profeta e voltou completamente curado e transformado para servir ao Deus vivo! Uma garotinha salvou a vida de um grande comandante!',
-            'ministracao_sarah' => 'Sarahzinha, meu amor! Olha o valor grandioso que tem uma princesinha de Deus! Você não precisa ser adulta para ser usada por Deus; mesmo sendo pequenina, a sua alegria, o seu amor e a sua fé abençoam a vida do papai Adrian King, da mamãe Samara e de todos ao seu redor! A criança sábia e que ama a Deus é luz nas nações! Você é uma menininha cheia do Espírito Santo! Nossa Rima de Ouro: \'Pequena no tamanho mas cheia de fé, a mão de Jesus me sustenta de pé!\'',
-        ],
-        [
-            'slug' => 'sadraque_mesaque',
-            'titulo' => 'Os Três Amigos na Fornalha Ardente e o Quarto Homem',
-            'personagem' => 'Sadraque, Mesaque e Abednego',
-            'tema' => 'A Fornalha Ardente',
-            'licoes' => 'fidelidade inabalável a Deus e a presença protetora de Jesus no meio do fogo',
-            'historia_base' => 'O rei Nabucodonosor mandou construir na Babilônia uma estátua gigante de ouro puro de trinta metros de altura! E ordenou com toque de trombetas, flautas e harpas que todos se curvassem com o rosto no chão para adorar a estátua. Quem não se curvasse seria atirado imediatamente dentro de uma fornalha de fogo ardente! Quando a música tocou, toda a multidão se prostrou no chão. Mas três jovens hebreus corajosos — Sadraque, Mesaque e Abednego — ficaram de pé eretos e firmes! O rei furioso os chamou: \'É verdade que vocês não adoram a estátua de ouro? Se não adorarem, quem é o deus que poderá livrá-los das minhas mãos?!\' Os jovens responderam com voz firme: \'Ó rei, o Deus a quem servimos pode nos livrar da fornalha ardente! E mesmo que Ele não nos livrasse, fica sabendo que nunca adoraremos deuses falsos!\' O rei ficou vermelho de raiva e mandou aquecer a fornalha sete vezes mais quente que o normal! Soldados fortes amarraram os três jovens e os jogaram no meio do fogo ardente: creck-creck! Mas quando o rei olhou para dentro da fornalha, levantou-se assombrado e gritou aos conselheiros: \'Nós não jogamos três homens amarrados no fogo?!\' Eles responderam: \'Sim, ó rei!\' O rei disse: \'Pois eu vejo quatro homens soltos, passeando em paz no meio das chamas sem se queimar, e o quarto é semelhante ao Filho de Deus!\' O rei chamou os jovens para fora. Eles saíram ilesos: nem um fio de cabelo estava chamuscado e nem sequer tinham cheiro de fumaça!',
-            'ministracao_sarah' => 'Sarahzinha, que vitória espetacular! No meio do fogo mais quente, Jesus desceu pessoalmente para passear com Seus amigos fiéis e não deixou nenhuma chama tocar neles! Você nunca estará desamparada, porque Jesus passeia com você no seu quartinho todos os dias! O papai Adrian King e a mamãe Samara te ensinam a ter essa fidelidade inabalável a Deus. Nenhuma dificuldade tem poder de queimar você! Nossa Rima de Ouro: \'No meio do fogo o quarto homem está, com Cristo ao meu lado nada vai me queimar!\'',
-        ],
-        [
-            'slug' => 'neemias_muralhas',
-            'titulo' => 'Neemias e a Reconstrução dos Muros com Louvor',
-            'personagem' => 'Neemias',
-            'tema' => 'A Reconstrução das Muralhas por Neemias',
-            'licoes' => 'oração, trabalho conjunto com a família e a alegria do Senhor é a nossa força',
-            'historia_base' => 'Neemias era o copeiro de confiança do rei da Pérsia, mas quando soube que as muralhas de Jerusalém estavam derrubadas e as portas queimadas pelo fogo, seu coração se entristeceu. Ele orou, jejuou e pediu autorização ao rei para ir reconstruir a santa cidade. O rei concedeu cartas de salvo-conduto e madeira. Chegando a Jerusalém, Neemias reuniu o povo e disse com entusiasmo contagiante: \'Venham, e reconstruamos os muros de Jerusalém, para que não estejamos mais em opróbrio! Porque a boa mão do meu Deus está sobre mim!\' Inimigos ao redor começaram a zombar e a ameaçar ataques de surpresa. Mas Neemias posicionou as famílias ao longo dos muros: com uma mão trabalhavam na argamassa e assentavam as pedras, e com a outra seguravam a lança e a espada! E Neemias declarava com voz de trovão: \'Não tenham medo deles! Lembrem-se do Senhor, grande e temível, e lutem por seus irmãos, seus filhos, suas filhas, suas esposas e seus lares! Porque a alegria do Senhor é a nossa força!\' Com unidade de coração, oração e trabalho alegre, em apenas cinquenta e dois dias todas as muralhas estavam erguidas, sólidas e com as portas restauradas para a glória de Deus!',
-            'ministracao_sarah' => 'Sarahzinha, que exemplo lindo de liderança e união familiar! A família do papai Adrian King e da mamãe Samara é como essa muralha de proteção levantada pelo Senhor ao seu redor! A alegria do Senhor é a sua força todos os dias! Quando você sorri e enche a casa de carinho, os muros de proteção da sua vida ficam ainda mais fortes! Você é uma construtora de bênçãos na terra! Nossa Rima de Ouro: \'Com fé e coragem o muro subiu, a bênção do Pai minha casa uniu!\'',
-        ],
-        [
-            'slug' => 'josias_pequeno_rei',
-            'titulo' => 'O Jovem Rei Josias que Amava a Palavra de Deus',
-            'personagem' => 'Rei Josias',
-            'tema' => 'O Jovem Rei Josias',
-            'licoes' => 'amar e guardar os mandamentos de Deus desde bem pequenino',
-            'historia_base' => 'Josias era apenas um garotinho de oito anos de idade quando foi coroado rei sobre Judá! Imagine uma criança de oito anos com uma coroa de ouro na cabecinha e um cetro na mão! Mas Josias não se encheu de orgulho; desde bem pequenino, ele buscou o Deus de seu pai Davi de todo o coração. Ele não andou nos caminhos ruins de reis anteriores, mas fez o que era reto aos olhos do Senhor. Aos dezesseis anos começou a limpar a terra de todas as coisas ruins, e aos vinte e seis mandou reformar e embelezar a casa do Senhor. Enquanto limpavam o templo, o sacerdote Hilquias encontrou algo precioso enterrado: o Livro da Lei do Senhor! Quando o escriba leu a Palavra de Deus em voz alta diante do rei Josias, o coração do jovem rei se enterneceu tanto que ele rasgou suas vestes em sinal de humildade e chorou diante de Deus! Josias reuniu todo o povo no templo e fez uma aliança solene de seguir ao Senhor de todo o coração e com toda a alma. Deus honrou o rei Josias com anos de grande paz e avivamento!',
-            'ministracao_sarah' => 'Sarahzinha, olha o rei Josias: começou a reinar e a buscar a Deus com apenas oito aninhos! Você também começou a sua história no Reino de Deus desde o primeiro dia de vida! O papai Adrian King e a mamãe Samara leem a Palavra de Deus e plantam sementes eternas no seu coraçãozinho. Guardar a Palavra de Deus desde criancinha te faz a menina mais sábia, prudente e honrada de todas! Nossa Rima de Ouro: \'Pequeno no trono mas grande no amor, guardo a Palavra do meu Salvador!\'',
-        ],
-        [
-            'slug' => 'viuva_sarepta',
-            'titulo' => 'A Viúva de Sarepta e o Azeite que Nunca Acabava',
-            'personagem' => 'Elias e a Viúva',
-            'tema' => 'O Milagre da Farinha e do Azeite',
-            'licoes' => 'confiança na provisão de Deus e que Ele nunca deixa faltar nada na nossa mesa',
-            'historia_base' => 'Durante uma seca rigorosa que durou anos sobre a terra, os rios secaram e a comida ficou muito escassa. Deus falou com o profeta Elias: \'Levanta-te e vai para Sarepta, pois ordenei a uma viúva ali que te sustente!\' Elias viajou pelo calor e chegou aos portões da cidade. Viu uma mulher apanhando gravetos na terra seca. Elias pediu com gentileza: \'Traga-me, por favor, um pouco de água numa vasilha para eu beber, e um pedaço de pão na sua mão!\' A mulher olhou com lágrimas e disse com a voz embargada: \'Tão certo como vive o Senhor teu Deus, não tenho nenhum pão assado; tenho apenas um punhado de farinha numa panela e um pouquinho de azeite numa botija. Estou apanhando estes dois gravetos para preparar a última refeição para mim e para o meu filhinho, para que comamos e depois morramos de fome.\' Mas Elias olhou com autoridade profética e disse: \'Não temas! Vá e faça o que disse; mas primeiro faça para mim um pequeno bolo e traga-me aqui, e depois faça para você e para o seu filho. Porque assim diz o Senhor Deus de Israel: A farinha da panela não se acabará, e o azeite da botija não faltará, até o dia em que o Senhor der chuva sobre a terra!\' A mulher creu e obedeceu. E sabe o que aconteceu? Ela colocou a mãozinha na panela e a farinha nunca acabou! Virava a botija e o azeite dourado escorria fresquinho todos os dias! Ela, o filho e o profeta comeram com fartura por muitos e muitos meses!',
-            'ministracao_sarah' => 'Sarahzinha, que milagre maravilhoso da provisão de Deus! A fé e a obediência daquela mãe e daquele filhinho abriram as torneiras do Céu! Na casa do papai Adrian King e da mamãe Samara nunca vai faltar nada: sempre haverá fartura, saúde, mesa farta e paz em abundância, porque o Deus de Elias é o provedor da sua família! Você cresce no meio da prosperidade de Deus! Bate palminha de gratidão! Nossa Rima de Ouro: \'A farinha e o azeite nunca vão findar, o Deus da fartura vai me abençoar!\'',
-        ],
+            'slug' => 'samuel_templo_chamado',
+            'titulo' => 'Samuel: A Oração de Ana e o Menino Que Ouviu a Voz de Deus',
+            'personagem' => 'Samuel, Ana e o Sacerdote Eli',
+            'tema' => 'A Resposta da Oração Fervorosa e a Voz do Senhor',
+            'licoes' => 'Quem ouve a voz de Deus desde pequenino cresce com sabedoria e autoridade profética.',
+            'historia_base' => 'Em Siló, onde ficava o Tabernáculo do Senhor, uma mulher de coração humilde e temente a Deus chamada Ana chorava de dor porque não conseguia ter filhos e sofria provocações constantes. Em profunda aflição de alma, Ana ajoelhou-se no santuário e orou ao Senhor com lágrimas abundantes. Seus lábios se moviam, mas sua voz não se ouvia; falava no íntimo do seu coração e fez um voto solene: \'Senhor dos Exércitos! Se benignamente atentares para a aflição da tua serva, e de mim te lembrares, e me deres um filho homem, ao Senhor o darei por todos os dias da sua vida!\'. O sacerdote Eli a abençoou dizendo: \'Vai em paz; e o Deus de Israel te conceda a petição que lhe pediste\'. Ana creu, seu semblante já não era triste, e no tempo certo Deus se lembrou dela e deu à luz um menino a quem chamou Samuel, que significa: \'Do Senhor o pedi!\'.
+
+Quando o menino foi desmamado, Ana levou-o ao templo em Siló e o entregou aos cuidados do sacerdote Eli para servir a Deus com alegria e pureza. Todos os anos, Ana costurava com carinho uma pequena túnica de linho azul e a levava para o pequeno Samuel quando subia para adorar ao Senhor. O menino Samuel crescia em estatura, graça e sabedoria perante Deus e os homens.
+
+Certa noite, quando a lâmpada de Deus ainda não se havia apagado no templo e Samuel estava deitado para dormir no lugar santo perto da Arca da Aliança, o Senhor chamou pelo seu nome: \'Samuel!\'. O menino levantou-se correndo, foi até o velho sacerdote Eli e disse: \'Eis-me aqui, pois tu me chamaste\'. Eli respondeu: \'Não te chamei eu, meu filho; torna a deitar-te\'. Samuel deitou-se. E o Senhor chamou pela segunda vez: \'Samuel!\'. Ele correu a Eli novamente: \'Eis-me aqui, porque me chamaste\'. Eli disse: \'Não te chamei, torna a deitar-te\'. Quando o Senhor chamou pela terceira vez: \'Samuel!\', Eli entendeu que era o Senhor que chamava o menino e o instruiu: \'Vai deitar-te; e se te chamar, dirás: Fala, Senhor, porque o teu servo ouve!\'.
+
+Samuel foi e deitou-se. Então veio o Senhor, pôs-se ali e chamou como das outras vezes: \'Samuel, Samuel!\'. E o pequeno Samuel respondeu com o coraçãozinho em reverência: \'Fala, Senhor, porque o teu servo ouve!\'. Naquela noite, Deus revelou a Samuel Seus segredos proféticos para toda a nação. Samuel cresceu, o Senhor era com ele, e nenhuma das Suas palavras caiu em terra!',
+            'ministracao_sarah' => 'Sarahzinha, o Deus que chamou Samuel no templo chama você pelo seu próprio nome desde agora! O seu coraçãozinho é sensível para ouvir a doce voz do Espírito Santo sussurrando paz, amor e sabedoria ao seu ouvido todas as noites!
+
+Ouça sempre com respeito e carinho a voz do seu papai Adrian King e da sua mamãe Samara, pois a obediência aos pais é a escola onde se aprende a ouvir a voz de Deus. E agradeça a Deus pela sua preciosa vovó Socorro, uma mulher que ora como Ana orou no templo: derramando o coração perante o Senhor para que a sua vida seja um altar vivo de santidade e sabedoria celestial! Nossa rima de ouro: \'Fala, meu Senhor, Tua filha vai ouvir, Tua voz de amor eu quero sempre seguir!\'',
+        ]
     ];
 
     public function __construct()
@@ -2054,9 +1912,24 @@ class CharleneController extends Controller
     public function managerPage()
     {
         $musicas = $this->getMusicFiles('todas');
-        $memorias = CharleneMemory::where('category', '!=', 'historia_ouvida')->orderBy('updated_at', 'desc')->get();
+        $memorias = CharleneMemory::where('category', '!=', 'historia_ouvida')->where('category', '!=', 'historia_biblica_ia')->orderBy('updated_at', 'desc')->get();
         $historiasOuvidas = CharleneMemory::where('category', 'historia_ouvida')->orderBy('updated_at', 'desc')->get();
-        $totalCatalogo = count(self::HISTORIAS_CATALOGO);
+
+        // Carrega histórias bíblicas geradas pela IA Charlene Teóloga Suprema salvas no banco
+        $historiasIaMem = CharleneMemory::where('category', 'historia_biblica_ia')->orderBy('created_at', 'asc')->get();
+        $historiasIa = [];
+        foreach ($historiasIaMem as $mem) {
+            $parsed = json_decode($mem->content, true);
+            if (is_array($parsed)) {
+                $parsed['id_banco'] = $mem->id;
+                $parsed['gerada_por_ia'] = true;
+                $parsed['created_at_fmt'] = $mem->created_at ? $mem->created_at->format('d/m/Y H:i') : '';
+                $historiasIa[] = $parsed;
+            }
+        }
+
+        $historiasCatalogoTotal = array_merge(self::HISTORIAS_CATALOGO, $historiasIa);
+        $totalCatalogo = count($historiasCatalogoTotal);
 
         return response()
             ->view('pages.charleneMusicas', [
@@ -2064,7 +1937,8 @@ class CharleneController extends Controller
                 'memorias' => $memorias,
                 'historiasOuvidas' => $historiasOuvidas,
                 'totalCatalogo' => $totalCatalogo,
-                'historiasCatalogo' => self::HISTORIAS_CATALOGO,
+                'historiasCatalogo' => $historiasCatalogoTotal,
+                'historiasIaCount' => count($historiasIa),
                 'baseUrl' => $this->baseUrl . '/storage/sara/musicas/',
             ])
             ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0')
@@ -2194,4 +2068,144 @@ class CharleneController extends Controller
 
         return response()->json(['version' => '1.0', 'response' => $res]);
     }
+
+    /**
+     * API: Gera uma nova história bíblica completa na íntegra usando IA (Charlene Teóloga Suprema)
+     * e salva permanentemente no banco de dados para a Sarah ouvir e a família ler.
+     */
+    public function gerarNovaHistoriaBiblica(Request $request): JsonResponse
+    {
+        $pedidoTema = trim((string) $request->input('tema', ''));
+        $pedidoPersonagem = trim((string) $request->input('personagem', ''));
+        $pedidoLivro = trim((string) $request->input('livro', ''));
+
+        // Carrega todas as histórias existentes (catálogo mestre + IA) para saber o que já foi contado
+        $existentesSlugs = array_column(self::HISTORIAS_CATALOGO, 'slug');
+        $existentesTitulos = array_column(self::HISTORIAS_CATALOGO, 'titulo');
+
+        $iaMem = CharleneMemory::where('category', 'historia_biblica_ia')->get();
+        foreach ($iaMem as $m) {
+            $parsed = json_decode($m->content, true);
+            if (is_array($parsed) && !empty($parsed['slug'])) {
+                $existentesSlugs[] = $parsed['slug'];
+                $existentesTitulos[] = $parsed['titulo'] ?? $parsed['slug'];
+            }
+        }
+
+        $titulosExistentesStr = implode(', ', array_slice($existentesTitulos, 0, 50));
+
+        $contextoInstrucao = "";
+        if (!empty($pedidoTema) || !empty($pedidoPersonagem) || !empty($pedidoLivro)) {
+            $contextoInstrucao = "O Adrian King (papai da Sarah) pediu expressamente para você gerar a história bíblica profunda sobre: "
+                . implode(' - ', array_filter([$pedidoTema, $pedidoPersonagem, $pedidoLivro])) . ".";
+        } else {
+            $contextoInstrucao = "Escolha a próxima história bíblica essencial da sequência canônica da Bíblia Sagrada (de Gênesis a Apocalipse) que AINDA NÃO FOI CONTADA nesta lista: [{$titulosExistentesStr}]. Pode ser sobre um patriarca, profeta, rei piedoso, milagre grandioso de Jesus, heroína da fé ou apóstolo.";
+        }
+
+        $systemPrompt = "Você é Charlene, uma Teóloga Suprema, Doutora em Sagradas Escrituras e Mestra de Análise Bíblica para a princesinha Sarah (filha de Adrian King e Samara).\n"
+            . "Seu objetivo é contar as histórias da Bíblia Sagrada NA ÍNTEGRA, com profundidade teológica real, rica em detalhes históricos, geográficos, culturais e milagres soberanos de Deus.\n"
+            . "NUNCA faça resumos superficiais ou infantis demais. Conte a história com respeito ao texto sagrado, mostrando como Deus agiu, os cenários, os diálogos reais da Bíblia e a renovação da fé.\n"
+            . "Em seguida, traga uma MINISTRAÇÃO PROFÉTICA E SACERDOTAL PROFUNDA E PODEROSA para a vida da Sarah:\n"
+            . "- Ministre unção do Espírito Santo, sabedoria de Cristo, inteligência brilhante e coração obediente;\n"
+            . "- Ensine honra inabalável e amor ao papai Adrian King (sacerdote da casa) e à mamãe Samara (coluna de graça e afeto);\n"
+            . "- Destaque com fervor a poderosa cobertura de intercessão e oração da vovó Socorro, mulher de Deus fervorosa que ora e clama de joelhos dobrados no altar pela vida e pelo futuro da Sarah!\n"
+            . "- Termine com a rima de ouro mnemônica de sabedoria e vitória espiritual.\n"
+            . "Retorne OBRIGATORIAMENTE um JSON com as chaves: titulo, personagem, tema, livro, licoes, historia_base, ministracao_sarah.";
+
+        $userPrompt = "{$contextoInstrucao}\n"
+            . "Escreva a história completa, na íntegra (de 4 a 6 parágrafos ricos, detalhados e substanciais para a 'historia_base'), e a ministração profética profunda (de 2 a 3 parágrafos ungidos e abençoados para 'ministracao_sarah').";
+
+        $apiKey = trim((string) (env('OPENAI_API_KEY') ?: ''));
+        if (!$apiKey) {
+            return response()->json(['success' => false, 'message' => 'OPENAI_API_KEY não configurada no servidor.'], 500);
+        }
+
+        try {
+            $res = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $apiKey,
+                'Content-Type' => 'application/json',
+            ])->timeout(45)->post('https://api.openai.com/v1/chat/completions', [
+                'model' => 'gpt-4o-mini',
+                'temperature' => 0.72,
+                'max_tokens' => 2500,
+                'response_format' => ['type' => 'json_object'],
+                'messages' => [
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'user', 'content' => $userPrompt],
+                ],
+            ]);
+
+            $jsonStr = $res->json('choices.0.message.content');
+            $data = json_decode($jsonStr, true);
+
+            if (!$data || empty($data['titulo']) || empty($data['historia_base'])) {
+                return response()->json(['success' => false, 'message' => 'A IA não retornou o formato esperado.', 'raw' => $jsonStr], 500);
+            }
+
+            // Normaliza slug único
+            $baseSlug = Str::slug($data['titulo'], '_');
+            $slug = 'ia_' . $baseSlug;
+            $counter = 1;
+            while (in_array($slug, $existentesSlugs)) {
+                $slug = 'ia_' . $baseSlug . '_' . $counter++;
+            }
+
+            $data['slug'] = $slug;
+            $data['licoes'] = is_array($data['licoes']) ? implode('; ', $data['licoes']) : (string) ($data['licoes'] ?? 'Fé, amor e obediência a Deus');
+            $data['gerada_por_ia'] = true;
+
+            // Salva no banco de dados como CharleneMemory
+            $mem = new CharleneMemory();
+            $mem->category = 'historia_biblica_ia';
+            $mem->subject = $slug;
+            $mem->content = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            $mem->learned_from = 'Charlene Teóloga Suprema (IA)';
+            $mem->last_mentioned_at = now();
+            $mem->save();
+
+            $data['id_banco'] = $mem->id;
+            $data['created_at_fmt'] = $mem->created_at->format('d/m/Y H:i');
+
+            $totalTotal = count(self::HISTORIAS_CATALOGO) + CharleneMemory::where('category', 'historia_biblica_ia')->count();
+
+            return response()->json([
+                'success' => true,
+                'message' => "História bíblica '{$data['titulo']}' gerada com sucesso pela Charlene Teóloga Suprema e adicionada ao catálogo!",
+                'historia' => $data,
+                'totalCatalogo' => $totalTotal,
+            ]);
+
+        } catch (\Throwable $e) {
+            Log::error('Erro ao gerar história bíblica com IA: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Erro ao contatar IA: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * API: Exclui uma história bíblica gerada pela IA
+     */
+    public function deleteHistoriaIa(Request $request): JsonResponse
+    {
+        $id = $request->input('id');
+        $slug = $request->input('slug');
+
+        $query = CharleneMemory::where('category', 'historia_biblica_ia');
+        if ($id) {
+            $query->where('id', $id);
+        } elseif ($slug) {
+            $query->where('subject', $slug);
+        } else {
+            return response()->json(['success' => false, 'message' => 'Identificador não fornecido.'], 400);
+        }
+
+        $query->delete();
+        $totalTotal = count(self::HISTORIAS_CATALOGO) + CharleneMemory::where('category', 'historia_biblica_ia')->count();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'História excluída com sucesso do catálogo.',
+            'totalCatalogo' => $totalTotal,
+        ]);
+    }
+
 }
