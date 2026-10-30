@@ -10293,36 +10293,39 @@
                                 isBabyInCrib = true;
                             }
 
-                            // Checagem de membros para fora: analisa pernas, pés, joelhos, braços, mãos, ombros e cabeça
-                            const allLimbCheck = [
-                                { keys: ['left_ankle', 'right_ankle'], label: 'Pé do bebê' },
-                                { keys: ['left_knee', 'right_knee'], label: 'Perna/Joelho do bebê' },
-                                { keys: ['left_wrist', 'right_wrist'], label: 'Mão/Braço do bebê' },
-                                { keys: ['left_elbow', 'right_elbow'], label: 'Braço/Cotovelo do bebê' },
-                                { keys: ['left_shoulder', 'right_shoulder'], label: 'Ombro do bebê' },
-                                { keys: ['nose'], label: 'Cabeça do bebê' }
-                            ];
+                            // Checagem de membros para fora: analisa apenas se houver movimentação física real no berço
+                            // Jamais acusa "membro para fora" em berço imóvel com bebê dormindo tranquilamente!
+                            if (cribMotion >= 2.0) {
+                                const allLimbCheck = [
+                                    { keys: ['left_ankle', 'right_ankle'], label: 'Pé do bebê' },
+                                    { keys: ['left_knee', 'right_knee'], label: 'Perna/Joelho do bebê' },
+                                    { keys: ['left_wrist', 'right_wrist'], label: 'Mão/Braço do bebê' },
+                                    { keys: ['left_elbow', 'right_elbow'], label: 'Braço/Cotovelo do bebê' },
+                                    { keys: ['left_shoulder', 'right_shoulder'], label: 'Ombro do bebê' },
+                                    { keys: ['nose'], label: 'Cabeça do bebê' }
+                                ];
 
-                            for (const limbGroup of allLimbCheck) {
-                                for (const keyName of limbGroup.keys) {
-                                    const pt = kps.find(k => k.name === keyName);
-                                    // Calibração especialista: ignora ruído térmico/dobras de lençol (score >= 0.36)
-                                    if (pt && pt.score >= 0.36) {
-                                        const px = (pt.x / vw) * 100;
-                                        const py = (pt.y / vh) * 100;
-                                        // Tolerância estável de 2.5% para acomodar imprecisão milimétrica do desenho manual
-                                        const insidePoly = (r.type === 'circle' && r.circle)
-                                            ? isPointInCircle(px, py, r.circle, 2.5)
-                                            : isPointInsidePolygonWithTolerance(px, py, r.points || [], 2.5);
+                                for (const limbGroup of allLimbCheck) {
+                                    for (const keyName of limbGroup.keys) {
+                                        const pt = kps.find(k => k.name === keyName);
+                                        // Calibração especialista: exige confiança sólida (score >= 0.42)
+                                        if (pt && pt.score >= 0.42) {
+                                            const px = (pt.x / vw) * 100;
+                                            const py = (pt.y / vh) * 100;
+                                            // Tolerância com margem de segurança de 3.5%
+                                            const insidePoly = (r.type === 'circle' && r.circle)
+                                                ? isPointInCircle(px, py, r.circle, 3.5)
+                                                : isPointInsidePolygonWithTolerance(px, py, r.points || [], 3.5);
 
-                                        if (!insidePoly) {
-                                            limbBreached = true;
-                                            breachMsg = `🚨 ${limbGroup.label} passou para fora do cerco do berço!`;
-                                            break;
+                                            if (!insidePoly) {
+                                                limbBreached = true;
+                                                breachMsg = `🚨 ${limbGroup.label} passou para fora do cerco do berço!`;
+                                                break;
+                                            }
                                         }
                                     }
+                                    if (limbBreached) break;
                                 }
-                                if (limbBreached) break;
                             }
                         }
 
@@ -10465,17 +10468,6 @@
         }
 
         function triggerFenceBreachAlert(camId, alertIndex, customMsg) {
-            const alertEl = document.getElementById(`fence-alert-${camId}`);
-            if (alertEl) {
-                alertEl.style.display = 'flex';
-                const span = alertEl.querySelector('span');
-                if (span && customMsg) {
-                    span.innerHTML = `⚠️ <b>${escapeHtml(customMsg)}</b>`;
-                }
-                setTimeout(() => { if (alertEl) alertEl.style.display = 'none'; }, 8000);
-            }
-            playToneSound(800, 0.25);
-
             captureAutoSnapshot(camId);
             const liveSnapshotBase64 = getLiveVideoSnapshotBase64(camId);
 
@@ -10489,7 +10481,39 @@
                         description: customMsg || '🚨 Criança fora da área segura do berço detectada!',
                         snapshot_base64: liveSnapshotBase64
                     })
-                }).catch(e => console.warn(e));
+                })
+                .then(r => r.json())
+                .then(res => {
+                    const evt = res && res.data;
+                    const desc = (evt && evt.description) ? evt.description : '';
+
+                    // Se a IA do servidor filtrou (bebê seguro no berço, alarme falso cancelado):
+                    if (desc.includes('seguro dentro') || desc.includes('Falso alerta evitado') || desc.includes('Filtrado com sucesso')) {
+                        const s = cribFenceState[camId];
+                        if (s) {
+                            s.fenceState = 'INSIDE';
+                            s.isLimbBreached = false;
+                            s.breachStreak = 0;
+                        }
+                        const alertEl = document.getElementById(`fence-alert-${camId}`);
+                        if (alertEl) alertEl.style.display = 'none';
+                        drawCribBox(camId);
+                        return;
+                    }
+
+                    // Se a IA confirmou a infração real:
+                    const alertEl = document.getElementById(`fence-alert-${camId}`);
+                    if (alertEl) {
+                        alertEl.style.display = 'flex';
+                        const span = alertEl.querySelector('span');
+                        if (span) {
+                            span.innerHTML = `⚠️ <b>${escapeHtml(desc || customMsg)}</b>`;
+                        }
+                        setTimeout(() => { if (alertEl) alertEl.style.display = 'none'; }, 8000);
+                    }
+                    playToneSound(800, 0.25);
+                })
+                .catch(e => console.warn(e));
             } catch(e) {}
         }
 
@@ -11456,7 +11480,39 @@
                 c.height = 360;
                 const ctx = c.getContext('2d');
                 ctx.drawImage(v, 0, 0, 640, 360);
-                return c.toDataURL('image/jpeg', 0.82);
+
+                // Desenha a linha demarcada do Cerco Virtual diretamente na imagem para a IA e Telegram
+                const s = cribFenceState[camId];
+                if (s && s.enabled && s.roi) {
+                    const roi = s.roi;
+                    ctx.save();
+                    ctx.strokeStyle = '#00ffff';
+                    ctx.lineWidth = 3.5;
+                    ctx.setLineDash([8, 4]);
+
+                    if (roi.type === 'circle' && roi.circle) {
+                        const cx = (roi.circle.cx / 100) * 640;
+                        const cy = (roi.circle.cy / 100) * 360;
+                        const rx = (roi.circle.rx / 100) * 640;
+                        const ry = (roi.circle.ry / 100) * 360;
+                        ctx.beginPath();
+                        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+                        ctx.stroke();
+                    } else if (Array.isArray(roi.points) && roi.points.length >= 3) {
+                        ctx.beginPath();
+                        roi.points.forEach((pt, i) => {
+                            const px = (pt.x / 100) * 640;
+                            const py = (pt.y / 100) * 360;
+                            if (i === 0) ctx.moveTo(px, py);
+                            else ctx.lineTo(px, py);
+                        });
+                        ctx.closePath();
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+
+                return c.toDataURL('image/jpeg', 0.85);
             } catch (e) {
                 return null;
             }

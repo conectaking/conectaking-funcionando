@@ -127,10 +127,12 @@ Analise a cena com rigor e máxima atenção biológica e espacial:
 - Visão zenital/inclinada comprime a altura. O bebê deitado no colchão (de costas, de lado ou de bruços) tem a cabeça no topo e pés embaixo na foto, mas ele está 100% DEITADO!
 - Para 'is_standing' ser TRUE, a criança DEVE estar fisicamente levantada sobre os dois pés OU em pé erguida segurando na grade superior do berço. Se o corpinho estiver sobre o colchão, 'is_standing' DEVE ser FALSE e 'is_lying_down' DEVE ser TRUE.
 
-4) MEMBRO OU CORPO PARA FORA DO BERÇO (CERCO):
-- 'is_limb_outside': TRUE SOMENTE SE uma perna, pé, braço ou mão real do bebê ultrapassou fisicamente para fora das grades/limite do berço.
-- Se o bebê está completamente dentro do perímetro do berço e do colchão, 'is_limb_outside' DEVE ser FALSE!
-- 'is_baby_outside': TRUE SOMENTE se a criança saiu do berço (ex: no chão ou cama ao lado).
+4) MEMBRO OU CORPO PARA FORA DO CERCO (CERCA VIRTUAL / BERÇO):
+- Na imagem pode haver uma linha tracejada CIANO/AZUL delimitando a área segura traçada pelos pais no berço ("CERCO VIRTUAL").
+- 'is_limb_outside': TRUE SOMENTE SE uma perna, pé, braço ou mão biológica real do bebê ultrapassou claramente para fora dessa linha demarcada (ou para fora das grades do berço).
+- Se o corpinho e os membros do bebê estiverem dentro da área demarcada: 'is_limb_outside': FALSE!
+- Uma pontinha de cobertor ou lençol encostando na linha NÃO é um membro fora!
+- 'is_baby_outside': TRUE SOMENTE se a criança saiu do berço/área segura (ex: caiu no chão ou cama ao lado).
 
 5) RISCO DE SUFOCAMENTO:
 - 'is_face_covered': TRUE se o rostinho da criança estiver coberto por cobertor grosso, pano ou travesseiro impedindo a respiração livre.

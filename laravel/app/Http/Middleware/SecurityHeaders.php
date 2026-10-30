@@ -120,7 +120,8 @@ class SecurityHeaders
     {
         return str_starts_with($path, 'kingCamera')
             || str_starts_with($path, 'king-camera')
-            || str_starts_with($path, 'monitor/');
+            || str_starts_with($path, 'monitor/')
+            || str_starts_with($path, 'charlene');
     }
 
     private function allowsCamera(string $path): bool
