@@ -134,6 +134,7 @@ class KingCameraService
     public function getSnapshotFrame(string $streamId): ?string
     {
         $cacheKey = "cam_snap_{$streamId}";
+        $lastGoodKey = "cam_last_good_snap_{$streamId}";
         $cached = Cache::get($cacheKey);
         if ($cached) {
             return $cached;
@@ -142,15 +143,23 @@ class KingCameraService
         $goUrl = $this->getGo2RtcUrl();
         try {
             // go2rtc precisa de tempo suficiente para aguardar o próximo keyframe (I-frame) do stream RTSP
-            $res = Http::timeout(5.0)->get("{$goUrl}/api/frame.jpeg?src=" . urlencode($streamId));
+            $res = Http::timeout(8.0)->get("{$goUrl}/api/frame.jpeg?src=" . urlencode($streamId));
             if ($res->successful() && strlen($res->body()) > 500) {
                 $body = $res->body();
                 Cache::put($cacheKey, $body, 2);
+                Cache::put($lastGoodKey, $body, 120);
                 return $body;
             }
         } catch (\Throwable $e) {
             Log::warning('ks.camera.getSnapshotFrame', ['streamId' => $streamId, 'error' => $e->getMessage()]);
         }
+
+        // Fallback para o último frame válido recente se o RTSP demorar a responder o keyframe
+        $lastGood = Cache::get($lastGoodKey);
+        if ($lastGood && strlen($lastGood) > 500) {
+            return $lastGood;
+        }
+
         return null;
     }
 

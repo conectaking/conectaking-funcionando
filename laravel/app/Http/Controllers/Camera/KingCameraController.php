@@ -1012,10 +1012,12 @@ class KingCameraController extends Controller
         $updates = [];
         if ($request->has('crib_fence_enabled')) {
             $updates['crib_fence_enabled'] = (bool) $request->input('crib_fence_enabled');
+            \Illuminate\Support\Facades\Cache::forget("kc_fence_alert_{$camera->id}");
         }
         if ($request->has('crib_roi_json')) {
             $roi = $request->input('crib_roi_json');
             $updates['crib_roi_json'] = is_string($roi) ? json_decode($roi, true) : $roi;
+            \Illuminate\Support\Facades\Cache::forget("kc_fence_alert_{$camera->id}");
         }
         if ($request->has('baby_cry_enabled')) {
             $updates['baby_cry_enabled'] = (bool) $request->input('baby_cry_enabled');
@@ -1127,6 +1129,148 @@ class KingCameraController extends Controller
             return response()->json(['success' => true, 'message' => 'Status da cerca seguro e resetado.']);
         }
 
+        $isAiCheck = (bool) $request->input('is_ai_check', false);
+        $isReinforcement = str_contains($description, 'REFORÇO');
+        $breachConfirmed = !in_array($eventType, ['crib_fence', 'fence_breach', 'baby_stand']);
+        $aiAnalysis = null;
+
+        // Extrai snapshot instantâneo em Base64 enviado diretamente pelo navegador se disponível
+        $jpegBinary = null;
+        if ($request->filled('snapshot_base64')) {
+            $rawBase64 = preg_replace('#^data:image/\w+;base64,#i', '', (string) $request->input('snapshot_base64'));
+            $decoded = base64_decode($rawBase64);
+            if ($decoded && strlen($decoded) > 300) {
+                $jpegBinary = $decoded;
+                // Guarda no cache de último frame limpo apenas se não estiver anotado com polígono da cerca
+                if (!in_array($eventType, ['crib_fence', 'fence_breach'], true)) {
+                    \Illuminate\Support\Facades\Cache::put("cam_last_good_snap_{$camera->stream_id}", $jpegBinary, 600);
+                }
+            }
+        }
+
+        // Se não veio snapshot do navegador, busca do go2rtc (com fallback em cache)
+        if (!$jpegBinary && in_array($eventType, ['crib_fence', 'fence_breach', 'baby_stand', 'motion', 'baby_cry'], true)) {
+            $jpegBinary = $this->cameraService->getSnapshot($camera);
+            if ($jpegBinary && in_array($eventType, ['crib_fence', 'fence_breach'], true) && !empty($camera->crib_roi_json)) {
+                $jpegBinary = $this->aiVision->annotateJpegWithCribRoi($jpegBinary, $camera->crib_roi_json);
+            }
+        }
+
+        $shouldSend = true;
+
+        // ── VALIDAÇÃO E DETECÇÃO DE ALTA PRECISÃO COM IA VISION (OPENAI / GEMINI) ──
+        if ($jpegBinary && in_array($eventType, ['baby_stand', 'crib_fence', 'fence_breach']) && $this->aiVision->isAvailable()) {
+            $aiAnalysis = $this->aiVision->analyzeBabySafetySnapshot($jpegBinary, $eventType);
+            if ($aiAnalysis['evaluated']) {
+                // Caso 0: Presença de Adulto/Cuidador (Pai ou Mãe) ajeitando o bebê
+                if ($aiAnalysis['adult_present']) {
+                    $caregiverCacheKey = "kc_caregiver_alert_{$camera->id}";
+                    $lastCaregiver = (int) \Illuminate\Support\Facades\Cache::get($caregiverCacheKey, 0);
+                    $nowTs = time();
+                    if (($nowTs - $lastCaregiver) >= 20) {
+                        \Illuminate\Support\Facades\Cache::put($caregiverCacheKey, $nowTs, 45);
+                        $eventType = 'adult_caregiver';
+                        $description = "🍼 {$aiAnalysis['adult_label']} no berço: {$aiAnalysis['adult_action']} (" . ($aiAnalysis['description'] ?: 'Interação segura com o bebê') . ')';
+                        $shouldSend = true;
+                        $breachConfirmed = false;
+                    } else {
+                        $shouldSend = false;
+                        $breachConfirmed = false;
+                    }
+                }
+                // Caso 0.1: Risco de Sufocamento / Rosto Coberto
+                elseif ($aiAnalysis['is_face_covered']) {
+                    $faceCacheKey = "kc_face_covered_{$camera->id}";
+                    $lastFace = (int) \Illuminate\Support\Facades\Cache::get($faceCacheKey, 0);
+                    $nowTs = time();
+                    if (($nowTs - $lastFace) >= 15) {
+                        \Illuminate\Support\Facades\Cache::put($faceCacheKey, $nowTs, 45);
+                        $eventType = 'face_covered';
+                        $description = '⚠️ URGÊNCIA: Rostinho do bebê parece coberto por cobertor/tecido! (' . ($aiAnalysis['description'] ?: 'Verifique imediatamente') . ')';
+                        $shouldSend = true;
+                        $breachConfirmed = true;
+                    } else {
+                        $shouldSend = false;
+                        $breachConfirmed = false;
+                    }
+                }
+                // Caso 1: Bebê em pé (elimina falso positivo quando o bebê está deitado dormindo)
+                elseif ($eventType === 'baby_stand') {
+                    if (! $aiAnalysis['is_standing'] && $aiAnalysis['is_lying_down']) {
+                        \Illuminate\Support\Facades\Log::info('kc.recordEvent.ai_stand_filtered', [
+                            'camera_id' => $camera->id,
+                            'desc' => $aiAnalysis['description'] ?: 'Bebê está deitado dormindo, não em pé.',
+                        ]);
+                        $shouldSend = false;
+                        $breachConfirmed = false;
+                        $description = 'Bebê está deitado dormindo no colchão (Alarme falso de bebê em pé evitado pela IA).';
+                    } elseif ($aiAnalysis['is_standing']) {
+                        $breachConfirmed = true;
+                        $description = '🚨 ALERTA: Bebê ficou em pé no berço! (' . ($aiAnalysis['description'] ?: 'Confirmado por IA Vision') . ')';
+                    }
+                }
+                // Caso 2: Cerca do berço (pé, perna, mão, braço, cabeça ou corpo fora do polígono ciano)
+                elseif (in_array($eventType, ['crib_fence', 'fence_breach'])) {
+                    if ($aiAnalysis['is_blanket_or_empty']) {
+                        \Illuminate\Support\Facades\Log::info('kc.recordEvent.ai_fence_blanket_filtered', [
+                            'camera_id' => $camera->id,
+                            'desc' => $aiAnalysis['description'] ?: 'Apenas cobertor/lençol detectado.',
+                        ]);
+                        $shouldSend = false;
+                        $breachConfirmed = false;
+                        \Illuminate\Support\Facades\Cache::forget("kc_fence_alert_{$camera->id}");
+                        $description = 'Apenas cobertor/lençol estático no berço (Filtrado com sucesso pela IA).';
+                    } elseif (! $aiAnalysis['is_limb_outside'] && ! $aiAnalysis['is_baby_outside']) {
+                        // Bebê 100% dentro do polígono ciano: reseta cache de alerta e não envia falso alarme
+                        \Illuminate\Support\Facades\Log::info('kc.recordEvent.ai_fence_inside_filtered', [
+                            'camera_id' => $camera->id,
+                            'desc' => $aiAnalysis['description'] ?: 'Bebê totalmente seguro dentro do cerco.',
+                        ]);
+                        $shouldSend = false;
+                        $breachConfirmed = false;
+                        \Illuminate\Support\Facades\Cache::forget("kc_fence_alert_{$camera->id}");
+                        $description = 'Bebê seguro dentro do berço (' . ($aiAnalysis['description'] ?: 'IA confirmou bebê protegido') . '). Falso alerta evitado.';
+                    } elseif ($aiAnalysis['is_limb_outside'] || $aiAnalysis['is_baby_outside']) {
+                        $breachConfirmed = true;
+                        $part = $aiAnalysis['limb_outside_part'] ?? 'nenhum';
+                        $aiDesc = trim((string) ($aiAnalysis['description'] ?? ''));
+
+                        if ($isReinforcement) {
+                            $description = '⚠️ REFORÇO: ' . ($aiDesc ?: 'O bebê continua com parte do corpo fora do cerco do berço!');
+                        } elseif ($part === 'pe_perna' || stripos($aiDesc, 'pé') !== false || stripos($aiDesc, 'perna') !== false) {
+                            $description = '🚨 Pé ou perna do bebê passou para fora do cerco do berço! ' . ($aiDesc ? "({$aiDesc})" : '');
+                        } elseif ($part === 'mao_braco' || stripos($aiDesc, 'mão') !== false || stripos($aiDesc, 'braço') !== false) {
+                            $description = '🚨 Mão ou braço do bebê passou para fora do cerco do berço! ' . ($aiDesc ? "({$aiDesc})" : '');
+                        } elseif ($part === 'cabeca' || stripos($aiDesc, 'cabeça') !== false) {
+                            $description = '🚨 Cabeça do bebê passou para fora do cerco do berço! ' . ($aiDesc ? "({$aiDesc})" : '');
+                        } else {
+                            $description = '🚨 ' . ($aiDesc ?: 'Bebê fora da área segura demarcada no cerco do berço!');
+                        }
+                    }
+                }
+            } else {
+                // Se a IA não pôde avaliar mas o sensor local disparou (não apenas checagem silenciosa)
+                $breachConfirmed = !$isAiCheck;
+                if ($isAiCheck) {
+                    $shouldSend = false;
+                }
+            }
+        }
+
+        // Se foi apenas uma inspeção periódica/automática e o bebê está 100% seguro dentro do cerco, retorna sem poluir o banco
+        if (!$shouldSend && !$breachConfirmed) {
+            return response()->json([
+                'success' => true,
+                'breach_confirmed' => false,
+                'notified_telegram' => false,
+                'ai_analysis' => $aiAnalysis,
+                'data' => [
+                    'event_type' => $eventType,
+                    'description' => $description,
+                ],
+            ]);
+        }
+
         // Evita duplicar registros desnecessários no banco para o mesmo evento em menos de 4 segundos
         $recentEvent = \App\Models\KingCameraEvent::where('camera_id', $camera->id)
             ->where('event_type', $eventType)
@@ -1147,100 +1291,11 @@ class KingCameraController extends Controller
         }
 
         $camera->update(['last_event_at' => now()]);
+        $telegramSent = false;
 
-        if ($camera->telegram_alerts_enabled && $camera->telegram_chat_id && in_array($eventType, ['baby_cry', 'baby_stand', 'crib_fence', 'fence_breach', 'siren', 'siren_triggered', 'motion', 'person', 'test'])) {
+        if ($shouldSend && $camera->telegram_alerts_enabled && $camera->telegram_chat_id && in_array($eventType, ['baby_cry', 'baby_stand', 'crib_fence', 'fence_breach', 'siren', 'siren_triggered', 'motion', 'person', 'test', 'adult_caregiver', 'face_covered'])) {
             try {
-                $shouldSend = true;
-
-                // Extrai snapshot instantâneo em Base64 enviado diretamente pelo navegador se disponível
-                $jpegBinary = null;
-                if ($request->filled('snapshot_base64')) {
-                    $rawBase64 = preg_replace('#^data:image/\w+;base64,#i', '', (string) $request->input('snapshot_base64'));
-                    $decoded = base64_decode($rawBase64);
-                    if ($decoded && strlen($decoded) > 300) {
-                        $jpegBinary = $decoded;
-                    }
-                }
-
-                // ── VALIDAÇÃO DE ALTA PRECISÃO COM IA VISION (OPENAI / GEMINI) ──
-                if ($jpegBinary && in_array($eventType, ['baby_stand', 'crib_fence', 'fence_breach']) && $this->aiVision->isAvailable()) {
-                    $aiAnalysis = $this->aiVision->analyzeBabySafetySnapshot($jpegBinary, $eventType);
-                    if ($aiAnalysis['evaluated']) {
-                        // Caso 0: Presença de Adulto/Cuidador (Pai ou Mãe) ajeitando o bebê
-                        if ($aiAnalysis['adult_present']) {
-                            $caregiverCacheKey = "kc_caregiver_alert_{$camera->id}";
-                            $lastCaregiver = (int) \Illuminate\Support\Facades\Cache::get($caregiverCacheKey, 0);
-                            $nowTs = time();
-                            if (($nowTs - $lastCaregiver) >= 20) {
-                                \Illuminate\Support\Facades\Cache::put($caregiverCacheKey, $nowTs, 45);
-                                $eventType = 'adult_caregiver';
-                                $description = "🍼 {$aiAnalysis['adult_label']} no berço: {$aiAnalysis['adult_action']} (" . ($aiAnalysis['description'] ?: 'Interação segura com o bebê') . ')';
-                                $event->update(['event_type' => 'adult_caregiver', 'description' => $description]);
-                                $shouldSend = true;
-                            } else {
-                                $shouldSend = false;
-                            }
-                        }
-                        // Caso 0.1: Risco de Sufocamento / Rosto Coberto
-                        elseif ($aiAnalysis['is_face_covered']) {
-                            $faceCacheKey = "kc_face_covered_{$camera->id}";
-                            $lastFace = (int) \Illuminate\Support\Facades\Cache::get($faceCacheKey, 0);
-                            $nowTs = time();
-                            if (($nowTs - $lastFace) >= 15) {
-                                \Illuminate\Support\Facades\Cache::put($faceCacheKey, $nowTs, 45);
-                                $eventType = 'face_covered';
-                                $description = '⚠️ URGÊNCIA: Rostinho do bebê parece coberto por cobertor/tecido! (' . ($aiAnalysis['description'] ?: 'Verifique imediatamente') . ')';
-                                $event->update(['event_type' => 'face_covered', 'description' => $description]);
-                                $shouldSend = true;
-                            } else {
-                                $shouldSend = false;
-                            }
-                        }
-                        // Caso 1: Bebê em pé (elimina falso positivo quando o bebê está deitado dormindo)
-                        elseif ($eventType === 'baby_stand') {
-                            if (! $aiAnalysis['is_standing'] && $aiAnalysis['is_lying_down']) {
-                                \Illuminate\Support\Facades\Log::info('kc.recordEvent.ai_stand_filtered', [
-                                    'camera_id' => $camera->id,
-                                    'desc' => $aiAnalysis['description'] ?: 'Bebê está deitado dormindo, não em pé.',
-                                ]);
-                                $shouldSend = false; // Bloqueia o falso alarme no Telegram!
-                                $description = 'Bebê está deitado dormindo no colchão (Alarme falso de bebê em pé evitado pela IA).';
-                                $event->update(['description' => $description]);
-                            } elseif ($aiAnalysis['is_standing']) {
-                                $description = '🚨 ALERTA: Bebê ficou em pé no berço! (' . ($aiAnalysis['description'] ?: 'Confirmado por IA Vision') . ')';
-                                $event->update(['description' => $description]);
-                            }
-                        }
-                        // Caso 2: Cerca do berço (membro ou corpo fora vs cobertor/lençol vs bebê seguro dentro)
-                        elseif (in_array($eventType, ['crib_fence', 'fence_breach'])) {
-                            if ($aiAnalysis['is_blanket_or_empty']) {
-                                \Illuminate\Support\Facades\Log::info('kc.recordEvent.ai_fence_blanket_filtered', [
-                                    'camera_id' => $camera->id,
-                                    'desc' => $aiAnalysis['description'] ?: 'Apenas cobertor/lençol detectado.',
-                                ]);
-                                $shouldSend = false; // Bloqueia falso alarme de lençol!
-                                $description = 'Apenas cobertor/lençol estático no berço (Filtrado com sucesso pela IA).';
-                                $event->update(['description' => $description]);
-                            } elseif (! $aiAnalysis['is_limb_outside'] && ! $aiAnalysis['is_baby_outside']) {
-                                // O BEBÊ ESTÁ NO BERÇO, MAS TOTALMENTE DENTRO! NENHUM MEMBRO FORA!
-                                \Illuminate\Support\Facades\Log::info('kc.recordEvent.ai_fence_inside_filtered', [
-                                    'camera_id' => $camera->id,
-                                    'desc' => $aiAnalysis['description'] ?: 'Bebê totalmente seguro dentro do berço.',
-                                ]);
-                                $shouldSend = false; // BLOQUEIA O FALSO ALARME!
-                                $description = 'Bebê seguro dentro do berço (' . ($aiAnalysis['description'] ?: 'IA confirmou bebê protegido') . '). Falso alerta evitado.';
-                                $event->update(['description' => $description]);
-                            } elseif ($aiAnalysis['is_limb_outside'] || $aiAnalysis['is_baby_outside']) {
-                                if (! empty($aiAnalysis['description'])) {
-                                    $description = '🚨 ' . $aiAnalysis['description'];
-                                    $event->update(['description' => $description]);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Controle inteligente anti-spam da Cerca do Berço
+                // Controle inteligente anti-spam da Cerca do Berço (executado SOMENTE quando há infração real confirmada!)
                 if (in_array($eventType, ['crib_fence', 'fence_breach'])) {
                     $cacheKey = "kc_fence_alert_{$camera->id}";
                     $state = \Illuminate\Support\Facades\Cache::get($cacheKey, ['count' => 0, 'last_sent' => 0]);
@@ -1255,14 +1310,18 @@ class KingCameraController extends Controller
                     elseif ($state['count'] === 1) {
                         if ($diffSec >= 15) {
                             \Illuminate\Support\Facades\Cache::put($cacheKey, ['count' => 2, 'last_sent' => $nowTs], 60);
+                            if (!str_contains($description, 'REFORÇO')) {
+                                $description = '⚠️ REFORÇO: ' . ltrim($description, '🚨 ');
+                                $event->update(['description' => $description]);
+                            }
                         } else {
                             $shouldSend = false;
                         }
                     }
-                    // Atingiu 2 alertas recentes: pausa envios até resetar (60s) ou o bebê retornar
+                    // Após 2 alertas: reenvia lembrete a cada 45s enquanto o bebê continuar fora do cerco
                     else {
-                        if ($diffSec >= 60) {
-                            \Illuminate\Support\Facades\Cache::put($cacheKey, ['count' => 1, 'last_sent' => $nowTs], 60);
+                        if ($diffSec >= 45) {
+                            \Illuminate\Support\Facades\Cache::put($cacheKey, ['count' => 2, 'last_sent' => $nowTs], 60);
                         } else {
                             $shouldSend = false;
                         }
@@ -1301,7 +1360,7 @@ class KingCameraController extends Controller
                         $motionCacheKey = "kc_motion_alert_{$camera->id}";
                         $lastMotion = (int) \Illuminate\Support\Facades\Cache::get($motionCacheKey, 0);
                         $nowTs = time();
-                        if (($nowTs - $lastMotion) < 25) {
+                        if (($nowTs - $lastMotion) < 20) {
                             $shouldSend = false;
                         } else {
                             \Illuminate\Support\Facades\Cache::put($motionCacheKey, $nowTs, 45);
@@ -1310,8 +1369,10 @@ class KingCameraController extends Controller
                 }
 
                 if ($shouldSend) {
-                    $this->telegramAgent->sendAlert($camera, $eventType, $description, $jpegBinary);
-                    $event->update(['notified_telegram' => true]);
+                    $telegramSent = $this->telegramAgent->sendAlert($camera, $eventType, $description, $jpegBinary);
+                    if ($telegramSent) {
+                        $event->update(['notified_telegram' => true]);
+                    }
                 }
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('kc.recordEvent.telegram.error', ['msg' => $e->getMessage()]);
@@ -1320,6 +1381,9 @@ class KingCameraController extends Controller
 
         return response()->json([
             'success' => true,
+            'breach_confirmed' => $breachConfirmed,
+            'notified_telegram' => $telegramSent,
+            'ai_analysis' => $aiAnalysis,
             'data' => $event,
         ]);
     }

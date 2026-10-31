@@ -55,9 +55,11 @@ class KingCameraTelegramAgentService
             if (str_contains($description, 'REFORÇO')) {
                 $header = "⚠️ <b>REFORÇO: BEBÊ CONTINUA FORA DO CERCO!</b>\n<i>(Segundo aviso de confirmação)</i>";
             } elseif (stripos($description, 'Pé') !== false || stripos($description, 'perna') !== false) {
-                $header = "🚨 <b>ALERTA: PÉ OU PERNA DO BEBÊ PASSOU DO CERCO!</b>\n<i>(Membro inferior ultrapassou o limite do berço)</i>";
+                $header = "🚨 <b>ALERTA: PÉ OU PERNA DO BEBÊ PASSOU DO CERCO!</b>\n<i>(Membro inferior ultrapassou o limite demarcado)</i>";
             } elseif (stripos($description, 'Mão') !== false || stripos($description, 'braço') !== false) {
                 $header = "🚨 <b>ALERTA: BRAÇO OU MÃO DO BEBÊ FORA DO CERCO!</b>\n<i>(Membro superior ultrapassou a área segura)</i>";
+            } elseif (stripos($description, 'Cabeça') !== false || stripos($description, 'cabeça') !== false) {
+                $header = "🚨 <b>ALERTA: CABEÇA DO BEBÊ FORA DO CERCO!</b>\n<i>(Cabeça da criança ultrapassou a área demarcada)</i>";
             } elseif (str_contains($description, 'ATENÇÃO') || str_contains($description, '2 minutos')) {
                 $header = "⏳ <b>LEMBRETE: BEBÊ FORA DO CERCO HÁ MAIS DE 2 MIN!</b>\n<i>(Lembrete de segurança)</i>";
             } else {
@@ -96,7 +98,7 @@ class KingCameraTelegramAgentService
 
             if ($jpegBinary && strlen($jpegBinary) > 100) {
                 try {
-                    $res = Http::timeout(8)->attach(
+                    $res = Http::retry(2, 400)->timeout(15)->attach(
                         'photo',
                         $jpegBinary,
                         'snapshot.jpg',
@@ -133,13 +135,25 @@ class KingCameraTelegramAgentService
             }
 
             if ($sent) {
-                KingCameraEvent::create([
-                    'camera_id' => $camera->id,
-                    'user_id' => (string) $camera->user_id,
-                    'event_type' => $eventType,
-                    'description' => $description,
-                    'notified_telegram' => true,
-                ]);
+                $existingEvt = KingCameraEvent::where('camera_id', $camera->id)
+                    ->where('event_type', $eventType)
+                    ->where('created_at', '>=', now()->subSeconds(8))
+                    ->latest('id')
+                    ->first();
+                if ($existingEvt) {
+                    $existingEvt->update([
+                        'description' => $description,
+                        'notified_telegram' => true,
+                    ]);
+                } else {
+                    KingCameraEvent::create([
+                        'camera_id' => $camera->id,
+                        'user_id' => (string) $camera->user_id,
+                        'event_type' => $eventType,
+                        'description' => $description,
+                        'notified_telegram' => true,
+                    ]);
+                }
                 $camera->update(['last_event_at' => now()]);
                 return true;
             }
@@ -353,6 +367,9 @@ class KingCameraTelegramAgentService
 
             /** @var KingCameraAiVisionService $aiVision */
             $aiVision = app(KingCameraAiVisionService::class);
+            if ($camera->crib_fence_enabled && !empty($camera->crib_roi_json)) {
+                $snap = $aiVision->annotateJpegWithCribRoi($snap, $camera->crib_roi_json);
+            }
             $ai = $aiVision->analyzeBabySafetySnapshot($snap, 'telegram_query');
 
             if ($ai['is_standing']) {
@@ -363,9 +380,20 @@ class KingCameraTelegramAgentService
                 $postureStr = '🧸 <b>No berço</b>';
             }
 
-            $fenceStr = ($ai['is_limb_outside'] || $ai['is_baby_outside'])
-                ? '⚠️ <b>Atenção: Parte do corpo fora da área segura</b>'
-                : '✅ <b>100% protegido dentro do cerco</b>';
+            if ($ai['is_limb_outside'] || $ai['is_baby_outside']) {
+                $part = $ai['limb_outside_part'] ?? 'nenhum';
+                if ($part === 'pe_perna') {
+                    $fenceStr = '🚨 <b>ALERTA: Pé ou perna do bebê fora da área segura!</b>';
+                } elseif ($part === 'mao_braco') {
+                    $fenceStr = '🚨 <b>ALERTA: Mão ou braço do bebê fora da área segura!</b>';
+                } elseif ($part === 'cabeca') {
+                    $fenceStr = '🚨 <b>ALERTA: Cabeça do bebê fora da área segura!</b>';
+                } else {
+                    $fenceStr = '🚨 <b>ALERTA: Bebê fora da área segura demarcada!</b>';
+                }
+            } else {
+                $fenceStr = '✅ <b>100% protegido dentro do cerco</b>';
+            }
 
             $caregiverStr = $ai['adult_present']
                 ? "🍼 <b>{$ai['adult_label']} presente ({$ai['adult_action']})</b>"

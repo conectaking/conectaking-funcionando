@@ -8745,12 +8745,14 @@
                 telegram_phone: document.getElementById('cam-telegram-phone')?.value.trim() || null,
                 telegram_alerts_enabled: document.getElementById('cam-telegram-alerts')?.checked ?? true,
                 crib_fence_enabled: document.getElementById('cam-crib-fence-enabled')?.checked || false,
-                crib_roi_json: {
-                    x: parseInt(document.getElementById('cam-crib-x')?.value || 20),
-                    y: parseInt(document.getElementById('cam-crib-y')?.value || 25),
-                    w: parseInt(document.getElementById('cam-crib-w')?.value || 60),
-                    h: parseInt(document.getElementById('cam-crib-h')?.value || 50),
-                },
+                crib_roi_json: (id && cribFenceState[id] && cribFenceState[id].roi)
+                    ? cribFenceState[id].roi
+                    : ((id && camerasData.find(c => c.id == id)?.crib_roi_json) || {
+                        x: parseInt(document.getElementById('cam-crib-x')?.value || 20),
+                        y: parseInt(document.getElementById('cam-crib-y')?.value || 25),
+                        w: parseInt(document.getElementById('cam-crib-w')?.value || 60),
+                        h: parseInt(document.getElementById('cam-crib-h')?.value || 50),
+                    }),
                 baby_stand_enabled: document.getElementById('cam-baby-stand-enabled')?.checked || false,
                 baby_cry_enabled: document.getElementById('cam-baby-cry-enabled')?.checked || false,
                 auto_tracking_enabled: document.getElementById('cam-auto-tracking-enabled')?.checked || false,
@@ -8816,12 +8818,14 @@
 
             const payload = {
                 crib_fence_enabled: document.getElementById('cam-crib-fence-enabled')?.checked || false,
-                crib_roi_json: {
-                    x: parseInt(document.getElementById('cam-crib-x')?.value || 20),
-                    y: parseInt(document.getElementById('cam-crib-y')?.value || 25),
-                    w: parseInt(document.getElementById('cam-crib-w')?.value || 60),
-                    h: parseInt(document.getElementById('cam-crib-h')?.value || 50),
-                },
+                crib_roi_json: (camId && cribFenceState[camId] && cribFenceState[camId].roi)
+                    ? cribFenceState[camId].roi
+                    : ((camId && camerasData.find(c => c.id == camId)?.crib_roi_json) || {
+                        x: parseInt(document.getElementById('cam-crib-x')?.value || 20),
+                        y: parseInt(document.getElementById('cam-crib-y')?.value || 25),
+                        w: parseInt(document.getElementById('cam-crib-w')?.value || 60),
+                        h: parseInt(document.getElementById('cam-crib-h')?.value || 50),
+                    }),
                 baby_stand_enabled: document.getElementById('cam-baby-stand-enabled')?.checked || false,
                 baby_cry_enabled: document.getElementById('cam-baby-cry-enabled')?.checked || false,
                 auto_tracking_enabled: document.getElementById('cam-auto-tracking-enabled')?.checked || false,
@@ -10199,6 +10203,9 @@
             s.fenceState = s.fenceState || 'INSIDE';
             s.alertCount = s.alertCount || 0;
             s.lastAlertTime = s.lastAlertTime || 0;
+            s.lastAiVisionCheck = s.lastAiVisionCheck || 0;
+            s.needsImmediateAiCheck = (s.needsImmediateAiCheck !== undefined) ? s.needsImmediateAiCheck : true;
+            s.isAiRequestInFlight = false;
             s.breachStreak = 0;
             s.calmCycles = 0;
             s.absenceStreak = 0;
@@ -10216,7 +10223,9 @@
                     return;
                 }
                 const video = document.getElementById(`video-${camId}`);
-                if (!video || video.readyState < 2 || isProcessing) return;
+                if (!video || video.readyState < 2 || !video.videoWidth || isProcessing) return;
+                // Se o usuário estiver arrastando um ponto do cerco agora, aguarda soltar
+                if (s.isDraggingFence) return;
                 isProcessing = true;
 
                 try {
@@ -10226,7 +10235,6 @@
                     const vh = video.videoHeight || 360;
 
                     // ── 0. ANÁLISE DE MOVIMENTO REAL POR DIFERENÇA DE FRAMES (160x90) ──
-                    // Evita que roupas, cobertores ou lençóis estáticos na cama ao lado gerem falsos alarmes
                     if (!s._motionCanvas) {
                         s._motionCanvas = document.createElement('canvas');
                         s._motionCanvas.width = 160;
@@ -10252,35 +10260,39 @@
                                 const diff = Math.abs(curPixels[idx] - s._prevFrameData[idx])
                                            + Math.abs(curPixels[idx + 1] - s._prevFrameData[idx + 1])
                                            + Math.abs(curPixels[idx + 2] - s._prevFrameData[idx + 2]);
-                                if (diff > 35) movingPixels++;
+                                if (diff > 30) movingPixels++;
                                 total++;
                             }
                         }
                         return total > 0 ? (movingPixels / total) * 100 : 0;
                     };
 
-                    // Nível de movimento dentro do berço
+                    // Nível de movimento dentro do cerco e no quadro geral do berço
                     const cribMotion = getRegionMotionPct(r.x, r.y, r.x + r.w, r.y + r.h);
+                    const fullMotion = getRegionMotionPct(10, 15, 90, 85);
 
-                    // 1. EXECUTA MODELOS DE IA: DETECÇÃO DE PESSOAS (COCO-SSD) E ARTICULAÇÕES (MOVENET POSE)
+                    // 1. EXECUTA MODELOS DE IA LOCAIS: DETECÇÃO DE PESSOAS (COCO-SSD) E ARTICULAÇÕES (MOVENET POSE)
                     const [persons, poses] = await Promise.all([
                         window.kingVisionAI.detectPersons(video),
                         window.kingVisionAI.detectPose(video)
                     ]);
 
-                    if (persons !== null || poses !== null) {
-                        let isBabyInCrib = false;
-                        let isBabyOutsideCrib = false;
-                        let limbBreached = false;
-                        let breachMsg = '';
+                    let isBabyInCrib = false;
+                    let isBabyOutsideCrib = false;
+                    let limbBreached = false;
+                    let breachMsg = '';
 
-                        // ── A. ANÁLISE ANATÔMICA COM MOVENET POSE (17 ARTICULAÇÕES DETALHADAS) ──
+                    if (persons !== null || poses !== null) {
+                        // ── A. ANÁLISE ANATÔMICA COM MOVENET POSE (17 ARTICULAÇÕES + EXTREMIDADES) ──
+                        // Sem trava de movimento: detecta mesmo se o pé/mão/cabeça já estiver parado fora do cerco!
                         if (poses && poses.length > 0 && poses[0].keypoints) {
                             const kps = poses[0].keypoints;
+                            const kpMap = {};
                             let pointsInside = 0;
 
                             for (const pt of kps) {
-                                if (pt.score >= 0.10) {
+                                kpMap[pt.name] = pt;
+                                if (pt.score >= 0.12) {
                                     const px = (pt.x / vw) * 100;
                                     const py = (pt.y / vh) * 100;
                                     if (isPointInCribFence(px, py, r)) {
@@ -10293,50 +10305,81 @@
                                 isBabyInCrib = true;
                             }
 
-                            // Checagem de membros para fora: analisa apenas se houver movimentação física real no berço
-                            // Jamais acusa "membro para fora" em berço imóvel com bebê dormindo tranquilamente!
-                            if (cribMotion >= 2.0) {
-                                const allLimbCheck = [
-                                    { keys: ['left_ankle', 'right_ankle'], label: 'Pé do bebê' },
-                                    { keys: ['left_knee', 'right_knee'], label: 'Perna/Joelho do bebê' },
-                                    { keys: ['left_wrist', 'right_wrist'], label: 'Mão/Braço do bebê' },
-                                    { keys: ['left_elbow', 'right_elbow'], label: 'Braço/Cotovelo do bebê' },
-                                    { keys: ['left_shoulder', 'right_shoulder'], label: 'Ombro do bebê' },
-                                    { keys: ['nose'], label: 'Cabeça do bebê' }
-                                ];
+                            const isPtInsideStrict = (px, py) => {
+                                if (r.type === 'circle' && r.circle) {
+                                    return isPointInCircle(px, py, r.circle, 0.5);
+                                }
+                                if (Array.isArray(r.points) && r.points.length >= 3) {
+                                    return isPointInsidePolygonWithTolerance(px, py, r.points, 0.5);
+                                }
+                                return isPointInCribFence(px, py, r);
+                            };
 
-                                for (const limbGroup of allLimbCheck) {
-                                    for (const keyName of limbGroup.keys) {
-                                        const pt = kps.find(k => k.name === keyName);
-                                        // Calibração especialista: exige confiança sólida (score >= 0.42)
-                                        if (pt && pt.score >= 0.42) {
-                                            const px = (pt.x / vw) * 100;
-                                            const py = (pt.y / vh) * 100;
-                                            // Tolerância com margem de segurança de 3.5%
-                                            const insidePoly = (r.type === 'circle' && r.circle)
-                                                ? isPointInCircle(px, py, r.circle, 3.5)
-                                                : isPointInsidePolygonWithTolerance(px, py, r.points || [], 3.5);
+                            const allLimbCheck = [
+                                { keys: ['left_ankle', 'right_ankle'], label: 'Pé ou perna do bebê' },
+                                { keys: ['left_knee', 'right_knee'], label: 'Perna/Joelho do bebê' },
+                                { keys: ['left_wrist', 'right_wrist'], label: 'Mão ou braço do bebê' },
+                                { keys: ['left_elbow', 'right_elbow'], label: 'Braço/Cotovelo do bebê' },
+                                { keys: ['nose', 'left_ear', 'right_ear', 'left_eye', 'right_eye'], label: 'Cabeça do bebê' },
+                                { keys: ['left_shoulder', 'right_shoulder'], label: 'Ombro do bebê' },
+                                { keys: ['left_hip', 'right_hip'], label: 'Corpo/Quadril do bebê' }
+                            ];
 
-                                            if (!insidePoly) {
-                                                limbBreached = true;
-                                                breachMsg = `🚨 ${limbGroup.label} passou para fora do cerco do berço!`;
-                                                break;
+                            for (const limbGroup of allLimbCheck) {
+                                for (const keyName of limbGroup.keys) {
+                                    const pt = kpMap[keyName];
+                                    // Calibração sensível para infravermelho noturno e bebês deitados (score >= 0.20)
+                                    if (pt && pt.score >= 0.20) {
+                                        const px = (pt.x / vw) * 100;
+                                        const py = (pt.y / vh) * 100;
+
+                                        if (!isPtInsideStrict(px, py)) {
+                                            limbBreached = true;
+                                            breachMsg = `🚨 ${limbGroup.label} passou para fora do cerco do berço!`;
+                                            break;
+                                        }
+
+                                        // Extrapolação anatômica da ponta do pé (além do tornozelo) e da mão (além do pulso)
+                                        if (keyName === 'left_ankle' || keyName === 'right_ankle') {
+                                            const knee = kpMap[keyName === 'left_ankle' ? 'left_knee' : 'right_knee'];
+                                            if (knee && knee.score >= 0.18) {
+                                                const tipX = ((pt.x + (pt.x - knee.x) * 0.32) / vw) * 100;
+                                                const tipY = ((pt.y + (pt.y - knee.y) * 0.32) / vh) * 100;
+                                                if (!isPtInsideStrict(tipX, tipY)) {
+                                                    limbBreached = true;
+                                                    breachMsg = '🚨 Pé ou perna do bebê passou para fora do cerco do berço!';
+                                                    break;
+                                                }
+                                            }
+                                        } else if (keyName === 'left_wrist' || keyName === 'right_wrist') {
+                                            const elbow = kpMap[keyName === 'left_wrist' ? 'left_elbow' : 'right_elbow'];
+                                            if (elbow && elbow.score >= 0.18) {
+                                                const tipX = ((pt.x + (pt.x - elbow.x) * 0.30) / vw) * 100;
+                                                const tipY = ((pt.y + (pt.y - elbow.y) * 0.30) / vh) * 100;
+                                                if (!isPtInsideStrict(tipX, tipY)) {
+                                                    limbBreached = true;
+                                                    breachMsg = '🚨 Mão ou braço do bebê passou para fora do cerco do berço!';
+                                                    break;
+                                                }
                                             }
                                         }
                                     }
-                                    if (limbBreached) break;
                                 }
+                                if (limbBreached) break;
                             }
                         }
 
-                        // ── B. ANÁLISE VIA BOUNDING BOX (COCO-SSD): PARTE DO CORPO ULTRAPASSANDO A BORDA ──
+                        // ── B. ANÁLISE VIA BOUNDING BOX (COCO-SSD): QUALQUER EXTREMIDADE ULTRAPASSANDO A BORDA ──
                         if (persons && persons.length > 0) {
                             for (const p of persons) {
                                 const [bx, by, bw, bh] = p.bbox;
-                                const x1 = (bx / vw) * 100;
-                                const y1 = (by / vh) * 100;
-                                const x2 = ((bx + bw) / vw) * 100;
-                                const y2 = ((by + bh) / vh) * 100;
+                                // Usa margem interna de 6% da caixa para representar os limites reais do corpo
+                                const padX = bw * 0.06;
+                                const padY = bh * 0.06;
+                                const x1 = ((bx + padX) / vw) * 100;
+                                const y1 = ((by + padY) / vh) * 100;
+                                const x2 = ((bx + bw - padX) / vw) * 100;
+                                const y2 = ((by + bh - padY) / vh) * 100;
                                 const cx = (x1 + x2) / 2;
                                 const cy = (y1 + y2) / 2;
 
@@ -10344,115 +10387,81 @@
 
                                 if (centerInside) {
                                     isBabyInCrib = true;
-                                    // Testa se as bordas ou cantos do corpinho ultrapassam o cerco demarcado
                                     const bodyTestPts = [
-                                        { x: x1, y: y1 }, { x: x2, y: y1 },
-                                        { x: x1, y: y2 }, { x: x2, y: y2 },
-                                        { x: cx, y: y1 }, { x: cx, y: y2 },
-                                        { x: x1, y: cy }, { x: x2, y: cy }
+                                        { x: x1, y: cy, label: 'Cabeça/Lateral do bebê' },
+                                        { x: x2, y: cy, label: 'Pé/Perna do bebê' },
+                                        { x: cx, y: y1, label: 'Braço/Mão superior do bebê' },
+                                        { x: cx, y: y2, label: 'Braço/Perna inferior do bebê' },
+                                        { x: x1, y: y1, label: 'Extremidade do bebê' },
+                                        { x: x2, y: y1, label: 'Extremidade do bebê' },
+                                        { x: x1, y: y2, label: 'Extremidade do bebê' },
+                                        { x: x2, y: y2, label: 'Extremidade do bebê' }
                                     ];
-                                    let outsideCount = 0;
                                     for (const tp of bodyTestPts) {
                                         const inFence = (r.type === 'circle' && r.circle)
-                                            ? isPointInCircle(tp.x, tp.y, r.circle, 2.0)
-                                            : isPointInsidePolygonWithTolerance(tp.x, tp.y, r.points || [], 2.0);
-                                        if (!inFence) outsideCount++;
-                                    }
-
-                                    // Se 3 ou mais pontos da caixa da criança ultrapassarem o cerco com boa confiança
-                                    if (outsideCount >= 3 && p.score >= 0.40) {
-                                        limbBreached = true;
-                                        if (!breachMsg) {
-                                            breachMsg = '🚨 Parte do corpo do bebê passou para fora do cerco do berço!';
+                                            ? isPointInCircle(tp.x, tp.y, r.circle, 0.5)
+                                            : isPointInsidePolygonWithTolerance(tp.x, tp.y, r.points || [], 0.5);
+                                        if (!inFence && p.score >= 0.25) {
+                                            limbBreached = true;
+                                            if (!breachMsg) {
+                                                breachMsg = `🚨 ${tp.label} passou para fora do cerco do berço!`;
+                                            }
+                                            break;
                                         }
                                     }
                                 } else {
-                                    // Criança com o centro fora do berço (ex: no chão ou cama ao lado)
-                                    const boxMotion = getRegionMotionPct(x1, y1, x2, y2);
                                     const areaPct = (bw * bh) / (vw * vh);
-                                    if (p.score >= 0.35 && (boxMotion >= 2.0 || areaPct >= 0.04)) {
+                                    if (p.score >= 0.28 && areaPct >= 0.03) {
                                         isBabyOutsideCrib = true;
                                     }
                                 }
                             }
                         }
+                    }
 
-                        // ── C. PERSISTÊNCIA INTELIGENTE DE BEBÊ DORMINDO (SEM FALSOS ALARMES) ──
-                        // Apenas se NENHUM membro ou parte do corpo estiver para fora!
-                        if (!isBabyInCrib && !isBabyOutsideCrib && s.hasSeenInCrib && !limbBreached) {
-                            if (cribMotion < 5.0) {
-                                isBabyInCrib = true; // Bebê dormindo seguro no berço
+                    // ── C. DECISÃO IMEDIATA LOCAL + VERIFICAÇÃO PROATIVA COM IA VISION ESPECIALISTA ──
+                    if (limbBreached || (isBabyOutsideCrib && !isBabyInCrib)) {
+                        s.breachStreak = (s.breachStreak || 0) + 1;
+                        s.absenceStreak = 0;
+                        s.calmCycles = 0;
+                        s.hasSeenInCrib = true;
+
+                        if (s.breachStreak >= 2) {
+                            const msg = limbBreached
+                                ? (breachMsg || '🚨 Parte do corpo do bebê passou para fora do cerco do berço!')
+                                : '🚨 ALERTA: Bebê saiu do cerco seguro do berço!';
+
+                            if (s.fenceState !== 'OUTSIDE') {
+                                s.lastAiVisionCheck = now;
+                                s.needsImmediateAiCheck = false;
+                                triggerFenceBreachAlert(camId, 1, msg, false);
+                            } else if (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 15000)) {
+                                s.lastAiVisionCheck = now;
+                                triggerFenceBreachAlert(camId, 2, '⚠️ REFORÇO: O bebê continua com parte do corpo fora da área segura!', false);
                             }
                         }
+                    } else {
+                        s.breachStreak = 0;
 
-                        // ── D. TOMADA DE DECISÃO INTELIGENTE E IMEDIATA ──
-                        // CASO 1: Membro real ou pedaço do bebê passou do cerco
-                        if (limbBreached) {
-                            s.breachStreak = (s.breachStreak || 0) + 1;
-                            s.absenceStreak = 0;
-                            s.calmCycles = 0;
-                            s.hasSeenInCrib = true;
-                            s.isLimbBreached = true;
+                        // Mesmo quando o MoveNet/COCO-SSD local não enxerga as perninhas na visão noturna infravermelha
+                        // (ou quando o usuário acabou de ajustar o cerco deixando o pé de fora), a IA Vision especialista
+                        // no servidor inspeciona a imagem com o polígono ciano desenhado!
+                        const timeSinceAi = now - (s.lastAiVisionCheck || 0);
+                        const shouldRunProactiveAi = s.needsImmediateAiCheck
+                            || (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 15000) && timeSinceAi >= 12000)
+                            || (s.fenceState === 'OUTSIDE' && timeSinceAi >= 12000)
+                            || ((cribMotion >= 0.35 || fullMotion >= 0.45) && timeSinceAi >= 6000)
+                            || (timeSinceAi >= 15000);
 
-                            // Exige 3 ciclos consecutivos (~3.6s) de persistência para evitar glitches momentâneos
-                            if (s.breachStreak >= 3) {
-                                if (s.fenceState !== 'OUTSIDE') {
-                                    s.fenceState = 'OUTSIDE';
-                                    s.alertCount = 1;
-                                    s.lastAlertTime = now;
-                                    triggerFenceBreachAlert(camId, 1, breachMsg || '🚨 Pedaço ou membro do bebê passou do cerco do berço!');
-                                    drawCribBox(camId);
-                                } else if (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 15000)) {
-                                    s.alertCount = 2;
-                                    s.lastAlertTime = now;
-                                    triggerFenceBreachAlert(camId, 2, '⚠️ REFORÇO: O bebê continua com parte do corpo fora da área segura!');
-                                }
-                            }
-                        }
-                        // CASO 2: Criança se movendo ativamente FORA do berço
-                        else if (isBabyOutsideCrib && !isBabyInCrib) {
-                            s.breachStreak = (s.breachStreak || 0) + 1;
-                            s.absenceStreak = (s.absenceStreak || 0) + 1;
-                            s.calmCycles = 0;
-                            s.isLimbBreached = false;
-
-                            if (s.breachStreak >= 2) {
-                                if (s.fenceState !== 'OUTSIDE') {
-                                    s.fenceState = 'OUTSIDE';
-                                    s.alertCount = 1;
-                                    s.lastAlertTime = now;
-                                    triggerFenceBreachAlert(camId, 1, '🚨 ALERTA: Bebê saiu do cerco! (Criança fora do berço)');
-                                    drawCribBox(camId);
-                                } else if (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 15000)) {
-                                    s.alertCount = 2;
-                                    s.lastAlertTime = now;
-                                    triggerFenceBreachAlert(camId, 2, '⚠️ REFORÇO: A criança continua fora do cerco seguro!');
-                                }
-                            }
-                        }
-                        // CASO 3: Bebê seguro DENTRO do berço (ou dormindo tranquilamente)
-                        else if (isBabyInCrib && !limbBreached) {
-                            s.breachStreak = 0;
-                            s.absenceStreak = 0;
-                            s.calmCycles = (s.calmCycles || 0) + 1;
-                            s.hasSeenInCrib = true;
-                            s.isLimbBreached = false;
-                            s.lastSeenInsideTime = now;
-
-                            if (s.fenceState === 'OUTSIDE') {
-                                s.fenceState = 'INSIDE';
-                                s.alertCount = 0;
-                                console.log(`[CribFence] Bebê seguro dentro do berço (câmera ${camId}). Normalizado.`);
-                                sendFenceClearedEvent(camId, true);
-                                const alertEl = document.getElementById(`fence-alert-${camId}`);
-                                if (alertEl) alertEl.style.display = 'none';
-                                drawCribBox(camId); // Restaura imediatamente o polígono para Ciano/Azul suave!
-                            }
-                        }
-                        else {
-                            s.breachStreak = 0;
-                            s.absenceStreak = 0;
-                            s.isLimbBreached = false;
+                        if (shouldRunProactiveAi && !s.isAiRequestInFlight) {
+                            const wasImmediate = Boolean(s.needsImmediateAiCheck);
+                            s.needsImmediateAiCheck = false;
+                            s.lastAiVisionCheck = now;
+                            const isReinf = (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 15000));
+                            const candidateMsg = isReinf
+                                ? '⚠️ REFORÇO: O bebê continua com parte do corpo fora do cerco!'
+                                : '🚨 Verificação de segurança da Cerca do Berço';
+                            triggerFenceBreachAlert(camId, isReinf ? 2 : 1, candidateMsg, !wasImmediate && !isReinf);
                         }
                     }
 
@@ -10467,9 +10476,14 @@
             }, 1200);
         }
 
-        function triggerFenceBreachAlert(camId, alertIndex, customMsg) {
-            captureAutoSnapshot(camId);
-            const liveSnapshotBase64 = getLiveVideoSnapshotBase64(camId);
+        function triggerFenceBreachAlert(camId, alertIndex, customMsg, isSilentCheck = false) {
+            const s = cribFenceState[camId];
+            if (!s || !s.enabled || s.isAiRequestInFlight) return;
+
+            const liveSnapshotBase64 = getLiveVideoSnapshotBase64(camId, true);
+            if (!liveSnapshotBase64) return;
+
+            s.isAiRequestInFlight = true;
 
             try {
                 fetch(`/api/cameras/${camId}/events`, {
@@ -10479,29 +10493,52 @@
                     body: JSON.stringify({
                         event_type: 'crib_fence',
                         description: customMsg || '🚨 Criança fora da área segura do berço detectada!',
-                        snapshot_base64: liveSnapshotBase64
+                        snapshot_base64: liveSnapshotBase64,
+                        is_ai_check: Boolean(isSilentCheck)
                     })
                 })
                 .then(r => r.json())
                 .then(res => {
+                    const currentS = cribFenceState[camId];
+                    if (currentS) currentS.isAiRequestInFlight = false;
+                    if (!currentS || !currentS.enabled) return;
+
                     const evt = res && res.data;
                     const desc = (evt && evt.description) ? evt.description : '';
+                    const isFilteredSafe = (res && res.breach_confirmed === false)
+                        || desc.includes('seguro dentro')
+                        || desc.includes('Falso alerta evitado')
+                        || desc.includes('Filtrado com sucesso');
 
-                    // Se a IA do servidor filtrou (bebê seguro no berço, alarme falso cancelado):
-                    if (desc.includes('seguro dentro') || desc.includes('Falso alerta evitado') || desc.includes('Filtrado com sucesso')) {
-                        const s = cribFenceState[camId];
-                        if (s) {
-                            s.fenceState = 'INSIDE';
-                            s.isLimbBreached = false;
-                            s.breachStreak = 0;
-                        }
+                    // Se a IA do servidor confirmou que o bebê está 100% seguro dentro do cerco:
+                    if (isFilteredSafe) {
+                        const wasOutside = (currentS.fenceState === 'OUTSIDE' || currentS.isLimbBreached);
+                        currentS.fenceState = 'INSIDE';
+                        currentS.isLimbBreached = false;
+                        currentS.breachStreak = 0;
+                        currentS.alertCount = 0;
                         const alertEl = document.getElementById(`fence-alert-${camId}`);
                         if (alertEl) alertEl.style.display = 'none';
-                        drawCribBox(camId);
+                        if (wasOutside) {
+                            drawCribBox(camId);
+                        }
                         return;
                     }
 
-                    // Se a IA confirmou a infração real:
+                    // Se a IA confirmou que o pé, mão, cabeça ou corpo do bebê está FORA do cerco:
+                    captureAutoSnapshot(camId);
+                    const now = Date.now();
+                    if (currentS.fenceState !== 'OUTSIDE') {
+                        currentS.fenceState = 'OUTSIDE';
+                        currentS.isLimbBreached = true;
+                        currentS.alertCount = 1;
+                        currentS.lastAlertTime = now;
+                    } else if (alertIndex >= 2) {
+                        currentS.alertCount = 2;
+                        currentS.lastAlertTime = now;
+                    }
+                    drawCribBox(camId);
+
                     const alertEl = document.getElementById(`fence-alert-${camId}`);
                     if (alertEl) {
                         alertEl.style.display = 'flex';
@@ -10509,12 +10546,21 @@
                         if (span) {
                             span.innerHTML = `⚠️ <b>${escapeHtml(desc || customMsg)}</b>`;
                         }
-                        setTimeout(() => { if (alertEl) alertEl.style.display = 'none'; }, 8000);
+                        setTimeout(() => {
+                            if (alertEl && (!cribFenceState[camId] || cribFenceState[camId].fenceState !== 'OUTSIDE')) {
+                                alertEl.style.display = 'none';
+                            }
+                        }, 10000);
                     }
                     playToneSound(800, 0.25);
                 })
-                .catch(e => console.warn(e));
-            } catch(e) {}
+                .catch(e => {
+                    if (cribFenceState[camId]) cribFenceState[camId].isAiRequestInFlight = false;
+                    console.warn(e);
+                });
+            } catch(e) {
+                if (cribFenceState[camId]) cribFenceState[camId].isAiRequestInFlight = false;
+            }
         }
 
         function toggleCribFence(camId, explicitState) {
@@ -10556,7 +10602,9 @@
                     activeHandle: null,
                     dragOffset: { x: 0, y: 0 },
                     fenceState: 'INSIDE',
-                    isLimbBreached: false
+                    isLimbBreached: false,
+                    needsImmediateAiCheck: true,
+                    lastAiVisionCheck: 0
                 };
 
                 btn.classList.add('active');
@@ -10644,8 +10692,12 @@
             const canvas = document.getElementById(`crib-canvas-${camId}`);
             if (!canvas) return;
             const wrap = canvas.parentElement;
-            canvas.width = wrap.clientWidth || 640;
-            canvas.height = wrap.clientHeight || 360;
+            if (wrap && (wrap.clientWidth > 50 || wrap.offsetWidth > 50)) {
+                canvas.width = wrap.clientWidth || wrap.offsetWidth || 640;
+                canvas.height = wrap.clientHeight || wrap.offsetHeight || 360;
+            }
+            if (canvas._cribInitDone) return;
+            canvas._cribInitDone = true;
 
             drawCribBox(camId);
 
@@ -10775,6 +10827,7 @@
 
                 if (activeHandle) {
                     isPointerDown = true;
+                    s.isDraggingFence = true;
                     startPos = { x: pos.x, y: pos.y };
                     initialRoi = JSON.parse(JSON.stringify(roi));
                     if (e.cancelable) e.preventDefault();
@@ -10890,6 +10943,7 @@
                     isPointerDown = false;
                     activeHandle = null;
                     const s = cribFenceState[camId];
+                    if (s) s.isDraggingFence = false;
                     if (s && s.enabled) {
                         const bb = getBoundingBoxFromRoi(s.roi);
                         s.roi.x = bb.x;
@@ -10902,9 +10956,6 @@
             };
 
             canvas.onpointerdown = onStart;
-            canvas.addEventListener('touchstart', onStart, { passive: false });
-            canvas.addEventListener('touchmove', onMove, { passive: false });
-            canvas.addEventListener('touchend', onEnd, { passive: false });
             window.addEventListener('pointermove', onMove);
             window.addEventListener('pointerup', onEnd);
             window.addEventListener('pointercancel', onEnd);
@@ -10946,6 +10997,7 @@
             const cw = canvas.width;
             const ch = canvas.height;
             const handleR = 15; // Toque fácil no celular e mouse
+            const isBreached = Boolean(s.fenceState === 'OUTSIDE' || s.isLimbBreached);
 
             if (roi.type === 'circle' && roi.circle) {
                 // ================= DESENHO REDONDO / OVAL (ELIPSE) =================
@@ -10957,10 +11009,10 @@
 
                 ctx.beginPath();
                 ctx.ellipse(cpx, cpy, rpx, rpy, 0, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(6, 182, 212, 0.22)';
+                ctx.fillStyle = isBreached ? 'rgba(239, 68, 68, 0.28)' : 'rgba(6, 182, 212, 0.22)';
                 ctx.fill();
 
-                ctx.strokeStyle = '#06b6d4';
+                ctx.strokeStyle = isBreached ? '#ef4444' : '#06b6d4';
                 ctx.lineWidth = 3.5;
                 ctx.setLineDash([8, 4]);
                 ctx.stroke();
@@ -10991,7 +11043,7 @@
                 handles.forEach(h => {
                     ctx.beginPath();
                     ctx.arc(h.px, h.py, handleR, 0, Math.PI * 2);
-                    ctx.fillStyle = '#06b6d4';
+                    ctx.fillStyle = isBreached ? '#ef4444' : '#06b6d4';
                     ctx.fill();
                     ctx.strokeStyle = '#ffffff';
                     ctx.lineWidth = 3;
@@ -11016,10 +11068,10 @@
                 const bw = (rw / 100) * cw;
                 const bh = (rh / 100) * ch;
 
-                ctx.fillStyle = 'rgba(6, 182, 212, 0.22)';
+                ctx.fillStyle = isBreached ? 'rgba(239, 68, 68, 0.28)' : 'rgba(6, 182, 212, 0.22)';
                 ctx.fillRect(bx, by, bw, bh);
 
-                ctx.strokeStyle = '#06b6d4';
+                ctx.strokeStyle = isBreached ? '#ef4444' : '#06b6d4';
                 ctx.lineWidth = 3.5;
                 ctx.setLineDash([8, 4]);
                 ctx.strokeRect(bx, by, bw, bh);
@@ -11035,7 +11087,7 @@
                 corners.forEach(c => {
                     ctx.beginPath();
                     ctx.arc(c.px, c.py, handleR, 0, Math.PI * 2);
-                    ctx.fillStyle = '#06b6d4';
+                    ctx.fillStyle = isBreached ? '#ef4444' : '#06b6d4';
                     ctx.fill();
                     ctx.strokeStyle = '#ffffff';
                     ctx.lineWidth = 3;
@@ -11083,7 +11135,6 @@
                 ctx.closePath();
 
                 // Fundo e borda: vermelho se houver infração/membro fora, ciano se seguro
-                const isBreached = Boolean(s.fenceState === 'OUTSIDE' || s.isLimbBreached);
                 ctx.fillStyle = isBreached ? 'rgba(239, 68, 68, 0.28)' : 'rgba(6, 182, 212, 0.22)';
                 ctx.fill();
 
@@ -11118,7 +11169,7 @@
                         const mpy = ((pts[i].y + pts[next].y) / 2 / 100) * ch;
                         ctx.beginPath();
                         ctx.arc(mpx, mpy, 7, 0, Math.PI * 2);
-                        ctx.fillStyle = 'rgba(6, 182, 212, 0.7)';
+                        ctx.fillStyle = isBreached ? 'rgba(239, 68, 68, 0.7)' : 'rgba(6, 182, 212, 0.7)';
                         ctx.fill();
                         ctx.strokeStyle = '#ffffff';
                         ctx.lineWidth = 1.5;
@@ -11126,14 +11177,14 @@
                     }
                 }
 
-                // Vértices principais (Círculos azuis para arrastar cada canto livremente)
+                // Vértices principais (Círculos azuis ou vermelhos para arrastar cada canto livremente)
                 pts.forEach((p, idx) => {
                     const px = (p.x / 100) * cw;
                     const py = (p.y / 100) * ch;
 
                     ctx.beginPath();
                     ctx.arc(px, py, handleR, 0, Math.PI * 2);
-                    ctx.fillStyle = '#06b6d4';
+                    ctx.fillStyle = isBreached ? '#ef4444' : '#06b6d4';
                     ctx.fill();
                     ctx.strokeStyle = '#ffffff';
                     ctx.lineWidth = 3.2;
@@ -11210,22 +11261,41 @@
                 try {
                     const parsed = typeof sourceRoi === 'string' ? JSON.parse(sourceRoi) : sourceRoi;
                     roi = normalizeCribRoi(parsed);
+                    if (localRoi && JSON.stringify(roi) !== JSON.stringify(cam.crib_roi_json) && !window._syncedRoiOnce?.[camId]) {
+                        window._syncedRoiOnce = window._syncedRoiOnce || {};
+                        window._syncedRoiOnce[camId] = true;
+                        cam.crib_roi_json = roi;
+                        fetch(`/api/cameras/${camId}/tracking`, {
+                            method: 'POST',
+                            credentials: 'include',
+                            headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                            body: JSON.stringify({ crib_fence_enabled: 1, crib_roi_json: roi })
+                        }).catch(() => {});
+                    }
                 } catch(e) {}
             }
 
-            cribFenceState[camId] = {
-                enabled: true,
-                roi: roi,
-                activeHandle: null,
-                dragOffset: { x: 0, y: 0 }
-            };
-
-            startFenceMonitor(camId);
+            const prevState = cribFenceState[camId];
+            if (prevState && prevState.enabled) {
+                prevState.roi = prevState.roi || roi;
+                if (!prevState.interval) {
+                    startFenceMonitor(camId);
+                }
+            } else {
+                cribFenceState[camId] = {
+                    enabled: true,
+                    roi: roi,
+                    activeHandle: null,
+                    dragOffset: { x: 0, y: 0 },
+                    needsImmediateAiCheck: true
+                };
+                startFenceMonitor(camId);
+            }
 
             const cribNav = document.getElementById(`tab-nav-${camId}-crib`);
             const isCribTab = cribNav ? cribNav.classList.contains('active') : false;
 
-            updateShapeSelectorButtons(camId, roi.type || 'polygon');
+            updateShapeSelectorButtons(camId, (cribFenceState[camId].roi || roi).type || 'polygon');
 
             if (!isCribTab) {
                 canvas.style.display = 'none';
@@ -11444,6 +11514,9 @@
             // 1. Tira foto instantânea e guarda no histórico
             captureAutoSnapshot(camId);
 
+            // 1.1 Captura snapshot direto do vídeo para enviar junto ao alerta do Telegram (evita timeout de RTSP)
+            const liveSnapshotBase64 = getLiveVideoSnapshotBase64(camId, false);
+
             // 2. Grava vídeo de 10 segundos
             if (!isMotionRecordingMap[camId]) {
                 isMotionRecordingMap[camId] = true;
@@ -11456,7 +11529,7 @@
                 }, 10000);
             }
 
-            // 3. Notifica Telegram e Banco de Dados
+            // 3. Notifica Telegram e Banco de Dados COM A FOTO EMBUTIDA
             try {
                 fetch(`/api/cameras/${camId}/events`, {
                     method: 'POST',
@@ -11464,16 +11537,21 @@
                     headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({
                         event_type: 'motion',
-                        description: '🏃 Movimento detectado! Foto tirada e vídeo de 10s gravado.'
+                        description: '🏃 Movimento detectado! Foto tirada e vídeo de 10s gravado.',
+                        snapshot_base64: liveSnapshotBase64
                     })
                 });
             } catch(e) {}
         }
 
-        // Captura instantânea do frame atual do vídeo em Base64 para envio direto ao Telegram
-        function getLiveVideoSnapshotBase64(camId) {
+        // Captura instantânea do frame atual do vídeo em Base64 para envio direto ao Telegram e IA Vision
+        window._lastCamSnap = window._lastCamSnap || {};
+        function getLiveVideoSnapshotBase64(camId, drawFence = true) {
             const v = document.getElementById(`video-${camId}`);
-            if (!v || v.readyState < 2 || !v.videoWidth || !v.videoHeight) return null;
+            const key = `${camId}_${drawFence ? 'fence' : 'raw'}`;
+            if (!v || v.readyState < 2 || !v.videoWidth || !v.videoHeight) {
+                return window._lastCamSnap[key] || null;
+            }
             try {
                 const c = document.createElement('canvas');
                 c.width = 640;
@@ -11481,40 +11559,116 @@
                 const ctx = c.getContext('2d');
                 ctx.drawImage(v, 0, 0, 640, 360);
 
-                // Desenha a linha demarcada do Cerco Virtual diretamente na imagem para a IA e Telegram
+                // Desenha a linha demarcada do Cerco Virtual e sombreamento externo diretamente na imagem para a IA e Telegram
                 const s = cribFenceState[camId];
-                if (s && s.enabled && s.roi) {
+                if (drawFence && s && s.enabled && s.roi) {
                     const roi = s.roi;
                     ctx.save();
-                    ctx.strokeStyle = '#00ffff';
-                    ctx.lineWidth = 3.5;
-                    ctx.setLineDash([8, 4]);
 
                     if (roi.type === 'circle' && roi.circle) {
                         const cx = (roi.circle.cx / 100) * 640;
                         const cy = (roi.circle.cy / 100) * 360;
                         const rx = (roi.circle.rx / 100) * 640;
                         const ry = (roi.circle.ry / 100) * 360;
+
+                        // Sombreia em vermelho a área FORA da cerca (regra evenodd)
+                        ctx.beginPath();
+                        ctx.rect(0, 0, 640, 360);
+                        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = 'rgba(220, 38, 38, 0.28)';
+                        ctx.fill('evenodd');
+
+                        // Sombreia em ciano sutil a área DENTRO da cerca para máximo contraste da IA Vision
                         ctx.beginPath();
                         ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-                        ctx.stroke();
-                    } else if (Array.isArray(roi.points) && roi.points.length >= 3) {
+                        ctx.fillStyle = 'rgba(0, 255, 255, 0.16)';
+                        ctx.fill();
+
+                        // Linha ciano brilhante da cerca
                         ctx.beginPath();
-                        roi.points.forEach((pt, i) => {
+                        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+                        ctx.strokeStyle = '#00ffff';
+                        ctx.lineWidth = 4;
+                        ctx.stroke();
+                    } else {
+                        let pts = roi.points;
+                        if (!Array.isArray(pts) || pts.length < 3) {
+                            const rx = Number(roi.x ?? 20);
+                            const ry = Number(roi.y ?? 25);
+                            const rw = Number(roi.w ?? 60);
+                            const rh = Number(roi.h ?? 50);
+                            pts = [
+                                { x: rx, y: ry },
+                                { x: rx + rw, y: ry },
+                                { x: rx + rw, y: ry + rh },
+                                { x: rx, y: ry + rh }
+                            ];
+                        }
+
+                        // Sombreia em vermelho a área FORA do polígono (regra evenodd)
+                        ctx.beginPath();
+                        ctx.rect(0, 0, 640, 360);
+                        pts.forEach((pt, i) => {
                             const px = (pt.x / 100) * 640;
                             const py = (pt.y / 100) * 360;
                             if (i === 0) ctx.moveTo(px, py);
                             else ctx.lineTo(px, py);
                         });
                         ctx.closePath();
+                        ctx.fillStyle = 'rgba(220, 38, 38, 0.28)';
+                        ctx.fill('evenodd');
+
+                        // Sombreia em ciano sutil a área DENTRO do polígono para máximo contraste da IA Vision
+                        ctx.beginPath();
+                        pts.forEach((pt, i) => {
+                            const px = (pt.x / 100) * 640;
+                            const py = (pt.y / 100) * 360;
+                            if (i === 0) ctx.moveTo(px, py);
+                            else ctx.lineTo(px, py);
+                        });
+                        ctx.closePath();
+                        ctx.fillStyle = 'rgba(0, 255, 255, 0.16)';
+                        ctx.fill();
+
+                        // Linha ciano brilhante do polígono
+                        ctx.beginPath();
+                        pts.forEach((pt, i) => {
+                            const px = (pt.x / 100) * 640;
+                            const py = (pt.y / 100) * 360;
+                            if (i === 0) ctx.moveTo(px, py);
+                            else ctx.lineTo(px, py);
+                        });
+                        ctx.closePath();
+                        ctx.strokeStyle = '#00ffff';
+                        ctx.lineWidth = 4;
                         ctx.stroke();
+
+                        // Desenha os círculos numerados nos vértices (1, 2, 3...) igual à tela
+                        pts.forEach((pt, i) => {
+                            const px = (pt.x / 100) * 640;
+                            const py = (pt.y / 100) * 360;
+                            ctx.beginPath();
+                            ctx.arc(px, py, 10, 0, Math.PI * 2);
+                            ctx.fillStyle = '#06b6d4';
+                            ctx.fill();
+                            ctx.strokeStyle = '#ffffff';
+                            ctx.lineWidth = 2;
+                            ctx.stroke();
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = 'bold 9px Arial, sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(String(i + 1), px, py);
+                        });
                     }
                     ctx.restore();
                 }
 
-                return c.toDataURL('image/jpeg', 0.85);
+                const dataUrl = c.toDataURL('image/jpeg', 0.86);
+                window._lastCamSnap[key] = dataUrl;
+                return dataUrl;
             } catch (e) {
-                return null;
+                return window._lastCamSnap[key] || null;
             }
         }
 
@@ -11585,6 +11739,23 @@
                 if (c) {
                     c.crib_fence_enabled = enabled ? 1 : 0;
                     if (roi) c.crib_roi_json = roi;
+                }
+
+                // Sempre que o usuário altera ou ativa a cerca, agenda verificação imediata da IA Vision (com debounce de 1.2s após soltar os pontos)
+                const s = cribFenceState[camId];
+                if (enabled && s && s.enabled) {
+                    s.fenceState = 'INSIDE';
+                    s.isLimbBreached = false;
+                    s.alertCount = 0;
+                    s.lastAlertTime = 0;
+                    drawCribBox(camId);
+                    if (s._roiEditTimer) clearTimeout(s._roiEditTimer);
+                    s._roiEditTimer = setTimeout(() => {
+                        if (cribFenceState[camId] && cribFenceState[camId].enabled) {
+                            cribFenceState[camId].lastAiVisionCheck = 0;
+                            cribFenceState[camId].needsImmediateAiCheck = true;
+                        }
+                    }, 1200);
                 }
 
                 await fetch(`/api/cameras/${camId}/tracking`, {
