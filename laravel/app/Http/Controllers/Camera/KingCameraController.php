@@ -1211,27 +1211,10 @@ class KingCameraController extends Controller
                 }
                 // Caso 2: Cerca do berço (pé, perna, mão, braço, cabeça ou corpo fora do polígono ciano)
                 elseif (in_array($eventType, ['crib_fence', 'fence_breach'])) {
-                    if ($aiAnalysis['is_blanket_or_empty']) {
-                        \Illuminate\Support\Facades\Log::info('kc.recordEvent.ai_fence_blanket_filtered', [
-                            'camera_id' => $camera->id,
-                            'desc' => $aiAnalysis['description'] ?: 'Apenas cobertor/lençol detectado.',
-                        ]);
-                        $shouldSend = false;
-                        $breachConfirmed = false;
-                        \Illuminate\Support\Facades\Cache::forget("kc_fence_alert_{$camera->id}");
-                        $description = 'Apenas cobertor/lençol estático no berço (Filtrado com sucesso pela IA).';
-                    } elseif (! $aiAnalysis['is_limb_outside'] && ! $aiAnalysis['is_baby_outside']) {
-                        // Bebê 100% dentro do polígono ciano: reseta cache de alerta e não envia falso alarme
-                        \Illuminate\Support\Facades\Log::info('kc.recordEvent.ai_fence_inside_filtered', [
-                            'camera_id' => $camera->id,
-                            'desc' => $aiAnalysis['description'] ?: 'Bebê totalmente seguro dentro do cerco.',
-                        ]);
-                        $shouldSend = false;
-                        $breachConfirmed = false;
-                        \Illuminate\Support\Facades\Cache::forget("kc_fence_alert_{$camera->id}");
-                        $description = 'Bebê seguro dentro do berço (' . ($aiAnalysis['description'] ?: 'IA confirmou bebê protegido') . '). Falso alerta evitado.';
-                    } elseif ($aiAnalysis['is_limb_outside'] || $aiAnalysis['is_baby_outside']) {
+                    if ($aiAnalysis['is_limb_outside'] || $aiAnalysis['is_baby_outside']) {
+                        // INFRAÇÃO CONFIRMADA: membro ou corpo fora da área segura!
                         $breachConfirmed = true;
+                        $shouldSend = true;
                         $part = $aiAnalysis['limb_outside_part'] ?? 'nenhum';
                         $aiDesc = trim((string) ($aiAnalysis['description'] ?? ''));
 
@@ -1246,6 +1229,25 @@ class KingCameraController extends Controller
                         } else {
                             $description = '🚨 ' . ($aiDesc ?: 'Bebê fora da área segura demarcada no cerco do berço!');
                         }
+                    } elseif ($aiAnalysis['is_blanket_or_empty']) {
+                        \Illuminate\Support\Facades\Log::info('kc.recordEvent.ai_fence_blanket_filtered', [
+                            'camera_id' => $camera->id,
+                            'desc' => $aiAnalysis['description'] ?: 'Apenas cobertor/lençol detectado.',
+                        ]);
+                        $shouldSend = false;
+                        $breachConfirmed = false;
+                        \Illuminate\Support\Facades\Cache::forget("kc_fence_alert_{$camera->id}");
+                        $description = 'Apenas cobertor/lençol estático no berço (Filtrado com sucesso pela IA).';
+                    } else {
+                        // Bebê 100% dentro do polígono ciano: reseta cache de alerta e não envia falso alarme
+                        \Illuminate\Support\Facades\Log::info('kc.recordEvent.ai_fence_inside_filtered', [
+                            'camera_id' => $camera->id,
+                            'desc' => $aiAnalysis['description'] ?: 'Bebê totalmente seguro dentro do cerco.',
+                        ]);
+                        $shouldSend = false;
+                        $breachConfirmed = false;
+                        \Illuminate\Support\Facades\Cache::forget("kc_fence_alert_{$camera->id}");
+                        $description = 'Bebê seguro dentro do berço (' . ($aiAnalysis['description'] ?: 'IA confirmou bebê protegido') . '). Falso alerta evitado.';
                     }
                 }
             } else {

@@ -9893,11 +9893,11 @@
             return false;
         }
 
-        function isPointInsidePolygonWithTolerance(px, py, points, tol = 4.0) {
-            return isPointInPolygon(px, py, points) || isPointNearPolygonEdge(px, py, points, tol);
+        function isPointInsidePolygonWithTolerance(px, py, points, tol = 1.0) {
+            return isPointInPolygon(px, py, points) || (tol > 0 && isPointNearPolygonEdge(px, py, points, tol));
         }
 
-        function isPointInCircle(px, py, circle, tol = 4.0) {
+        function isPointInCircle(px, py, circle, tol = 1.0) {
             const cx = Number(circle.cx ?? 50);
             const cy = Number(circle.cy ?? 50);
             const rx = Math.max(5, Number(circle.rx ?? circle.r ?? 25));
@@ -9909,20 +9909,20 @@
             return ((dx * dx) / (effRx * effRx) + (dy * dy) / (effRy * effRy)) <= 1.0;
         }
 
-        function isPointInCribFence(px, py, r) {
+        function isPointInCribFence(px, py, r, tol = 1.0) {
             if (!r) return true;
             if (r.type === 'circle' && r.circle) {
-                return isPointInCircle(px, py, r.circle, 4.0);
+                return isPointInCircle(px, py, r.circle, tol);
             }
             if (Array.isArray(r.points) && r.points.length >= 3) {
-                return isPointInsidePolygonWithTolerance(px, py, r.points, 4.0);
+                return isPointInsidePolygonWithTolerance(px, py, r.points, tol);
             }
             // Fallback retangular legado
             const rx = Number(r.x ?? 20);
             const ry = Number(r.y ?? 25);
             const rw = Number(r.w ?? r.width ?? 60);
             const rh = Number(r.h ?? r.height ?? 50);
-            return (px >= rx - 5 && px <= rx + rw + 5 && py >= ry - 5 && py <= ry + rh + 5);
+            return (px >= rx - tol && px <= rx + rw + tol && py >= ry - tol && py <= ry + rh + tol);
         }
 
         function getPolygonCentroid(points) {
@@ -10307,12 +10307,12 @@
 
                             const isPtInsideStrict = (px, py) => {
                                 if (r.type === 'circle' && r.circle) {
-                                    return isPointInCircle(px, py, r.circle, 0.5);
+                                    return isPointInCircle(px, py, r.circle, 0.0);
                                 }
                                 if (Array.isArray(r.points) && r.points.length >= 3) {
-                                    return isPointInsidePolygonWithTolerance(px, py, r.points, 0.5);
+                                    return isPointInsidePolygonWithTolerance(px, py, r.points, 0.0);
                                 }
-                                return isPointInCribFence(px, py, r);
+                                return isPointInCribFence(px, py, r, 0.0);
                             };
 
                             const allLimbCheck = [
@@ -10399,9 +10399,9 @@
                                     ];
                                     for (const tp of bodyTestPts) {
                                         const inFence = (r.type === 'circle' && r.circle)
-                                            ? isPointInCircle(tp.x, tp.y, r.circle, 0.5)
-                                            : isPointInsidePolygonWithTolerance(tp.x, tp.y, r.points || [], 0.5);
-                                        if (!inFence && p.score >= 0.25) {
+                                            ? isPointInCircle(tp.x, tp.y, r.circle, 0.0)
+                                            : isPointInsidePolygonWithTolerance(tp.x, tp.y, r.points || [], 0.0);
+                                        if (!inFence && p.score >= 0.20) {
                                             limbBreached = true;
                                             if (!breachMsg) {
                                                 breachMsg = `🚨 ${tp.label} passou para fora do cerco do berço!`;
@@ -10411,8 +10411,12 @@
                                     }
                                 } else {
                                     const areaPct = (bw * bh) / (vw * vh);
-                                    if (p.score >= 0.28 && areaPct >= 0.03) {
+                                    if (p.score >= 0.20 && areaPct >= 0.02) {
+                                        limbBreached = true;
                                         isBabyOutsideCrib = true;
+                                        if (!breachMsg) {
+                                            breachMsg = '🚨 Bebê com o corpo fora da área segura demarcada!';
+                                        }
                                     }
                                 }
                             }

@@ -353,8 +353,17 @@ PROMPT;
                     $next = ($i + 1) % $n;
                     $x1 = (float)$points[$i]['x']; $y1 = (float)$points[$i]['y'];
                     $x2 = (float)$points[$next]['x']; $y2 = (float)$points[$next]['y'];
-                    $dist = hypot($px - ($x1 + $x2)/2, $py - ($y1 + $y2)/2);
-                    if ($dist <= $tolerance) return true;
+                    $dx = $x2 - $x1;
+                    $dy = $y2 - $y1;
+                    $lenSq = $dx * $dx + $dy * $dy;
+                    if ($lenSq > 0.000001) {
+                        $t = max(0.0, min(1.0, (($px - $x1) * $dx + ($py - $y1) * $dy) / $lenSq));
+                        $projX = $x1 + $t * $dx;
+                        $projY = $y1 + $t * $dy;
+                        if (hypot($px - $projX, $py - $projY) <= $tolerance) {
+                            return true;
+                        }
+                    }
                 }
             }
             return false;
@@ -370,9 +379,9 @@ PROMPT;
 
     private function formatNormalizedResult(array $json, string $source, mixed $roi = null): array
     {
-        $isLimbOutside = false;
-        $isBabyOutside = false;
-        $normPart = 'nenhum';
+        $isLimbOutside = (bool) ($json['is_limb_outside'] ?? false);
+        $isBabyOutside = (bool) ($json['is_baby_outside'] ?? false);
+        $normPart = trim((string) ($json['limb_outside_part'] ?? 'nenhum'));
         $desc = trim((string) ($json['description'] ?? ''));
 
         if (is_string($roi)) {
@@ -385,47 +394,95 @@ PROMPT;
             $legsBox = $json['legs_feet_box'] ?? null;
             $totalBox = $json['baby_total_bounding_box'] ?? null;
 
-            // 1. Testa as extremidades das pernas e pés (ponto mais distante e centro dos pés com margem de 4%)
+            // 1. Testa as extremidades das pernas e pés (cantos e centro dos pés com margem zero/estrita)
             if (is_array($legsBox) && count($legsBox) >= 4) {
                 [$lx1, $ly1, $lx2, $ly2] = $legsBox;
                 $feetPoints = [
-                    [(float)$lx2, (float)(($ly1 + $ly2) / 2)],
+                    [(float)$lx1, (float)$ly1],
+                    [(float)$lx2, (float)$ly1],
+                    [(float)$lx1, (float)$ly2],
                     [(float)$lx2, (float)$ly2],
+                    [(float)(($lx1 + $lx2) / 2), (float)(($ly1 + $ly2) / 2)],
+                    [(float)$lx2, (float)(($ly1 + $ly2) / 2)],
                 ];
                 $feetOutside = 0;
                 foreach ($feetPoints as [$fpx, $fpy]) {
-                    if (!$this->isPointInRoi($fpx, $fpy, $roi, 3.0)) {
+                    if (!$this->isPointInRoi($fpx, $fpy, $roi, 0.5)) {
                         $feetOutside++;
                     }
                 }
                 if ($feetOutside >= 1) {
                     $isLimbOutside = true;
-                    $normPart = 'pe_perna';
-                    $desc = 'Pé/perna do bebê passou para fora do cerco demarcado no berço!';
+                    if ($normPart === 'nenhum' || empty($normPart)) {
+                        $normPart = 'pe_perna';
+                    }
+                    if (empty($desc) || stripos($desc, 'seguro') !== false) {
+                        $desc = 'Pé ou perna do bebê passou para fora da linha demarcada do berço!';
+                    }
                 }
             }
 
-            // 2. Testa a cabeça (usando o centro da cabeça para evitar falsos positivos nas bordas do travesseiro)
-            if (!$isLimbOutside && is_array($headBox) && count($headBox) >= 4) {
+            // 2. Testa a cabeça (usando o centro e bordas)
+            if (is_array($headBox) && count($headBox) >= 4) {
                 [$hx1, $hy1, $hx2, $hy2] = $headBox;
-                $headCenter = [(float)(($hx1 + $hx2) / 2), (float)(($hy1 + $hy2) / 2)];
-                if (!$this->isPointInRoi($headCenter[0], $headCenter[1], $roi, 3.0)) {
+                $headPoints = [
+                    [(float)(($hx1 + $hx2) / 2), (float)(($hy1 + $hy2) / 2)],
+                    [(float)$hx1, (float)(($hy1 + $hy2) / 2)],
+                    [(float)$hx2, (float)(($hy1 + $hy2) / 2)],
+                ];
+                $headOutside = 0;
+                foreach ($headPoints as [$hpx, $hpy]) {
+                    if (!$this->isPointInRoi($hpx, $hpy, $roi, 0.5)) {
+                        $headOutside++;
+                    }
+                }
+                if ($headOutside >= 1) {
                     $isLimbOutside = true;
-                    $normPart = 'cabeca';
-                    $desc = 'Cabeça do bebê passou para fora do cerco demarcado no berço!';
+                    if ($normPart === 'nenhum' || empty($normPart)) {
+                        $normPart = 'cabeca';
+                    }
+                    if (empty($desc) || stripos($desc, 'seguro') !== false) {
+                        $desc = 'Cabeça do bebê passou para fora da demarcação do berço!';
+                    }
                 }
             }
 
-            // 3. Testa se o corpo inteiro saiu do cerco
+            // 3. Testa se alguma extremidade do corpo ou o bebê por inteiro saiu do cerco
             if (is_array($totalBox) && count($totalBox) >= 4) {
                 [$bx1, $by1, $bx2, $by2] = $totalBox;
                 $centerBx = (float)(($bx1 + $bx2) / 2);
                 $centerBy = (float)(($by1 + $by2) / 2);
-                if (!$this->isPointInRoi($centerBx, $centerBy, $roi, 3.0)) {
+
+                if (!$this->isPointInRoi($centerBx, $centerBy, $roi, 0.5)) {
                     $isBabyOutside = true;
                     $isLimbOutside = true;
                     $normPart = 'corpo';
-                    $desc = 'Bebê saiu da área segura do cerco demarcado!';
+                    $desc = 'Bebê saiu da área segura demarcada no cerco!';
+                } else {
+                    // Centro dentro, mas testa se alguma extremidade (pés, mãos, tronco) está fora
+                    $bodyExtremities = [
+                        [(float)$bx1, (float)$centerBy],
+                        [(float)$bx2, (float)$centerBy],
+                        [(float)$centerBx, (float)$by1],
+                        [(float)$centerBx, (float)$by2],
+                        [(float)$bx2, (float)$by2],
+                        [(float)$bx1, (float)$by2],
+                    ];
+                    $extremitiesOutside = 0;
+                    foreach ($bodyExtremities as [$epx, $epy]) {
+                        if (!$this->isPointInRoi($epx, $epy, $roi, 0.5)) {
+                            $extremitiesOutside++;
+                        }
+                    }
+                    if ($extremitiesOutside >= 1) {
+                        $isLimbOutside = true;
+                        if ($normPart === 'nenhum' || empty($normPart)) {
+                            $normPart = 'membro';
+                        }
+                        if (empty($desc) || stripos($desc, 'seguro') !== false) {
+                            $desc = 'Extremidade ou membro do bebê passou para fora da cerca!';
+                        }
+                    }
                 }
             }
         }
