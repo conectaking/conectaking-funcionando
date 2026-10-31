@@ -1160,7 +1160,7 @@ class KingCameraController extends Controller
 
         // ── VALIDAÇÃO E DETECÇÃO DE ALTA PRECISÃO COM IA VISION (OPENAI / GEMINI) ──
         if ($jpegBinary && in_array($eventType, ['baby_stand', 'crib_fence', 'fence_breach']) && $this->aiVision->isAvailable()) {
-            $aiAnalysis = $this->aiVision->analyzeBabySafetySnapshot($jpegBinary, $eventType);
+            $aiAnalysis = $this->aiVision->analyzeBabySafetySnapshot($jpegBinary, $eventType, $camera->crib_roi_json);
             if ($aiAnalysis['evaluated']) {
                 // Caso 0: Presença de Adulto/Cuidador (Pai ou Mãe) ajeitando o bebê
                 if ($aiAnalysis['adult_present']) {

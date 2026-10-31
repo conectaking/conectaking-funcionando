@@ -43,6 +43,7 @@ class KingCameraAiVisionService
 
     /**
      * Analisa com IA Vision o snapshot da câmera quando há um alerta candidato ou consulta do usuário.
+     * Pode receber o $roi (crib_roi_json) para conferência matemática exata das coordenadas detectadas pela IA.
      *
      * @return array{
      *   evaluated: bool,
@@ -62,7 +63,7 @@ class KingCameraAiVisionService
      *   source: string
      * }
      */
-    public function analyzeBabySafetySnapshot(string $jpegBinary, string $candidateEvent = ''): array
+    public function analyzeBabySafetySnapshot(string $jpegBinary, string $candidateEvent = '', mixed $roi = null): array
     {
         $defaultFallback = [
             'evaluated' => false,
@@ -88,10 +89,10 @@ class KingCameraAiVisionService
 
         try {
             if ($this->getOpenAiKey() !== '') {
-                return $this->analyzeWithOpenAi($jpegBinary, $candidateEvent);
+                return $this->analyzeWithOpenAi($jpegBinary, $candidateEvent, $roi);
             }
             if ($this->getGeminiKey() !== '') {
-                return $this->analyzeWithGemini($jpegBinary, $candidateEvent);
+                return $this->analyzeWithGemini($jpegBinary, $candidateEvent, $roi);
             }
         } catch (\Throwable $e) {
             Log::warning('kc.ai_vision.error', [
@@ -188,36 +189,49 @@ class KingCameraAiVisionService
     private function getSpecialistPrompt(string $candidateEvent): string
     {
         return <<<PROMPT
-Na imagem há um polígono de linha ciano brilhante (#00ffff) desenhado sobre o berço delimitando a área segura do cerco.
-Ignore as bordas de madeira do berço físico; avalie ESTRITAMENTE em relação à LINHA CIANO do polígono!
-Olhe com máxima atenção para todas as extremidades do bebê (pés, pernas, mãos, braços e cabeça) ao longo de todas as bordas da linha ciano:
-1. Orientação anatômica do bebê: localize primeiro onde está a CABEÇA (com cabelo) em uma ponta do corpo e onde está a FRALDA/QUADRIL na ponta oposta. Os membros que saem da ponta oposta à cabeça (região da fralda/quadril) são SEMPRE PERNAS E PÉS ("pe_perna"); os membros próximos à cabeça/ombros são BRAÇOS E MÃOS ("mao_braco").
-2. Os pés, pernas, mãos, braços e cabeça do bebê estão 100% dentro do polígono de linha ciano, OU alguma parte do corpo do bebê atravessa/está fora da linha ciano?
-3. Se alguma parte atravessa ou está fora da linha ciano, defina "is_limb_outside": true e indique qual parte em "limb_outside_part" ("pe_perna", "mao_braco", "cabeca" ou "corpo").
-4. Verifique também se o bebê está deitado ("is_lying_down": true, "is_standing": false) ou em pé ("is_standing": true), se há adulto presente ("adult_present") ou rosto coberto ("is_face_covered").
+Você é o sistema especialista de visão computacional da King Câmera para monitoramento pediátrico em berço.
+Analise este quadro de vídeo de câmera de segurança (16:9).
+As coordenadas x e y vão de 0% a 100%:
+- x vai de 0% (extremo esquerdo) a 100% (extremo direito).
+- y vai de 0% (topo) a 100% (base inferior).
+
+Tarefas de Detecção com Máxima Precisão:
+1. Localize o bebê humano:
+   - "head_box": [x_min, y_min, x_max, y_max] onde a cabeça/cabelo do bebê está localizada.
+   - "legs_feet_box": [x_min, y_min, x_max, y_max] onde as pernas, joelhos, tornozelos e pezinhos do bebê estão localizados.
+   - "baby_total_bounding_box": [x_min, y_min, x_max, y_max] englobando todo o corpinho do bebê.
+2. Identifique a postura:
+   - "is_standing": true SOMENTE se o bebê estiver em pé erguido nas pernas ou apoiado em pé na grade.
+   - "is_lying_down": true se o bebê estiver deitado dormindo ou repousando no colchão.
+   - "baby_posture": "sleeping_back" | "sleeping_stomach" | "sleeping_side" | "awake_moving" | "standing" | "empty".
+3. Outros fatores de risco:
+   - "is_blanket_or_empty": true se não houver bebê humano no berço (apenas lençol/cobertor).
+   - "adult_present": true se houver pai/mãe ou cuidador adulto presente.
+   - "adult_label": "Pai/Mãe".
+   - "adult_action": ação do adulto.
+   - "is_face_covered": true se o rostinho da criança estiver obstruído por pano/travesseiro (risco de sufocamento).
+   - "description": breve diagnóstico da cena em português.
 
 Responda ESTRITAMENTE em JSON:
 {
-  "head_side": string,
-  "legs_feet_side": string,
+  "head_box": [number, number, number, number],
+  "legs_feet_box": [number, number, number, number],
+  "baby_total_bounding_box": [number, number, number, number],
   "is_standing": boolean,
   "is_lying_down": boolean,
-  "is_limb_outside": boolean,
-  "is_baby_outside": boolean,
-  "limb_outside_part": "pe_perna"|"mao_braco"|"cabeca"|"corpo"|"nenhum",
   "is_blanket_or_empty": boolean,
   "adult_present": boolean,
   "adult_label": string,
   "adult_action": string,
   "is_face_covered": boolean,
-  "baby_posture": "sleeping_back"|"sleeping_stomach"|"sleeping_side"|"awake_moving"|"standing"|"empty",
+  "baby_posture": string,
   "confidence": float,
   "description": string
 }
 PROMPT;
     }
 
-    private function analyzeWithOpenAi(string $jpegBinary, string $candidateEvent): array
+    private function analyzeWithOpenAi(string $jpegBinary, string $candidateEvent, mixed $roi = null): array
     {
         $base64 = base64_encode($jpegBinary);
         $dataUrl = "data:image/jpeg;base64,{$base64}";
@@ -252,10 +266,10 @@ PROMPT;
             throw new \RuntimeException("Resposta OpenAI não é JSON válido: " . $content);
         }
 
-        return $this->formatNormalizedResult($json, 'openai');
+        return $this->formatNormalizedResult($json, 'openai', $roi);
     }
 
-    private function analyzeWithGemini(string $jpegBinary, string $candidateEvent): array
+    private function analyzeWithGemini(string $jpegBinary, string $candidateEvent, mixed $roi = null): array
     {
         $apiKey = $this->getGeminiKey();
         $base64 = base64_encode($jpegBinary);
@@ -295,36 +309,133 @@ PROMPT;
             throw new \RuntimeException("Gemini Vision não retornou JSON: " . $rawText);
         }
 
-        return $this->formatNormalizedResult($json, 'gemini');
+        return $this->formatNormalizedResult($json, 'gemini', $roi);
     }
 
-    private function formatNormalizedResult(array $json, string $source): array
+    /**
+     * Testa geometricamente se um ponto (px, py em porcentagem 0-100) está contido dentro do cerco do berço.
+     * Suporta uma margem de tolerância em porcentagem.
+     */
+    private function isPointInRoi(float $px, float $py, array $roi, float $tolerance = 0.0): bool
     {
-        $breachSide = mb_strtolower(trim((string) ($json['breach_side'] ?? 'none')));
-        $legsSide = mb_strtolower(trim((string) ($json['legs_feet_side'] ?? '')));
-        $hasBreachSide = $breachSide !== '' && !in_array($breachSide, ['none', 'nenhum', 'nenhuma', 'null', 'false'], true);
+        $type = $roi['type'] ?? 'polygon';
 
-        $isLimbOutside = (bool) ($json['is_limb_outside'] ?? false) || $hasBreachSide;
-        $rawPart = mb_strtolower(trim((string) ($json['limb_outside_part'] ?? 'nenhum')));
+        if ($type === 'circle' && !empty($roi['circle'])) {
+            $cx = (float) ($roi['circle']['cx'] ?? 50);
+            $cy = (float) ($roi['circle']['cy'] ?? 50);
+            $rx = max(1.0, (float) ($roi['circle']['rx'] ?? 25)) + $tolerance;
+            $ry = max(1.0, (float) ($roi['circle']['ry'] ?? 20)) + $tolerance;
+            $norm = pow(($px - $cx) / $rx, 2) + pow(($py - $cy) / $ry, 2);
+            return $norm <= 1.05;
+        }
+
+        $points = $roi['points'] ?? [];
+        if (!empty($points) && is_array($points) && count($points) >= 3) {
+            $inside = false;
+            $n = count($points);
+            for ($i = 0, $j = $n - 1; $i < $n; $j = $i++) {
+                $xi = (float) ($points[$i]['x'] ?? 0);
+                $yi = (float) ($points[$i]['y'] ?? 0);
+                $xj = (float) ($points[$j]['x'] ?? 0);
+                $yj = (float) ($points[$j]['y'] ?? 0);
+                $intersect = (($yi > $py) !== ($yj > $py)) &&
+                    ($px < ($xj - $xi) * ($py - $yi) / ($yj - $yi + 0.000001) + $xi);
+                if ($intersect) {
+                    $inside = !$inside;
+                }
+            }
+            if ($inside) {
+                return true;
+            }
+            if ($tolerance > 0) {
+                // Se estiver dentro da distância de tolerância de qualquer segmento
+                for ($i = 0; $i < $n; $i++) {
+                    $next = ($i + 1) % $n;
+                    $x1 = (float)$points[$i]['x']; $y1 = (float)$points[$i]['y'];
+                    $x2 = (float)$points[$next]['x']; $y2 = (float)$points[$next]['y'];
+                    $dist = hypot($px - ($x1 + $x2)/2, $py - ($y1 + $y2)/2);
+                    if ($dist <= $tolerance) return true;
+                }
+            }
+            return false;
+        }
+
+        $rx = ((float) ($roi['x'] ?? 20)) - $tolerance;
+        $ry = ((float) ($roi['y'] ?? 25)) - $tolerance;
+        $rw = ((float) ($roi['w'] ?? 60)) + ($tolerance * 2);
+        $rh = ((float) ($roi['h'] ?? 50)) + ($tolerance * 2);
+
+        return ($px >= $rx && $px <= ($rx + $rw) && $py >= $ry && $py <= ($ry + $rh));
+    }
+
+    private function formatNormalizedResult(array $json, string $source, mixed $roi = null): array
+    {
+        $isLimbOutside = false;
+        $isBabyOutside = false;
+        $normPart = 'nenhum';
         $desc = trim((string) ($json['description'] ?? ''));
 
-        if ($isLimbOutside && $legsSide !== '' && $breachSide === $legsSide) {
-            $normPart = 'pe_perna';
-            $desc = 'Pé/perna do bebê passou para fora do cerco demarcado no berço!';
-        } elseif (str_contains($rawPart, 'pe') || str_contains($rawPart, 'pé') || str_contains($rawPart, 'perna')) {
-            $normPart = 'pe_perna';
-            $desc = 'Pé/perna do bebê passou para fora do cerco demarcado no berço!';
-        } elseif (str_contains($rawPart, 'cabec') || str_contains($rawPart, 'cabeç')) {
-            $normPart = 'cabeca';
-            $desc = 'Cabeça do bebê passou para fora do cerco demarcado no berço!';
-        } elseif (str_contains($rawPart, 'mao') || str_contains($rawPart, 'mão') || str_contains($rawPart, 'brac') || str_contains($rawPart, 'braç')) {
-            $normPart = 'mao_braco';
-            $desc = 'Mão/braço do bebê passou para fora do cerco demarcado no berço!';
-        } elseif ($isLimbOutside || !empty($json['is_baby_outside'])) {
-            $normPart = 'corpo';
-            $desc = 'Bebê com parte do corpo fora do cerco demarcado no berço!';
-        } else {
+        if (is_string($roi)) {
+            $roi = json_decode($roi, true);
+        }
+
+        // Se o ROI do cerco foi fornecido, efetua verificação geométrica rigorosa dos pontos anatômicos
+        if (is_array($roi) && !empty($roi)) {
+            $headBox = $json['head_box'] ?? null;
+            $legsBox = $json['legs_feet_box'] ?? null;
+            $totalBox = $json['baby_total_bounding_box'] ?? null;
+
+            // 1. Testa as extremidades das pernas e pés (ponto mais distante e centro dos pés com margem de 4%)
+            if (is_array($legsBox) && count($legsBox) >= 4) {
+                [$lx1, $ly1, $lx2, $ly2] = $legsBox;
+                $feetPoints = [
+                    [(float)$lx2, (float)(($ly1 + $ly2) / 2)],
+                    [(float)$lx2, (float)$ly2],
+                ];
+                $feetOutside = 0;
+                foreach ($feetPoints as [$fpx, $fpy]) {
+                    if (!$this->isPointInRoi($fpx, $fpy, $roi, 3.0)) {
+                        $feetOutside++;
+                    }
+                }
+                if ($feetOutside >= 1) {
+                    $isLimbOutside = true;
+                    $normPart = 'pe_perna';
+                    $desc = 'Pé/perna do bebê passou para fora do cerco demarcado no berço!';
+                }
+            }
+
+            // 2. Testa a cabeça (usando o centro da cabeça para evitar falsos positivos nas bordas do travesseiro)
+            if (!$isLimbOutside && is_array($headBox) && count($headBox) >= 4) {
+                [$hx1, $hy1, $hx2, $hy2] = $headBox;
+                $headCenter = [(float)(($hx1 + $hx2) / 2), (float)(($hy1 + $hy2) / 2)];
+                if (!$this->isPointInRoi($headCenter[0], $headCenter[1], $roi, 3.0)) {
+                    $isLimbOutside = true;
+                    $normPart = 'cabeca';
+                    $desc = 'Cabeça do bebê passou para fora do cerco demarcado no berço!';
+                }
+            }
+
+            // 3. Testa se o corpo inteiro saiu do cerco
+            if (is_array($totalBox) && count($totalBox) >= 4) {
+                [$bx1, $by1, $bx2, $by2] = $totalBox;
+                $centerBx = (float)(($bx1 + $bx2) / 2);
+                $centerBy = (float)(($by1 + $by2) / 2);
+                if (!$this->isPointInRoi($centerBx, $centerBy, $roi, 3.0)) {
+                    $isBabyOutside = true;
+                    $isLimbOutside = true;
+                    $normPart = 'corpo';
+                    $desc = 'Bebê saiu da área segura do cerco demarcado!';
+                }
+            }
+        }
+
+        // Se estiver seguro dentro do cerco
+        if (!$isLimbOutside && !$isBabyOutside) {
             $normPart = 'nenhum';
+            if ($desc === '') {
+                $desc = 'Bebê seguro dentro da área demarcada do berço.';
+            }
         }
 
         return [
@@ -332,7 +443,7 @@ PROMPT;
             'is_standing' => (bool) ($json['is_standing'] ?? false),
             'is_lying_down' => (bool) ($json['is_lying_down'] ?? true),
             'is_limb_outside' => $isLimbOutside,
-            'is_baby_outside' => (bool) ($json['is_baby_outside'] ?? false),
+            'is_baby_outside' => $isBabyOutside,
             'limb_outside_part' => $normPart,
             'is_blanket_or_empty' => (bool) ($json['is_blanket_or_empty'] ?? false),
             'adult_present' => (bool) ($json['adult_present'] ?? false),
@@ -340,7 +451,7 @@ PROMPT;
             'adult_action' => trim((string) ($json['adult_action'] ?? 'interagindo com o bebê no berço')),
             'is_face_covered' => (bool) ($json['is_face_covered'] ?? false),
             'baby_posture' => trim((string) ($json['baby_posture'] ?? 'sleeping_back')),
-            'confidence' => (float) ($json['confidence'] ?? 0.92),
+            'confidence' => (float) ($json['confidence'] ?? 0.95),
             'description' => $desc,
             'source' => $source
         ];

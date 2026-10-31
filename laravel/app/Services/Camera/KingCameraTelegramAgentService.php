@@ -370,7 +370,7 @@ class KingCameraTelegramAgentService
             if ($camera->crib_fence_enabled && !empty($camera->crib_roi_json)) {
                 $snap = $aiVision->annotateJpegWithCribRoi($snap, $camera->crib_roi_json);
             }
-            $ai = $aiVision->analyzeBabySafetySnapshot($snap, 'telegram_query');
+            $ai = $aiVision->analyzeBabySafetySnapshot($snap, 'telegram_query', $camera->crib_roi_json);
 
             if ($ai['is_standing']) {
                 $postureStr = '🚨 <b>Em pé na grade do berço</b>';
