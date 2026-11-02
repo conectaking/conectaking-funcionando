@@ -10387,15 +10387,12 @@
 
                                 if (centerInside) {
                                     isBabyInCrib = true;
+                                    // Testa as extremidades reais do corpo (cabeça, pés e laterais), ignorando os cantos vazios da caixa que pegam almofadas/cobertores
                                     const bodyTestPts = [
                                         { x: x1, y: cy, label: 'Cabeça/Lateral do bebê' },
                                         { x: x2, y: cy, label: 'Pé/Perna do bebê' },
                                         { x: cx, y: y1, label: 'Braço/Mão superior do bebê' },
-                                        { x: cx, y: y2, label: 'Braço/Perna inferior do bebê' },
-                                        { x: x1, y: y1, label: 'Extremidade do bebê' },
-                                        { x: x2, y: y1, label: 'Extremidade do bebê' },
-                                        { x: x1, y: y2, label: 'Extremidade do bebê' },
-                                        { x: x2, y: y2, label: 'Extremidade do bebê' }
+                                        { x: cx, y: y2, label: 'Braço/Perna inferior do bebê' }
                                     ];
                                     for (const tp of bodyTestPts) {
                                         const inFence = (r.type === 'circle' && r.circle)

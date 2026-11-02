@@ -189,34 +189,43 @@ class KingCameraAiVisionService
     private function getSpecialistPrompt(string $candidateEvent): string
     {
         return <<<PROMPT
-Você é o sistema especialista de visão computacional da King Câmera para monitoramento pediátrico em berço.
-Analise este quadro de vídeo de câmera de segurança (16:9).
-As coordenadas x e y vão de 0% a 100%:
-- x vai de 0% (extremo esquerdo) a 100% (extremo direito).
-- y vai de 0% (topo) a 100% (base inferior).
+Você é o sistema especialista de visão computacional da King Câmera para segurança e monitoramento pediátrico em berço.
+Analise a imagem da câmera com máxima atenção visual e técnica.
 
-Tarefas de Detecção com Máxima Precisão:
-1. Localize o bebê humano:
-   - "head_box": [x_min, y_min, x_max, y_max] onde a cabeça/cabelo do bebê está localizada.
-   - "legs_feet_box": [x_min, y_min, x_max, y_max] onde as pernas, joelhos, tornozelos e pezinhos do bebê estão localizados.
-   - "baby_total_bounding_box": [x_min, y_min, x_max, y_max] englobando todo o corpinho do bebê.
-2. Identifique a postura:
+NESTA IMAGEM EXISTE UM CERCO VIRTUAL DESENHADO:
+- Uma linha CIANO (azul-piscina/turquesa brilhante) com pontinhos numerados azuis demarca o perímetro do cerco de proteção.
+- A área FORA do cerco possui um sombreamento avermelhado/rosado.
+- A área DENTRO do cerco é a área segura do bebê.
+
+DIRETRIZES FUNDAMENTAIS DE ANÁLISE HUMANA vs OBJETOS (ALMOFADAS, TRAVESSEIROS E PROTETORES):
+1. DIFERENCIAÇÃO ENTRE O BEBÊ E ALMOFADAS/PROTETORES:
+   - Almofadas, travesseiros, rolinhos protetores de berço nas bordas da grade, colchão e cobertores são OBJETOS INANIMADOS.
+   - NUNCA confunda almofadas, travesseiros, bichos de pelúcia ou tecidos com o corpo do bebê.
+   - O bebê é apenas o ser humano real (cabeça com cabelos/rosto, bracinhos, perninhas, tronco e pezinhos humanos).
+
+2. VERIFICAÇÃO RIGOROSA DA CERCA (LINHA CIANO):
+   - "is_limb_outside": true SOMENTE E APENAS SE alguma parte real do corpo humano do bebê (cabeça, braço, mão, perna ou pé) estiver fisicamente ultrapassando para FORA da linha ciano (penetrando na área avermelhada/externa).
+   - Se uma almofada, travesseiro ou protetor de berço estiver fora ou sobre a linha ciano, mas o bebê estiver dentro da linha ciano, o bebê está TOTALMENTE SEGURO (is_limb_outside: false).
+   - "is_baby_outside": true se o bebê inteiro saiu da área do cerco.
+   - "limb_outside_part": "pe_perna" | "mao_braco" | "cabeca" | "corpo" | "nenhum".
+
+3. POSTURA E RISCOS:
    - "is_standing": true SOMENTE se o bebê estiver em pé erguido nas pernas ou apoiado em pé na grade.
-   - "is_lying_down": true se o bebê estiver deitado dormindo ou repousando no colchão.
+   - "is_lying_down": true se estiver deitado no colchão dormindo ou descansando.
    - "baby_posture": "sleeping_back" | "sleeping_stomach" | "sleeping_side" | "awake_moving" | "standing" | "empty".
-3. Outros fatores de risco:
-   - "is_blanket_or_empty": true se não houver bebê humano no berço (apenas lençol/cobertor).
-   - "adult_present": true se houver pai/mãe ou cuidador adulto presente.
-   - "adult_label": "Pai/Mãe".
-   - "adult_action": ação do adulto.
-   - "is_face_covered": true se o rostinho da criança estiver obstruído por pano/travesseiro (risco de sufocamento).
-   - "description": breve diagnóstico da cena em português.
+   - "is_blanket_or_empty": true apenas se o berço estiver vazio de bebê humano (somente lençol/cobertor).
+   - "adult_present": true se houver adulto presente.
+   - "adult_label": "Pai/Mãe" se presente.
+   - "adult_action": ação do adulto se presente.
+   - "is_face_covered": true se o rostinho da criança estiver abafado por pano/travesseiro (risco de sufocamento).
+   - "description": diagnóstico detalhado explicando a posição do bebê e confirmando se ele está ou não dentro da demarcação ciano.
 
 Responda ESTRITAMENTE em JSON:
 {
-  "head_box": [number, number, number, number],
-  "legs_feet_box": [number, number, number, number],
-  "baby_total_bounding_box": [number, number, number, number],
+  "is_limb_outside": boolean,
+  "is_baby_outside": boolean,
+  "limb_outside_part": "pe_perna" | "mao_braco" | "cabeca" | "corpo" | "nenhum",
+  "baby_detected": boolean,
   "is_standing": boolean,
   "is_lying_down": boolean,
   "is_blanket_or_empty": boolean,
@@ -225,6 +234,8 @@ Responda ESTRITAMENTE em JSON:
   "adult_action": string,
   "is_face_covered": boolean,
   "baby_posture": string,
+  "objects_near_fence": string,
+  "baby_exact_location_relative_to_fence": string,
   "confidence": float,
   "description": string
 }
@@ -233,6 +244,11 @@ PROMPT;
 
     private function analyzeWithOpenAi(string $jpegBinary, string $candidateEvent, mixed $roi = null): array
     {
+        // Garante que a imagem tenha o cerco ciano anotado para análise visual da IA
+        if (!empty($roi)) {
+            $jpegBinary = $this->annotateJpegWithCribRoi($jpegBinary, $roi);
+        }
+
         $base64 = base64_encode($jpegBinary);
         $dataUrl = "data:image/jpeg;base64,{$base64}";
         $prompt = $this->getSpecialistPrompt($candidateEvent);
@@ -251,7 +267,7 @@ PROMPT;
                     ],
                 ],
                 'temperature' => 0.0,
-                'max_tokens' => 300,
+                'max_tokens' => 350,
                 'response_format' => ['type' => 'json_object'],
             ]);
 
@@ -271,6 +287,10 @@ PROMPT;
 
     private function analyzeWithGemini(string $jpegBinary, string $candidateEvent, mixed $roi = null): array
     {
+        if (!empty($roi)) {
+            $jpegBinary = $this->annotateJpegWithCribRoi($jpegBinary, $roi);
+        }
+
         $apiKey = $this->getGeminiKey();
         $base64 = base64_encode($jpegBinary);
         $prompt = $this->getSpecialistPrompt($candidateEvent);
@@ -388,100 +408,23 @@ PROMPT;
             $roi = json_decode($roi, true);
         }
 
-        // Se o ROI do cerco foi fornecido, efetua verificação geométrica rigorosa dos pontos anatômicos
+        // Se o modelo de visão detectou o corpinho do bebê ou caixa total
         if (is_array($roi) && !empty($roi)) {
-            $headBox = $json['head_box'] ?? null;
-            $legsBox = $json['legs_feet_box'] ?? null;
             $totalBox = $json['baby_total_bounding_box'] ?? null;
-
-            // 1. Testa as extremidades das pernas e pés (cantos e centro dos pés com margem zero/estrita)
-            if (is_array($legsBox) && count($legsBox) >= 4) {
-                [$lx1, $ly1, $lx2, $ly2] = $legsBox;
-                $feetPoints = [
-                    [(float)$lx1, (float)$ly1],
-                    [(float)$lx2, (float)$ly1],
-                    [(float)$lx1, (float)$ly2],
-                    [(float)$lx2, (float)$ly2],
-                    [(float)(($lx1 + $lx2) / 2), (float)(($ly1 + $ly2) / 2)],
-                    [(float)$lx2, (float)(($ly1 + $ly2) / 2)],
-                ];
-                $feetOutside = 0;
-                foreach ($feetPoints as [$fpx, $fpy]) {
-                    if (!$this->isPointInRoi($fpx, $fpy, $roi, 0.5)) {
-                        $feetOutside++;
-                    }
-                }
-                if ($feetOutside >= 1) {
-                    $isLimbOutside = true;
-                    if ($normPart === 'nenhum' || empty($normPart)) {
-                        $normPart = 'pe_perna';
-                    }
-                    if (empty($desc) || stripos($desc, 'seguro') !== false) {
-                        $desc = 'Pé ou perna do bebê passou para fora da linha demarcada do berço!';
-                    }
-                }
-            }
-
-            // 2. Testa a cabeça (usando o centro e bordas)
-            if (is_array($headBox) && count($headBox) >= 4) {
-                [$hx1, $hy1, $hx2, $hy2] = $headBox;
-                $headPoints = [
-                    [(float)(($hx1 + $hx2) / 2), (float)(($hy1 + $hy2) / 2)],
-                    [(float)$hx1, (float)(($hy1 + $hy2) / 2)],
-                    [(float)$hx2, (float)(($hy1 + $hy2) / 2)],
-                ];
-                $headOutside = 0;
-                foreach ($headPoints as [$hpx, $hpy]) {
-                    if (!$this->isPointInRoi($hpx, $hpy, $roi, 0.5)) {
-                        $headOutside++;
-                    }
-                }
-                if ($headOutside >= 1) {
-                    $isLimbOutside = true;
-                    if ($normPart === 'nenhum' || empty($normPart)) {
-                        $normPart = 'cabeca';
-                    }
-                    if (empty($desc) || stripos($desc, 'seguro') !== false) {
-                        $desc = 'Cabeça do bebê passou para fora da demarcação do berço!';
-                    }
-                }
-            }
-
-            // 3. Testa se alguma extremidade do corpo ou o bebê por inteiro saiu do cerco
             if (is_array($totalBox) && count($totalBox) >= 4) {
                 [$bx1, $by1, $bx2, $by2] = $totalBox;
                 $centerBx = (float)(($bx1 + $bx2) / 2);
                 $centerBy = (float)(($by1 + $by2) / 2);
 
-                if (!$this->isPointInRoi($centerBx, $centerBy, $roi, 0.5)) {
+                // Se o CENTRO do corpinho do bebê estiver do lado de fora do cerco
+                if (!$this->isPointInRoi($centerBx, $centerBy, $roi, 1.0)) {
                     $isBabyOutside = true;
                     $isLimbOutside = true;
-                    $normPart = 'corpo';
-                    $desc = 'Bebê saiu da área segura demarcada no cerco!';
-                } else {
-                    // Centro dentro, mas testa se alguma extremidade (pés, mãos, tronco) está fora
-                    $bodyExtremities = [
-                        [(float)$bx1, (float)$centerBy],
-                        [(float)$bx2, (float)$centerBy],
-                        [(float)$centerBx, (float)$by1],
-                        [(float)$centerBx, (float)$by2],
-                        [(float)$bx2, (float)$by2],
-                        [(float)$bx1, (float)$by2],
-                    ];
-                    $extremitiesOutside = 0;
-                    foreach ($bodyExtremities as [$epx, $epy]) {
-                        if (!$this->isPointInRoi($epx, $epy, $roi, 0.5)) {
-                            $extremitiesOutside++;
-                        }
+                    if ($normPart === 'nenhum' || empty($normPart)) {
+                        $normPart = 'corpo';
                     }
-                    if ($extremitiesOutside >= 1) {
-                        $isLimbOutside = true;
-                        if ($normPart === 'nenhum' || empty($normPart)) {
-                            $normPart = 'membro';
-                        }
-                        if (empty($desc) || stripos($desc, 'seguro') !== false) {
-                            $desc = 'Extremidade ou membro do bebê passou para fora da cerca!';
-                        }
+                    if (empty($desc) || stripos($desc, 'seguro') !== false) {
+                        $desc = 'Bebê saiu da área segura demarcada no cerco!';
                     }
                 }
             }
