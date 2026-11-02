@@ -1134,13 +1134,22 @@ class KingCameraController extends Controller
         $breachConfirmed = !in_array($eventType, ['crib_fence', 'fence_breach', 'baby_stand']);
         $aiAnalysis = null;
 
+        // Se o cliente enviou as coordenadas atualizadas do cerco no disparo do evento, atualiza o modelo
+        if ($request->has('crib_roi_json') && !empty($request->input('crib_roi_json'))) {
+            $incomingRoi = $request->input('crib_roi_json');
+            $camera->crib_roi_json = $incomingRoi;
+            $camera->save();
+        }
+
         // Extrai snapshot instantâneo em Base64 enviado diretamente pelo navegador se disponível
         $jpegBinary = null;
+        $isClientAnnotated = false;
         if ($request->filled('snapshot_base64')) {
             $rawBase64 = preg_replace('#^data:image/\w+;base64,#i', '', (string) $request->input('snapshot_base64'));
             $decoded = base64_decode($rawBase64);
             if ($decoded && strlen($decoded) > 300) {
                 $jpegBinary = $decoded;
+                $isClientAnnotated = true;
                 // Guarda no cache de último frame limpo apenas se não estiver anotado com polígono da cerca
                 if (!in_array($eventType, ['crib_fence', 'fence_breach'], true)) {
                     \Illuminate\Support\Facades\Cache::put("cam_last_good_snap_{$camera->stream_id}", $jpegBinary, 600);
@@ -1153,6 +1162,7 @@ class KingCameraController extends Controller
             $jpegBinary = $this->cameraService->getSnapshot($camera);
             if ($jpegBinary && in_array($eventType, ['crib_fence', 'fence_breach'], true) && !empty($camera->crib_roi_json)) {
                 $jpegBinary = $this->aiVision->annotateJpegWithCribRoi($jpegBinary, $camera->crib_roi_json);
+                $isClientAnnotated = true;
             }
         }
 
@@ -1160,7 +1170,7 @@ class KingCameraController extends Controller
 
         // ── VALIDAÇÃO E DETECÇÃO DE ALTA PRECISÃO COM IA VISION (OPENAI / GEMINI) ──
         if ($jpegBinary && in_array($eventType, ['baby_stand', 'crib_fence', 'fence_breach']) && $this->aiVision->isAvailable()) {
-            $aiAnalysis = $this->aiVision->analyzeBabySafetySnapshot($jpegBinary, $eventType, $camera->crib_roi_json);
+            $aiAnalysis = $this->aiVision->analyzeBabySafetySnapshot($jpegBinary, $eventType, $camera->crib_roi_json, !$isClientAnnotated);
             if ($aiAnalysis['evaluated']) {
                 // Caso 0: Presença de Adulto/Cuidador (Pai ou Mãe) ajeitando o bebê
                 if ($aiAnalysis['adult_present']) {
@@ -1220,12 +1230,14 @@ class KingCameraController extends Controller
 
                         if ($isReinforcement) {
                             $description = '⚠️ REFORÇO: ' . ($aiDesc ?: 'O bebê continua com parte do corpo fora do cerco do berço!');
-                        } elseif ($part === 'pe_perna' || stripos($aiDesc, 'pé') !== false || stripos($aiDesc, 'perna') !== false) {
-                            $description = '🚨 Pé ou perna do bebê passou para fora do cerco do berço! ' . ($aiDesc ? "({$aiDesc})" : '');
-                        } elseif ($part === 'mao_braco' || stripos($aiDesc, 'mão') !== false || stripos($aiDesc, 'braço') !== false) {
-                            $description = '🚨 Mão ou braço do bebê passou para fora do cerco do berço! ' . ($aiDesc ? "({$aiDesc})" : '');
-                        } elseif ($part === 'cabeca' || stripos($aiDesc, 'cabeça') !== false) {
+                        } elseif ($part === 'cabeca') {
                             $description = '🚨 Cabeça do bebê passou para fora do cerco do berço! ' . ($aiDesc ? "({$aiDesc})" : '');
+                        } elseif ($part === 'pe_perna') {
+                            $description = '🚨 Pé ou perna do bebê passou para fora do cerco do berço! ' . ($aiDesc ? "({$aiDesc})" : '');
+                        } elseif ($part === 'mao_braco') {
+                            $description = '🚨 Mão ou braço do bebê passou para fora do cerco do berço! ' . ($aiDesc ? "({$aiDesc})" : '');
+                        } elseif ($part === 'corpo') {
+                            $description = '🚨 Corpo do bebê fora do cerco demarcado! ' . ($aiDesc ? "({$aiDesc})" : '');
                         } else {
                             $description = '🚨 ' . ($aiDesc ?: 'Bebê fora da área segura demarcada no cerco do berço!');
                         }

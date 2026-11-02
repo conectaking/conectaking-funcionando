@@ -63,7 +63,7 @@ class KingCameraAiVisionService
      *   source: string
      * }
      */
-    public function analyzeBabySafetySnapshot(string $jpegBinary, string $candidateEvent = '', mixed $roi = null): array
+    public function analyzeBabySafetySnapshot(string $jpegBinary, string $candidateEvent = '', mixed $roi = null, bool $needsAnnotation = true): array
     {
         $defaultFallback = [
             'evaluated' => false,
@@ -89,10 +89,10 @@ class KingCameraAiVisionService
 
         try {
             if ($this->getOpenAiKey() !== '') {
-                return $this->analyzeWithOpenAi($jpegBinary, $candidateEvent, $roi);
+                return $this->analyzeWithOpenAi($jpegBinary, $candidateEvent, $roi, $needsAnnotation);
             }
             if ($this->getGeminiKey() !== '') {
-                return $this->analyzeWithGemini($jpegBinary, $candidateEvent, $roi);
+                return $this->analyzeWithGemini($jpegBinary, $candidateEvent, $roi, $needsAnnotation);
             }
         } catch (\Throwable $e) {
             Log::warning('kc.ai_vision.error', [
@@ -189,36 +189,41 @@ class KingCameraAiVisionService
     private function getSpecialistPrompt(string $candidateEvent): string
     {
         return <<<PROMPT
-Você é o sistema especialista de visão computacional da King Câmera para segurança e monitoramento pediátrico em berço.
-Analise a imagem da câmera com máxima atenção visual e técnica.
+Você é o sistema especialista supremo de visão computacional da King Câmera para segurança e monitoramento pediátrico em berço.
+Analise a imagem da câmera com máxima acurácia técnica, visual e anatômica.
 
 NESTA IMAGEM EXISTE UM CERCO VIRTUAL DESENHADO:
 - Uma linha CIANO (azul-piscina/turquesa brilhante) com pontinhos numerados azuis demarca o perímetro do cerco de proteção.
-- A área FORA do cerco possui um sombreamento avermelhado/rosado.
+- A área FORA do cerco possui um leve sombreamento avermelhado/rosado.
 - A área DENTRO do cerco é a área segura do bebê.
 
-DIRETRIZES FUNDAMENTAIS DE ANÁLISE HUMANA vs OBJETOS (ALMOFADAS, TRAVESSEIROS E PROTETORES):
-1. DIFERENCIAÇÃO ENTRE O BEBÊ E ALMOFADAS/PROTETORES:
-   - Almofadas, travesseiros, rolinhos protetores de berço nas bordas da grade, colchão e cobertores são OBJETOS INANIMADOS.
-   - NUNCA confunda almofadas, travesseiros, bichos de pelúcia ou tecidos com o corpo do bebê.
-   - O bebê é apenas o ser humano real (cabeça com cabelos/rosto, bracinhos, perninhas, tronco e pezinhos humanos).
+DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
 
-2. VERIFICAÇÃO RIGOROSA DA CERCA (LINHA CIANO):
-   - "is_limb_outside": true SOMENTE E APENAS SE alguma parte real do corpo humano do bebê (cabeça, braço, mão, perna ou pé) estiver fisicamente ultrapassando para FORA da linha ciano (penetrando na área avermelhada/externa).
-   - Se uma almofada, travesseiro ou protetor de berço estiver fora ou sobre a linha ciano, mas o bebê estiver dentro da linha ciano, o bebê está TOTALMENTE SEGURO (is_limb_outside: false).
-   - "is_baby_outside": true se o bebê inteiro saiu da área do cerco.
-   - "limb_outside_part": "pe_perna" | "mao_braco" | "cabeca" | "corpo" | "nenhum".
+1. DIFERENCIAÇÃO ENTRE O BEBÊ E ALMOFADAS/PROTETORES/COBERTORES:
+   - ATENÇÃO MÁXIMA: As bordas do berço possuem almofadas brancas/rolinhos protetores acolchoados (protetor de berço), travesseiros e cobertores.
+   - Almofadas, travesseiros, rolinhos protetores de grade, lençol e cobertores são OBJETOS INANIMADOS de tecido.
+   - NUNCA confunda as bordas de uma almofada branca, protetor de berço ou cobertor com a cabeça, mão, perna ou pé do bebê!
+   - O corpo do bebê é unicamente o ser humano real: cabeça humana com cabelo/rosto, tronco com roupinha infantil, bracinhos e perninhas humanas.
+   - Se almofadas, travesseiros ou protetores estiverem fora da linha ciano, mas o bebê estiver com todo o seu corpo dentro da linha ciano: O BEBÊ ESTÁ TOTALMENTE SEGURO! Responda "is_limb_outside": false, "is_baby_outside": false, "limb_outside_part": "nenhum". NÃO CRIE FALSO ALARME POR CAUSA DE ALMOFADAS!
+
+2. REGRA DE OURO - ANÁLISE GLOBAL DA CENA:
+   - NUNCA olhe apenas para o interior da linha ciano! Procure o bebê no QUADRO INTEIRO da imagem (dentro e fora do cerco).
+   - "is_blanket_or_empty": só pode ser true se NÃO EXISTIR NENHUM BEBÊ HUMANO em nenhum lugar do berço/imagem (berço totalmente desocupado). Se o bebê estiver visível no berço (mesmo que com a cabeça ou corpo fora do cerco), "is_blanket_or_empty" é OBRIGATORIAMENTE FALSE!
+   - Se o bebê real estiver visível na imagem:
+     a) Se a cabeça do bebê estiver do lado de fora da linha ciano (penetrando na área avermelhada externa à esquerda ou topo) -> "is_limb_outside": true, "limb_outside_part": "cabeca".
+     b) Se os pés ou pernas do bebê estiverem do lado de fora da linha ciano (penetrando na área externa à direita ou base) -> "is_limb_outside": true, "limb_outside_part": "pe_perna".
+     c) Se a linha ciano cortar o meio do corpinho do bebê, deixando partes anatômicas de fora -> INFRAÇÃO CONFIRMADA: "is_limb_outside": true! Se tanto a cabeça quanto os pés/corpo estiverem do lado de fora -> "is_baby_outside": true, "is_limb_outside": true, "limb_outside_part": "corpo".
+     d) SOMENTE considere "is_limb_outside": false se TODAS as partes anatômicas do corpinho do bebê (cabeça, braços, tronco, pernas e pés) estiverem 100% CONTIDAS DENTRO do polígono ciano.
 
 3. POSTURA E RISCOS:
    - "is_standing": true SOMENTE se o bebê estiver em pé erguido nas pernas ou apoiado em pé na grade.
    - "is_lying_down": true se estiver deitado no colchão dormindo ou descansando.
    - "baby_posture": "sleeping_back" | "sleeping_stomach" | "sleeping_side" | "awake_moving" | "standing" | "empty".
-   - "is_blanket_or_empty": true apenas se o berço estiver vazio de bebê humano (somente lençol/cobertor).
    - "adult_present": true se houver adulto presente.
    - "adult_label": "Pai/Mãe" se presente.
    - "adult_action": ação do adulto se presente.
    - "is_face_covered": true se o rostinho da criança estiver abafado por pano/travesseiro (risco de sufocamento).
-   - "description": diagnóstico detalhado explicando a posição do bebê e confirmando se ele está ou não dentro da demarcação ciano.
+   - "description": diagnóstico detalhado explicando a posição exata do bebê humano, diferenciando-o de almofadas e confirmando se ele está ou não dentro da demarcação ciano.
 
 Responda ESTRITAMENTE em JSON:
 {
@@ -242,10 +247,10 @@ Responda ESTRITAMENTE em JSON:
 PROMPT;
     }
 
-    private function analyzeWithOpenAi(string $jpegBinary, string $candidateEvent, mixed $roi = null): array
+    private function analyzeWithOpenAi(string $jpegBinary, string $candidateEvent, mixed $roi = null, bool $needsAnnotation = true): array
     {
-        // Garante que a imagem tenha o cerco ciano anotado para análise visual da IA
-        if (!empty($roi)) {
+        // Garante que a imagem tenha o cerco ciano anotado se ainda não tiver
+        if ($needsAnnotation && !empty($roi)) {
             $jpegBinary = $this->annotateJpegWithCribRoi($jpegBinary, $roi);
         }
 
@@ -285,9 +290,9 @@ PROMPT;
         return $this->formatNormalizedResult($json, 'openai', $roi);
     }
 
-    private function analyzeWithGemini(string $jpegBinary, string $candidateEvent, mixed $roi = null): array
+    private function analyzeWithGemini(string $jpegBinary, string $candidateEvent, mixed $roi = null, bool $needsAnnotation = true): array
     {
-        if (!empty($roi)) {
+        if ($needsAnnotation && !empty($roi)) {
             $jpegBinary = $this->annotateJpegWithCribRoi($jpegBinary, $roi);
         }
 
