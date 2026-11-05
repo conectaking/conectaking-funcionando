@@ -7042,15 +7042,57 @@ document.addEventListener('DOMContentLoaded', async () => {
     return data.photo || null;
   }
 
+  async function prepareWatermarkFile(file, maxSide = 2560) {
+    if (!file || !file.type || !file.type.startsWith('image/')) return file;
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const w = img.naturalWidth || img.width;
+        const h = img.naturalHeight || img.height;
+        if (w <= maxSide && h <= maxSide) {
+          resolve(file);
+          return;
+        }
+        const ratio = Math.min(maxSide / w, maxSide / h);
+        const targetW = Math.round(w * ratio);
+        const targetH = Math.round(h * ratio);
+        const canvas = document.createElement('canvas');
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, targetW, targetH);
+          canvas.toBlob((blob) => {
+            if (!blob) { resolve(file); return; }
+            const cleanName = (file.name || 'watermark').replace(/\.[^.]+$/, '') + '.png';
+            resolve(new File([blob], cleanName, { type: 'image/png' }));
+          }, 'image/png');
+        } else {
+          resolve(file);
+        }
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(file);
+      };
+      img.src = url;
+    });
+  }
+
   async function setWatermarkLogo(file, which) {
     const w = which === 'landscape' ? 'landscape' : 'portrait';
+    const optimizedFile = await prepareWatermarkFile(file, 2560);
     const form = new FormData();
-    form.append('file', file, file.name || 'watermark.png');
+    form.append('file', optimizedFile, optimizedFile.name || 'watermark.png');
     const res = await fetchWithTimeout(`${API_URL}/api/king-selection/galleries/${galleryId}/watermark?which=${encodeURIComponent(w)}`, {
       method: 'POST',
       headers: { 'Authorization': HEADERS?.Authorization || '' },
       body: form
-    }, 30000);
+    }, 45000);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.message || 'Falha ao enviar marca d\'água');
     wmMode = 'logo';

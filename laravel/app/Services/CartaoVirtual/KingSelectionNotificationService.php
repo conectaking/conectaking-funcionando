@@ -83,6 +83,80 @@ class KingSelectionNotificationService
     }
 
     /**
+     * Dispara notificação de comprovante PIX enviado para o fotógrafo.
+     */
+    public function notifyPaymentProofUploaded(
+        int $galleryId,
+        ?string $clientName,
+        ?string $clientPhone,
+        ?string $clientEmail,
+        int $amountCents,
+        ?string $note = null
+    ): void {
+        try {
+            $info = DB::selectOne(
+                "SELECT
+                    g.id AS gallery_id,
+                    g.nome_projeto,
+                    g.slug AS gallery_slug,
+                    u.id AS owner_id,
+                    u.name AS owner_name,
+                    u.profile_slug,
+                    u.notification_phone,
+                    u.notification_email
+                 FROM king_galleries g
+                 INNER JOIN profile_items pi ON pi.id = g.profile_item_id
+                 INNER JOIN users u ON u.id = pi.user_id
+                 WHERE g.id = ?
+                 LIMIT 1",
+                [$galleryId]
+            );
+
+            if (!$info) {
+                return;
+            }
+
+            $projectName = trim((string) ($info->nome_projeto ?? 'Galeria'));
+            $ownerPhone  = trim((string) ($info->notification_phone ?? ''));
+            $ownerSlug   = trim((string) ($info->profile_slug ?? ''));
+
+            $nameStr  = $clientName  ? "👤 *Cliente:* " . $clientName  . "\n" : '';
+            $phoneStr = $clientPhone ? "📱 *WhatsApp:* " . $clientPhone . "\n" : '';
+            $emailStr = $clientEmail ? "📧 *Email:* " . $clientEmail . "\n"    : '';
+            $valStr   = $amountCents > 0
+                ? "💵 *Valor:* R$ " . number_format($amountCents / 100, 2, ',', '.') . "\n"
+                : '';
+            $noteStr  = ($note && trim($note) !== '')
+                ? "📝 *Nota do cliente:*\n\"" . trim($note) . "\"\n"
+                : '';
+
+            $message = "💰 *Novo Comprovante PIX no King Selection!*\n\n"
+                . "📁 *Projeto:* {$projectName}\n"
+                . $nameStr
+                . $phoneStr
+                . $emailStr
+                . $valStr
+                . ($noteStr ? "\n" . $noteStr : '')
+                . "\n🔍 Acesse a aba *Fotos vendidas* no painel para conferir o comprovante e liberar o download!";
+
+            $this->sendViaWebhook($message, $ownerPhone, $ownerSlug, [
+                'type'         => 'king_selection_payment_proof',
+                'event'        => 'king_selection_payment_proof',
+                'title'        => '💰 Comprovante PIX no King Selection!',
+                'gallery_id'   => $galleryId,
+                'project_name' => $projectName,
+                'client_name'  => $clientName,
+                'amount_cents' => $amountCents,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('kingselection.notification.payment_proof_failed', [
+                'gallery_id' => $galleryId,
+                'error'      => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * Envia via webhook CK Agent (n8n) → Telegram.
      */
     private function sendViaWebhook(string $message, string $ownerPhone, string $ownerSlug, array $extra = []): void

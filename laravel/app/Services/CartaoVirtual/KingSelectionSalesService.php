@@ -841,6 +841,21 @@ class KingSelectionSalesService
             [$galleryId, $clientId, $round, $amountCents, $filePath, $noteClean]
         );
 
+        // Dispara notificação Telegram imediata para o fotógrafo
+        try {
+            $client = DB::selectOne('SELECT nome, email, telefone FROM king_gallery_clients WHERE id = ? LIMIT 1', [$clientId]);
+            app(\App\Services\CartaoVirtual\KingSelectionNotificationService::class)->notifyPaymentProofUploaded(
+                $galleryId,
+                $client->nome ?? null,
+                $client->telefone ?? null,
+                $client->email ?? null,
+                $amountCents,
+                $noteClean
+            );
+        } catch (\Throwable) {
+            // Notificação não bloqueia a resposta do cliente
+        }
+
         return ['status' => 200, 'body' => [
             'success' => true,
             'payment' => $this->getPaymentByClientRound($galleryId, $clientId, $round),

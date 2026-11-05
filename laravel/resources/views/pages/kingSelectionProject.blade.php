@@ -1355,31 +1355,37 @@
                       <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-center-v-p" title="Centro vertical">Centro</button>
                       <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-bottom-p" title="Baixo">Baixo</button>
                     </div>
-                    <div>
-                      <div class="flex items-center justify-between gap-2">
-                        <div class="text-[11px] font-extrabold text-zinc-200">Ajuste fino (passo 3%)</div>
-                        <div class="text-[10px] text-zinc-400 font-mono" id="wm-logo-offset-val-p">X 0% · Y 0%</div>
+                    <details class="mt-3 border border-zinc-700/80 rounded-xl bg-zinc-900/60 p-2 text-xs">
+                      <summary class="font-bold text-zinc-300 cursor-pointer select-none py-1 flex items-center justify-between">
+                        <span><i class="fas fa-sliders text-amber-400 mr-1.5"></i> Ajuste Fino & Posição Avançada</span>
+                        <i class="fas fa-chevron-down text-zinc-400 text-[10px]"></i>
+                      </summary>
+                      <div class="mt-2.5 pt-2 border-t border-zinc-700/80 space-y-2.5">
+                        <div class="flex items-center justify-between gap-2">
+                          <div class="text-[11px] font-extrabold text-zinc-200">Ajuste fino (passo 3%)</div>
+                          <div class="text-[10px] text-zinc-400 font-mono" id="wm-logo-offset-val-p">X 0% · Y 0%</div>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-left-p" title="Esquerda"><i class="fas fa-arrow-left"></i></button>
+                          <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-right-p" title="Direita"><i class="fas fa-arrow-right"></i></button>
+                          <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-up-p" title="Cima"><i class="fas fa-arrow-up"></i></button>
+                          <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-down-p" title="Baixo"><i class="fas fa-arrow-down"></i></button>
+                        </div>
+                        <div class="pt-2 border-t border-zinc-700">
+                          <div class="text-xs font-extrabold text-white">Esticar o ladrilho (retrato)</div>
+                          <div class="mt-2 flex items-center justify-between gap-2">
+                            <div class="text-[11px] font-extrabold text-zinc-200">Largura</div>
+                            <div class="text-[10px] text-zinc-400 font-extrabold" id="wm-stretch-w-val-p">100%</div>
+                          </div>
+                          <input id="wm-stretch-w-p" class="ks-range mt-1 ks-range-on-dark" type="range" min="50" max="400" step="1" value="100" />
+                          <div class="mt-2 flex items-center justify-between gap-2">
+                            <div class="text-[11px] font-extrabold text-zinc-200">Altura</div>
+                            <div class="text-[10px] text-zinc-400 font-extrabold" id="wm-stretch-h-val-p">100%</div>
+                          </div>
+                          <input id="wm-stretch-h-p" class="ks-range mt-1 ks-range-on-dark" type="range" min="50" max="400" step="1" value="100" />
+                        </div>
                       </div>
-                      <div class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-left-p" title="Esquerda"><i class="fas fa-arrow-left"></i></button>
-                        <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-right-p" title="Direita"><i class="fas fa-arrow-right"></i></button>
-                        <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-up-p" title="Cima"><i class="fas fa-arrow-up"></i></button>
-                        <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-down-p" title="Baixo"><i class="fas fa-arrow-down"></i></button>
-                      </div>
-                    </div>
-                    <div class="pt-2 border-t border-zinc-700">
-                      <div class="text-xs font-extrabold text-white">Esticar o ladrilho (retrato)</div>
-                      <div class="mt-2 flex items-center justify-between gap-2">
-                        <div class="text-[11px] font-extrabold text-zinc-200">Largura</div>
-                        <div class="text-[10px] text-zinc-400 font-extrabold" id="wm-stretch-w-val-p">100%</div>
-                      </div>
-                      <input id="wm-stretch-w-p" class="ks-range mt-1 ks-range-on-dark" type="range" min="50" max="400" step="1" value="100" />
-                      <div class="mt-2 flex items-center justify-between gap-2">
-                        <div class="text-[11px] font-extrabold text-zinc-200">Altura</div>
-                        <div class="text-[10px] text-zinc-400 font-extrabold" id="wm-stretch-h-val-p">100%</div>
-                      </div>
-                      <input id="wm-stretch-h-p" class="ks-range mt-1 ks-range-on-dark" type="range" min="50" max="400" step="1" value="100" />
-                    </div>
+                    </details>
                   </div>
                 </div>
                 <div class="rounded-xl border border-zinc-700 bg-black p-3">
@@ -1417,31 +1423,37 @@
                       <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-center-h-l" title="Centro">Centro</button>
                       <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-right-l" title="Direita">Direita</button>
                     </div>
-                    <div>
-                      <div class="flex items-center justify-between gap-2">
-                        <div class="text-[11px] font-extrabold text-zinc-200">Ajuste fino (passo 3%)</div>
-                        <div class="text-[10px] text-zinc-400 font-mono" id="wm-logo-offset-val-l">X 0% · Y 0%</div>
+                    <details class="mt-3 border border-zinc-700/80 rounded-xl bg-zinc-900/60 p-2 text-xs">
+                      <summary class="font-bold text-zinc-300 cursor-pointer select-none py-1 flex items-center justify-between">
+                        <span><i class="fas fa-sliders text-amber-400 mr-1.5"></i> Ajuste Fino & Posição Avançada</span>
+                        <i class="fas fa-chevron-down text-zinc-400 text-[10px]"></i>
+                      </summary>
+                      <div class="mt-2.5 pt-2 border-t border-zinc-700/80 space-y-2.5">
+                        <div class="flex items-center justify-between gap-2">
+                          <div class="text-[11px] font-extrabold text-zinc-200">Ajuste fino (passo 3%)</div>
+                          <div class="text-[10px] text-zinc-400 font-mono" id="wm-logo-offset-val-l">X 0% · Y 0%</div>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-left-l" title="Esquerda"><i class="fas fa-arrow-left"></i></button>
+                          <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-right-l" title="Direita"><i class="fas fa-arrow-right"></i></button>
+                          <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-up-l" title="Cima"><i class="fas fa-arrow-up"></i></button>
+                          <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-down-l" title="Baixo"><i class="fas fa-arrow-down"></i></button>
+                        </div>
+                        <div class="pt-2 border-t border-zinc-700">
+                          <div class="text-xs font-extrabold text-white">Esticar o ladrilho (paisagem)</div>
+                          <div class="mt-2 flex items-center justify-between gap-2">
+                            <div class="text-[11px] font-extrabold text-zinc-200">Largura</div>
+                            <div class="text-[10px] text-zinc-400 font-extrabold" id="wm-stretch-w-val-l">100%</div>
+                          </div>
+                          <input id="wm-stretch-w-l" class="ks-range mt-1 ks-range-on-dark" type="range" min="50" max="400" step="1" value="100" />
+                          <div class="mt-2 flex items-center justify-between gap-2">
+                            <div class="text-[11px] font-extrabold text-zinc-200">Altura</div>
+                            <div class="text-[10px] text-zinc-400 font-extrabold" id="wm-stretch-h-val-l">100%</div>
+                          </div>
+                          <input id="wm-stretch-h-l" class="ks-range mt-1 ks-range-on-dark" type="range" min="50" max="400" step="1" value="100" />
+                        </div>
                       </div>
-                      <div class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-left-l" title="Esquerda"><i class="fas fa-arrow-left"></i></button>
-                        <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-right-l" title="Direita"><i class="fas fa-arrow-right"></i></button>
-                        <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-up-l" title="Cima"><i class="fas fa-arrow-up"></i></button>
-                        <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-down-l" title="Baixo"><i class="fas fa-arrow-down"></i></button>
-                      </div>
-                    </div>
-                    <div class="pt-2 border-t border-zinc-700">
-                      <div class="text-xs font-extrabold text-white">Esticar o ladrilho (paisagem)</div>
-                      <div class="mt-2 flex items-center justify-between gap-2">
-                        <div class="text-[11px] font-extrabold text-zinc-200">Largura</div>
-                        <div class="text-[10px] text-zinc-400 font-extrabold" id="wm-stretch-w-val-l">100%</div>
-                      </div>
-                      <input id="wm-stretch-w-l" class="ks-range mt-1 ks-range-on-dark" type="range" min="50" max="400" step="1" value="100" />
-                      <div class="mt-2 flex items-center justify-between gap-2">
-                        <div class="text-[11px] font-extrabold text-zinc-200">Altura</div>
-                        <div class="text-[10px] text-zinc-400 font-extrabold" id="wm-stretch-h-val-l">100%</div>
-                      </div>
-                      <input id="wm-stretch-h-l" class="ks-range mt-1 ks-range-on-dark" type="range" min="50" max="400" step="1" value="100" />
-                    </div>
+                    </details>
                   </div>
                 </div>
               </div>
