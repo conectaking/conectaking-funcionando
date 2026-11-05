@@ -503,7 +503,14 @@ class KingSelectionMediaService
         }
         $out = $this->resizePng($buf, 560);
         if ($out === null) {
-            return ['status' => 500, 'message' => 'Falha ao processar marca d’água'];
+            // Se a imagem personalizada falhou, faz fallback para a marca oficial da Conecta King
+            $bufFb = $this->defaultWatermarkAssetBuffer($which === 'landscape');
+            if ($bufFb !== null) {
+                $out = $this->resizePng($bufFb, 560);
+            }
+            if ($out === null) {
+                return ['status' => 500, 'message' => 'Falha ao processar marca d’água'];
+            }
         }
 
         return ['status' => 200, 'binary' => $out, 'contentType' => 'image/png'];
@@ -779,8 +786,8 @@ class KingSelectionMediaService
     {
         $cur = (string) ini_get('memory_limit');
         $bytes = $this->memoryLimitToBytes($cur);
-        if ($bytes > 0 && $bytes < 512 * 1024 * 1024) {
-            @ini_set('memory_limit', '512M');
+        if ($bytes > 0 && $bytes < 1024 * 1024 * 1024) {
+            @ini_set('memory_limit', '1024M');
         }
     }
 

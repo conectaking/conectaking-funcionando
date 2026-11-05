@@ -10,19 +10,38 @@
   <title>KingSelection - Projeto</title>
   <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
   <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
+  <script src="/config.js?v=2026-09-10-apex1"></script>
+  @vite(['resources/css/fontawesome.css', 'resources/css/app.css', 'resources/js/pages/kingSelectionProject.js'])
   <style>
-    html {
-      background-color: #0b0b0f !important;
+    :root {
+      --ks-primary: #f59e0b;
+      --ks-primary-dark: #d97706;
+      --ks-accent: #f59e0b;
+      --ks-bg: #f1f5f9;
+      --ks-card: #ffffff;
+      --ks-card-subtle: #f8fafc;
+      --ks-line: #e2e8f0;
+      --ks-line-subtle: #f1f5f9;
+      --ks-muted: #64748b;
+      --ks-text: #0f172a;
+      --ks-text-muted: #64748b;
     }
-    body {
-      background-color: #0b0b0f !important;
-      color: #ffffff !important;
+
+    html, body {
+      background-color: #f1f5f9 !important;
+      color: #0f172a !important;
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif;
       margin: 0;
     }
+
+    body:before, body:after {
+      display: none !important;
+    }
+
     #ks-preloader {
       position: fixed;
       inset: 0;
-      background: #0b0b0f;
+      background: #f1f5f9;
       z-index: 99999999;
       display: flex;
       flex-direction: column;
@@ -39,17 +58,293 @@
     .ks-spinner {
       width: 42px;
       height: 42px;
-      border: 3px solid rgba(250, 204, 21, 0.2);
-      border-top-color: #facc15;
+      border: 3px solid rgba(245, 158, 11, 0.2);
+      border-top-color: #f59e0b;
       border-radius: 50%;
       animation: ks-spin 0.8s linear infinite;
     }
     @keyframes ks-spin {
       to { transform: rotate(360deg); }
     }
+
+    /* Seja Fit Theme Overrides */
+    .ks-top {
+      background: #0f172a !important;
+      border-bottom: 1px solid #1e293b !important;
+      color: #f8fafc !important;
+    }
+    .ks-nav a {
+      color: #94a3b8 !important;
+      font-weight: 700;
+      border-radius: 8px;
+      padding: 6px 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 11px;
+      transition: all 0.15s ease;
+    }
+    .ks-nav a:hover {
+      color: #ffffff !important;
+      background: rgba(255, 255, 255, 0.08) !important;
+    }
+    .ks-nav a.active {
+      color: #fbbf24 !important;
+      background: rgba(245, 158, 11, 0.14) !important;
+      border-color: rgba(245, 158, 11, 0.3) !important;
+      box-shadow: none !important;
+    }
+
+    .ks-card {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 16px !important;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
+      color: #0f172a !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+    .ks-card:before {
+      display: none !important;
+    }
+
+    .ks-side a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 13px;
+      color: #475569 !important;
+      border: 1px solid transparent;
+      transition: all .15s ease;
+    }
+    .ks-side a:hover {
+      background: #f8fafc !important;
+      color: #0f172a !important;
+      border-color: #e2e8f0 !important;
+    }
+    .ks-side a.active {
+      background: #fffbeb !important;
+      color: #b45309 !important;
+      border-color: #fde68a !important;
+      font-weight: 700 !important;
+      box-shadow: 0 1px 2px rgba(245, 158, 11, 0.08) !important;
+    }
+
+    /* Action Buttons Seja Fit */
+    .ks-btn {
+      border: 1px solid #cbd5e1 !important;
+      border-radius: 12px !important;
+      padding: 9px 16px !important;
+      font-weight: 700 !important;
+      background: #ffffff !important;
+      color: #334155 !important;
+      transition: all .18s ease;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      font-size: 11px !important;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+    .ks-btn:hover {
+      background: #f8fafc !important;
+      color: #0f172a !important;
+      border-color: #94a3b8 !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+    .ks-btn:active {
+      transform: translateY(0);
+    }
+    .ks-btn-primary {
+      background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+      color: #ffffff !important;
+      border: none !important;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.28) !important;
+    }
+    .ks-btn-primary:hover {
+      filter: brightness(1.05) !important;
+      box-shadow: 0 6px 16px rgba(245, 158, 11, 0.38) !important;
+    }
+    #ks-delete-project {
+      background: #fef2f2 !important;
+      border: 1px solid #fecaca !important;
+      color: #dc2626 !important;
+    }
+    #ks-delete-project:hover {
+      background: #fee2e2 !important;
+      border-color: #fca5a5 !important;
+      color: #b91c1c !important;
+    }
+
+    /* Restore native Tailwind light text */
+    .text-slate-900 { color: #0f172a !important; }
+    .text-slate-800 { color: #1e293b !important; }
+    .text-slate-700 { color: #334155 !important; }
+    .text-slate-600 { color: #475569 !important; }
+    .text-slate-500 { color: #64748b !important; }
+    .text-slate-400 { color: #94a3b8 !important; }
+    .ks-muted { color: #64748b !important; }
+
+    .bg-white { background-color: #ffffff !important; }
+    .bg-slate-50 { background-color: #f8fafc !important; }
+    .border-slate-200 { border-color: #e2e8f0 !important; }
+    .border-slate-100 { border-color: #f1f5f9 !important; }
+
+    /* Inputs */
+    .ks-input {
+      background: #ffffff !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #0f172a !important;
+      border-radius: 12px !important;
+    }
+    .ks-input::placeholder {
+      color: #94a3b8 !important;
+    }
+    .ks-input:focus {
+      border-color: #f59e0b !important;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15) !important;
+    }
+    .ks-field label {
+      color: #475569 !important;
+      font-weight: 700;
+      letter-spacing: .12em;
+    }
+
+    /* Activity (Atividades do cliente) Seja Fit */
+    .ks-abo-card {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 16px !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+    }
+    .ks-abo-head {
+      background: #ffffff !important;
+      border-bottom: 1px solid #f1f5f9 !important;
+    }
+    .ks-abo-title {
+      color: #0f172a !important;
+      font-weight: 800;
+      letter-spacing: .08em;
+    }
+    .ks-abo-search {
+      background: #ffffff !important;
+      border-bottom: 1px solid #f1f5f9 !important;
+    }
+    .ks-abo-search input {
+      background: #f8fafc !important;
+      border: 1px solid #e2e8f0 !important;
+      color: #0f172a !important;
+      border-radius: 12px !important;
+    }
+    .ks-abo-search i {
+      color: #94a3b8 !important;
+    }
+    .ks-abo-item {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      color: #0f172a !important;
+      border-radius: 14px !important;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+      transition: all 0.15s ease;
+    }
+    .ks-abo-item:hover {
+      background: #f8fafc !important;
+      border-color: #cbd5e1 !important;
+    }
+    .ks-abo-item.active {
+      background: #fffdf5 !important;
+      border-color: #f59e0b !important;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.12) !important;
+    }
+    .ks-abo-item-name {
+      color: #0f172a !important;
+      font-weight: 800;
+    }
+    .ks-abo-item-email {
+      color: #64748b !important;
+    }
+    .ks-abo-badge {
+      background: #fef3c7 !important;
+      color: #92400e !important;
+      border: 1px solid #fde68a !important;
+      font-weight: 800 !important;
+      border-radius: 999px !important;
+    }
+
+    /* Buttons inside Activity */
+    #ks-activity-finish {
+      background: #10b981 !important;
+      color: #ffffff !important;
+      border: none !important;
+      font-weight: 800 !important;
+      border-radius: 12px !important;
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25) !important;
+    }
+    #ks-activity-finish:hover {
+      background: #059669 !important;
+    }
+    #ks-activity-new {
+      background: #f59e0b !important;
+      color: #ffffff !important;
+      border: none !important;
+      font-weight: 800 !important;
+      border-radius: 12px !important;
+      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.25) !important;
+    }
+    #ks-activity-new:hover {
+      background: #d97706 !important;
+    }
+    #ks-open-export {
+      background: #ffffff !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #334155 !important;
+      border-radius: 12px !important;
+    }
+    #ks-open-export:hover {
+      background: #f8fafc !important;
+      color: #0f172a !important;
+    }
+    #ks-act-whatsapp-lead {
+      background: #ecfdf5 !important;
+      border: 1px solid #a7f3d0 !important;
+      color: #047857 !important;
+      border-radius: 999px !important;
+      font-weight: 700 !important;
+    }
+
+    /* Hamburger & Retractable Sidebar */
+    #ks-sidebar {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #ks-main-content {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #ks-main-container.ks-sidebar-collapsed #ks-sidebar {
+      margin-left: -19rem;
+      margin-right: -1.5rem;
+      opacity: 0;
+      pointer-events: none;
+      visibility: hidden;
+    }
+    #ks-main-container.ks-sidebar-collapsed #ks-main-content {
+      width: 100%;
+      max-width: 100%;
+    }
+    @media (max-width: 1024px) {
+      #ks-main-container {
+        flex-direction: column;
+      }
+      #ks-sidebar {
+        width: 100%;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+      }
+      #ks-main-container.ks-sidebar-collapsed #ks-sidebar {
+        display: none;
+      }
+    }
   </style>
-  <script src="/config.js?v=2026-09-10-apex1"></script>
-  @vite(['resources/css/fontawesome.css', 'resources/css/app.css', 'resources/js/pages/kingSelectionProject.js'])
 </head>
 
 <body>
@@ -58,26 +353,34 @@
     <div class="ks-spinner"></div>
   </div>
   <div class="ks-top">
-    <div class="ks-wrap flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div class="ks-wrap flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2.5">
       <div class="flex items-center gap-3">
-        <div>
-          <div class="font-black uppercase tracking-[0.38em] text-[10px] text-slate-500 hidden">— — —</div>
-          <div class="font-extrabold text-slate-900 tracking-tight">KingSelection</div>
+        <!-- Botão Hambúrguer Seja Fit -->
+        <button id="ks-btn-hamburger" type="button"
+          class="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition flex items-center justify-center cursor-pointer"
+          title="Alternar Menu Lateral (Hambúrguer)" aria-label="Menu Lateral">
+          <svg class="w-6 h-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+
+        <a href="/kingSelection" class="flex items-center gap-2 text-white no-underline">
+          <img src="https://i.ibb.co/60sW9k75/logo.png" alt="Conecta King" class="w-7 h-7 object-contain" />
+          <span class="font-extrabold text-base tracking-tight text-white">KingSelection</span>
+        </a>
+
+        <div class="ks-nav flex items-center gap-1 ml-2 sm:ml-4">
+          <a href="#" id="ks-nav-projects" class="active">Meus projetos</a>
+          <a href="#" id="ks-nav-clients">Clientes</a>
+          <a href="#" id="ks-nav-settings">Configurações</a>
         </div>
       </div>
-      <div class="flex items-center gap-3 text-sm text-slate-600">
+      <div class="flex items-center gap-3 text-sm text-slate-300">
         <span id="ks-user-pill"
-          class="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-slate-100 border border-slate-200">
-          <span class="w-7 h-7 rounded-full bg-slate-200 inline-flex items-center justify-center font-black">CK</span>
-          <span class="font-extrabold">CONECTA</span>
+          class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/90 border border-slate-700 text-xs">
+          <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 inline-flex items-center justify-center font-black text-[11px]">CK</span>
+          <span class="font-extrabold text-slate-200">CONECTA KING</span>
         </span>
-      </div>
-    </div>
-    <div class="ks-wrap pt-0">
-      <div class="ks-nav flex items-center gap-2">
-        <a href="#" id="ks-nav-projects" class="active">Meus projetos</a>
-        <a href="#" id="ks-nav-clients">Clientes</a>
-        <a href="#" id="ks-nav-settings">Configurações</a>
       </div>
     </div>
   </div>
@@ -85,38 +388,42 @@
   <div class="ks-wrap">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div class="min-w-0">
-        <div class="text-sm font-extrabold text-slate-900" id="ks-project-title">Projeto</div>
-        <div class="text-sm ks-muted" id="ks-project-sub">KingSelection</div>
+        <div class="text-xl font-extrabold text-slate-900 tracking-tight" id="ks-project-title">Projeto</div>
+        <div class="text-xs font-semibold text-slate-500 mt-0.5" id="ks-project-sub">KingSelection</div>
       </div>
       <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
         <button class="ks-btn" id="ks-back" title="Voltar"><i class="fas fa-arrow-left"></i> Voltar</button>
         <button class="ks-btn" id="ks-panel" title="Ir para o painel"><i class="fas fa-house"></i> Painel</button>
         <button class="ks-btn" id="ks-share"><i class="fas fa-share"></i> Compartilhar</button>
         <button class="ks-btn ks-btn-primary" id="ks-publish"><i class="fas fa-bullhorn"></i> Publicar</button>
-        <button class="ks-btn" id="ks-delete-project" title="Excluir projeto inteiro"
-          style="color:#f87171;border-color:rgba(248,113,113,.45)"><i class="fas fa-trash"></i> Excluir projeto</button>
+        <button class="ks-btn" id="ks-delete-project" title="Excluir projeto inteiro"><i class="fas fa-trash"></i> Excluir projeto</button>
       </div>
     </div>
 
-    <div class="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <div class="ks-card ks-card--side-nav p-3 lg:col-span-3">
-        <div class="ks-side flex flex-col gap-1 max-h-none overflow-y-visible overflow-x-auto overscroll-x-contain pr-1 md:overflow-x-visible md:pr-0">
-          <a href="#" data-tab="activity" class="active"><i class="fas fa-wave-square"></i> Atividades do cliente</a>
-          <a href="#" data-tab="photos"><i class="fas fa-images"></i> Fotos</a>
-          <a href="#" data-tab="facial"><i class="fas fa-face-smile"></i> Reconhecimento Facial</a>
-          <a href="#" data-tab="details"><i class="fas fa-pen"></i> Dados da galeria de fotos</a>
-          <a href="#" id="ks-link-config-finalizacao" title="Configurar título, mensagem e imagem da tela de obrigado"><i class="fas fa-hand-holding-heart"></i> Página de finalização</a>
-          <a href="#" data-tab="privacy"><i class="fas fa-lock"></i> Acesso e privacidade</a>
-          <a href="#" data-tab="sales"><i class="fas fa-receipt"></i> Fotos vendidas</a>
-          <a href="#" data-tab="promo"><i class="fas fa-ticket"></i> Cupom e redes</a>
-          <a href="#" data-tab="links"><i class="fas fa-link"></i> Link e compartilhamento</a>
-          <a href="#" data-tab="support"><i class="fab fa-whatsapp"></i> Suporte WhatsApp</a>
-          <a href="#" data-tab="download"><i class="fas fa-download"></i> Download</a>
-          <a href="#" data-tab="watermark"><i class="fas fa-droplet"></i> Marca d'água</a>
+    <!-- Layout Flex com Sidebar Retrátil (Seja Fit) -->
+    <div id="ks-main-container" class="mt-6 flex gap-6 items-start transition-all duration-300">
+      <!-- Sidebar Retrátil -->
+      <aside id="ks-sidebar" class="w-72 shrink-0 transition-all duration-300 ease-in-out">
+        <div class="ks-card ks-card--side-nav p-3">
+          <div class="ks-side flex flex-col gap-1 max-h-none overflow-y-visible">
+            <a href="#" data-tab="activity" class="active"><i class="fas fa-wave-square"></i> Atividades do cliente</a>
+            <a href="#" data-tab="photos"><i class="fas fa-images"></i> Fotos</a>
+            <a href="#" data-tab="facial"><i class="fas fa-face-smile"></i> Reconhecimento Facial</a>
+            <a href="#" data-tab="details"><i class="fas fa-pen"></i> Dados da galeria de fotos</a>
+            <a href="#" id="ks-link-config-finalizacao" title="Configurar título, mensagem e imagem da tela de obrigado"><i class="fas fa-hand-holding-heart"></i> Página de finalização</a>
+            <a href="#" data-tab="privacy"><i class="fas fa-lock"></i> Acesso e privacidade</a>
+            <a href="#" data-tab="sales"><i class="fas fa-receipt"></i> Fotos vendidas</a>
+            <a href="#" data-tab="promo"><i class="fas fa-ticket"></i> Cupom e redes</a>
+            <a href="#" data-tab="links"><i class="fas fa-link"></i> Link e compartilhamento</a>
+            <a href="#" data-tab="support"><i class="fab fa-whatsapp"></i> Suporte WhatsApp</a>
+            <a href="#" data-tab="download"><i class="fas fa-download"></i> Download</a>
+            <a href="#" data-tab="watermark"><i class="fas fa-droplet"></i> Marca d'água</a>
+          </div>
         </div>
-      </div>
+      </aside>
 
-      <div class="lg:col-span-9">
+      <!-- Conteúdo Principal -->
+      <main id="ks-main-content" class="flex-1 min-w-0 transition-all duration-300">
         <div id="ks-error" class="hidden mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700"></div>
 
         <!-- Activity (igual Alboom: lista + painel + tabs + fotos) -->
@@ -1399,7 +1706,7 @@
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   </div>
 
@@ -1707,6 +2014,35 @@
 
   <!-- Toast host -->
   <div class="ks-toast-host" id="ks-toast-host" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Script Hambúrguer Seja Fit -->
+  <script>
+    (function () {
+      function initHamburger() {
+        const btn = document.getElementById('ks-btn-hamburger');
+        const container = document.getElementById('ks-main-container');
+        if (!btn || !container) return;
+
+        // Recupera estado salvo (padrão: aberto)
+        const isCollapsed = localStorage.getItem('ks_sidebar_collapsed') === 'true';
+        if (isCollapsed) {
+          container.classList.add('ks-sidebar-collapsed');
+        }
+
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          const collapsed = container.classList.toggle('ks-sidebar-collapsed');
+          localStorage.setItem('ks_sidebar_collapsed', collapsed ? 'true' : 'false');
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initHamburger);
+      } else {
+        initHamburger();
+      }
+    })();
+  </script>
 
 </body>
 

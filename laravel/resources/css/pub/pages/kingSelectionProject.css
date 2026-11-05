@@ -1,110 +1,87 @@
-/* from resources/views/pages/kingSelectionProject.blade.php */
+/* KingSelection Seja Fit Light Theme */
 
 :root {
-      /* Tema V2 (preto + amarelo) */
-      --ks-primary: #facc15;
-      /* amarelo */
-      --ks-accent: #facc15;
-      /* mesmo amarelo */
-      --ks-black: #000000;
-      --ks-card: rgba(10, 10, 10, .78);
-      --ks-line: rgba(255, 255, 255, .10);
-      --ks-muted: rgba(255, 255, 255, .50);
-      --ks-text: #ffffff;
-      --ks-glow: 0 0 18px rgba(250, 204, 21, .24);
-    }
+  --ks-primary: #f59e0b;
+  --ks-primary-dark: #d97706;
+  --ks-accent: #f59e0b;
+  --ks-bg: #f1f5f9;
+  --ks-card: #ffffff;
+  --ks-card-subtle: #f8fafc;
+  --ks-line: #e2e8f0;
+  --ks-line-subtle: #f1f5f9;
+  --ks-muted: #64748b;
+  --ks-text: #0f172a;
+  --ks-text-muted: #64748b;
+}
 
-    body {
-      background:
-        radial-gradient(900px 520px at 20% 0%, rgba(250, 204, 21, .11), transparent 62%),
-        radial-gradient(700px 460px at 85% 0%, rgba(255, 255, 255, .06), transparent 62%),
-        var(--ks-black);
-      color: var(--ks-text);
-      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Helvetica Neue, Arial;
-      -webkit-tap-highlight-color: transparent;
-    }
+body {
+  background: var(--ks-bg);
+  color: var(--ks-text);
+  font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Helvetica Neue, Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  margin: 0;
+}
 
-    /* “Sistema” no fundo (preenche o preto vazio) */
-    body:before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background:
-        radial-gradient(800px 420px at 18% 18%, rgba(250, 204, 21, .10), transparent 60%),
-        radial-gradient(640px 360px at 82% 22%, rgba(250, 204, 21, .06), transparent 62%),
-        linear-gradient(to bottom, rgba(255, 255, 255, .03), transparent 25%, transparent 75%, rgba(255, 255, 255, .02)),
-        repeating-linear-gradient(90deg, rgba(255, 255, 255, .06) 0 1px, transparent 1px 44px),
-        repeating-linear-gradient(0deg, rgba(255, 255, 255, .05) 0 1px, transparent 1px 44px);
-      opacity: .10;
-      mix-blend-mode: screen;
-      z-index: 0;
-    }
+body:before, body:after {
+  display: none !important;
+}
 
-    body:after {
-      content: "";
-      position: fixed;
-      inset: -200px;
-      pointer-events: none;
-      background: radial-gradient(circle at 50% 20%, rgba(250, 204, 21, .10), transparent 55%);
-      opacity: .35;
-      z-index: 0;
-      filter: blur(24px);
-    }
+.ks-top {
+  background: #0f172a;
+  border-bottom: 1px solid #1e293b;
+  color: #f8fafc;
+}
 
-    .ks-top {
-      background: rgba(0, 0, 0, .88);
-      border-bottom: 1px solid var(--ks-line);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px)
-    }
+/* Mais espaço útil no desktop */
+.ks-wrap {
+  max-width: min(1920px, 98vw);
+  width: 100%;
+  margin: 0 auto;
+  padding: 18px 14px;
+  position: relative;
+  z-index: 1;
+}
 
-    /* Mais espaço útil no desktop (menos “preto vazio” nas laterais) */
-    .ks-wrap {
-      max-width: min(1920px, 98vw);
-      width: 100%;
-      margin: 0 auto;
-      padding: 18px 14px;
-      position: relative;
-      z-index: 1;
-    }
+/* Native Tailwind text colors for clean light theme */
+.text-slate-900 {
+  color: #0f172a !important;
+}
 
-    /* Força Tailwind "text-slate-900" ficar claro no tema escuro */
-    .text-slate-900 {
-      color: #f8fafc !important
-    }
+.text-slate-800 {
+  color: #1e293b !important;
+}
 
-    .text-slate-700 {
-      color: #cbd5e1 !important
-    }
+.text-slate-700 {
+  color: #334155 !important;
+}
 
-    .text-slate-600 {
-      color: rgba(255, 255, 255, .55) !important
-    }
+.text-slate-600 {
+  color: #475569 !important;
+}
 
-    .text-slate-500 {
-      color: rgba(255, 255, 255, .45) !important
-    }
+.text-slate-500 {
+  color: #64748b !important;
+}
 
-    .bg-white {
-      background: rgba(15, 15, 15, .72) !important
-    }
+.bg-white {
+  background: #ffffff !important;
+}
 
-    .bg-slate-50 {
-      background: rgba(2, 6, 23, .35) !important
-    }
+.bg-slate-50 {
+  background: #f8fafc !important;
+}
 
-    .border-slate-200 {
-      border-color: var(--ks-line) !important
-    }
+.border-slate-200 {
+  border-color: #e2e8f0 !important;
+}
 
-    .border-slate-300 {
-      border-color: var(--ks-line) !important
-    }
+.border-slate-300 {
+  border-color: #cbd5e1 !important;
+}
 
-    .border-slate-100 {
-      border-color: var(--ks-line) !important
-    }
+.border-slate-100 {
+  border-color: #f1f5f9 !important;
+}
 
     /* Modal “Dados do cliente”: .bg-white global é escuro; forçar cartão claro + texto escuro */
     #ks-act-contact-modal .ks-modal-light {
@@ -173,12 +150,10 @@
     }
 
     .ks-card {
-      background: var(--ks-card);
-      border: 1px solid var(--ks-line);
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
       border-radius: 16px;
-      box-shadow: inset 0 0 18px rgba(250, 204, 21, .06), 0 18px 60px rgba(0, 0, 0, .40);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
       position: relative;
       overflow: hidden;
     }
@@ -225,126 +200,123 @@
       overflow: visible;
     }
 
-    /* "Racing border" (linha lateral) estilo seu V2 */
     .ks-card:before {
-      content: "";
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 3px;
-      background: var(--ks-accent);
-      opacity: .85;
+      display: none;
     }
 
     .ks-side a {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 12px 12px;
-      border-radius: 14px;
-      font-weight: 900;
-      color: var(--ks-muted);
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 13px;
+      color: #475569;
       border: 1px solid transparent;
-      transition: all .18s ease
+      transition: all .15s ease;
     }
 
     .ks-side a:hover {
-      color: #fff;
-      border-color: var(--ks-line);
-      background: rgba(255, 255, 255, .02)
+      color: #0f172a;
+      border-color: #e2e8f0;
+      background: #f8fafc;
     }
 
     .ks-side a.active {
-      color: var(--ks-accent);
-      border-color: rgba(250, 204, 21, .22);
-      background: rgba(255, 255, 255, .03);
-      box-shadow: var(--ks-glow);
+      color: #b45309;
+      border-color: #fde68a;
+      background: #fffbeb;
+      font-weight: 700;
+      box-shadow: 0 1px 2px rgba(245, 158, 11, 0.08);
     }
 
     .ks-field label {
-      font-size: 10px;
-      color: rgba(255, 255, 255, .45);
-      font-weight: 950;
-      letter-spacing: .28em;
-      text-transform: uppercase
+      font-size: 11px;
+      color: #475569;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
     }
 
     .ks-input {
       width: 100%;
-      border: 1px solid var(--ks-line);
+      border: 1px solid #cbd5e1;
       border-radius: 12px;
-      padding: 12px 12px;
+      padding: 10px 12px;
       outline: none;
-      font-size: 16px;
-      background: rgba(10, 10, 10, .72);
-      color: #fff;
+      font-size: 14px;
+      background: #ffffff;
+      color: #0f172a;
     }
 
     .ks-input::placeholder {
-      color: rgba(148, 163, 184, .55)
+      color: #94a3b8;
     }
 
     .ks-input:focus {
-      border-color: rgba(250, 204, 21, .42);
-      box-shadow: 0 0 0 3px rgba(250, 204, 21, .12)
+      border-color: #f59e0b;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
     }
 
     /* Modal exportar: leitura nítida (evita textarea “branca” / texto ilegível) */
     #ks-export-modal textarea.ks-export-ta,
     #ks-export-modal textarea#ks-export-filter-input {
-      background: rgba(6, 6, 6, .94) !important;
-      color: #f3f4f6 !important;
-      border: 1px solid rgba(255, 255, 255, .16) !important;
-      caret-color: var(--ks-accent, #facc15);
-      -webkit-text-fill-color: #f3f4f6;
+      background: #ffffff !important;
+      color: #0f172a !important;
+      border: 1px solid #cbd5e1 !important;
+      caret-color: var(--ks-accent, #f59e0b);
+      -webkit-text-fill-color: #0f172a;
     }
 
     #ks-export-modal textarea.ks-export-ta::placeholder,
     #ks-export-modal textarea#ks-export-filter-input::placeholder {
-      color: rgba(255, 255, 255, .42) !important;
-      -webkit-text-fill-color: rgba(255, 255, 255, .42);
+      color: #94a3b8 !important;
+      -webkit-text-fill-color: #94a3b8;
     }
 
     #ks-export-modal textarea.ks-export-ta:focus,
     #ks-export-modal textarea#ks-export-filter-input:focus {
-      border-color: rgba(250, 204, 21, .45) !important;
-      box-shadow: 0 0 0 2px rgba(250, 204, 21, .12) !important;
+      border-color: #f59e0b !important;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15) !important;
     }
 
     .ks-btn {
-      border: 1px solid var(--ks-line);
-      border-radius: 10px;
-      padding: 11px 12px;
-      font-weight: 950;
-      background: rgba(255, 255, 255, .02);
-      color: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 9px 16px;
+      font-weight: 700;
+      background: #ffffff;
+      color: #334155;
       transition: all .18s ease;
       text-transform: uppercase;
-      letter-spacing: .12em;
+      letter-spacing: .05em;
       font-size: 11px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     }
 
     .ks-btn:hover {
       transform: translateY(-1px);
-      border-color: rgba(255, 255, 255, .16);
-      box-shadow: 0 16px 40px rgba(0, 0, 0, .30)
+      border-color: #94a3b8;
+      background: #f8fafc;
+      color: #0f172a;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
     }
 
     .ks-btn:active {
-      transform: translateY(0)
+      transform: translateY(0);
     }
 
     .ks-btn-primary {
-      background: var(--ks-primary);
-      color: #000;
-      border-color: rgba(250, 204, 21, .55);
-      box-shadow: 0 0 0 3px rgba(250, 204, 21, .10), 0 18px 50px rgba(0, 0, 0, .32);
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #ffffff;
+      border: none;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.28);
     }
 
     .ks-btn-primary:hover {
-      filter: saturate(1.05) brightness(1.02);
-      box-shadow: 0 0 0 3px rgba(250, 204, 21, .14), 0 18px 70px rgba(0, 0, 0, .42)
+      filter: brightness(1.05);
+      box-shadow: 0 6px 16px rgba(245, 158, 11, 0.38);
     }
 
     /* Seletor da Capa do link: no mobile abre estilo modal full-screen */
@@ -1223,7 +1195,7 @@
     .ks-abo-search {
       position: relative;
       padding: 12px;
-      border-bottom: 1px solid var(--ks-line)
+      border-bottom: 1px solid #f1f5f9;
     }
 
     .ks-abo-search i {
@@ -1231,29 +1203,29 @@
       left: 22px;
       top: 50%;
       transform: translateY(-50%);
-      color: var(--ks-accent);
-      opacity: .9
+      color: #94a3b8;
     }
 
     .ks-abo-search input {
       width: 100%;
-      padding: 12px 12px 12px 40px;
-      border-radius: 14px;
-      border: 1px solid rgba(250, 204, 21, .22);
-      background: rgba(255, 255, 255, .03);
-      color: #fff;
+      padding: 10px 12px 10px 38px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      color: #0f172a;
       outline: none;
-      font-size: 16px
+      font-size: 14px;
     }
 
     .ks-abo-search input:focus {
-      border-color: rgba(250, 204, 21, .45);
-      box-shadow: 0 0 0 3px rgba(250, 204, 21, .10)
+      border-color: #f59e0b;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
     }
 
     .ks-abo-group {
       padding: 10px 12px;
-      border-bottom: 1px solid var(--ks-line)
+      border-bottom: 1px solid #f1f5f9;
     }
 
     .ks-abo-ghead {
@@ -1261,41 +1233,49 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      font-weight: 950;
-      font-size: 12px
+      font-weight: 800;
+      font-size: 12px;
     }
 
     .ks-abo-ghead span {
-      color: rgba(255, 255, 255, .85)
+      color: #334155;
     }
 
     .ks-abo-count {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 28px;
-      height: 22px;
-      padding: 0 10px;
+      min-width: 24px;
+      height: 20px;
+      padding: 0 8px;
       border-radius: 999px;
-      font-weight: 950;
+      font-weight: 800;
       font-size: 11px;
-      border: 1px solid rgba(250, 204, 21, .20);
-      background: rgba(250, 204, 21, .10);
-      color: var(--ks-accent)
+      border: 1px solid #fde68a;
+      background: #fef3c7;
+      color: #92400e;
     }
 
     .ks-abo-item {
       margin-top: 10px;
       border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, .10);
-      background: rgba(0, 0, 0, .35);
-      padding: 10px;
-      cursor: pointer
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      padding: 12px;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+      transition: all 0.15s ease;
+    }
+
+    .ks-abo-item:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
     }
 
     .ks-abo-item.active {
-      border-color: rgba(250, 204, 21, .35);
-      box-shadow: 0 0 0 3px rgba(250, 204, 21, .08)
+      border-color: #f59e0b;
+      background: #fffdf5;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.12);
     }
 
     .ks-abo-item .nm {
@@ -1908,5 +1888,36 @@
       }
     }
 
-/* auto-extracted from resources/views/pages/kingSelectionProject.blade.php */
+/* Seja Fit Collapsible Sidebar Layout */
+#ks-sidebar {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#ks-main-content {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#ks-main-container.ks-sidebar-collapsed #ks-sidebar {
+  margin-left: -19rem;
+  margin-right: -1.5rem;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+#ks-main-container.ks-sidebar-collapsed #ks-main-content {
+  width: 100%;
+  max-width: 100%;
+}
+@media (max-width: 1024px) {
+  #ks-main-container {
+    flex-direction: column;
+  }
+  #ks-sidebar {
+    width: 100%;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  #ks-main-container.ks-sidebar-collapsed #ks-sidebar {
+    display: none;
+  }
+}
+
 

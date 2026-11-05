@@ -1225,6 +1225,35 @@ class KingSelectionAdminService
         $ext = preg_replace('/[^a-z0-9]/', '', $ext) ?: 'png';
         $key = 'galleries/'.$galleryId.'/watermark/'.(string) Str::uuid().'.'.$ext;
         $ct = str_starts_with($mime, 'image/') ? $mime : 'image/png';
+
+        // Normaliza e otimiza imagens de marca d'água muito grandes (limite de 2560px)
+        // para evitar alto consumo de memória GD (680MB+) durante a pré-visualização e renderização
+        $imgInfo = @getimagesizefromstring($binary);
+        if ($imgInfo && ($imgInfo[0] > 2560 || $imgInfo[1] > 2560)) {
+            @ini_set('memory_limit', '1536M');
+            $src = @imagecreatefromstring($binary);
+            if ($src) {
+                $w = imagesx($src);
+                $h = imagesy($src);
+                $scale = 2560 / max($w, $h);
+                $nw = max(1, (int) round($w * $scale));
+                $nh = max(1, (int) round($h * $scale));
+                $dst = imagecreatetruecolor($nw, $nh);
+                imagealphablending($dst, false);
+                imagesavealpha($dst, true);
+                imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
+                imagedestroy($src);
+                ob_start();
+                imagepng($dst, null, 8);
+                $resized = ob_get_clean();
+                imagedestroy($dst);
+                if (!empty($resized)) {
+                    $binary = $resized;
+                    $ct = 'image/png';
+                }
+            }
+        }
+
         if (! $r2->putKey($key, $binary, $ct)) {
             return ['status' => 502, 'body' => ['success' => false, 'message' => 'Falha ao enviar marca d\'água para o R2']];
         }
