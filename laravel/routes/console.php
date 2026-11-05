@@ -126,14 +126,19 @@ Artisan::command('maintenance:ops-alert {title} {--level=error}', function (stri
 })->purpose('Envia alerta ops (log + Sentry) — usado pelo backup do host');
 
 
-Artisan::command('finance:notify-due-bills {--days=3}', function () {
-    $days = (int) ($this->option('days') ?: 3);
-    $this->info("Verificando contas a vencer nos próximos {$days} dias...");
+Artisan::command('finance:notify-due-bills {--days=}', function () {
+    $daysOption = $this->option('days');
+    $days = ($daysOption !== null && $daysOption !== '') ? (int) $daysOption : null;
+    if ($days !== null && $days > 0) {
+        $this->info("Verificando contas a vencer nos próximos {$days} dias...");
+    } else {
+        $this->info("Verificando contas a vencer nos prazos programados (Hoje, 1 dia, 3 dias, 7 dias e atrasadas)...");
+    }
     $res = app(\App\Services\Finance\FinanceNotificationService::class)->notifyUpcomingDueBills($days);
     $this->info("Notificações concluídas: {$res['users_notified']} usuário(s), {$res['total_bills']} conta(s), total R$ ".number_format($res['total_amount'], 2, ',', '.'));
 
     return 0;
-})->purpose('Envia lembrete Telegram das contas financeiras a vencer (hoje e próximos dias)');
+})->purpose('Envia lembrete Telegram pelo Agente King Finanças das contas a vencer (7d, 3d, 1d, hoje e atrasadas)');
 
 
 // Timezone: America/Sao_Paulo (mesmo horário civil do Node na VPS BR)
