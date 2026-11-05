@@ -2243,12 +2243,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function getWmParams() {
-    let mode = getRadio('wm_mode') || wmMode || 'x';
+    let mode = getRadio('wm_mode') || wmMode || 'tile_dense';
     const hasCustom = galleryHasCustomWmPath();
-    // Se não há marca personalizada enviada, não permitir modo "logo" (evita 500/422 no preview)
+    // Se não há marca personalizada enviada, modo "logo" cai para "tile_dense"
     if (mode === 'logo' && !hasCustom) mode = 'tile_dense';
-    // Se há marca personalizada enviada, não permitir modo "tile_dense" (Conecta King) para evitar conflito
-    if (mode === 'tile_dense' && hasCustom) mode = 'logo';
     const opPct = clamp(parseInt(wmOpacity?.value || String(wmOpacityPct), 10), 0, 100);
     const scPPct = clamp(parseInt(wmScaleP?.value || String(wmScalePortraitPct), 10), 10, 500);
     const scLPct = clamp(parseInt(wmScaleL?.value || String(wmScaleLandscapePct), 10), 10, 500);
@@ -2551,6 +2549,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (wmPreviewTimer) clearTimeout(wmPreviewTimer);
     if (immediate) {
       wmPreviewTimer = null;
+      try { _previewObjectUrls.clear(); } catch (_) {}
       refreshWatermarkPreview().catch(() => { });
       return;
     }
@@ -4516,12 +4515,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       wmModeLogoWrap.style.cursor = hasCustom ? 'pointer' : 'not-allowed';
       wmModeLogoWrap.title = hasCustom ? '' : 'Envie uma marca d\'água para habilitar esta opção.';
     }
-    // Habilitar/desabilitar a opção "Marca d\'água da Conecta King"
-    if (wmModeCk) wmModeCk.disabled = !!hasCustom;
+    // A opção "Marca d'água da Conecta King" está SEMPRE habilitada e disponível
+    if (wmModeCk) wmModeCk.disabled = false;
     if (wmModeCkWrap) {
-      wmModeCkWrap.style.opacity = hasCustom ? '0.55' : '1';
-      wmModeCkWrap.style.cursor = hasCustom ? 'not-allowed' : 'pointer';
-      wmModeCkWrap.title = hasCustom ? 'Remova a marca personalizada para usar a Conecta King.' : '';
+      wmModeCkWrap.style.opacity = '1';
+      wmModeCkWrap.style.cursor = 'pointer';
+      wmModeCkWrap.title = '';
     }
     // sliders (defaults)
     wmOpacityPct = clamp(Math.round((parseFloat(gallery?.watermark_opacity ?? 0.22) || 0.22) * 100), 0, 100);
@@ -7088,16 +7087,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     const optimizedFile = await prepareWatermarkFile(file, 2560);
     const form = new FormData();
     form.append('file', optimizedFile, optimizedFile.name || 'watermark.png');
+    form.append('which', w);
+    const headers = {};
+    if (HEADERS && HEADERS.Authorization) headers.Authorization = HEADERS.Authorization;
+    if (window.CkCsrf && typeof window.CkCsrf.attachToHeaders === 'function') {
+      try { window.CkCsrf.attachToHeaders(headers, 'POST'); } catch (_) {}
+    } else {
+      const cm = document.cookie.match(/(?:^|; )ck_csrf=([^;]*)/);
+      if (cm) headers['X-CK-CSRF'] = decodeURIComponent(cm[1]);
+      const xm = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
+      if (xm) headers['X-XSRF-TOKEN'] = decodeURIComponent(xm[1]);
+    }
     const res = await fetchWithTimeout(`${API_URL}/api/king-selection/galleries/${galleryId}/watermark?which=${encodeURIComponent(w)}`, {
       method: 'POST',
-      headers: { 'Authorization': HEADERS?.Authorization || '' },
+      headers,
+      credentials: 'same-origin',
       body: form
-    }, 45000);
+    }, 60000);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.message || 'Falha ao enviar marca d\'água');
+    if (gallery && typeof gallery === 'object') {
+      if (w === 'portrait') {
+        gallery.watermark_path_portrait = data.watermark_path_portrait || data.watermark_path;
+      } else {
+        gallery.watermark_path_landscape = data.watermark_path_landscape || data.watermark_path;
+      }
+      if (!gallery.watermark_path) gallery.watermark_path = data.watermark_path;
+      gallery.watermark_mode = 'logo';
+    }
     wmMode = 'logo';
     setRadio('wm_mode', 'logo');
-    scheduleWatermarkPreview();
+    _previewObjectUrls.clear();
+    scheduleWatermarkPreview(true);
   }
 
   // side tabs
@@ -9721,7 +9742,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (wmRotateP) wmRotateP.value = String(rot);
       updateWmRotateButtonsP();
       setWmRotateLabels(rot, wmRotateLandscapeDeg);
-      scheduleWatermarkPreview();
+      scheduleWatermarkPreview(true);
     });
   });
   document.querySelectorAll('[data-wm-rotate-l]').forEach((btn) => {
@@ -9732,7 +9753,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (wmRotateL) wmRotateL.value = String(rot);
       updateWmRotateButtonsL();
       setWmRotateLabels(wmRotatePortraitDeg, rot);
-      scheduleWatermarkPreview();
+      scheduleWatermarkPreview(true);
     });
   });
 
@@ -9807,7 +9828,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     scheduleWatermarkPreview();
   });
   Array.from(document.querySelectorAll('input[name="wm_mode"]')).forEach(r => {
-    r.addEventListener('change', scheduleWatermarkPreview);
+    r.addEventListener('change', () => {
+      wmMode = r.value || 'tile_dense';
+      scheduleWatermarkPreview(true);
+    });
   });
 
   // Clicar na porcentagem (opacidade/tamanho) para digitar o valor

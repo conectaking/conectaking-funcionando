@@ -608,10 +608,10 @@ body:before, body:after {
     }
 
     .ks-wm-frame {
-      border: 1px solid #3f3f46;
+      border: 1px solid #e2e8f0;
       border-radius: 16px;
       overflow: hidden;
-      background: #000000
+      background: #0f172a;
     }
 
     .ks-wm-frame img {
@@ -621,12 +621,13 @@ body:before, body:after {
       display: block
     }
 
-    /* Prévias retrato/paisagem: preenchem o moldura (crop visual), sem “faixas” pretas */
+    /* Prévias retrato/paisagem: preenchem o moldura (crop visual) */
     .ks-wm-preview-frame {
       width: 100%;
       position: relative;
       overflow: hidden;
-      background: #000;
+      background: #0f172a;
+      border-radius: 14px;
     }
 
     .ks-wm-preview-frame--portrait {
@@ -652,14 +653,27 @@ body:before, body:after {
 
     .ks-wm-rot-btn {
       min-width: 3.25rem;
+      background: #ffffff !important;
+      color: #334155 !important;
+      border: 1px solid #cbd5e1 !important;
+      border-radius: 10px !important;
+      font-weight: 700 !important;
+      transition: all .15s ease !important;
+      cursor: pointer;
+    }
+
+    .ks-wm-rot-btn:hover {
+      background: #f1f5f9 !important;
+      border-color: #94a3b8 !important;
+      color: #0f172a !important;
     }
 
     .ks-wm-rot-btn.is-active-p,
     .ks-wm-rot-btn.is-active-l {
-      border-color: rgba(250, 204, 21, .55);
-      box-shadow: 0 0 0 2px rgba(250, 204, 21, .18);
-      color: #000;
-      background: var(--ks-primary, #facc15);
+      border-color: #d97706 !important;
+      box-shadow: 0 1px 3px rgba(245, 158, 11, 0.3) !important;
+      color: #ffffff !important;
+      background: #f59e0b !important;
     }
 
     .ks-wm-ph {
@@ -1393,20 +1407,21 @@ body:before, body:after {
     }
 
     .ks-abo-box {
-      padding: 14px;
-      border: 1px solid var(--ks-line);
+      padding: 16px;
+      border: 1px solid #e2e8f0;
       border-radius: 16px;
-      background: rgba(255, 255, 255, .02);
-      min-width: 0
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      min-width: 0;
     }
 
     .ks-abo-box h4 {
       margin: 0 0 10px 0;
-      font-weight: 950;
+      font-weight: 800;
       font-size: 12px;
-      letter-spacing: .12em;
+      letter-spacing: .08em;
       text-transform: uppercase;
-      color: rgba(255, 255, 255, .85)
+      color: #334155;
     }
 
     .ks-abo-kpi {
@@ -1418,9 +1433,9 @@ body:before, body:after {
 
     .ks-abo-kpi .k {
       padding: 12px;
-      border: 1px solid rgba(255, 255, 255, .10);
+      border: 1px solid #e2e8f0;
       border-radius: 14px;
-      background: rgba(0, 0, 0, .28);
+      background: #f8fafc;
       min-width: 0;
       overflow: hidden;
       display: flex;
@@ -1430,10 +1445,10 @@ body:before, body:after {
 
     .ks-abo-kpi .k .l {
       font-size: 10px;
-      letter-spacing: .18em;
+      letter-spacing: .12em;
       text-transform: uppercase;
-      color: var(--ks-muted);
-      font-weight: 900;
+      color: #64748b;
+      font-weight: 800;
       white-space: normal;
       overflow-wrap: anywhere;
       line-height: 1.35
@@ -1443,7 +1458,7 @@ body:before, body:after {
       margin-top: 6px;
       font-weight: 950;
       font-size: clamp(14px, 1.05vw + 12px, 18px);
-      color: #fff;
+      color: #0f172a;
       line-height: 1.35;
       overflow-wrap: anywhere;
       word-break: break-word;

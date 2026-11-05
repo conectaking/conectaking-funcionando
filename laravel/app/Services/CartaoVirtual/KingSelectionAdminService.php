@@ -2699,12 +2699,58 @@ class KingSelectionAdminService
             if (SchemaMeta::hasColumn('king_galleries', 'watermark_path_portrait')) $cols[] = 'watermark_path_portrait';
             if (SchemaMeta::hasColumn('king_galleries', 'watermark_path_landscape')) $cols[] = 'watermark_path_landscape';
             if (SchemaMeta::hasColumn('king_galleries', 'watermark_scale')) $cols[] = 'watermark_scale';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_scale_portrait')) $cols[] = 'watermark_scale_portrait';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_scale_landscape')) $cols[] = 'watermark_scale_landscape';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_rotate')) $cols[] = 'watermark_rotate';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_rotate_portrait')) $cols[] = 'watermark_rotate_portrait';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_rotate_landscape')) $cols[] = 'watermark_rotate_landscape';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_logo_offset_x')) $cols[] = 'watermark_logo_offset_x';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_logo_offset_y')) $cols[] = 'watermark_logo_offset_y';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_logo_offset_x_portrait')) $cols[] = 'watermark_logo_offset_x_portrait';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_logo_offset_y_portrait')) $cols[] = 'watermark_logo_offset_y_portrait';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_logo_offset_x_landscape')) $cols[] = 'watermark_logo_offset_x_landscape';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_logo_offset_y_landscape')) $cols[] = 'watermark_logo_offset_y_landscape';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_stretch_w_pct_portrait')) $cols[] = 'watermark_stretch_w_pct_portrait';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_stretch_h_pct_portrait')) $cols[] = 'watermark_stretch_h_pct_portrait';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_stretch_w_pct_landscape')) $cols[] = 'watermark_stretch_w_pct_landscape';
+            if (SchemaMeta::hasColumn('king_galleries', 'watermark_stretch_h_pct_landscape')) $cols[] = 'watermark_stretch_h_pct_landscape';
+
             $g = DB::selectOne('SELECT '.implode(', ', $cols).' FROM king_galleries WHERE id = ? LIMIT 1', [(int) $own->gallery_id]);
-            $mode = strtolower((string) ($query['wm_mode'] ?? $g->watermark_mode ?? 'none'));
+            $mode = strtolower((string) ($query['wm_mode'] ?? $g->watermark_mode ?? 'tile_dense'));
             if ($mode !== '' && $mode !== 'none') {
                 $opacity = isset($query['wm_opacity']) && is_numeric($query['wm_opacity'])
                     ? (float) $query['wm_opacity']
                     : (float) ($g->watermark_opacity ?? 0.22);
+
+                $isLandscape = true;
+                if (isset($query['wm_aspect_w'], $query['wm_aspect_h'])) {
+                    $isLandscape = (float) $query['wm_aspect_w'] >= (float) $query['wm_aspect_h'];
+                }
+
+                $scale = $isLandscape
+                    ? (isset($query['wm_scale_landscape']) ? (float) $query['wm_scale_landscape'] : (isset($query['wm_scale']) ? (float) $query['wm_scale'] : (float) ($g->watermark_scale_landscape ?? $g->watermark_scale ?? 1.0)))
+                    : (isset($query['wm_scale_portrait']) ? (float) $query['wm_scale_portrait'] : (isset($query['wm_scale']) ? (float) $query['wm_scale'] : (float) ($g->watermark_scale_portrait ?? $g->watermark_scale ?? 1.0)));
+
+                $rotate = $isLandscape
+                    ? (int) ($query['wm_rotate_landscape'] ?? $query['wm_rotate'] ?? $g->watermark_rotate_landscape ?? $g->watermark_rotate ?? 0)
+                    : (int) ($query['wm_rotate_portrait'] ?? $query['wm_rotate'] ?? $g->watermark_rotate_portrait ?? $g->watermark_rotate ?? 0);
+
+                $offX = $isLandscape
+                    ? (float) ($query['wm_ox_l'] ?? $g->watermark_logo_offset_x_landscape ?? $g->watermark_logo_offset_x ?? 0)
+                    : (float) ($query['wm_ox_p'] ?? $g->watermark_logo_offset_x_portrait ?? $g->watermark_logo_offset_x ?? 0);
+
+                $offY = $isLandscape
+                    ? (float) ($query['wm_oy_l'] ?? $g->watermark_logo_offset_y_landscape ?? $g->watermark_logo_offset_y ?? 0)
+                    : (float) ($query['wm_oy_p'] ?? $g->watermark_logo_offset_y_portrait ?? $g->watermark_logo_offset_y ?? 0);
+
+                $stretchW = $isLandscape
+                    ? (float) ($query['wm_st_wl'] ?? $g->watermark_stretch_w_pct_landscape ?? $g->watermark_stretch_w_pct ?? 100)
+                    : (float) ($query['wm_st_wp'] ?? $g->watermark_stretch_w_pct_portrait ?? $g->watermark_stretch_w_pct ?? 100);
+
+                $stretchH = $isLandscape
+                    ? (float) ($query['wm_st_hl'] ?? $g->watermark_stretch_h_pct_landscape ?? $g->watermark_stretch_h_pct ?? 100)
+                    : (float) ($query['wm_st_hp'] ?? $g->watermark_stretch_h_pct_portrait ?? $g->watermark_stretch_h_pct ?? 100);
+
                 $wm = [
                     'enabled' => true,
                     'mode'    => $mode,
@@ -2712,9 +2758,12 @@ class KingSelectionAdminService
                     'path'    => $g->watermark_path ?? null,
                     'path_portrait' => $g->watermark_path_portrait ?? null,
                     'path_landscape' => $g->watermark_path_landscape ?? null,
-                    'scale'   => isset($query['wm_scale']) ? (float) $query['wm_scale'] : (float) ($g->watermark_scale ?? 1.0),
-                    'offset_x' => (float) ($query['wm_ox_p'] ?? $query['wm_ox_l'] ?? 0),
-                    'offset_y' => (float) ($query['wm_oy_p'] ?? $query['wm_oy_l'] ?? 0),
+                    'scale'   => $scale,
+                    'rotate'  => $rotate,
+                    'offset_x' => $offX,
+                    'offset_y' => $offY,
+                    'stretch_w' => $stretchW,
+                    'stretch_h' => $stretchH,
                 ];
             }
         }

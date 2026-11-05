@@ -116,7 +116,7 @@ class KingSelectionMediaService
         $isThumb = $maxSide <= 480;
         $wmKey = '';
         if ($watermark && ! empty($watermark['enabled']) && ! $isThumb) {
-            $wmKey = '|wm:'.($watermark['mode'] ?? 'x').':'.round((float) ($watermark['opacity'] ?? 0.22), 3);
+            $wmKey = '|wm:'.md5(json_encode($watermark));
         }
         $cacheFile = $this->previewCachePath($path, $maxSide, $wmKey);
         if ($cacheFile !== null && is_file($cacheFile) && filesize($cacheFile) > 64) {
@@ -325,6 +325,21 @@ class KingSelectionMediaService
             return $this->applyDiagonalWatermark($jpegBinary, $opacity);
         }
 
+        // Rotação da marca d'água (0, 90, 180, 270)
+        $rotate = (int) ($watermark['rotate'] ?? 0);
+        if (in_array($rotate, [90, 180, 270], true)) {
+            // GD imagerotate gira no sentido anti-horário com graus positivos.
+            // Para girar no sentido horário desejado: (360 - $rotate) % 360
+            $deg = (360 - $rotate) % 360;
+            $rotated = @imagerotate($wmImg, $deg, imagecolorallocatealpha($wmImg, 0, 0, 0, 127));
+            if ($rotated !== false) {
+                imagedestroy($wmImg);
+                $wmImg = $rotated;
+                imagealphablending($wmImg, false);
+                imagesavealpha($wmImg, true);
+            }
+        }
+
         $wmW = imagesx($wmImg);
         $wmH = imagesy($wmImg);
 
@@ -347,14 +362,15 @@ class KingSelectionMediaService
         } else {
             // Marca personalizada (logo)
             $scale = (float) ($watermark['scale'] ?? 1.0);
-            $scale = max(0.1, min(5.0, $scale));
+            $scale = max(0.05, min(5.0, $scale));
 
-            $targetW = max(32, min($w, (int) round($w * 0.45 * $scale)));
-            $targetH = max(32, (int) round($wmH * ($targetW / max(1, $wmW))));
-            if ($targetH > $h) {
-                $targetH = $h;
-                $targetW = max(32, (int) round($wmW * ($targetH / max(1, $wmH))));
-            }
+            $stretchW = (float) ($watermark['stretch_w'] ?? 100) / 100.0;
+            $stretchH = (float) ($watermark['stretch_h'] ?? 100) / 100.0;
+            $stretchW = max(0.5, min(4.0, $stretchW));
+            $stretchH = max(0.5, min(4.0, $stretchH));
+
+            $targetW = max(32, min($w * 2, (int) round($w * 0.45 * $scale * $stretchW)));
+            $targetH = max(32, (int) round($wmH * ($targetW / max(1, $wmW * $stretchW)) * $stretchH));
 
             $wmCanvas = imagecreatetruecolor($targetW, $targetH);
             imagealphablending($wmCanvas, false);

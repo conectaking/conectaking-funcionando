@@ -980,7 +980,7 @@
                 <i class="fas fa-wand-magic-sparkles"></i> Gerar texto sugerido
               </button>
             </div>
-            <div class="rounded-xl border border-white/10 bg-black/25 p-4">
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div class="text-xs font-extrabold ks-muted tracking-widest uppercase mb-2">Perfis (arroba + link)</div>
               <div id="ks-promo-social-rows" class="space-y-2"></div>
               <button type="button" class="ks-btn mt-2" id="ks-promo-add-social"><i class="fas fa-plus"></i> Adicionar perfil</button>
@@ -1016,14 +1016,14 @@
           </div>
 
           <!-- Capa do link e do evento -->
-          <div id="ks-link-cover-card-wrap" class="mt-6 rounded-2xl border-2 border-amber-500/60 bg-gradient-to-br from-amber-500/10 via-slate-900/90 to-black p-5 shadow-xl">
+          <div id="ks-link-cover-card-wrap" class="mt-6 rounded-2xl border border-amber-300 bg-amber-50/60 p-5 shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
-              <div class="font-extrabold text-white text-base flex items-center gap-2">
-                <i class="fas fa-image text-amber-400 text-lg"></i> Capa do link e do evento
-                <span class="bg-amber-400 text-black text-[11px] font-black px-2 py-0.5 rounded tracking-wide uppercase">Capa</span>
+              <div class="font-extrabold text-slate-900 text-base flex items-center gap-2">
+                <i class="fas fa-image text-amber-500 text-lg"></i> Capa do link e do evento
+                <span class="bg-amber-400 text-slate-950 text-[11px] font-black px-2 py-0.5 rounded tracking-wide uppercase">Capa</span>
               </div>
             </div>
-            <p class="text-sm text-slate-200 mt-1 max-w-3xl leading-relaxed">Você pode escolher uma foto da galeria ou enviar uma imagem externa (JPG/PNG) do seu dispositivo para a <b>capa principal do evento</b> (aparece em destaque ao abrir o link e na prévia do WhatsApp).</p>
+            <p class="text-sm text-slate-700 mt-1 max-w-3xl leading-relaxed">Você pode escolher uma foto da galeria ou enviar uma imagem externa (JPG/PNG) do seu dispositivo para a <b>capa principal do evento</b> (aparece em destaque ao abrir o link e na prévia do WhatsApp).</p>
 
             <div class="flex flex-wrap gap-2 items-center mt-4">
               <input type="file" id="ks-link-cover-upload-file" class="hidden" accept="image/*" />
@@ -1034,11 +1034,11 @@
 
             <div class="mt-4">
               <div class="ks-field">
-                <label class="text-slate-100 font-bold text-xs uppercase tracking-wider">Pré-visualização da capa atual</label>
-                <div class="rounded-xl overflow-hidden border-2 border-amber-500/40 bg-black/80 mt-2 max-w-md shadow-inner">
-                  <img id="ks-link-cover-preview" alt="Prévia da capa do link" style="width:100%;height:230px;object-fit:contain;background:#0b0b0b;display:block" />
+                <label class="text-slate-700 font-bold text-xs uppercase tracking-wider">Pré-visualização da capa atual</label>
+                <div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 mt-2 max-w-md shadow-inner">
+                  <img id="ks-link-cover-preview" alt="Prévia da capa do link" style="width:100%;height:230px;object-fit:contain;background:#f8fafc;display:block" />
                 </div>
-                <div id="ks-link-cover-current-source" class="text-xs text-amber-300 font-medium mt-2">Origem atual: foto da galeria</div>
+                <div id="ks-link-cover-current-source" class="text-xs text-amber-800 font-semibold mt-2">Origem atual: foto da galeria</div>
               </div>
             </div>
 
@@ -1063,7 +1063,7 @@
             </div>
           </div>
 
-          <div class="mt-5 rounded-xl border border-white/10 bg-black/25 p-4">
+          <div class="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div class="text-xs font-extrabold ks-muted tracking-widest uppercase mb-3">Mensagem personalizada para compartilhar (opcional)</div>
             <textarea id="ks-links-custom-message" class="ks-input mt-2" rows="4"
               placeholder="Ex.: Olá! Segue o link da sua galeria. Qualquer dúvida, me chame no WhatsApp."></textarea>
@@ -1128,7 +1128,7 @@
           <div class="font-extrabold text-slate-900">Suporte WhatsApp</div>
           <p class="text-sm ks-muted mt-2 max-w-3xl">Configure aqui o botão de suporte que aparece para o cliente dentro da galeria. Assim fica fácil para ele te chamar para confirmar pagamento, pedir liberação ou tirar dúvidas.</p>
 
-          <div class="mt-5 rounded-xl border border-white/10 bg-black/25 p-4">
+          <div class="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div class="text-xs font-extrabold ks-muted tracking-widest uppercase mb-3">Botão flutuante no cliente</div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
               <label>WhatsApp de suporte (com DDD / país)
@@ -1216,7 +1216,7 @@
                   </div>
 
                   <div id="ks-client-empty"
-                    class="mt-3 rounded-2xl border border-dashed border-white/10 bg-black/30 p-5 text-sm text-white/60 hidden">
+                    class="mt-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500 hidden">
                     Nenhum cliente cadastrado (acesso desativado).
                   </div>
 
@@ -1308,149 +1308,170 @@
               </div>
             </label>
 
-            <div class="rounded-xl border border-zinc-600 bg-black p-4 text-zinc-100">
+            <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-5 text-slate-800 mt-4 shadow-sm">
               <div class="flex items-center justify-between gap-3">
                 <div>
-                  <div class="font-extrabold text-white">Pré-visualização (tempo real)</div>
-                  <div class="text-sm text-zinc-400">Mostra como o cliente verá a marca d’água.</div>
+                  <div class="font-extrabold text-slate-900 text-base">Pré-visualização (tempo real)</div>
+                  <div class="text-xs text-slate-500 mt-0.5">Mostra exatamente como seu cliente verá a marca d’água nas fotos.</div>
                 </div>
-                <div class="text-xs text-zinc-400 font-extrabold" id="wm-current"></div>
+                <div class="text-xs text-amber-700 font-extrabold bg-amber-100 border border-amber-200 px-3 py-1 rounded-full" id="wm-current"></div>
               </div>
 
-              <div class="mt-3 text-xs text-zinc-400"><strong class="text-zinc-200">Preencher</strong>: escala forte + <strong class="text-zinc-200">esticar</strong> largura/altura (cobre a foto, tipo papel de parede “preencher”). <strong class="text-zinc-200">Ajustar</strong>: escala contida + <strong class="text-zinc-200">100% esticar</strong> + posição ao centro (tipo “ajustar” sem cortar o desenho da marca). Tamanho retrato/paisagem continua separado nos sliders.</div>
+              <div class="mt-3 text-xs text-slate-600 bg-white border border-slate-200 rounded-xl p-3 shadow-xs">
+                <strong class="text-slate-800">Preencher</strong>: escala forte + esticar para cobrir a área da foto. <strong class="text-slate-800">Ajustar</strong>: escala contida proporcional sem cortar. Use os botões de <strong>Rotação (0°, 90°, 180°, 270°)</strong> para girar sua marca d'água livremente.
+              </div>
 
               <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div class="rounded-xl border border-zinc-700 bg-black p-3">
-                  <div class="text-sm font-extrabold text-white">Foto vertical (retrato)</div>
-                  <div class="text-xs text-zinc-400 mt-1">Prévia em 3:4 — como em fotos em pé.</div>
-                  <div class="ks-wm-frame ks-wm-preview-frame ks-wm-preview-frame--portrait mt-2">
-                    <div class="ks-wm-ph" id="wm-ph-p">Adicione fotos para ver o preview</div>
+                <!-- Retrato -->
+                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div class="flex items-center justify-between">
+                    <div class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                      <i class="fas fa-mobile-screen text-amber-500"></i> Foto vertical (retrato)
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-400">3:4</span>
+                  </div>
+                  <div class="ks-wm-frame ks-wm-preview-frame ks-wm-preview-frame--portrait mt-2.5 rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+                    <div class="ks-wm-ph text-slate-400" id="wm-ph-p">Adicione fotos para ver o preview</div>
                     <img id="wm-preview-portrait" class="hidden" alt="preview marca d’água retrato" />
                   </div>
-                  <div class="mt-2 flex items-center justify-between gap-2">
-                    <div class="text-xs font-extrabold text-zinc-200">Tamanho no retrato</div>
-                    <div class="text-xs text-zinc-400 font-extrabold" id="wm-scale-p-val">120%</div>
+
+                  <div class="mt-3 flex items-center justify-between gap-2">
+                    <div class="text-xs font-extrabold text-slate-700">Tamanho no retrato</div>
+                    <div class="text-xs text-amber-700 font-extrabold font-mono bg-amber-50 px-2 py-0.5 rounded border border-amber-200" id="wm-scale-p-val">120%</div>
                   </div>
-                  <input id="wm-scale-p" class="ks-range mt-2 ks-range-on-dark" type="range" min="10" max="500" step="1" value="120" />
-                  <div class="mt-2 flex items-center justify-between gap-2">
-                    <div class="text-xs font-extrabold text-zinc-200">Rotação (retrato)</div>
-                    <div class="text-xs text-zinc-400 font-extrabold" id="wm-rotate-p-val">0Â°</div>
+                  <input id="wm-scale-p" class="ks-range mt-1.5" type="range" min="10" max="500" step="1" value="120" />
+
+                  <div class="mt-3 flex items-center justify-between gap-2">
+                    <div class="text-xs font-extrabold text-slate-700">Rotação (retrato)</div>
+                    <div class="text-xs text-slate-500 font-extrabold font-mono" id="wm-rotate-p-val">0°</div>
                   </div>
                   <input type="hidden" id="wm-rotate-p" value="0" />
-                  <div class="mt-1 grid grid-cols-4 gap-1.5">
-                    <button type="button" class="ks-btn ks-wm-rot-btn text-[10px] px-1 py-2" data-wm-rotate-p="0" title="Normal">0Â°</button>
-                    <button type="button" class="ks-btn ks-wm-rot-btn text-[10px] px-1 py-2" data-wm-rotate-p="90" title="90Â°">90Â°</button>
-                    <button type="button" class="ks-btn ks-wm-rot-btn text-[10px] px-1 py-2" data-wm-rotate-p="180" title="180Â°">180Â°</button>
-                    <button type="button" class="ks-btn ks-wm-rot-btn text-[10px] px-1 py-2" data-wm-rotate-p="270" title="270Â°">270Â°</button>
+                  <div class="mt-1.5 grid grid-cols-4 gap-1.5">
+                    <button type="button" class="ks-btn ks-wm-rot-btn text-[11px] font-bold px-1 py-2 text-center cursor-pointer" data-wm-rotate-p="0" title="Normal">0°</button>
+                    <button type="button" class="ks-btn ks-wm-rot-btn text-[11px] font-bold px-1 py-2 text-center cursor-pointer" data-wm-rotate-p="90" title="90°">90°</button>
+                    <button type="button" class="ks-btn ks-wm-rot-btn text-[11px] font-bold px-1 py-2 text-center cursor-pointer" data-wm-rotate-p="180" title="180°">180°</button>
+                    <button type="button" class="ks-btn ks-wm-rot-btn text-[11px] font-bold px-1 py-2 text-center cursor-pointer" data-wm-rotate-p="270" title="270°">270°</button>
                   </div>
-                  <div class="mt-2 grid grid-cols-2 gap-1.5">
-                    <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-fill-p" title="Preencher — escala forte (cobre a área)">Preencher</button>
-                    <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-fit-p" title="Ajustar — escala mais contida">Ajustar</button>
+
+                  <div class="mt-2.5 grid grid-cols-2 gap-2">
+                    <button type="button" class="ks-btn text-[11px] font-bold px-2 py-2 text-center cursor-pointer" id="btn-wm-fill-p" title="Preencher — escala forte (cobre a área)"><i class="fas fa-expand text-amber-500 mr-1"></i> Preencher</button>
+                    <button type="button" class="ks-btn text-[11px] font-bold px-2 py-2 text-center cursor-pointer" id="btn-wm-fit-p" title="Ajustar — escala mais contida"><i class="fas fa-compress text-slate-500 mr-1"></i> Ajustar</button>
                   </div>
-                  <div class="mt-4 pt-3 border-t border-zinc-700 space-y-3">
-                    <div class="text-xs font-extrabold text-zinc-200">Mosaico — só em fotos verticais</div>
-                    <div class="text-[11px] text-zinc-500">Posição vertical do padrão (cima / centro / baixo)</div>
+
+                  <div class="mt-4 pt-3 border-t border-slate-100 space-y-3">
+                    <div class="text-xs font-extrabold text-slate-800">Posição vertical do padrão</div>
                     <div class="grid grid-cols-3 gap-1.5">
-                      <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-top-p" title="Cima">Cima</button>
-                      <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-center-v-p" title="Centro vertical">Centro</button>
-                      <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-bottom-p" title="Baixo">Baixo</button>
+                      <button type="button" class="ks-btn text-[10px] font-bold px-1 py-2 cursor-pointer" id="btn-wm-align-top-p" title="Cima">Cima</button>
+                      <button type="button" class="ks-btn text-[10px] font-bold px-1 py-2 cursor-pointer" id="btn-wm-align-center-v-p" title="Centro vertical">Centro</button>
+                      <button type="button" class="ks-btn text-[10px] font-bold px-1 py-2 cursor-pointer" id="btn-wm-align-bottom-p" title="Baixo">Baixo</button>
                     </div>
-                    <details class="mt-3 border border-zinc-700/80 rounded-xl bg-zinc-900/60 p-2 text-xs">
-                      <summary class="font-bold text-zinc-300 cursor-pointer select-none py-1 flex items-center justify-between">
-                        <span><i class="fas fa-sliders text-amber-400 mr-1.5"></i> Ajuste Fino & Posição Avançada</span>
-                        <i class="fas fa-chevron-down text-zinc-400 text-[10px]"></i>
+
+                    <details class="mt-3 border border-slate-200 rounded-xl bg-slate-50/70 p-2.5 text-xs">
+                      <summary class="font-bold text-slate-700 cursor-pointer select-none py-1 flex items-center justify-between">
+                        <span><i class="fas fa-sliders text-amber-500 mr-1.5"></i> Ajuste Fino & Posição Avançada</span>
+                        <i class="fas fa-chevron-down text-slate-400 text-[10px]"></i>
                       </summary>
-                      <div class="mt-2.5 pt-2 border-t border-zinc-700/80 space-y-2.5">
+                      <div class="mt-2.5 pt-2.5 border-t border-slate-200 space-y-3">
                         <div class="flex items-center justify-between gap-2">
-                          <div class="text-[11px] font-extrabold text-zinc-200">Ajuste fino (passo 3%)</div>
-                          <div class="text-[10px] text-zinc-400 font-mono" id="wm-logo-offset-val-p">X 0% · Y 0%</div>
+                          <div class="text-[11px] font-extrabold text-slate-700">Ajuste fino (passo 3%)</div>
+                          <div class="text-[10px] text-slate-500 font-mono" id="wm-logo-offset-val-p">X 0% · Y 0%</div>
                         </div>
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                          <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-left-p" title="Esquerda"><i class="fas fa-arrow-left"></i></button>
-                          <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-right-p" title="Direita"><i class="fas fa-arrow-right"></i></button>
-                          <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-up-p" title="Cima"><i class="fas fa-arrow-up"></i></button>
-                          <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-down-p" title="Baixo"><i class="fas fa-arrow-down"></i></button>
+                          <button type="button" class="ks-btn text-[10px] cursor-pointer" id="btn-wm-offset-left-p" title="Esquerda"><i class="fas fa-arrow-left"></i></button>
+                          <button type="button" class="ks-btn text-[10px] cursor-pointer" id="btn-wm-offset-right-p" title="Direita"><i class="fas fa-arrow-right"></i></button>
+                          <button type="button" class="ks-btn text-[10px] cursor-pointer" id="btn-wm-offset-up-p" title="Cima"><i class="fas fa-arrow-up"></i></button>
+                          <button type="button" class="ks-btn text-[10px] cursor-pointer" id="btn-wm-offset-down-p" title="Baixo"><i class="fas fa-arrow-down"></i></button>
                         </div>
-                        <div class="pt-2 border-t border-zinc-700">
-                          <div class="text-xs font-extrabold text-white">Esticar o ladrilho (retrato)</div>
+                        <div class="pt-2 border-t border-slate-200">
+                          <div class="text-xs font-extrabold text-slate-800">Esticar o ladrilho (retrato)</div>
                           <div class="mt-2 flex items-center justify-between gap-2">
-                            <div class="text-[11px] font-extrabold text-zinc-200">Largura</div>
-                            <div class="text-[10px] text-zinc-400 font-extrabold" id="wm-stretch-w-val-p">100%</div>
+                            <div class="text-[11px] font-extrabold text-slate-700">Largura</div>
+                            <div class="text-[10px] text-slate-500 font-extrabold" id="wm-stretch-w-val-p">100%</div>
                           </div>
-                          <input id="wm-stretch-w-p" class="ks-range mt-1 ks-range-on-dark" type="range" min="50" max="400" step="1" value="100" />
+                          <input id="wm-stretch-w-p" class="ks-range mt-1" type="range" min="50" max="400" step="1" value="100" />
                           <div class="mt-2 flex items-center justify-between gap-2">
-                            <div class="text-[11px] font-extrabold text-zinc-200">Altura</div>
-                            <div class="text-[10px] text-zinc-400 font-extrabold" id="wm-stretch-h-val-p">100%</div>
+                            <div class="text-[11px] font-extrabold text-slate-700">Altura</div>
+                            <div class="text-[10px] text-slate-500 font-extrabold" id="wm-stretch-h-val-p">100%</div>
                           </div>
-                          <input id="wm-stretch-h-p" class="ks-range mt-1 ks-range-on-dark" type="range" min="50" max="400" step="1" value="100" />
+                          <input id="wm-stretch-h-p" class="ks-range mt-1" type="range" min="50" max="400" step="1" value="100" />
                         </div>
                       </div>
                     </details>
                   </div>
                 </div>
-                <div class="rounded-xl border border-zinc-700 bg-black p-3">
-                  <div class="text-sm font-extrabold text-white">Foto horizontal (paisagem)</div>
-                  <div class="text-xs text-zinc-400 mt-1">Prévia em 16:9 — como em fotos deitadas.</div>
-                  <div class="ks-wm-frame ks-wm-preview-frame ks-wm-preview-frame--landscape mt-2">
-                    <div class="ks-wm-ph" id="wm-ph-l">Adicione fotos para ver o preview</div>
+
+                <!-- Paisagem -->
+                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div class="flex items-center justify-between">
+                    <div class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                      <i class="fas fa-tv text-amber-500"></i> Foto horizontal (paisagem)
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-400">16:9</span>
+                  </div>
+                  <div class="ks-wm-frame ks-wm-preview-frame ks-wm-preview-frame--landscape mt-2.5 rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+                    <div class="ks-wm-ph text-slate-400" id="wm-ph-l">Adicione fotos para ver o preview</div>
                     <img id="wm-preview-landscape" class="hidden" alt="preview marca d’água paisagem" />
                   </div>
-                  <div class="mt-2 flex items-center justify-between gap-2">
-                    <div class="text-xs font-extrabold text-zinc-200">Tamanho na paisagem</div>
-                    <div class="text-xs text-zinc-400 font-extrabold" id="wm-scale-l-val">120%</div>
+
+                  <div class="mt-3 flex items-center justify-between gap-2">
+                    <div class="text-xs font-extrabold text-slate-700">Tamanho na paisagem</div>
+                    <div class="text-xs text-amber-700 font-extrabold font-mono bg-amber-50 px-2 py-0.5 rounded border border-amber-200" id="wm-scale-l-val">120%</div>
                   </div>
-                  <input id="wm-scale-l" class="ks-range mt-2 ks-range-on-dark" type="range" min="10" max="500" step="1" value="120" />
-                  <div class="mt-2 flex items-center justify-between gap-2">
-                    <div class="text-xs font-extrabold text-zinc-200">Rotação (paisagem)</div>
-                    <div class="text-xs text-zinc-400 font-extrabold" id="wm-rotate-l-val">0Â°</div>
+                  <input id="wm-scale-l" class="ks-range mt-1.5" type="range" min="10" max="500" step="1" value="120" />
+
+                  <div class="mt-3 flex items-center justify-between gap-2">
+                    <div class="text-xs font-extrabold text-slate-700">Rotação (paisagem)</div>
+                    <div class="text-xs text-slate-500 font-extrabold font-mono" id="wm-rotate-l-val">0°</div>
                   </div>
                   <input type="hidden" id="wm-rotate-l" value="0" />
-                  <div class="mt-1 grid grid-cols-4 gap-1.5">
-                    <button type="button" class="ks-btn ks-wm-rot-btn text-[10px] px-1 py-2" data-wm-rotate-l="0" title="Normal">0Â°</button>
-                    <button type="button" class="ks-btn ks-wm-rot-btn text-[10px] px-1 py-2" data-wm-rotate-l="90" title="90Â°">90Â°</button>
-                    <button type="button" class="ks-btn ks-wm-rot-btn text-[10px] px-1 py-2" data-wm-rotate-l="180" title="180Â°">180Â°</button>
-                    <button type="button" class="ks-btn ks-wm-rot-btn text-[10px] px-1 py-2" data-wm-rotate-l="270" title="270Â°">270Â°</button>
+                  <div class="mt-1.5 grid grid-cols-4 gap-1.5">
+                    <button type="button" class="ks-btn ks-wm-rot-btn text-[11px] font-bold px-1 py-2 text-center cursor-pointer" data-wm-rotate-l="0" title="Normal">0°</button>
+                    <button type="button" class="ks-btn ks-wm-rot-btn text-[11px] font-bold px-1 py-2 text-center cursor-pointer" data-wm-rotate-l="90" title="90°">90°</button>
+                    <button type="button" class="ks-btn ks-wm-rot-btn text-[11px] font-bold px-1 py-2 text-center cursor-pointer" data-wm-rotate-l="180" title="180°">180°</button>
+                    <button type="button" class="ks-btn ks-wm-rot-btn text-[11px] font-bold px-1 py-2 text-center cursor-pointer" data-wm-rotate-l="270" title="270°">270°</button>
                   </div>
-                  <div class="mt-2 grid grid-cols-2 gap-1.5">
-                    <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-fill-l" title="Preencher">Preencher</button>
-                    <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-fit-l" title="Ajustar">Ajustar</button>
+
+                  <div class="mt-2.5 grid grid-cols-2 gap-2">
+                    <button type="button" class="ks-btn text-[11px] font-bold px-2 py-2 text-center cursor-pointer" id="btn-wm-fill-l" title="Preencher"><i class="fas fa-expand text-amber-500 mr-1"></i> Preencher</button>
+                    <button type="button" class="ks-btn text-[11px] font-bold px-2 py-2 text-center cursor-pointer" id="btn-wm-fit-l" title="Ajustar"><i class="fas fa-compress text-slate-500 mr-1"></i> Ajustar</button>
                   </div>
-                  <div class="mt-4 pt-3 border-t border-zinc-700 space-y-3">
-                    <div class="text-xs font-extrabold text-zinc-200">Mosaico — só em fotos horizontais</div>
-                    <div class="text-[11px] text-zinc-500">Posição horizontal do padrão (esquerda / centro / direita)</div>
+
+                  <div class="mt-4 pt-3 border-t border-slate-100 space-y-3">
+                    <div class="text-xs font-extrabold text-slate-800">Posição horizontal do padrão</div>
                     <div class="grid grid-cols-3 gap-1.5">
-                      <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-left-l" title="Esquerda">Esquerda</button>
-                      <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-center-h-l" title="Centro">Centro</button>
-                      <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-right-l" title="Direita">Direita</button>
+                      <button type="button" class="ks-btn text-[10px] font-bold px-1 py-2 cursor-pointer" id="btn-wm-align-left-l" title="Esquerda">Esquerda</button>
+                      <button type="button" class="ks-btn text-[10px] font-bold px-1 py-2 cursor-pointer" id="btn-wm-align-center-h-l" title="Centro">Centro</button>
+                      <button type="button" class="ks-btn text-[10px] font-bold px-1 py-2 cursor-pointer" id="btn-wm-align-right-l" title="Direita">Direita</button>
                     </div>
-                    <details class="mt-3 border border-zinc-700/80 rounded-xl bg-zinc-900/60 p-2 text-xs">
-                      <summary class="font-bold text-zinc-300 cursor-pointer select-none py-1 flex items-center justify-between">
-                        <span><i class="fas fa-sliders text-amber-400 mr-1.5"></i> Ajuste Fino & Posição Avançada</span>
-                        <i class="fas fa-chevron-down text-zinc-400 text-[10px]"></i>
+
+                    <details class="mt-3 border border-slate-200 rounded-xl bg-slate-50/70 p-2.5 text-xs">
+                      <summary class="font-bold text-slate-700 cursor-pointer select-none py-1 flex items-center justify-between">
+                        <span><i class="fas fa-sliders text-amber-500 mr-1.5"></i> Ajuste Fino & Posição Avançada</span>
+                        <i class="fas fa-chevron-down text-slate-400 text-[10px]"></i>
                       </summary>
-                      <div class="mt-2.5 pt-2 border-t border-zinc-700/80 space-y-2.5">
+                      <div class="mt-2.5 pt-2.5 border-t border-slate-200 space-y-3">
                         <div class="flex items-center justify-between gap-2">
-                          <div class="text-[11px] font-extrabold text-zinc-200">Ajuste fino (passo 3%)</div>
-                          <div class="text-[10px] text-zinc-400 font-mono" id="wm-logo-offset-val-l">X 0% · Y 0%</div>
+                          <div class="text-[11px] font-extrabold text-slate-700">Ajuste fino (passo 3%)</div>
+                          <div class="text-[10px] text-slate-500 font-mono" id="wm-logo-offset-val-l">X 0% · Y 0%</div>
                         </div>
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                          <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-left-l" title="Esquerda"><i class="fas fa-arrow-left"></i></button>
-                          <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-right-l" title="Direita"><i class="fas fa-arrow-right"></i></button>
-                          <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-up-l" title="Cima"><i class="fas fa-arrow-up"></i></button>
-                          <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-down-l" title="Baixo"><i class="fas fa-arrow-down"></i></button>
+                          <button type="button" class="ks-btn text-[10px] cursor-pointer" id="btn-wm-offset-left-l" title="Esquerda"><i class="fas fa-arrow-left"></i></button>
+                          <button type="button" class="ks-btn text-[10px] cursor-pointer" id="btn-wm-offset-right-l" title="Direita"><i class="fas fa-arrow-right"></i></button>
+                          <button type="button" class="ks-btn text-[10px] cursor-pointer" id="btn-wm-offset-up-l" title="Cima"><i class="fas fa-arrow-up"></i></button>
+                          <button type="button" class="ks-btn text-[10px] cursor-pointer" id="btn-wm-offset-down-l" title="Baixo"><i class="fas fa-arrow-down"></i></button>
                         </div>
-                        <div class="pt-2 border-t border-zinc-700">
-                          <div class="text-xs font-extrabold text-white">Esticar o ladrilho (paisagem)</div>
+                        <div class="pt-2 border-t border-slate-200">
+                          <div class="text-xs font-extrabold text-slate-800">Esticar o ladrilho (paisagem)</div>
                           <div class="mt-2 flex items-center justify-between gap-2">
-                            <div class="text-[11px] font-extrabold text-zinc-200">Largura</div>
-                            <div class="text-[10px] text-zinc-400 font-extrabold" id="wm-stretch-w-val-l">100%</div>
+                            <div class="text-[11px] font-extrabold text-slate-700">Largura</div>
+                            <div class="text-[10px] text-slate-500 font-extrabold" id="wm-stretch-w-val-l">100%</div>
                           </div>
-                          <input id="wm-stretch-w-l" class="ks-range mt-1 ks-range-on-dark" type="range" min="50" max="400" step="1" value="100" />
+                          <input id="wm-stretch-w-l" class="ks-range mt-1" type="range" min="50" max="400" step="1" value="100" />
                           <div class="mt-2 flex items-center justify-between gap-2">
-                            <div class="text-[11px] font-extrabold text-zinc-200">Altura</div>
-                            <div class="text-[10px] text-zinc-400 font-extrabold" id="wm-stretch-h-val-l">100%</div>
+                            <div class="text-[11px] font-extrabold text-slate-700">Altura</div>
+                            <div class="text-[10px] text-slate-500 font-extrabold" id="wm-stretch-h-val-l">100%</div>
                           </div>
-                          <input id="wm-stretch-h-l" class="ks-range mt-1 ks-range-on-dark" type="range" min="50" max="400" step="1" value="100" />
+                          <input id="wm-stretch-h-l" class="ks-range mt-1" type="range" min="50" max="400" step="1" value="100" />
                         </div>
                       </div>
                     </details>
@@ -1458,71 +1479,71 @@
                 </div>
               </div>
 
-              <div class="mt-5">
+              <div class="mt-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div class="flex items-center justify-between gap-2">
-                  <div class="text-sm font-extrabold text-white">Transparência (opacidade)</div>
-                  <div class="text-xs text-zinc-400 font-extrabold" id="wm-opacity-val">12%</div>
+                  <div class="text-sm font-extrabold text-slate-900">Transparência (opacidade)</div>
+                  <div class="text-xs text-amber-700 font-extrabold font-mono bg-amber-50 px-2 py-0.5 rounded border border-amber-200" id="wm-opacity-val">12%</div>
                 </div>
-                <input id="wm-opacity" class="ks-range mt-2 ks-range-on-dark" type="range" min="0" max="100" step="1" value="12" />
-                <div class="text-xs text-zinc-400 mt-2">0% = quase não aparece. 100% = bem forte.</div>
+                <input id="wm-opacity" class="ks-range mt-2" type="range" min="0" max="100" step="1" value="12" />
+                <div class="text-xs text-slate-500 mt-2">0% = quase não aparece. 100% = bem visível.</div>
               </div>
 
             </div>
 
-            <div class="rounded-xl border border-zinc-700 bg-black p-4 text-zinc-100">
-              <div class="font-extrabold text-white">Marca d’água atual</div>
-              <div class="text-sm text-zinc-400 mt-1">Mostra a marca d’água que está valendo (padrão Conecta King ou personalizada).</div>
-              <div id="wm-file-defaults" class="mt-3 flex flex-wrap gap-4 items-start">
-                <div class="text-xs text-zinc-400 max-w-[220px]">
-                  <div class="font-extrabold text-white mb-2" id="wm-file-ph">Marca Conecta King (fixa — retrato e paisagem)</div>
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 text-slate-800 shadow-sm mt-4">
+              <div class="font-extrabold text-slate-900 text-base">Marca d’água atual</div>
+              <div class="text-xs text-slate-500 mt-1">Mostra a marca d’água que está valendo (padrão Conecta King ou personalizada).</div>
+              <div id="wm-file-defaults" class="mt-4 flex flex-wrap gap-4 items-start">
+                <div class="text-xs text-slate-600 max-w-[240px]">
+                  <div class="font-bold text-slate-800 mb-2" id="wm-file-ph">Marca Conecta King (fixa — retrato e paisagem)</div>
                   <div class="flex flex-wrap gap-3 items-end">
                     <div class="text-center">
-                      <div class="text-[11px] font-extrabold text-zinc-300 mb-1">Retrato</div>
-                      <div class="ks-wm-frame mx-auto bg-zinc-900/50" style="width:112px;aspect-ratio:3/4;max-height:180px">
-                        <img id="wm-file-default-portrait" class="w-full h-full object-contain" alt="Marca Conecta King — retrato" src="./marca%20dagua%20KingSelection%20vertical.png" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='marca_dagua_kingselection_vertical.png'" />
+                      <div class="text-[11px] font-bold text-slate-500 mb-1">Retrato</div>
+                      <div class="ks-wm-frame mx-auto bg-slate-900 p-1" style="width:112px;aspect-ratio:3/4;max-height:180px">
+                        <img id="wm-file-default-portrait" class="w-full h-full object-contain" alt="Marca Conecta King — retrato" src="/marca_dagua_kingselection_vertical.png" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/watermark/marca-dagua-vertical.png'" />
                       </div>
                     </div>
                     <div class="text-center">
-                      <div class="text-[11px] font-extrabold text-zinc-300 mb-1">Paisagem</div>
-                      <div class="ks-wm-frame mx-auto bg-zinc-900/50" style="width:168px;aspect-ratio:16/9;max-height:110px">
-                        <img id="wm-file-default-landscape" class="w-full h-full object-contain" alt="Marca Conecta King — paisagem" src="./marca%20dagua%20KingSelection%20horizontal.png" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='marca_dagua_kingselection_horizontal.png'" />
+                      <div class="text-[11px] font-bold text-slate-500 mb-1">Paisagem</div>
+                      <div class="ks-wm-frame mx-auto bg-slate-900 p-1" style="width:168px;aspect-ratio:16/9;max-height:110px">
+                        <img id="wm-file-default-landscape" class="w-full h-full object-contain" alt="Marca Conecta King — paisagem" src="/marca_dagua_kingselection_horizontal.png" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/watermark/marca-dagua-horizontal.png'" />
                       </div>
                     </div>
                   </div>
-                  <p class="mt-2 text-zinc-500">São os mesmos ficheiros usados na pré-visualização e nas exportações quando não envia marca própria.</p>
+                  <p class="mt-2 text-slate-500">São os mesmos arquivos oficiais da Conecta King usados nas fotos.</p>
                 </div>
               </div>
-              <div id="wm-file-custom-wrap" class="mt-3 hidden">
-                <div class="text-xs text-zinc-400">
-                  <div class="font-extrabold text-white mb-2" id="wm-file-custom-label">Marca personalizada (enviada)</div>
+              <div id="wm-file-custom-wrap" class="mt-4 hidden">
+                <div class="text-xs text-slate-600">
+                  <div class="font-bold text-slate-800 mb-2" id="wm-file-custom-label">Marca personalizada (enviada)</div>
                   <div class="flex flex-wrap gap-4 items-start">
                     <div>
-                      <div class="text-[11px] font-extrabold text-zinc-300 mb-1">Retrato (vertical)</div>
-                      <div class="ks-wm-frame" id="wm-file-frame-p" style="width:120px;aspect-ratio:3/4;max-height:160px">
+                      <div class="text-[11px] font-bold text-slate-500 mb-1">Retrato (vertical)</div>
+                      <div class="ks-wm-frame bg-slate-900 p-1" id="wm-file-frame-p" style="width:120px;aspect-ratio:3/4;max-height:160px">
                         <img id="wm-file-preview-p" class="hidden w-full h-full object-contain" alt="marca retrato" />
                       </div>
                     </div>
                     <div>
-                      <div class="text-[11px] font-extrabold text-zinc-300 mb-1">Paisagem (horizontal)</div>
-                      <div class="ks-wm-frame" id="wm-file-frame-l" style="width:168px;aspect-ratio:16/9;max-height:100px">
+                      <div class="text-[11px] font-bold text-slate-500 mb-1">Paisagem (horizontal)</div>
+                      <div class="ks-wm-frame bg-slate-900 p-1" id="wm-file-frame-l" style="width:168px;aspect-ratio:16/9;max-height:100px">
                         <img id="wm-file-preview-l" class="hidden w-full h-full object-contain" alt="marca paisagem" />
                       </div>
                     </div>
                   </div>
-                  <p class="mt-2">Dica: PNG com fundo transparente fica mais bonito.</p>
+                  <p class="mt-2 text-slate-500">Dica: PNG com fundo transparente fica mais bonito.</p>
                 </div>
               </div>
             </div>
 
-            <div class="flex items-center gap-2 flex-wrap">
+            <div class="flex items-center gap-3 flex-wrap mt-5">
               <input type="file" id="wm-file-p" accept="image/png,image/jpeg,image/webp" class="hidden" />
               <input type="file" id="wm-file-l" accept="image/png,image/jpeg,image/webp" class="hidden" />
-              <button type="button" class="ks-btn" id="btn-upload-wm-p"><i class="fas fa-upload"></i> Enviar retrato</button>
-              <button type="button" class="ks-btn" id="btn-upload-wm-l"><i class="fas fa-upload"></i> Enviar paisagem</button>
-              <button class="ks-btn" id="btn-remove-wm-logo"><i class="fas fa-trash"></i> Remover marca d’água</button>
-              <button class="ks-btn ks-btn-primary" id="btn-save-wm"><i class="fas fa-save"></i> Salvar</button>
+              <button type="button" class="ks-btn bg-white hover:bg-slate-50 text-slate-700 border-slate-300 font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm cursor-pointer" id="btn-upload-wm-p"><i class="fas fa-upload text-amber-500 mr-1.5"></i> Enviar retrato</button>
+              <button type="button" class="ks-btn bg-white hover:bg-slate-50 text-slate-700 border-slate-300 font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm cursor-pointer" id="btn-upload-wm-l"><i class="fas fa-upload text-amber-500 mr-1.5"></i> Enviar paisagem</button>
+              <button type="button" class="ks-btn bg-red-50 hover:bg-red-100 text-red-600 border-red-200 font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm cursor-pointer" id="btn-remove-wm-logo"><i class="fas fa-trash mr-1.5"></i> Remover marca d’água</button>
+              <button type="button" class="ks-btn ks-btn-primary bg-amber-500 hover:bg-amber-600 text-white border-amber-600 font-bold text-xs py-2.5 px-6 rounded-xl shadow-md cursor-pointer ml-auto" id="btn-save-wm"><i class="fas fa-save mr-1.5"></i> Salvar</button>
             </div>
-            <div class="text-xs ks-muted">Dica: envie um PNG com fundo transparente.</div>
+            <div class="text-xs ks-muted mt-2">Dica: envie um PNG com fundo transparente.</div>
           </div>
         </div>
 
@@ -1854,28 +1875,26 @@
 
   <!-- Modal: Compartilhar acesso do cliente -->
   <div id="ks-client-share-modal" class="fixed inset-0 hidden items-center justify-center p-4"
-    style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:999999;align-items:center;justify-content:center;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);" aria-hidden="true">
-    <div class="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden text-white"
-      style="background:#111116 !important; border: 1px solid rgba(250,204,21,.35) !important; box-shadow: 0 25px 60px rgba(0,0,0,0.95) !important;">
-      <div class="px-5 py-4 flex items-center justify-between gap-3"
-        style="border-bottom: 1px solid rgba(255,255,255,.1);">
-        <div class="font-extrabold text-base text-white">Compartilhar acesso</div>
-        <button type="button" id="ks-client-share-close" class="text-white/60 hover:text-white"
+    style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.6);z-index:999999;align-items:center;justify-content:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);" aria-hidden="true">
+    <div class="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden bg-white text-slate-800 border border-slate-200">
+      <div class="px-5 py-4 flex items-center justify-between gap-3 border-b border-slate-100">
+        <div class="font-extrabold text-base text-slate-900">Compartilhar acesso</div>
+        <button type="button" id="ks-client-share-close" class="text-slate-400 hover:text-slate-700"
           style="background:none;border:none;cursor:pointer;font-size:18px"><i class="fas fa-times"></i></button>
       </div>
       <div class="p-5">
-        <div class="rounded-2xl border border-white/10 bg-black/40 p-4">
-          <div class="text-xs ks-muted font-extrabold" style="letter-spacing:.18em;text-transform:uppercase">Dados de acesso do cliente</div>
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div class="text-xs text-slate-500 font-extrabold" style="letter-spacing:.18em;text-transform:uppercase">Dados de acesso do cliente</div>
           <div class="mt-3 text-sm space-y-2">
-            <div><span class="text-white/60">Link:</span> <span class="ks-link break-all font-mono text-xs text-yellow-400" id="ks-client-share-link">-</span></div>
-            <div><span class="text-white/60">E-mail:</span> <span id="ks-client-share-email" class="font-mono text-xs">-</span></div>
-            <div><span class="text-white/60">Senha:</span> <span class="font-mono text-base font-bold text-yellow-400" id="ks-client-share-pass">••••••</span></div>
+            <div><span class="text-slate-500">Link:</span> <span class="ks-link break-all font-mono text-xs text-amber-700 font-bold" id="ks-client-share-link">-</span></div>
+            <div><span class="text-slate-500">E-mail:</span> <span id="ks-client-share-email" class="font-mono text-xs text-slate-800 font-semibold">-</span></div>
+            <div><span class="text-slate-500">Senha:</span> <span class="font-mono text-base font-bold text-amber-600" id="ks-client-share-pass">••••••</span></div>
           </div>
           <button class="ks-btn ks-btn-primary mt-4 w-full" id="ks-client-share-copy"><i class="fas fa-copy"></i> Copiar Mensagem Completa</button>
         </div>
 
         <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <button class="ks-btn" id="ks-client-share-whats"><i class="fab fa-whatsapp"></i> Enviar por WhatsApp</button>
+          <button class="ks-btn" id="ks-client-share-whats"><i class="fab fa-whatsapp text-emerald-600"></i> Enviar por WhatsApp</button>
           <button class="ks-btn"
             onclick="navigator.clipboard && navigator.clipboard.writeText(document.getElementById('ks-client-share-link')?.textContent||'')"><i
               class="fas fa-link"></i> Copiar só o link</button>
@@ -1886,34 +1905,32 @@
 
   <!-- Modal: dados do cliente (atividades) — copiar nome, e-mail, telefone -->
   <div id="ks-act-contact-modal" class="fixed inset-0 hidden items-center justify-center p-4"
-    style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:999999;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;" aria-hidden="true">
-    <div class="w-full max-w-md rounded-2xl shadow-2xl overflow-hidden text-white"
-      style="background:#111116 !important; border: 1px solid rgba(250,204,21,.35) !important; box-shadow: 0 25px 60px rgba(0,0,0,0.95) !important;">
-      <div class="px-5 py-4 flex items-center justify-between gap-3"
-        style="border-bottom: 1px solid rgba(255,255,255,.1);">
-        <div class="font-extrabold text-white text-base">Dados do cliente</div>
-        <button type="button" id="ks-act-contact-close" class="text-slate-500 hover:text-slate-900" aria-label="Fechar"><i
+    style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.6);z-index:999999;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:center;justify-content:center;" aria-hidden="true">
+    <div class="w-full max-w-md rounded-2xl shadow-2xl overflow-hidden bg-white text-slate-800 border border-slate-200">
+      <div class="px-5 py-4 flex items-center justify-between gap-3 border-b border-slate-100">
+        <div class="font-extrabold text-slate-900 text-base">Dados do cliente</div>
+        <button type="button" id="ks-act-contact-close" class="text-slate-400 hover:text-slate-700" aria-label="Fechar" style="background:none;border:none;cursor:pointer;font-size:18px"><i
             class="fas fa-times"></i></button>
       </div>
       <div class="p-5 space-y-3 text-sm text-slate-800">
         <div>
           <div class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1">Nome</div>
           <div class="flex gap-2 items-center">
-            <span id="ks-act-contact-nome" class="flex-1 min-w-0 break-words font-medium">—</span>
+            <span id="ks-act-contact-nome" class="flex-1 min-w-0 break-words font-medium text-slate-900">—</span>
             <button type="button" class="ks-btn ks-btn-primary shrink-0 text-xs px-3 py-1.5" data-ks-act-copy="nome"><i class="fas fa-copy"></i></button>
           </div>
         </div>
         <div>
           <div class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1">E-mail</div>
           <div class="flex gap-2 items-center">
-            <span id="ks-act-contact-email" class="flex-1 min-w-0 break-all font-mono text-xs">—</span>
+            <span id="ks-act-contact-email" class="flex-1 min-w-0 break-all font-mono text-xs text-slate-900 font-semibold">—</span>
             <button type="button" class="ks-btn ks-btn-primary shrink-0 text-xs px-3 py-1.5" data-ks-act-copy="email"><i class="fas fa-copy"></i></button>
           </div>
         </div>
         <div>
           <div class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1">Telefone</div>
           <div class="flex gap-2 items-center">
-            <span id="ks-act-contact-phone" class="flex-1 min-w-0 break-all font-mono text-xs">—</span>
+            <span id="ks-act-contact-phone" class="flex-1 min-w-0 break-all font-mono text-xs text-slate-900 font-semibold">—</span>
             <button type="button" class="ks-btn ks-btn-primary shrink-0 text-xs px-3 py-1.5" data-ks-act-copy="phone"><i class="fas fa-copy"></i></button>
           </div>
         </div>
@@ -1924,13 +1941,11 @@
 
   <!-- Export modal simples -->
   <div id="ks-export-modal" class="fixed inset-0 hidden items-center justify-center p-4"
-    style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:999999;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;">
-    <div class="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden text-white"
-      style="background:#111116 !important; border: 1px solid rgba(250,204,21,.35) !important; box-shadow: 0 25px 60px rgba(0,0,0,0.95) !important;">
-      <div class="px-5 py-4 flex items-center justify-between"
-        style="border-bottom: 1px solid rgba(255,255,255,.1);">
-        <div class="font-extrabold text-white text-base">Exportar fotos</div>
-        <button id="ks-export-close" class="text-slate-500 hover:text-slate-900"><i class="fas fa-times"></i></button>
+    style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.6);z-index:999999;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+    <div class="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden bg-white text-slate-800 border border-slate-200">
+      <div class="px-5 py-4 flex items-center justify-between border-b border-slate-100">
+        <div class="font-extrabold text-slate-900 text-base">Exportar fotos</div>
+        <button id="ks-export-close" class="text-slate-400 hover:text-slate-700" style="background:none;border:none;cursor:pointer;font-size:18px"><i class="fas fa-times"></i></button>
       </div>
       <div class="p-5">
         <div class="text-xs font-extrabold text-slate-500 uppercase tracking-[0.14em] mb-2">Seleção (lote)</div>
@@ -1985,34 +2000,34 @@
       <div class="ks-dupe-body">
         <div class="hint" id="ks-dupe-hint">Encontramos fotos com o mesmo código/nome já existente nesta galeria.</div>
         <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div class="rounded-2xl border border-white/10 bg-black/35 overflow-hidden">
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden">
             <div
-              class="px-4 py-3 border-b border-white/10 text-xs font-extrabold tracking-[0.18em] uppercase text-white/70">
+              class="px-4 py-3 border-b border-slate-200 text-xs font-extrabold tracking-[0.18em] uppercase text-slate-700">
               Atual na galeria</div>
             <div class="p-3">
-              <div class="rounded-xl overflow-hidden border border-white/10 bg-black/40" style="aspect-ratio: 4 / 3;">
+              <div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-100" style="aspect-ratio: 4 / 3;">
                 <img id="ks-dupe-img-old" alt="foto atual" decoding="async" fetchpriority="low"
-                  style="width:100%;height:100%;object-fit:contain;display:block;background:#000" />
+                  style="width:100%;height:100%;object-fit:contain;display:block;background:#0f172a" />
               </div>
-              <div class="mt-2 text-xs text-white/70 font-mono truncate" id="ks-dupe-old-name">-</div>
+              <div class="mt-2 text-xs text-slate-700 font-mono truncate" id="ks-dupe-old-name">-</div>
             </div>
           </div>
-          <div class="rounded-2xl border border-white/10 bg-black/35 overflow-hidden">
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden">
             <div
-              class="px-4 py-3 border-b border-white/10 text-xs font-extrabold tracking-[0.18em] uppercase text-white/70">
+              class="px-4 py-3 border-b border-slate-200 text-xs font-extrabold tracking-[0.18em] uppercase text-slate-700">
               Nova (que você selecionou)</div>
             <div class="p-3">
-              <div class="rounded-xl overflow-hidden border border-white/10 bg-black/40" style="aspect-ratio: 4 / 3;">
+              <div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-100" style="aspect-ratio: 4 / 3;">
                 <img id="ks-dupe-img-new" alt="nova foto" decoding="async" fetchpriority="low"
-                  style="width:100%;height:100%;object-fit:contain;display:block;background:#000" />
+                  style="width:100%;height:100%;object-fit:contain;display:block;background:#0f172a" />
               </div>
-              <div class="mt-2 text-xs text-white/70 font-mono truncate" id="ks-dupe-new-name">-</div>
+              <div class="mt-2 text-xs text-slate-700 font-mono truncate" id="ks-dupe-new-name">-</div>
             </div>
           </div>
         </div>
 
         <div class="mt-4">
-          <div class="text-xs font-extrabold tracking-[0.18em] uppercase text-white/50">Lista de repetidas</div>
+          <div class="text-xs font-extrabold tracking-[0.18em] uppercase text-slate-500">Lista de repetidas</div>
           <div class="ks-dupe-list" id="ks-dupe-list"></div>
         </div>
       </div>
