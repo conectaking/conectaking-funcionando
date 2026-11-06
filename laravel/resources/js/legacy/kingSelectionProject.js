@@ -10297,10 +10297,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       btnApplyWmGen.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Enviando formato paisagem/quadrada...';
       await setWatermarkLogo(fileL, 'landscape');
 
-      // 3. Salva a configuração da galeria para cobrir a imagem inteira com 100% da fidelidade das transparências geradas
+      // 3. Salva a configuração da galeria com a marca d'água personalizada ativada
       btnApplyWmGen.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Ativando na galeria...';
       await savePatch({
-        watermark_mode: 'tile_dense',
+        watermark_mode: 'logo',
         watermark_opacity: 1.0,
         watermark_scale_portrait: 1.0,
         watermark_scale_landscape: 1.0,
@@ -10317,9 +10317,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         watermark_stretch_h_pct_landscape: 100
       });
 
-      // Atualiza interface do painel
-      wmMode = 'tile_dense';
-      setRadio('wm_mode', 'tile_dense');
+      // Atualiza interface do painel para "Sua marca d'água personalizada"
+      wmMode = 'logo';
+      setRadio('wm_mode', 'logo');
       if (wmOpacity) wmOpacity.value = 100;
       if (wmOpacityVal) wmOpacityVal.textContent = '100%';
 

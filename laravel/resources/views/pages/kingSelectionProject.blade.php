@@ -71,10 +71,11 @@
       to { transform: rotate(360deg); }
     }
 
-    /* Seja Fit Theme Overrides */
+    /* Conecta King Luxury Dark & Gold Header */
     .ks-top {
-      background: #0f172a !important;
-      border-bottom: 1px solid #1e293b !important;
+      background: linear-gradient(135deg, #07080a 0%, #0f1015 50%, #171410 100%) !important;
+      border-bottom: 1px solid rgba(245, 158, 11, 0.28) !important;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.75), 0 1px 0 0 rgba(245, 158, 11, 0.2) !important;
       color: #f8fafc !important;
     }
     .ks-nav a {
@@ -359,25 +360,27 @@
   <div class="ks-top">
     <div class="ks-wrap flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2.5">
       <div class="flex items-center gap-3">
-        <!-- Botão Hambúrguer Seja Fit -->
+        <!-- Botão Hambúrguer Conecta King (Preto com Dourado) -->
         <button id="ks-btn-hamburger" type="button"
-          class="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition flex items-center justify-center cursor-pointer"
+          class="p-2 rounded-xl text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 focus:outline-none focus:ring-2 focus:ring-amber-500/40 transition flex items-center justify-center cursor-pointer shadow-xs"
           title="Alternar Menu Lateral (Hambúrguer)" aria-label="Menu Lateral">
           <svg class="w-6 h-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 6h16M4 12h16M4 18h16"></path>
           </svg>
         </button>
 
-        <a href="/kingSelection" class="flex items-center gap-2 text-white no-underline">
-          <img src="https://i.ibb.co/60sW9k75/logo.png" alt="Conecta King" class="w-7 h-7 object-contain" />
-          <span class="font-extrabold text-base tracking-tight text-white">KingSelection</span>
+        <a href="/kingSelection" class="flex items-center gap-2.5 text-white no-underline group">
+          <div class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center p-1 shadow-xs group-hover:border-amber-400/50 transition">
+            <img src="https://i.ibb.co/60sW9k75/logo.png" alt="Conecta King" class="w-full h-full object-contain" />
+          </div>
+          <span class="font-black text-lg tracking-tight bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-transparent drop-shadow-xs">KingSelection</span>
         </a>
       </div>
       <div class="flex items-center gap-3 text-sm text-slate-300">
         <span id="ks-user-pill"
-          class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/90 border border-slate-700 text-xs">
-          <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 inline-flex items-center justify-center font-black text-[11px]">CK</span>
-          <span class="font-extrabold text-slate-200">CONECTA KING</span>
+          class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/70 border border-amber-500/30 text-xs shadow-xs">
+          <span class="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 inline-flex items-center justify-center font-black text-[11px] shadow-xs">CK</span>
+          <span class="font-extrabold text-amber-200/90 tracking-wider text-[11px]">CONECTA KING</span>
         </span>
       </div>
     </div>
