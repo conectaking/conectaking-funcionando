@@ -199,48 +199,56 @@ NESTA IMAGEM EXISTE UM CERCO VIRTUAL DESENHADO:
 
 DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
 
-1. DIFERENCIAÇÃO ENTRE O BEBÊ E ALMOFADAS/PROTETORES/COBERTORES:
-   - ATENÇÃO MÁXIMA: As bordas do berço possuem almofadas brancas/rolinhos protetores acolchoados (protetor de berço), travesseiros e cobertores.
-   - Almofadas, travesseiros, rolinhos protetores de grade, lençol e cobertores são OBJETOS INANIMADOS de tecido.
-   - NUNCA confunda as bordas de uma almofada branca, protetor de berço ou cobertor com a cabeça, mão, perna ou pé do bebê!
-   - O corpo do bebê é unicamente o ser humano real: cabeça humana com cabelo/rosto, tronco com roupinha infantil, bracinhos e perninhas humanas.
-   - Se almofadas, travesseiros ou protetores estiverem fora da linha ciano, mas o bebê estiver com todo o seu corpo dentro da linha ciano: O BEBÊ ESTÁ TOTALMENTE SEGURO! Responda "is_limb_outside": false, "is_baby_outside": false, "limb_outside_part": "nenhum". NÃO CRIE FALSO ALARME POR CAUSA DE ALMOFADAS!
+1. IDENTIFICAÇÃO ANATÔMICA DO BEBÊ HUMANO (COORDENADAS):
+   - Localize o ser humano real (o bebê):
+     * Cabeça: o crânio da criança, com cabelo (normalmente escuro ou encaracolado) e rostinho humano.
+     * Pés / Pernas: os pezinhos descalços ou perninhas da criança.
+     * Tronco / Corpo: o tórax/abdômen com roupinha/macacão/body infantil.
+   - Forneça a posição do centro da cabeça ("head_center"), do centro dos pés ("feet_center") e do centro do tronco ("torso_center") em porcentagem da imagem:
+     x: 0 (borda esquerda) a 100 (borda direita)
+     y: 0 (borda superior) a 100 (borda inferior)
 
-2. REGRA DE OURO - ANÁLISE GLOBAL DA CENA:
-   - NUNCA olhe apenas para o interior da linha ciano! Procure o bebê no QUADRO INTEIRO da imagem (dentro e fora do cerco).
-   - "is_blanket_or_empty": só pode ser true se NÃO EXISTIR NENHUM BEBÊ HUMANO em nenhum lugar do berço/imagem (berço totalmente desocupado). Se o bebê estiver visível no berço (mesmo que com a cabeça ou corpo fora do cerco), "is_blanket_or_empty" é OBRIGATORIAMENTE FALSE!
-   - Se o bebê real estiver visível na imagem:
-     a) Se a cabeça do bebê estiver do lado de fora da linha ciano (penetrando na área avermelhada externa à esquerda ou topo) -> "is_limb_outside": true, "limb_outside_part": "cabeca".
-     b) Se os pés ou pernas do bebê estiverem do lado de fora da linha ciano (penetrando na área externa à direita ou base) -> "is_limb_outside": true, "limb_outside_part": "pe_perna".
-     c) Se a linha ciano cortar o meio do corpinho do bebê, deixando partes anatômicas de fora -> INFRAÇÃO CONFIRMADA: "is_limb_outside": true! Se tanto a cabeça quanto os pés/corpo estiverem do lado de fora -> "is_baby_outside": true, "is_limb_outside": true, "limb_outside_part": "corpo".
-     d) SOMENTE considere "is_limb_outside": false se TODAS as partes anatômicas do corpinho do bebê (cabeça, braços, tronco, pernas e pés) estiverem 100% CONTIDAS DENTRO do polígono ciano.
+2. DIFERENCIAÇÃO ENTRE O BEBÊ E ALMOFADAS/PROTETORES/COBERTORES:
+   - ATENÇÃO MÁXIMA: As bordas do berço possuem almofadas brancas/rolinhos protetores acolchoados (protetor de berço), travesseiros e cobertores de tecido.
+   - Almofadas, travesseiros, rolinhos protetores de grade, lençóis e cobertores são OBJETOS INANIMADOS de tecido.
+   - NUNCA confunda uma almofada branca, protetor de berço ou cobertor com a cabeça, perna ou pé do bebê!
+   - Se almofadas, travesseiros ou protetores estiverem fora da linha ciano na área avermelhada, mas o bebê humano estiver com a cabeça, tronco e pernas dentro da linha ciano: O BEBÊ ESTÁ TOTALMENTE SEGURO!
+   - Nesse caso, responda "is_limb_outside": false, "is_baby_outside": false, "limb_outside_part": "nenhum". NÃO CRIE FALSO ALARME POR CAUSA DE ALMOFADAS!
 
-3. POSTURA E RISCOS:
+3. INFRAÇÃO REAL DO CERCO (SOMENTE PARA CORPO HUMANO REAL):
+   - Há infração "is_limb_outside": true SOMENTE SE:
+     a) A cabeça humana real do bebê estiver cruzando a linha ciano e penetrando na área avermelhada externa (head_is_outside_cyan_fence: true) -> limb_outside_part: "cabeca".
+     b) Os pés/perninhas reais do bebê estiverem cruzando a linha ciano e penetrando na área avermelhada externa (feet_are_outside_cyan_fence: true) -> limb_outside_part: "pe_perna".
+     c) Os bracinhos/mãos reais estiverem do lado de fora -> limb_outside_part: "mao_braco".
+     d) O corpinho todo estiver fora ou a linha ciano cortar o meio do bebê -> is_baby_outside: true, limb_outside_part: "corpo".
+   - Se o bebê estiver inteiro contido dentro da linha ciano (área azulada interna): "is_limb_outside": false, "is_baby_outside": false, "limb_outside_part": "nenhum".
+
+4. POSTURA E RISCOS:
    - "is_standing": true SOMENTE se o bebê estiver em pé erguido nas pernas ou apoiado em pé na grade.
    - "is_lying_down": true se estiver deitado no colchão dormindo ou descansando.
-   - "baby_posture": "sleeping_back" | "sleeping_stomach" | "sleeping_side" | "awake_moving" | "standing" | "empty".
-   - "adult_present": true se houver adulto presente.
-   - "adult_label": "Pai/Mãe" se presente.
-   - "adult_action": ação do adulto se presente.
    - "is_face_covered": true se o rostinho da criança estiver abafado por pano/travesseiro (risco de sufocamento).
-   - "description": diagnóstico detalhado explicando a posição exata do bebê humano, diferenciando-o de almofadas e confirmando se ele está ou não dentro da demarcação ciano.
+   - "description": diagnóstico detalhado explicando a posição exata do bebê humano, confirmando se a cabeça e os membros estão dentro ou fora da demarcação ciano e diferenciando-o das almofadas.
 
 Responda ESTRITAMENTE em JSON:
 {
+  "baby_detected": boolean,
+  "is_blanket_or_empty": boolean,
+  "head_center": { "x": float, "y": float },
+  "feet_center": { "x": float, "y": float },
+  "torso_center": { "x": float, "y": float },
+  "head_is_outside_cyan_fence": boolean,
+  "feet_are_outside_cyan_fence": boolean,
+  "body_is_outside_cyan_fence": boolean,
   "is_limb_outside": boolean,
   "is_baby_outside": boolean,
   "limb_outside_part": "pe_perna" | "mao_braco" | "cabeca" | "corpo" | "nenhum",
-  "baby_detected": boolean,
   "is_standing": boolean,
   "is_lying_down": boolean,
-  "is_blanket_or_empty": boolean,
   "adult_present": boolean,
   "adult_label": string,
   "adult_action": string,
   "is_face_covered": boolean,
   "baby_posture": string,
-  "objects_near_fence": string,
-  "baby_exact_location_relative_to_fence": string,
   "confidence": float,
   "description": string
 }
@@ -369,10 +377,13 @@ PROMPT;
                     $inside = !$inside;
                 }
             }
-            if ($inside) {
-                return true;
+            if ($tolerance == 0.0) {
+                return $inside;
             }
             if ($tolerance > 0) {
+                if ($inside) {
+                    return true;
+                }
                 // Se estiver dentro da distância de tolerância de qualquer segmento
                 for ($i = 0; $i < $n; $i++) {
                     $next = ($i + 1) % $n;
@@ -390,6 +401,28 @@ PROMPT;
                         }
                     }
                 }
+                return false;
+            }
+            if ($tolerance < 0) {
+                // Margem interna estrita: deve estar dentro E afastado da borda
+                if (!$inside) return false;
+                $minDist = 999999.0;
+                for ($i = 0; $i < $n; $i++) {
+                    $next = ($i + 1) % $n;
+                    $x1 = (float)$points[$i]['x']; $y1 = (float)$points[$i]['y'];
+                    $x2 = (float)$points[$next]['x']; $y2 = (float)$points[$next]['y'];
+                    $dx = $x2 - $x1;
+                    $dy = $y2 - $y1;
+                    $lenSq = $dx * $dx + $dy * $dy;
+                    if ($lenSq > 0.000001) {
+                        $t = max(0.0, min(1.0, (($px - $x1) * $dx + ($py - $y1) * $dy) / $lenSq));
+                        $projX = $x1 + $t * $dx;
+                        $projY = $y1 + $t * $dy;
+                        $dist = hypot($px - $projX, $py - $projY);
+                        if ($dist < $minDist) $minDist = $dist;
+                    }
+                }
+                return $minDist >= abs($tolerance);
             }
             return false;
         }
@@ -413,24 +446,73 @@ PROMPT;
             $roi = json_decode($roi, true);
         }
 
-        // Se o modelo de visão detectou o corpinho do bebê ou caixa total
-        if (is_array($roi) && !empty($roi)) {
-            $totalBox = $json['baby_total_bounding_box'] ?? null;
-            if (is_array($totalBox) && count($totalBox) >= 4) {
-                [$bx1, $by1, $bx2, $by2] = $totalBox;
-                $centerBx = (float)(($bx1 + $bx2) / 2);
-                $centerBy = (float)(($by1 + $by2) / 2);
+        $headCenter = $json['head_center'] ?? null;
+        $feetCenter = $json['feet_center'] ?? null;
+        $torsoCenter = $json['torso_center'] ?? null;
 
-                // Se o CENTRO do corpinho do bebê estiver do lado de fora do cerco
-                if (!$this->isPointInRoi($centerBx, $centerBy, $roi, 1.0)) {
+        // ── VERIFICAÇÃO GEOMÉTRICA DE ALTA PRECISÃO (VALIDAÇÃO DUPLA CONTRA FALSOS POSITIVOS E FALSOS NEGATIVOS) ──
+        if (is_array($roi) && !empty($roi) && !empty($json['baby_detected'])) {
+            // 1. Validação da Cabeça
+            if (is_array($headCenter) && isset($headCenter['x'], $headCenter['y'])) {
+                $hx = (float) $headCenter['x'];
+                $hy = (float) $headCenter['y'];
+                // Tolerância de 2.5% para o interior (evita falsos alertas quando o bebê apenas encosta no limite interno)
+                $headInFence = $this->isPointInRoi($hx, $hy, $roi, 2.5);
+
+                if ($headInFence) {
+                    // Cabeça matematicamente DENTRO do cerco!
+                    // Se o modelo confundiu almofada/protetor externo com a cabeça do bebê:
+                    if ($normPart === 'cabeca') {
+                        $isLimbOutside = false;
+                        $normPart = 'nenhum';
+                    }
+                } else {
+                    // Cabeça matematicamente FORA do cerco (ou cortada pela linha)
+                    // Verifica se está estritamente fora além da borda externa
+                    $isStrictlyOutside = !$this->isPointInRoi($hx, $hy, $roi, -1.0);
+                    if ($isStrictlyOutside || !empty($json['head_is_outside_cyan_fence'])) {
+                        $isLimbOutside = true;
+                        $normPart = 'cabeca';
+                        if (empty($desc) || stripos($desc, 'seguro') !== false) {
+                            $desc = '🚨 Cabeça do bebê passou para fora da área segura demarcada no cerco!';
+                        }
+                    }
+                }
+            }
+
+            // 2. Validação dos Pés
+            if (is_array($feetCenter) && isset($feetCenter['x'], $feetCenter['y'])) {
+                $fx = (float) $feetCenter['x'];
+                $fy = (float) $feetCenter['y'];
+                $feetInFence = $this->isPointInRoi($fx, $fy, $roi, 2.5);
+
+                if ($feetInFence) {
+                    if ($normPart === 'pe_perna') {
+                        $isLimbOutside = false;
+                        $normPart = 'nenhum';
+                    }
+                } else {
+                    $isStrictlyOutside = !$this->isPointInRoi($fx, $fy, $roi, -1.0);
+                    if ($isStrictlyOutside || !empty($json['feet_are_outside_cyan_fence'])) {
+                        $isLimbOutside = true;
+                        if ($normPart === 'nenhum') $normPart = 'pe_perna';
+                        if (empty($desc) || stripos($desc, 'seguro') !== false) {
+                            $desc = '🚨 Pé ou perna do bebê passou para fora da área segura demarcada no cerco!';
+                        }
+                    }
+                }
+            }
+
+            // 3. Validação do Tronco / Centro do Bebê
+            if (is_array($torsoCenter) && isset($torsoCenter['x'], $torsoCenter['y'])) {
+                $tx = (float) $torsoCenter['x'];
+                $ty = (float) $torsoCenter['y'];
+                $torsoInFence = $this->isPointInRoi($tx, $ty, $roi, 1.5);
+                if (!$torsoInFence) {
                     $isBabyOutside = true;
                     $isLimbOutside = true;
-                    if ($normPart === 'nenhum' || empty($normPart)) {
-                        $normPart = 'corpo';
-                    }
-                    if (empty($desc) || stripos($desc, 'seguro') !== false) {
-                        $desc = 'Bebê saiu da área segura demarcada no cerco!';
-                    }
+                    $normPart = 'corpo';
+                    $desc = '🚨 Bebê com o corpo fora da área segura demarcada!';
                 }
             }
         }
@@ -438,8 +520,8 @@ PROMPT;
         // Se estiver seguro dentro do cerco
         if (!$isLimbOutside && !$isBabyOutside) {
             $normPart = 'nenhum';
-            if ($desc === '') {
-                $desc = 'Bebê seguro dentro da área demarcada do berço.';
+            if ($desc === '' || stripos($desc, 'fora') !== false) {
+                $desc = 'Bebê seguro dentro da área demarcada do berço (confirmado por geometria anatômica).';
             }
         }
 

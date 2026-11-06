@@ -10271,17 +10271,22 @@
                     const cribMotion = getRegionMotionPct(r.x, r.y, r.x + r.w, r.y + r.h);
                     const fullMotion = getRegionMotionPct(10, 15, 90, 85);
 
-                    // Indicador visual de movimento em tempo real na tela do berço
-                    if (cribMotion >= 0.10 || fullMotion >= 0.16) {
-                        const mbanner = document.getElementById(`motion-alert-${camId}`);
-                        if (mbanner) {
-                            mbanner.style.display = 'flex';
-                            mbanner.innerHTML = '<i class="fas fa-running"></i> <span>🏃 <b>MOVIMENTO NO BERÇO!</b> O bebê se mexeu</span>';
-                            clearTimeout(s._motionTimer);
-                            s._motionTimer = setTimeout(() => {
-                                if (mbanner) mbanner.style.display = 'none';
-                            }, 3500);
+                    // Indicador visual de movimento em tempo real na tela do berço (com filtro anti-ruído infravermelho)
+                    if (cribMotion >= 1.6 || fullMotion >= 2.4) {
+                        s._motionStreak = (s._motionStreak || 0) + 1;
+                        if (s._motionStreak >= 2) {
+                            const mbanner = document.getElementById(`motion-alert-${camId}`);
+                            if (mbanner) {
+                                mbanner.style.display = 'flex';
+                                mbanner.innerHTML = '<i class="fas fa-running"></i> <span>🏃 <b>MOVIMENTO NO BERÇO!</b> O bebê se mexeu</span>';
+                                clearTimeout(s._motionTimer);
+                                s._motionTimer = setTimeout(() => {
+                                    if (mbanner) mbanner.style.display = 'none';
+                                }, 3000);
+                            }
                         }
+                    } else {
+                        s._motionStreak = 0;
                     }
 
                     // 1. EXECUTA MODELOS DE IA LOCAIS: DETECÇÃO DE PESSOAS (COCO-SSD) E ARTICULAÇÕES (MOVENET POSE)
@@ -10305,10 +10310,10 @@
 
                             for (const pt of kps) {
                                 kpMap[pt.name] = pt;
-                                if (pt.score >= 0.15) {
+                                if (pt.score >= 0.25) {
                                     const px = (pt.x / vw) * 100;
                                     const py = (pt.y / vh) * 100;
-                                    if (isPointInCribFence(px, py, r)) {
+                                    if (isPointInCribFence(px, py, r, 2.0)) {
                                         pointsInside++;
                                     }
                                 }
@@ -10320,12 +10325,12 @@
 
                             const isPtInsideStrict = (px, py) => {
                                 if (r.type === 'circle' && r.circle) {
-                                    return isPointInCircle(px, py, r.circle, 0.0);
+                                    return isPointInCircle(px, py, r.circle, 1.5);
                                 }
                                 if (Array.isArray(r.points) && r.points.length >= 3) {
-                                    return isPointInsidePolygonWithTolerance(px, py, r.points, 0.0);
+                                    return isPointInsidePolygonWithTolerance(px, py, r.points, 1.5);
                                 }
-                                return isPointInCribFence(px, py, r, 0.0);
+                                return isPointInCribFence(px, py, r, 1.5);
                             };
 
                             const allLimbCheck = [
@@ -10341,7 +10346,7 @@
                             for (const limbGroup of allLimbCheck) {
                                 for (const keyName of limbGroup.keys) {
                                     const pt = kpMap[keyName];
-                                    if (pt && pt.score >= 0.22) {
+                                    if (pt && pt.score >= 0.35) {
                                         const px = (pt.x / vw) * 100;
                                         const py = (pt.y / vh) * 100;
 
@@ -10362,13 +10367,13 @@
                                 const [bx, by, bw, bh] = p.bbox;
                                 const cx = ((bx + bw / 2) / vw) * 100;
                                 const cy = ((by + bh / 2) / vh) * 100;
-                                const centerInside = isPointInCribFence(cx, cy, r);
+                                const centerInside = isPointInCribFence(cx, cy, r, 2.0);
 
                                 if (centerInside) {
                                     isBabyInCrib = true;
                                 } else {
                                     const areaPct = (bw * bh) / (vw * vh);
-                                    if (p.score >= 0.22 && areaPct >= 0.02) {
+                                    if (p.score >= 0.35 && areaPct >= 0.03) {
                                         limbBreached = true;
                                         isBabyOutsideCrib = true;
                                         if (!breachMsg) {
@@ -10387,7 +10392,7 @@
                         s.calmCycles = 0;
                         s.hasSeenInCrib = true;
 
-                        if (s.breachStreak >= 2) {
+                        if (s.breachStreak >= 3) {
                             const msg = limbBreached
                                 ? (breachMsg || '🚨 Parte do corpo do bebê passou para fora do cerco do berço!')
                                 : '🚨 ALERTA: Bebê saiu do cerco seguro do berço!';
@@ -10404,15 +10409,14 @@
                     } else {
                         s.breachStreak = 0;
 
-                        // Mesmo quando o MoveNet/COCO-SSD local não enxerga as perninhas na visão noturna infravermelha
-                        // (ou quando o usuário acabou de ajustar o cerco deixando o pé de fora), a IA Vision especialista
-                        // no servidor inspeciona a imagem com o polígono ciano desenhado!
+                        // Verificação com IA Vision especialista:
+                        // Ocorre sob demanda inicial, confirmações periódicas quando fora do berço,
+                        // ou quando movimento físico sustentado é detectado no berço.
                         const timeSinceAi = now - (s.lastAiVisionCheck || 0);
                         const shouldRunProactiveAi = s.needsImmediateAiCheck
                             || (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 15000) && timeSinceAi >= 12000)
-                            || (s.fenceState === 'OUTSIDE' && timeSinceAi >= 12000)
-                            || ((cribMotion >= 0.35 || fullMotion >= 0.45) && timeSinceAi >= 6000)
-                            || (timeSinceAi >= 15000);
+                            || (s.fenceState === 'OUTSIDE' && timeSinceAi >= 20000)
+                            || ((cribMotion >= 1.8 || fullMotion >= 2.6) && (s._motionStreak >= 2) && timeSinceAi >= 10000);
 
                         if (shouldRunProactiveAi && !s.isAiRequestInFlight) {
                             const wasImmediate = Boolean(s.needsImmediateAiCheck);
@@ -11425,13 +11429,13 @@
                         const d = Math.abs(currentData[i] - prevData[i]) +
                                   Math.abs(currentData[i+1] - prevData[i+1]) +
                                   Math.abs(currentData[i+2] - prevData[i+2]);
-                        if (d > 22) diff++;
+                        if (d > 35) diff++;
                     }
 
-                    // Sensibilidade calibrada para visão noturna infravermelha
-                    if (diff > 35) {
+                    // Calibrado para movimentos reais do bebê (eliminando ruído térmico e artefatos IR)
+                    if (diff > 140) {
                         motionStreak++;
-                        if (motionStreak >= 1) {
+                        if (motionStreak >= 2) {
                             triggerBabyMotionDetected(camId);
                         }
                     } else {
