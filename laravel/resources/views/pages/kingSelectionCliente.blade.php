@@ -45,6 +45,10 @@
   <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png" />
   <style>
     html, body { background-color: #000000; color: #ffffff; }
+    .ks-password-wrap { position: relative; display: flex; align-items: center; width: 100%; }
+    .ks-password-wrap input { width: 100%; padding-right: 42px !important; }
+    .ks-pass-toggle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #9ca3af; cursor: pointer; padding: 6px 10px; font-size: 14px; transition: color 0.15s ease; }
+    .ks-pass-toggle:hover { color: #facc15; }
   </style>
   <script src="/config.js?v=2026-09-10-apex1"></script>
   @vite(['resources/css/fontawesome.css', 'resources/css/app.css', 'resources/js/pages/kingSelectionCliente.js'])
@@ -99,7 +103,7 @@
 
   <div id="ks-toast" class="ks-hidden" style="position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:220;background:#1f2937;border:1px solid #374151;padding:10px 18px;border-radius:10px;font-size:14px;max-width:90%;"></div>
 
-  <div id="ks-boot" aria-live="polite">A carregar.</div>
+  <div id="ks-boot" aria-live="polite">Carregando galeria...</div>
 
   <div id="ks-login" class="ks-login-wrap ks-hidden">
     <div class="ks-login-card">
@@ -114,13 +118,13 @@
         />
       </div>
       <h1 id="ks-login-title">King Selection</h1>
-      <p id="ks-login-sub" class="ks-login-lead">A carregar.</p>
+      <p id="ks-login-sub" class="ks-login-lead">Carregando...</p>
       <div id="ks-login-body" class="ks-hidden">
         <!-- Modo Fotos vendidas (paid_event_photos): nome + e-mail + WhatsApp (reentrar / conferir identidade) -->
         <div id="ks-login-mode-details" class="ks-hidden">
           <p class="ks-section-h">Entrar na minha seleção</p>
           <p id="ks-login-details-lead" class="ks-muted" style="font-size:13px;margin:-6px 0 14px;line-height:1.45;text-align:left">
-            Use o mesmo <strong>nome</strong>, <strong>e-mail</strong> e <strong>WhatsApp</strong> do cadastro (ao enviar a seleção). Informe com DDD e, se necessário, código do pa(ex.: 55). Se o fotógrafo não salvou seu WhatsApp no cadastro, pode deixar em branco.
+            Use o mesmo <strong>nome</strong>, <strong>e-mail</strong> e <strong>WhatsApp</strong> do cadastro (ao enviar a seleção). Informe com DDD e, se necessário, código do país (ex.: 55). Se o fotógrafo não salvou seu WhatsApp no cadastro, pode deixar em branco.
           </p>
           <div class="ks-field">
             <label for="ks-reauth-nome">Nome</label>
@@ -175,11 +179,16 @@
           <p id="ks-login-pw-lead" class="ks-muted" style="font-size:13px;margin:-6px 0 14px;line-height:1.45;text-align:left"></p>
           <div class="ks-field">
             <label for="ks-login-email">E-mail</label>
-            <input id="ks-login-email" class="ks-input" type="email" autocomplete="email" />
+            <input id="ks-login-email" class="ks-input" type="email" autocomplete="email" placeholder="seu-email@exemplo.com" />
           </div>
           <div class="ks-field">
             <label for="ks-login-senha">Senha</label>
-            <input id="ks-login-senha" class="ks-input" type="password" autocomplete="current-password" />
+            <div class="ks-password-wrap">
+              <input id="ks-login-senha" class="ks-input" type="password" autocomplete="current-password" placeholder="Digite sua senha" />
+              <button type="button" class="ks-pass-toggle" id="ks-pass-toggle" title="Mostrar/ocultar senha" aria-label="Mostrar/ocultar senha">
+                <i class="fas fa-eye" id="ks-pass-toggle-icon"></i>
+              </button>
+            </div>
           </div>
           <button type="button" class="ks-btn ks-btn-yellow" id="ks-login-pw-btn" style="width:100%;justify-content:center;margin-top:4px">
             <i class="fas fa-right-to-bracket"></i> Entrar na galeria
@@ -210,7 +219,7 @@
             <div class="ks-top-sort-meta">
               <label class="ks-muted" for="ks-sort" style="font-size:12px;font-weight:700;margin:0">Ordenar:</label>
               <select id="ks-sort" class="ks-select" title="Ordenação">
-                <option value="order">Sequncia original</option>
+                <option value="order">Sequência original</option>
                 <option value="name">Nome do arquivo</option>
                 <option value="id">Número da foto (ID)</option>
               </select>
@@ -227,7 +236,7 @@
               <button type="button" class="ks-btn ks-btn-outline" id="ks-compare" title="Comparar duas fotos lado a lado">
                 <i class="fas fa-columns"></i> Comparar e ajustar
               </button>
-              <button type="button" class="ks-btn ks-btn-danger" id="ks-clear" title="Limpa s a seleção atual">
+              <button type="button" class="ks-btn ks-btn-danger" id="ks-clear" title="Limpa só a seleção atual">
                 <i class="fas fa-trash-alt"></i> Limpar seleção
               </button>
               <button type="button" class="ks-btn ks-btn-edit-req ks-hidden" id="ks-send-edit" title="Enviar fotos marcadas para edição" aria-hidden="true">
@@ -243,9 +252,9 @@
                 <i class="fas fa-file-archive"></i> ZIP
               </button>
               <button type="button" class="ks-btn ks-btn-yellow" id="ks-advance" title="Ir para comparar e ajustar">
-                <i class="fas fa-arrow-right"></i> Avanar
+                <i class="fas fa-arrow-right"></i> Avançar
               </button>
-              <button type="button" class="ks-btn ks-hidden" id="ks-folder-select-all" title="Selecionar todas as fotos deste lbum">
+              <button type="button" class="ks-btn ks-hidden" id="ks-folder-select-all" title="Selecionar todas as fotos deste álbum">
                 <i class="fas fa-check-double"></i> Selecionar todas
               </button>
               <button type="button" class="ks-btn ks-hidden" id="ks-folder-back-top" title="Voltar para pastas">
@@ -409,7 +418,7 @@
       </div>
       <div class="ks-wrap" style="max-width:1100px">
         <h2 class="ks-cmp-title">Comparar e ajustar seleção</h2>
-        <p class="ks-cmp-hint">Por defeito, cada clique na faixa de baixo <strong>alterna entre Foto A e Foto B</strong>. Toque na <strong>rea grande da foto</strong> (ou no rtulo Foto A / Foto B) para <strong>fixar</strong> s esse lado; toque <strong>de novo</strong> para voltar  alternncia. <strong>Ampliar</strong> abre s essa imagem; <strong>Ampliar A e B juntas</strong> abre o visualizador das duas. Use setas e <strong>Remover</strong> como antes. No fim da faixa, o botão <strong>+</strong> permite <strong>adicionar mais fotos</strong>  seleção sem fechar esta tela.</p>
+        <p class="ks-cmp-hint">Por padrão, cada clique na faixa de baixo <strong>alterna entre Foto A e Foto B</strong>. Toque na <strong>área grande da foto</strong> (ou no rótulo Foto A / Foto B) para <strong>fixar</strong> só esse lado; toque <strong>de novo</strong> para voltar à alternância. <strong>Ampliar</strong> abre só essa imagem; <strong>Ampliar A e B juntas</strong> abre o visualizador das duas. Use setas e <strong>Remover</strong> como antes. No fim da faixa, o botão <strong>+</strong> permite <strong>adicionar mais fotos</strong> à seleção sem fechar esta tela.</p>
         <div class="ks-cmp-both-wrap">
           <button type="button" class="ks-btn ks-btn-yellow" id="ks-cmp-both"><i class="fas fa-expand"></i> Ampliar A e B juntas</button>
         </div>
@@ -563,7 +572,7 @@
   <div id="ks-viewer" class="ks-hidden ks-viewer" aria-hidden="true">
     <button type="button" class="ks-btn ks-viewer-close" id="ks-viewer-close" aria-label="Fechar"><i class="fas fa-times"></i></button>
     <button type="button" class="ks-viewer-nav ks-viewer-nav-prev" id="ks-viewer-prev" aria-label="Foto anterior"><i class="fas fa-chevron-left"></i></button>
-    <button type="button" class="ks-viewer-nav ks-viewer-nav-next" id="ks-viewer-next" aria-label="Prxima foto"><i class="fas fa-chevron-right"></i></button>
+    <button type="button" class="ks-viewer-nav ks-viewer-nav-next" id="ks-viewer-next" aria-label="Próxima foto"><i class="fas fa-chevron-right"></i></button>
     <div class="ks-viewer-inner">
       <div class="ks-viewer-photo-wrap">
         <button type="button" class="ks-check-btn ks-viewer-check ks-hidden" id="ks-viewer-check" aria-label="Selecionar" title="Selecionar"></button>
@@ -581,7 +590,7 @@
     <div class="ks-ab-head">
       <div class="ks-ab-head-col ks-ab-head-col-a">
         <span class="ks-ab-slot-label">Foto A</span>
-        <div class="ks-ab-zoom-btns" title="Zoom: roda do mouse ou botes">
+        <div class="ks-ab-zoom-btns" title="Zoom: roda do mouse ou botões">
           <button type="button" class="ks-ab-zoom-btn" id="ks-viewer-ab-zoom-out-a" title="Reduzir zoom"><i class="fas fa-search-minus"></i></button>
           <button type="button" class="ks-ab-zoom-btn" id="ks-viewer-ab-zoom-in-a" title="Aumentar zoom"><i class="fas fa-search-plus"></i></button>
           <button type="button" class="ks-ab-zoom-btn ks-ab-zoom-reset" id="ks-viewer-ab-zoom-reset-a" title="Ajustar ao tamanho normal">Ajustar</button>
@@ -593,7 +602,7 @@
       </div>
       <div class="ks-ab-head-col ks-ab-head-col-b">
         <span class="ks-ab-slot-label">Foto B</span>
-        <div class="ks-ab-zoom-btns" title="Zoom: roda do mouse ou botes">
+        <div class="ks-ab-zoom-btns" title="Zoom: roda do mouse ou botões">
           <button type="button" class="ks-ab-zoom-btn" id="ks-viewer-ab-zoom-out-b" title="Reduzir zoom"><i class="fas fa-search-minus"></i></button>
           <button type="button" class="ks-ab-zoom-btn" id="ks-viewer-ab-zoom-in-b" title="Aumentar zoom"><i class="fas fa-search-plus"></i></button>
           <button type="button" class="ks-ab-zoom-btn ks-ab-zoom-reset" id="ks-viewer-ab-zoom-reset-b" title="Ajustar ao tamanho normal">Ajustar</button>

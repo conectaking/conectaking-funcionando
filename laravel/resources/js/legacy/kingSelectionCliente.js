@@ -3095,7 +3095,7 @@
       leadPw.textContent =
         mode === 'signup'
           ? 'Informe o e-mail e a senha que você definiu ao se cadastrar nesta galeria.'
-          : 'Informe o e-mail e a senha que o fotógrafo enviou para você (modo privado).';
+          : 'Informe o e-mail e a senha fornecidos pelo fotógrafo (modo privado).';
     }
     $('ks-login-sub').textContent =
       mode === 'signup'
@@ -3107,6 +3107,12 @@
         mode === 'signup'
           ? 'Primeira vez neste link? A galeria pode abrir direto; você completa o cadastro ao enviar a seleção.'
           : 'O fotógrafo deve ter enviado o link com e-mail e senha (por exemplo no WhatsApp).';
+    }
+
+    // Pré-preenchimento automático do e-mail do cliente se disponível
+    const emailField = $('ks-login-email');
+    if (emailField && !emailField.value && galleryMeta?.cliente_email) {
+      emailField.value = String(galleryMeta.cliente_email).trim();
     }
   }
 
@@ -5421,6 +5427,43 @@
     }
   });
 
+  // Toggle mostrar / ocultar senha
+  $('ks-pass-toggle')?.addEventListener('click', () => {
+    const passInput = $('ks-login-senha');
+    const icon = $('ks-pass-toggle-icon');
+    if (!passInput) return;
+    if (passInput.type === 'password') {
+      passInput.type = 'text';
+      if (icon) {
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      }
+    } else {
+      passInput.type = 'password';
+      if (icon) {
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
+    }
+  });
+
+  // Pressionar Enter nos campos de login para entrar direto
+  $('ks-login-email')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const pass = $('ks-login-senha');
+      if (pass && !pass.value) {
+        pass.focus();
+      } else {
+        $('ks-login-pw-btn')?.click();
+      }
+    }
+  });
+  $('ks-login-senha')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      $('ks-login-pw-btn')?.click();
+    }
+  });
+
   $('ks-logout')?.addEventListener('click', () => {
     setJwt(null);
     syncKsAuthCookie();
@@ -6908,6 +6951,22 @@
       }
     } else {
       showLogin();
+      // Auto-preenchimento ou auto-login via URL params (ex.: ?senha=102030 ou ?email=...&senha=...)
+      try {
+        const uParams = new URLSearchParams(window.location.search);
+        const qEmail = uParams.get('email') || uParams.get('mail');
+        const qSenha = uParams.get('senha') || uParams.get('password') || uParams.get('pass') || uParams.get('p');
+        if (qEmail && $('ks-login-email')) {
+          $('ks-login-email').value = qEmail.trim();
+        }
+        if (qSenha && $('ks-login-senha')) {
+          $('ks-login-senha').value = qSenha.trim();
+        }
+        if (qSenha && $('ks-login-email')?.value && $('ks-login-pw-btn')) {
+          // Se e-mail e senha estão preenchidos via URL ou metadata, aciona o login automaticamente
+          $('ks-login-pw-btn').click();
+        }
+      } catch (_) {}
     }
   }
 

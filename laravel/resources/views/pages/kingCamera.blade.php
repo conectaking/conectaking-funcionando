@@ -10260,7 +10260,7 @@
                                 const diff = Math.abs(curPixels[idx] - s._prevFrameData[idx])
                                            + Math.abs(curPixels[idx + 1] - s._prevFrameData[idx + 1])
                                            + Math.abs(curPixels[idx + 2] - s._prevFrameData[idx + 2]);
-                                if (diff > 52) movingPixels++;
+                                if (diff > 78) movingPixels++;
                                 total++;
                             }
                         }
@@ -10283,11 +10283,11 @@
                         rx1 = r.x; ry1 = r.y; rx2 = r.x + r.w; ry2 = r.y + r.h;
                     }
 
-                    // Nível de movimento focado ESTRITAMENTE dentro do perímetro do berço (com filtro anti-ruído infravermelho de 52 diff)
+                    // Nível de movimento focado ESTRITAMENTE dentro do perímetro do berço (com filtro anti-ruído infravermelho de 78 diff)
                     const cribMotion = getRegionMotionPct(rx1, ry1, rx2, ry2);
 
-                    // Indicador visual de movimento em tempo real na tela do berço: requer movimento consistente por 3 ciclos
-                    if (cribMotion >= 2.8) {
+                    // Indicador visual de movimento em tempo real na tela do berço: requer movimento consistente real por 3 ciclos
+                    if (cribMotion >= 5.5) {
                         s._motionStreak = (s._motionStreak || 0) + 1;
                         if (s._motionStreak >= 3) {
                             const mbanner = document.getElementById(`motion-alert-${camId}`);
@@ -10432,7 +10432,7 @@
                         const shouldRunProactiveAi = s.needsImmediateAiCheck
                             || (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 15000) && timeSinceAi >= 12000)
                             || (s.fenceState === 'OUTSIDE' && timeSinceAi >= 20000)
-                            || ((cribMotion >= 1.8 || fullMotion >= 2.6) && (s._motionStreak >= 2) && timeSinceAi >= 10000);
+                            || ((cribMotion >= 5.5 || fullMotion >= 6.5) && (s._motionStreak >= 3) && timeSinceAi >= 15000);
 
                         if (shouldRunProactiveAi && !s.isAiRequestInFlight) {
                             const wasImmediate = Boolean(s.needsImmediateAiCheck);

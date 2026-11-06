@@ -165,7 +165,8 @@ class KingSelectionPublicService
                         min_selections, allow_self_signup, client_enabled, access_mode,
                         client_folder_layout, client_entry_splash_enabled,
                         gallery_link_cover_photo_id, gallery_link_cover_file_path,
-                        tutorial_video_url, allow_client_edit_request, is_published
+                        tutorial_video_url, allow_client_edit_request, is_published,
+                        cliente_email
                  FROM king_galleries WHERE LOWER(TRIM(slug)) = LOWER(TRIM(?)) LIMIT 1',
                 [$slug]
             );
@@ -234,6 +235,7 @@ class KingSelectionPublicService
                     'allow_self_signup' => $allowSelfSignup,
                     'client_enabled' => array_key_exists('client_enabled', (array) $g) ? (bool) $g->client_enabled : true,
                     'access_mode' => $accessMode,
+                    'cliente_email' => !empty($g->cliente_email) ? trim((string) $g->cliente_email) : null,
                     'total_photos' => $totalPhotos,
                     'cover_photo_id' => $coverPhotoId,
                     'deferred_signup_flow' => $allowSelfSignup && in_array($accessMode, ['signup', 'public', 'paid_event_photos'], true),
