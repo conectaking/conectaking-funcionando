@@ -8934,27 +8934,44 @@ document.addEventListener('DOMContentLoaded', async () => {
       const passShown = isRevealed ? escapeHtml(_clientPwCache.get(cid)) : '••••••';
       const menuOpen = (_openClientMenuFor === cid) ? 'open' : '';
       return `
-        <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 relative shadow-xs hover:border-slate-300 transition" data-client-id="${cid}">
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0">
-              <div class="flex items-center gap-2.5">
-                <span class="w-8 h-8 rounded-full bg-amber-500/15 text-amber-700 flex items-center justify-center font-extrabold text-xs shrink-0">
-                  <i class="fas fa-user"></i>
-                </span>
-                <div class="min-w-0">
-                  <div class="font-extrabold text-slate-900 text-base leading-tight">${nm}</div>
-                  <div class="text-xs font-semibold text-slate-500 truncate mt-0.5">${em}</div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 relative shadow-xs hover:border-amber-400/80 hover:shadow-md transition duration-200" data-client-id="${cid}">
+          <!-- Cabeçalho do Card: Avatar, Nome, E-mail, WhatsApp e Ações -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+            <div class="flex items-center gap-3.5 min-w-0">
+              <span class="w-11 h-11 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 flex items-center justify-center font-black text-sm shrink-0 shadow-xs">
+                <i class="fas fa-user"></i>
+              </span>
+              <div class="min-w-0">
+                <div class="font-black text-slate-900 text-lg leading-tight truncate tracking-tight">${nm}</div>
+                <div class="flex flex-wrap items-center gap-2.5 mt-1.5 text-xs">
+                  <span class="inline-flex items-center gap-1.5 font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                    <i class="fas fa-envelope text-amber-600"></i>
+                    <span>${em}</span>
+                  </span>
+                  ${ph ? `
+                  <span class="inline-flex items-center gap-1.5 font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                    <i class="fab fa-whatsapp text-emerald-600"></i>
+                    <span>${ph}</span>
+                  </span>` : ''}
                 </div>
               </div>
-              ${ph ? `<div class="text-xs font-semibold text-slate-600 mt-2 flex items-center gap-1.5"><i class="fas fa-phone text-slate-400 text-[10px]"></i> ${ph}</div>` : ''}
             </div>
-            <div class="flex items-center gap-1.5 shrink-0">
-              <button class="ks-btn text-xs px-2.5 py-1.5 border-slate-200 bg-white hover:bg-slate-50 text-slate-700" data-action="eye" title="Ver ou ocultar senha"><i class="fas ${isRevealed ? 'fa-eye-slash text-amber-600' : 'fa-eye text-slate-600'}"></i></button>
-              <button class="ks-btn text-xs px-2.5 py-1.5 border-slate-200 bg-white hover:bg-slate-50 text-slate-700" data-action="change-pass" title="Alterar senha"><i class="fas fa-key text-slate-600"></i></button>
-              <button class="ks-btn text-xs px-2.5 py-1.5 border-slate-200 bg-white hover:bg-slate-50 text-slate-700" data-action="share" title="Compartilhar WhatsApp"><i class="fas fa-share text-slate-600"></i></button>
+
+            <!-- Botões Rápidos -->
+            <div class="flex items-center gap-2 shrink-0">
+              <button class="ks-btn text-xs px-3.5 py-2 font-black border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer" data-action="share" title="Enviar link e senha no WhatsApp do cliente">
+                <i class="fab fa-whatsapp text-emerald-600 text-sm"></i>
+                <span>Enviar WhatsApp</span>
+              </button>
+              <button class="ks-btn text-xs px-3 py-2 font-bold border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer" data-action="edit" title="Editar dados">
+                <i class="fas fa-pen text-slate-500 text-xs"></i>
+                <span>Editar</span>
+              </button>
               <div class="relative">
-                <button class="ks-btn text-xs px-2.5 py-1.5 border-slate-200 bg-white hover:bg-slate-50 text-slate-700" data-action="more" title="Mais opções"><i class="fas fa-ellipsis-vertical text-slate-600"></i></button>
-                <div class="ks-menu ${menuOpen}" data-menu style="top:38px;right:0;z-index:90">
+                <button class="ks-btn text-xs px-2.5 py-2 border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-xl transition shadow-xs cursor-pointer" data-action="more" title="Mais opções">
+                  <i class="fas fa-ellipsis-vertical text-slate-600"></i>
+                </button>
+                <div class="ks-menu ${menuOpen}" data-menu style="top:42px;right:0;z-index:90">
                   <button data-action="edit"><i class="fas fa-pen"></i> Editar dados</button>
                   <button data-action="change-pass"><i class="fas fa-key"></i> Alterar senha</button>
                   <button data-action="share"><i class="fas fa-share"></i> Compartilhar</button>
@@ -8964,32 +8981,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
           </div>
 
-          <!-- Caixa de Senha de Acesso 100% Legível -->
-          <div class="mt-4 rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs">
-            <div class="flex items-center justify-between flex-wrap gap-2">
-              <div class="text-[11px] font-black text-slate-700 tracking-wider uppercase flex items-center gap-1.5">
-                <i class="fas fa-lock text-amber-500 text-xs"></i>
-                <span>Senha de acesso</span>
+          <!-- Caixa de Credenciais de Acesso (Alto contraste e 100% legível) -->
+          <div class="mt-4 rounded-xl border border-amber-200/90 bg-amber-50/60 p-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="flex items-center gap-3 flex-wrap">
+                <div class="text-xs font-black text-amber-950 uppercase tracking-wider flex items-center gap-1.5">
+                  <i class="fas fa-lock text-amber-600"></i>
+                  <span>Senha de Acesso:</span>
+                </div>
+                <div class="font-mono text-base font-black px-3.5 py-1 rounded-lg border shadow-xs ${isRevealed ? 'bg-slate-900 text-amber-300 border-amber-500/50' : 'bg-white text-slate-900 border-slate-300'}" data-pass ${isRevealed ? 'data-revealed="1"' : ''}>
+                  ${passShown}
+                </div>
               </div>
-              <div class="flex items-center gap-1.5">
-                <button type="button" class="ks-btn ks-btn-sm text-xs font-bold py-1 px-2.5 rounded-lg border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700" data-action="eye" title="Ver ou ocultar senha">
-                  <i class="fas ${isRevealed ? 'fa-eye-slash text-amber-600' : 'fa-eye text-slate-500'}"></i>
+
+              <div class="flex items-center gap-2 flex-wrap">
+                <button type="button" class="ks-btn ks-btn-sm text-xs font-bold py-1.5 px-3 rounded-xl border-slate-300 bg-white hover:bg-slate-50 text-slate-800 cursor-pointer shadow-xs flex items-center gap-1.5" data-action="eye" title="Ver ou ocultar senha">
+                  <i class="fas ${isRevealed ? 'fa-eye-slash text-amber-600' : 'fa-eye text-slate-600'}"></i>
                   <span>${isRevealed ? 'Ocultar' : 'Ver senha'}</span>
                 </button>
-                <button type="button" class="ks-btn ks-btn-sm text-xs font-bold py-1 px-2.5 rounded-lg border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700" data-action="change-pass" title="Alterar senha do cliente">
-                  <i class="fas fa-key text-slate-500"></i>
-                  <span>Alterar senha</span>
+                <button type="button" class="ks-btn ks-btn-sm text-xs font-bold py-1.5 px-3 rounded-xl border-slate-300 bg-white hover:bg-slate-50 text-slate-800 cursor-pointer shadow-xs flex items-center gap-1.5" data-action="change-pass" title="Alterar senha do cliente">
+                  <i class="fas fa-key text-slate-600"></i>
+                  <span>Alterar</span>
+                </button>
+                <button class="ks-btn ks-btn-primary text-xs px-3.5 py-1.5 font-black shadow-xs flex items-center gap-1.5 rounded-xl cursor-pointer" data-action="copy" title="Copiar link e senha do cliente">
+                  <i class="fas fa-copy"></i>
+                  <span>Copiar Acesso</span>
                 </button>
               </div>
-            </div>
-            <div class="mt-2.5 flex items-center justify-between gap-3 pt-2.5 border-t border-slate-100">
-              <div class="font-mono text-base font-black text-slate-900 tracking-widest bg-amber-50/80 px-3 py-1 rounded-lg border border-amber-200/80" data-pass ${isRevealed ? 'data-revealed="1"' : ''}>
-                ${passShown}
-              </div>
-              <button class="ks-btn ks-btn-primary text-xs px-3.5 py-2 font-extrabold shadow-sm flex items-center gap-1.5 rounded-xl cursor-pointer" data-action="copy">
-                <i class="fas fa-copy"></i>
-                <span>Copiar acesso</span>
-              </button>
             </div>
           </div>
         </div>

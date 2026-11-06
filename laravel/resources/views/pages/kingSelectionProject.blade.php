@@ -376,12 +376,51 @@
           <span class="font-black text-lg tracking-tight bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-transparent drop-shadow-xs">KingSelection</span>
         </a>
       </div>
-      <div class="flex items-center gap-3 text-sm text-slate-300">
-        <span id="ks-user-pill"
-          class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/75 border border-amber-500/30 text-xs shadow-xs">
-          <span class="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 inline-flex items-center justify-center font-black text-[11px] shadow-xs">CK</span>
-          <span class="font-extrabold text-amber-200/90 tracking-wider text-[11px]">CONECTA KING</span>
-        </span>
+      <!-- Lado Direito: Avatar do Usuário com Menu de Configuração -->
+      <div class="flex items-center gap-3 text-sm">
+        <div class="relative" id="ks-user-menu-container" style="position: relative;">
+          <button id="ks-user-avatar-btn" type="button"
+            style="display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 5px; border-radius: 9999px; background: rgba(0, 0, 0, 0.75); border: 1px solid rgba(245, 158, 11, 0.35); cursor: pointer; transition: all 0.2s;"
+            title="Meu Perfil e Configurações">
+            <div style="width: 28px; height: 28px; border-radius: 9999px; overflow: hidden; background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.5); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <img id="ks-user-avatar-img" src="" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
+              <span id="ks-user-avatar-initials" style="font-weight: 900; color: #fbbf24; font-size: 11px;">CK</span>
+            </div>
+            <span id="ks-user-name-display" style="font-weight: 800; font-size: 11px; color: rgba(253, 230, 138, 0.95); letter-spacing: 0.05em; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Perfil</span>
+            <i class="fas fa-chevron-down" style="font-size: 10px; color: rgba(245, 158, 11, 0.8);"></i>
+          </button>
+
+          <!-- Dropdown do Avatar -->
+          <div id="ks-user-dropdown" style="display: none; position: absolute; right: 0; top: calc(100% + 8px); width: 230px; border-radius: 16px; background: #0f1016; border: 1px solid rgba(245, 158, 11, 0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.7); padding: 8px; z-index: 99999;">
+            <div style="padding: 10px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 6px; display: flex; align-items: center; gap: 10px;">
+              <div style="width: 34px; height: 34px; border-radius: 9999px; overflow: hidden; background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.5); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <img id="ks-user-dropdown-img" src="" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
+                <span id="ks-user-dropdown-initials" style="font-weight: 900; color: #fbbf24; font-size: 12px;">CK</span>
+              </div>
+              <div style="min-width: 0;">
+                <div id="ks-user-dropdown-name" style="font-weight: 800; font-size: 13px; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Conecta King</div>
+                <div style="font-size: 10.5px; color: #94a3b8;">Gerenciar Conta</div>
+              </div>
+            </div>
+
+            <a href="/conta" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; color: #e2e8f0; font-size: 12px; font-weight: 700; text-decoration: none; transition: all 0.15s;" onmouseover="this.style.background='rgba(245,158,11,0.15)';this.style.color='#fbbf24';" onmouseout="this.style.background='transparent';this.style.color='#e2e8f0';">
+              <i class="fas fa-user-gear" style="color: #fbbf24; width: 16px; text-align: center;"></i>
+              <span>Configurar Perfil & Foto</span>
+            </a>
+
+            <a href="/dashboard" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; color: #e2e8f0; font-size: 12px; font-weight: 700; text-decoration: none; transition: all 0.15s;" onmouseover="this.style.background='rgba(245,158,11,0.15)';this.style.color='#fbbf24';" onmouseout="this.style.background='transparent';this.style.color='#e2e8f0';">
+              <i class="fas fa-house" style="color: #fbbf24; width: 16px; text-align: center;"></i>
+              <span>Painel Geral</span>
+            </a>
+
+            <div style="height: 1px; background: rgba(255, 255, 255, 0.08); margin: 6px 0;"></div>
+
+            <button type="button" id="ks-user-logout-btn" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; color: #f87171; font-size: 12px; font-weight: 700; background: transparent; border: none; cursor: pointer; text-align: left; transition: all 0.15s;" onmouseover="this.style.background='rgba(239,68,68,0.15)';" onmouseout="this.style.background='transparent';">
+              <i class="fas fa-sign-out-alt" style="width: 16px; text-align: center;"></i>
+              <span>Sair</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1171,83 +1210,133 @@
         </div>
 
         <!-- Clients -->
-        <div class="ks-card p-5 hidden" data-pane="clients">
-          <div class="font-extrabold text-slate-900">Clientes</div>
+        <div class="ks-card p-6 hidden" data-pane="clients">
+          <!-- Topo da Aba de Clientes: Título e Botões de Ação -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-200">
+            <div>
+              <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 flex items-center justify-center text-base font-bold shadow-xs">
+                  <i class="fas fa-users"></i>
+                </div>
+                <div>
+                  <div class="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+                    <span>Clientes da Galeria</span>
+                    <span id="ks-client-count-badge" class="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 shadow-xs">
+                      <span id="ks-client-count">0</span> cadastrado(s)
+                    </span>
+                  </div>
+                  <div class="text-xs font-semibold text-slate-500 mt-0.5">
+                    Cadastre e gerencie os acessos, senhas e informações de contato dos clientes desta galeria.
+                  </div>
+                </div>
+              </div>
+            </div>
 
-          <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div class="lg:col-span-2 space-y-4">
-              <!-- Autocadastro -->
-              <div class="rounded-2xl border border-slate-200 bg-white p-5">
-                <div class="font-extrabold text-slate-900">Autocadastro de clientes</div>
-                <div class="text-sm ks-muted mt-1">Visitantes podem se cadastrar como clientes na tela de login da
-                  galeria.</div>
+            <!-- Botão Adicionar Novo Cliente -->
+            <button type="button" class="ks-btn ks-btn-primary" id="ks-client-add" style="padding: 10px 22px; font-size: 13px; font-weight: 800; border-radius: 12px; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);" title="Cadastrar Novo Cliente">
+              <i class="fas fa-user-plus"></i> Novo Cliente
+            </button>
+          </div>
 
-                <div class="mt-4 flex items-center justify-between gap-4">
+          <!-- Grid Principal: Lista de Clientes e Configurações -->
+          <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Coluna Principal (2 colunas): Busca e Lista de Clientes -->
+            <div class="lg:col-span-2 space-y-5">
+              
+              <!-- Barra de Busca de Clientes -->
+              <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+                <div class="relative">
+                  <i class="fas fa-search" aria-hidden="true" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #f59e0b; font-size: 14px;"></i>
+                  <input id="ks-client-search" class="ks-input" placeholder="Buscar cliente por nome, e-mail ou WhatsApp..." style="padding-left: 42px; font-size: 13px; font-weight: 500;" autocomplete="off" />
+                </div>
+              </div>
+
+              <!-- Lista de Clientes -->
+              <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fas fa-address-book text-amber-500"></i>
+                    <span>Clientes Cadastrados</span>
+                  </div>
+                  <div class="text-xs font-semibold text-slate-500">
+                    Acesso exclusivo por e-mail e senha
+                  </div>
+                </div>
+
+                <!-- Estado Vazio (Sem clientes) -->
+                <div id="ks-client-empty" class="mt-4 rounded-2xl border border-dashed border-amber-300/80 bg-amber-50/40 p-8 text-center hidden">
+                  <div class="w-14 h-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto text-xl shadow-xs">
+                    <i class="fas fa-user-plus"></i>
+                  </div>
+                  <div class="font-extrabold text-slate-800 text-base mt-3">Nenhum cliente cadastrado ainda</div>
+                  <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1 leading-relaxed">
+                    Cadastre o cliente para gerar o login (e-mail e senha) e enviar o link de seleção diretamente pelo WhatsApp.
+                  </p>
+                  <button type="button" class="ks-btn ks-btn-primary mt-4 inline-flex items-center gap-2" onclick="document.getElementById('ks-client-add').click();">
+                    <i class="fas fa-plus"></i> Cadastrar Primeiro Cliente
+                  </button>
+                </div>
+
+                <!-- Container onde o JS renderiza os cards -->
+                <div id="ks-client-list" class="mt-4 space-y-4"></div>
+              </div>
+
+              <!-- Autocadastro de Visitantes -->
+              <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+                <div class="flex items-start justify-between gap-4">
                   <div class="min-w-0">
-                    <div class="font-extrabold">Permitir que visitantes se cadastrem como clientes</div>
-                    <div class="text-sm ks-muted">Nome, e-mail e telefone podem ser solicitados no cadastro.</div>
+                    <div class="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                      <i class="fas fa-user-check text-emerald-600"></i>
+                      <span>Autocadastro na tela de login</span>
+                    </div>
+                    <div class="text-xs text-slate-500 mt-1 leading-relaxed">
+                      Permite que visitantes que receberem o link da galeria façam seu próprio cadastro (nome, e-mail e WhatsApp) na tela inicial.
+                    </div>
                   </div>
                   <label class="inline-flex items-center gap-3 select-none">
-                    <input id="ks-self-signup" type="checkbox" class="w-5 h-5" />
+                    <input id="ks-self-signup" type="checkbox" class="w-5 h-5 accent-amber-500 rounded cursor-pointer" />
                   </label>
                 </div>
 
-                <div class="mt-4">
-                  <button class="ks-btn ks-btn-primary" id="btn-save-selfsignup"><i class="fas fa-save"></i>
-                    Salvar</button>
+                <div class="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+                  <button class="ks-btn ks-btn-primary" id="btn-save-selfsignup">
+                    <i class="fas fa-save"></i> Salvar Opção de Autocadastro
+                  </button>
                 </div>
               </div>
+            </div>
 
-              <!-- Lista de clientes (modelo atual: 1 cliente por galeria) -->
-              <div class="rounded-2xl border border-slate-200 bg-white p-5">
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <div class="font-extrabold text-slate-900">Clientes</div>
-                    <div class="text-sm ks-muted">Adicione e cadastre seus clientes.</div>
-                  </div>
+            <!-- Coluna Lateral (1 coluna): Dicas e Orientações -->
+            <div class="lg:col-span-1 space-y-4">
+              <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+                <div class="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                  <i class="fas fa-lightbulb text-amber-500"></i>
+                  <span>Dicas Importantes</span>
                 </div>
-
-                <div class="mt-4">
-                  <div class="text-xs ks-muted font-extrabold" style="letter-spacing:.18em;text-transform:uppercase">
-                    Adicionar cliente</div>
-                  <div class="mt-2 flex items-center gap-2">
-                    <div class="flex-1 relative">
-                      <i class="fas fa-search" aria-hidden="true"
-                        style="position:absolute;left:14px;top:50%;transform:translateY(-50%);opacity:.75;color:var(--ks-accent)"></i>
-                      <input id="ks-client-search" class="ks-input" placeholder="Digite o nome ou e-mail do cliente"
-                        style="padding-left:44px" />
+                <div class="mt-3 space-y-3 text-xs text-slate-600 leading-relaxed">
+                  <div class="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <i class="fab fa-whatsapp text-emerald-600 text-base mt-0.5 shrink-0"></i>
+                    <div>
+                      <strong class="text-slate-800">Enviar pelo WhatsApp:</strong> Clique no botão verde de WhatsApp em cada cliente para abrir a mensagem com link e senha prontos.
                     </div>
-                    <button class="ks-btn ks-btn-primary" id="ks-client-add" title="Adicionar cliente"><i
-                        class="fas fa-plus"></i></button>
                   </div>
-                </div>
-
-                <div class="mt-6">
-                  <div class="text-xs ks-muted font-extrabold" style="letter-spacing:.18em;text-transform:uppercase">
-                    Clientes cadastrados (<span id="ks-client-count">0</span>)
+                  <div class="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <i class="fas fa-eye text-amber-600 text-base mt-0.5 shrink-0"></i>
+                    <div>
+                      <strong class="text-slate-800">Ver Senha:</strong> Clique no ícone de olho para revelar a senha gerada para o cliente.
+                    </div>
                   </div>
-
-                  <div id="ks-client-empty"
-                    class="mt-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500 hidden">
-                    Nenhum cliente cadastrado (acesso desativado).
+                  <div class="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <i class="fas fa-key text-slate-600 text-base mt-0.5 shrink-0"></i>
+                    <div>
+                      <strong class="text-slate-800">Alterar Senha:</strong> Use o botão de alterar ou menu de opções para redefinir a senha a qualquer momento.
+                    </div>
                   </div>
-
-                  <div id="ks-client-list" class="mt-3 grid grid-cols-1 gap-3"></div>
                 </div>
               </div>
             </div>
 
-            <!-- Dicas / ações rápidas -->
-            <div class="lg:col-span-1">
-              <div class="rounded-2xl border border-slate-200 bg-white p-5">
-                <div class="font-extrabold text-slate-900">Dicas</div>
-                <div class="text-sm ks-muted mt-2">
-                  - Use <b>Compartilhar</b> para copiar a mensagem pronta do WhatsApp.<br />
-                  - Clique no <b>olhinho</b> para revelar a senha (se disponível).<br />
-                  - Para gerar uma nova senha, use <b>Editar</b>.
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -2403,6 +2492,83 @@
         document.addEventListener('DOMContentLoaded', initHamburger);
       } else {
         initHamburger();
+      }
+
+      // Inicialização do Avatar e Perfil do Usuário
+      function initUserAvatar() {
+        const avatarBtn = document.getElementById('ks-user-avatar-btn');
+        const dropdown = document.getElementById('ks-user-dropdown');
+        const logoutBtn = document.getElementById('ks-user-logout-btn');
+
+        if (!avatarBtn || !dropdown) return;
+
+        avatarBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const isHidden = dropdown.style.display === 'none' || !dropdown.style.display;
+          dropdown.style.display = isHidden ? 'block' : 'none';
+        });
+
+        document.addEventListener('click', (e) => {
+          if (!dropdown.contains(e.target) && !avatarBtn.contains(e.target)) {
+            dropdown.style.display = 'none';
+          }
+        });
+
+        logoutBtn?.addEventListener('click', () => {
+          if (confirm('Deseja realmente sair?')) {
+            localStorage.removeItem('conectaKingToken');
+            localStorage.removeItem('token');
+            localStorage.removeItem('conectaKingUser');
+            window.location.href = '/login';
+          }
+        });
+
+        try {
+          const rawUser = localStorage.getItem('conectaKingUser') || localStorage.getItem('user');
+          if (rawUser) {
+            const user = JSON.parse(rawUser);
+            const name = user.name || user.display_name || user.nome || 'Conecta King';
+            const email = user.email || '';
+            const photo = user.profile_image_url || user.photo || user.avatar || '';
+
+            const nameEl = document.getElementById('ks-user-name-display');
+            const dropNameEl = document.getElementById('ks-user-dropdown-name');
+            const dropEmailEl = document.getElementById('ks-user-dropdown-email');
+            const imgEl = document.getElementById('ks-user-avatar-img');
+            const dropImgEl = document.getElementById('ks-user-dropdown-img');
+            const initEl = document.getElementById('ks-user-avatar-initials');
+            const dropInitEl = document.getElementById('ks-user-dropdown-initials');
+
+            if (nameEl) nameEl.textContent = name;
+            if (dropNameEl) dropNameEl.textContent = name;
+            if (dropEmailEl && email) dropEmailEl.textContent = email;
+
+            const initials = name.split(' ').map(n => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'CK';
+            if (initEl) initEl.textContent = initials;
+            if (dropInitEl) dropInitEl.textContent = initials;
+
+            if (photo && photo !== 'null') {
+              if (imgEl) {
+                imgEl.src = photo;
+                imgEl.style.display = 'block';
+                if (initEl) initEl.style.display = 'none';
+              }
+              if (dropImgEl) {
+                dropImgEl.src = photo;
+                dropImgEl.style.display = 'block';
+                if (dropInitEl) dropInitEl.style.display = 'none';
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Erro ao carregar avatar do usuário:', e);
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initUserAvatar);
+      } else {
+        initUserAvatar();
       }
     })();
   </script>

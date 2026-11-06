@@ -436,13 +436,8 @@
         </a>
       </div>
 
-      <!-- Lado Direito: User Pill + Voltar + Nova Galeria -->
+      <!-- Lado Direito: Voltar + Nova Galeria + Avatar do Usuário (depois de galeria) -->
       <div style="display: flex; align-items: center; gap: 10px;">
-        <span id="ks-user-pill" style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 9999px; background: rgba(0, 0, 0, 0.75); border: 1px solid rgba(245, 158, 11, 0.3); font-size: 11px;">
-          <span style="width: 22px; height: 22px; border-radius: 9999px; background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; font-size: 10px;">CK</span>
-          <span style="font-weight: 800; color: rgba(253, 230, 138, 0.95); letter-spacing: 0.08em;">CONECTA KING</span>
-        </span>
-
         <button class="ks-btn secondary" id="ks-back-btn" style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.15); color: #e2e8f0; font-weight: 800; border-radius: 12px; padding: 9px 15px; cursor: pointer;" title="Voltar ao Painel Geral">
           <i class="fas fa-arrow-left"></i> Voltar
         </button>
@@ -450,6 +445,51 @@
         <button class="ks-btn primary" id="ks-new-btn" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #000; font-weight: 900; border: 1px solid rgba(251, 191, 36, 0.6); box-shadow: 0 0 15px rgba(245, 158, 11, 0.25); border-radius: 12px; padding: 9px 16px; cursor: pointer;" title="Criar Nova Galeria">
           <i class="fas fa-plus"></i> Nova Galeria
         </button>
+
+        <!-- Avatar / Perfil do Usuário (depois de Nova Galeria) -->
+        <div class="relative" id="ks-user-menu-container" style="position: relative;">
+          <button id="ks-user-avatar-btn" type="button"
+            style="display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 5px; border-radius: 9999px; background: rgba(0, 0, 0, 0.75); border: 1px solid rgba(245, 158, 11, 0.35); cursor: pointer; transition: all 0.2s;"
+            title="Meu Perfil e Configurações">
+            <div style="width: 28px; height: 28px; border-radius: 9999px; overflow: hidden; background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.5); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <img id="ks-user-avatar-img" src="" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
+              <span id="ks-user-avatar-initials" style="font-weight: 900; color: #fbbf24; font-size: 11px;">CK</span>
+            </div>
+            <span id="ks-user-name-display" style="font-weight: 800; font-size: 11px; color: rgba(253, 230, 138, 0.95); letter-spacing: 0.05em; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Perfil</span>
+            <i class="fas fa-chevron-down" style="font-size: 10px; color: rgba(245, 158, 11, 0.8);"></i>
+          </button>
+
+          <!-- Dropdown do Avatar -->
+          <div id="ks-user-dropdown" style="display: none; position: absolute; right: 0; top: calc(100% + 8px); width: 230px; border-radius: 16px; background: #0f1016; border: 1px solid rgba(245, 158, 11, 0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.7); padding: 8px; z-index: 99999;">
+            <div style="padding: 10px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 6px; display: flex; align-items: center; gap: 10px;">
+              <div style="width: 34px; height: 34px; border-radius: 9999px; overflow: hidden; background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.5); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <img id="ks-user-dropdown-img" src="" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
+                <span id="ks-user-dropdown-initials" style="font-weight: 900; color: #fbbf24; font-size: 12px;">CK</span>
+              </div>
+              <div style="min-width: 0;">
+                <div id="ks-user-dropdown-name" style="font-weight: 800; font-size: 13px; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Conecta King</div>
+                <div style="font-size: 10.5px; color: #94a3b8;">Gerenciar Conta</div>
+              </div>
+            </div>
+
+            <a href="/conta" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; color: #e2e8f0; font-size: 12px; font-weight: 700; text-decoration: none; transition: all 0.15s;" onmouseover="this.style.background='rgba(245,158,11,0.15)';this.style.color='#fbbf24';" onmouseout="this.style.background='transparent';this.style.color='#e2e8f0';">
+              <i class="fas fa-user-gear" style="color: #fbbf24; width: 16px; text-align: center;"></i>
+              <span>Configurar Perfil & Foto</span>
+            </a>
+
+            <a href="/dashboard" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; color: #e2e8f0; font-size: 12px; font-weight: 700; text-decoration: none; transition: all 0.15s;" onmouseover="this.style.background='rgba(245,158,11,0.15)';this.style.color='#fbbf24';" onmouseout="this.style.background='transparent';this.style.color='#e2e8f0';">
+              <i class="fas fa-house" style="color: #fbbf24; width: 16px; text-align: center;"></i>
+              <span>Painel Geral</span>
+            </a>
+
+            <div style="height: 1px; background: rgba(255, 255, 255, 0.08); margin: 6px 0;"></div>
+
+            <button type="button" id="ks-user-logout-btn" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; color: #f87171; font-size: 12px; font-weight: 700; background: transparent; border: none; cursor: pointer; text-align: left; transition: all 0.15s;" onmouseover="this.style.background='rgba(239,68,68,0.15)';" onmouseout="this.style.background='transparent';">
+              <i class="fas fa-sign-out-alt" style="width: 16px; text-align: center;"></i>
+              <span>Sair</span>
+            </button>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -462,16 +502,6 @@
       <!-- Sidebar Retrátil -->
       <aside id="ks-sidebar" class="w-72 shrink-0 transition-all duration-300 ease-in-out">
         <div class="ks-card ks-card--side-nav p-3">
-          <!-- Botão Nova Galeria no topo da sidebar -->
-          <button type="button" id="ks-side-new-btn"
-            class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-amber-950 font-extrabold text-xs transition mb-2.5 border border-amber-300 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 shadow-xs cursor-pointer group"
-            title="Criar nova galeria">
-            <span class="w-6 h-6 rounded-lg bg-black/15 text-black flex items-center justify-center text-xs group-hover:scale-110 transition-transform">
-              <i class="fas fa-plus"></i>
-            </span>
-            <span class="font-extrabold tracking-tight">Nova Galeria</span>
-          </button>
-
           <div class="ks-side flex flex-col gap-1 max-h-none overflow-y-visible">
             <a href="/kingSelection" class="active" id="ks-tab-all"><i class="fas fa-folder-open"></i> Todas as Galerias</a>
             <a href="#" data-filter="preparacao"><i class="fas fa-clock"></i> Em Preparação</a>
@@ -706,10 +736,6 @@
           localStorage.setItem('ks_sidebar_collapsed', collapsed ? 'true' : 'false');
         });
 
-        // Clique no botão Nova Galeria da Sidebar
-        document.getElementById('ks-side-new-btn')?.addEventListener('click', () => {
-          document.getElementById('ks-new-btn')?.click();
-        });
 
         // Filtros de colunas no menu lateral
         const filterLinks = document.querySelectorAll('.ks-side a[data-filter]');
@@ -744,6 +770,83 @@
         document.addEventListener('DOMContentLoaded', initHamburger);
       } else {
         initHamburger();
+      }
+
+      // Inicialização do Avatar e Perfil do Usuário
+      function initUserAvatar() {
+        const avatarBtn = document.getElementById('ks-user-avatar-btn');
+        const dropdown = document.getElementById('ks-user-dropdown');
+        const logoutBtn = document.getElementById('ks-user-logout-btn');
+
+        if (!avatarBtn || !dropdown) return;
+
+        avatarBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const isHidden = dropdown.style.display === 'none' || !dropdown.style.display;
+          dropdown.style.display = isHidden ? 'block' : 'none';
+        });
+
+        document.addEventListener('click', (e) => {
+          if (!dropdown.contains(e.target) && !avatarBtn.contains(e.target)) {
+            dropdown.style.display = 'none';
+          }
+        });
+
+        logoutBtn?.addEventListener('click', () => {
+          if (confirm('Deseja realmente sair?')) {
+            localStorage.removeItem('conectaKingToken');
+            localStorage.removeItem('token');
+            localStorage.removeItem('conectaKingUser');
+            window.location.href = '/login';
+          }
+        });
+
+        try {
+          const rawUser = localStorage.getItem('conectaKingUser') || localStorage.getItem('user');
+          if (rawUser) {
+            const user = JSON.parse(rawUser);
+            const name = user.name || user.display_name || user.nome || 'Conecta King';
+            const email = user.email || '';
+            const photo = user.profile_image_url || user.photo || user.avatar || '';
+
+            const nameEl = document.getElementById('ks-user-name-display');
+            const dropNameEl = document.getElementById('ks-user-dropdown-name');
+            const dropEmailEl = document.getElementById('ks-user-dropdown-email');
+            const imgEl = document.getElementById('ks-user-avatar-img');
+            const dropImgEl = document.getElementById('ks-user-dropdown-img');
+            const initEl = document.getElementById('ks-user-avatar-initials');
+            const dropInitEl = document.getElementById('ks-user-dropdown-initials');
+
+            if (nameEl) nameEl.textContent = name;
+            if (dropNameEl) dropNameEl.textContent = name;
+            if (dropEmailEl && email) dropEmailEl.textContent = email;
+
+            const initials = name.split(' ').map(n => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'CK';
+            if (initEl) initEl.textContent = initials;
+            if (dropInitEl) dropInitEl.textContent = initials;
+
+            if (photo && photo !== 'null') {
+              if (imgEl) {
+                imgEl.src = photo;
+                imgEl.style.display = 'block';
+                if (initEl) initEl.style.display = 'none';
+              }
+              if (dropImgEl) {
+                dropImgEl.src = photo;
+                dropImgEl.style.display = 'block';
+                if (dropInitEl) dropInitEl.style.display = 'none';
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Erro ao carregar avatar do usuário:', e);
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initUserAvatar);
+      } else {
+        initUserAvatar();
       }
     })();
   </script>
