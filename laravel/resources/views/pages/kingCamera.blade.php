@@ -10260,21 +10260,36 @@
                                 const diff = Math.abs(curPixels[idx] - s._prevFrameData[idx])
                                            + Math.abs(curPixels[idx + 1] - s._prevFrameData[idx + 1])
                                            + Math.abs(curPixels[idx + 2] - s._prevFrameData[idx + 2]);
-                                if (diff > 30) movingPixels++;
+                                if (diff > 52) movingPixels++;
                                 total++;
                             }
                         }
                         return total > 0 ? (movingPixels / total) * 100 : 0;
                     };
 
-                    // Nível de movimento dentro do cerco e no quadro geral do berço
-                    const cribMotion = getRegionMotionPct(r.x, r.y, r.x + r.w, r.y + r.h);
-                    const fullMotion = getRegionMotionPct(10, 15, 90, 85);
+                    // Calcula o bounding box real do cerco (seja polígono, círculo ou retângulo)
+                    let rx1 = 20, ry1 = 25, rx2 = 80, ry2 = 75;
+                    if (r.type === 'circle' && r.circle) {
+                        rx1 = (r.circle.cx || 50) - (r.circle.rx || 25);
+                        ry1 = (r.circle.cy || 50) - (r.circle.ry || 20);
+                        rx2 = (r.circle.cx || 50) + (r.circle.rx || 25);
+                        ry2 = (r.circle.cy || 50) + (r.circle.ry || 20);
+                    } else if (Array.isArray(r.points) && r.points.length >= 3) {
+                        rx1 = Math.min(...r.points.map(p => p.x));
+                        ry1 = Math.min(...r.points.map(p => p.y));
+                        rx2 = Math.max(...r.points.map(p => p.x));
+                        ry2 = Math.max(...r.points.map(p => p.y));
+                    } else if (r.x !== undefined && r.w !== undefined) {
+                        rx1 = r.x; ry1 = r.y; rx2 = r.x + r.w; ry2 = r.y + r.h;
+                    }
 
-                    // Indicador visual de movimento em tempo real na tela do berço (com filtro anti-ruído infravermelho)
-                    if (cribMotion >= 1.6 || fullMotion >= 2.4) {
+                    // Nível de movimento focado ESTRITAMENTE dentro do perímetro do berço (com filtro anti-ruído infravermelho de 52 diff)
+                    const cribMotion = getRegionMotionPct(rx1, ry1, rx2, ry2);
+
+                    // Indicador visual de movimento em tempo real na tela do berço: requer movimento consistente por 3 ciclos
+                    if (cribMotion >= 2.8) {
                         s._motionStreak = (s._motionStreak || 0) + 1;
-                        if (s._motionStreak >= 2) {
+                        if (s._motionStreak >= 3) {
                             const mbanner = document.getElementById(`motion-alert-${camId}`);
                             if (mbanner) {
                                 mbanner.style.display = 'flex';
@@ -10325,12 +10340,12 @@
 
                             const isPtInsideStrict = (px, py) => {
                                 if (r.type === 'circle' && r.circle) {
-                                    return isPointInCircle(px, py, r.circle, 1.5);
+                                    return isPointInCircle(px, py, r.circle, 3.5);
                                 }
                                 if (Array.isArray(r.points) && r.points.length >= 3) {
-                                    return isPointInsidePolygonWithTolerance(px, py, r.points, 1.5);
+                                    return isPointInsidePolygonWithTolerance(px, py, r.points, 3.5);
                                 }
-                                return isPointInCribFence(px, py, r, 1.5);
+                                return isPointInCribFence(px, py, r, 3.5);
                             };
 
                             const allLimbCheck = [
@@ -10346,7 +10361,8 @@
                             for (const limbGroup of allLimbCheck) {
                                 for (const keyName of limbGroup.keys) {
                                     const pt = kpMap[keyName];
-                                    if (pt && pt.score >= 0.35) {
+                                    // Confiança elevada para 0.52: evita que o modelo alucine membros em cima de almofadas ou dobras de lençóis
+                                    if (pt && pt.score >= 0.52) {
                                         const px = (pt.x / vw) * 100;
                                         const py = (pt.y / vh) * 100;
 

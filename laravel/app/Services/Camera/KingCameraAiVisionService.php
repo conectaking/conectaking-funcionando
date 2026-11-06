@@ -213,6 +213,7 @@ DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
    - Almofadas, travesseiros, rolinhos protetores de grade, lençóis e cobertores são OBJETOS INANIMADOS de tecido.
    - NUNCA confunda uma almofada branca, protetor de berço ou cobertor com a cabeça, perna ou pé do bebê!
    - Se almofadas, travesseiros ou protetores estiverem fora da linha ciano na área avermelhada, mas o bebê humano estiver com a cabeça, tronco e pernas dentro da linha ciano: O BEBÊ ESTÁ TOTALMENTE SEGURO!
+   - Mesmo que o bebê esteja encostado numa almofada que toca a borda, se o corpinho da criança não passou para fora: O BEBÊ ESTÁ 100% SEGURO.
    - Nesse caso, responda "is_limb_outside": false, "is_baby_outside": false, "limb_outside_part": "nenhum". NÃO CRIE FALSO ALARME POR CAUSA DE ALMOFADAS!
 
 3. INFRAÇÃO REAL DO CERCO (SOMENTE PARA CORPO HUMANO REAL):
@@ -222,6 +223,7 @@ DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
      c) Os bracinhos/mãos reais estiverem do lado de fora -> limb_outside_part: "mao_braco".
      d) O corpinho todo estiver fora ou a linha ciano cortar o meio do bebê -> is_baby_outside: true, limb_outside_part: "corpo".
    - Se o bebê estiver inteiro contido dentro da linha ciano (área azulada interna): "is_limb_outside": false, "is_baby_outside": false, "limb_outside_part": "nenhum".
+   - Em caso de dúvida ou se o que estiver saindo for apenas a almofada/tecido, declare "is_limb_outside": false.
 
 4. POSTURA E RISCOS:
    - "is_standing": true SOMENTE se o bebê estiver em pé erguido nas pernas ou apoiado em pé na grade.
@@ -450,27 +452,25 @@ PROMPT;
         $feetCenter = $json['feet_center'] ?? null;
         $torsoCenter = $json['torso_center'] ?? null;
 
-        // ── VERIFICAÇÃO GEOMÉTRICA DE ALTA PRECISÃO (VALIDAÇÃO DUPLA CONTRA FALSOS POSITIVOS E FALSOS NEGATIVOS) ──
+        // ── VERIFICAÇÃO GEOMÉTRICA DE ALTA PRECISÃO (FILTRO PROTETOR CONTRA FALSOS POSITIVOS DE ALMOFADAS) ──
         if (is_array($roi) && !empty($roi) && !empty($json['baby_detected'])) {
             // 1. Validação da Cabeça
             if (is_array($headCenter) && isset($headCenter['x'], $headCenter['y'])) {
                 $hx = (float) $headCenter['x'];
                 $hy = (float) $headCenter['y'];
-                // Tolerância de 2.5% para o interior (evita falsos alertas quando o bebê apenas encosta no limite interno)
-                $headInFence = $this->isPointInRoi($hx, $hy, $roi, 2.5);
+                // Tolerância de 4.0% para o interior (evita falsos alertas quando o bebê apenas encosta no limite interno)
+                $headInFence = $this->isPointInRoi($hx, $hy, $roi, 4.0);
 
                 if ($headInFence) {
                     // Cabeça matematicamente DENTRO do cerco!
-                    // Se o modelo confundiu almofada/protetor externo com a cabeça do bebê:
+                    // Se o modelo confundiu almofada/protetor externo com a cabeça do bebê, filtra imediatamente:
                     if ($normPart === 'cabeca') {
                         $isLimbOutside = false;
                         $normPart = 'nenhum';
                     }
                 } else {
-                    // Cabeça matematicamente FORA do cerco (ou cortada pela linha)
-                    // Verifica se está estritamente fora além da borda externa
-                    $isStrictlyOutside = !$this->isPointInRoi($hx, $hy, $roi, -1.0);
-                    if ($isStrictlyOutside || !empty($json['head_is_outside_cyan_fence'])) {
+                    // Cabeça matematicamente fora: só aceita se o modelo também declarou explicitamente a cabeça fora do cerco
+                    if (!empty($json['head_is_outside_cyan_fence']) || ($isLimbOutside && $normPart === 'cabeca')) {
                         $isLimbOutside = true;
                         $normPart = 'cabeca';
                         if (empty($desc) || stripos($desc, 'seguro') !== false) {
@@ -484,16 +484,17 @@ PROMPT;
             if (is_array($feetCenter) && isset($feetCenter['x'], $feetCenter['y'])) {
                 $fx = (float) $feetCenter['x'];
                 $fy = (float) $feetCenter['y'];
-                $feetInFence = $this->isPointInRoi($fx, $fy, $roi, 2.5);
+                $feetInFence = $this->isPointInRoi($fx, $fy, $roi, 4.0);
 
                 if ($feetInFence) {
+                    // Pés matematicamente DENTRO do cerco: filtra falso alarme de almofada/cobertor externo
                     if ($normPart === 'pe_perna') {
                         $isLimbOutside = false;
                         $normPart = 'nenhum';
                     }
                 } else {
-                    $isStrictlyOutside = !$this->isPointInRoi($fx, $fy, $roi, -1.0);
-                    if ($isStrictlyOutside || !empty($json['feet_are_outside_cyan_fence'])) {
+                    // Pés matematicamente fora: só confirma se a IA declarou explicitamente os pés fora
+                    if (!empty($json['feet_are_outside_cyan_fence']) || ($isLimbOutside && $normPart === 'pe_perna')) {
                         $isLimbOutside = true;
                         if ($normPart === 'nenhum') $normPart = 'pe_perna';
                         if (empty($desc) || stripos($desc, 'seguro') !== false) {
@@ -507,14 +508,20 @@ PROMPT;
             if (is_array($torsoCenter) && isset($torsoCenter['x'], $torsoCenter['y'])) {
                 $tx = (float) $torsoCenter['x'];
                 $ty = (float) $torsoCenter['y'];
-                $torsoInFence = $this->isPointInRoi($tx, $ty, $roi, 1.5);
-                if (!$torsoInFence) {
-                    $isBabyOutside = true;
-                    $isLimbOutside = true;
-                    $normPart = 'corpo';
-                    $desc = '🚨 Bebê com o corpo fora da área segura demarcada!';
+                $torsoInFence = $this->isPointInRoi($tx, $ty, $roi, 3.0);
+                if ($torsoInFence && $normPart === 'corpo') {
+                    $isBabyOutside = false;
+                    $isLimbOutside = false;
+                    $normPart = 'nenhum';
                 }
             }
+        }
+
+        // Se a IA declarou que NÃO há membro nem bebê fora da cerca, respeita a decisão visual e não gera alarme falso
+        if (empty($json['is_limb_outside']) && empty($json['is_baby_outside']) && empty($json['head_is_outside_cyan_fence']) && empty($json['feet_are_outside_cyan_fence'])) {
+            $isLimbOutside = false;
+            $isBabyOutside = false;
+            $normPart = 'nenhum';
         }
 
         // Se estiver seguro dentro do cerco
