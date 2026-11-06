@@ -4908,12 +4908,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   function salesApprovalStatusBadge(status) {
     const st = String(status || 'pending').toLowerCase();
     if (st === 'approved') {
-      return '<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;border:1px solid rgba(34,197,94,.75);background:rgba(22,163,74,.28);color:#dcfce7;font-weight:900"><i class="fas fa-circle-check" style="font-size:13px"></i>APROVADA</span>';
+      return '<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;border:1px solid #86efac;background:#f0fdf4;color:#15803d;font-weight:900"><i class="fas fa-circle-check" style="font-size:13px"></i>APROVADA</span>';
     }
     if (st === 'rejected') {
-      return '<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;border:1px solid rgba(248,113,113,.75);background:rgba(185,28,28,.28);color:#fecaca;font-weight:900"><i class="fas fa-circle-xmark" style="font-size:13px"></i>REJEITADA</span>';
+      return '<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;border:1px solid #fca5a5;background:#fef2f2;color:#b91c1c;font-weight:900"><i class="fas fa-circle-xmark" style="font-size:13px"></i>REJEITADA</span>';
     }
-    return '<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;border:1px solid rgba(148,163,184,.55);background:rgba(100,116,139,.18);color:#e2e8f0;font-weight:800"><i class="fas fa-clock"></i>PENDENTE</span>';
+    return '<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;border:1px solid #cbd5e1;background:#f8fafc;color:#475569;font-weight:800"><i class="fas fa-clock"></i>PENDENTE</span>';
   }
 
   function updateSalesPriceModeUi() {
@@ -4993,9 +4993,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
     salesPackagesWrap.innerHTML = list.map((p, idx) => `
-      <div class="rounded-xl border border-slate-700 p-3 bg-slate-900/75 text-slate-100" data-sales-package="${idx}" draggable="true">
+      <div class="rounded-2xl border border-slate-200 p-3.5 bg-slate-50/70 text-slate-800 shadow-xs" data-sales-package="${idx}" draggable="true">
         <div class="mb-2 flex items-center justify-between gap-2">
-          <span class="text-xs font-black tracking-widest uppercase text-slate-300">Pacote ${idx + 1}</span>
+          <span class="text-xs font-black tracking-widest uppercase text-slate-600">Pacote ${idx + 1}</span>
           <div class="flex items-center gap-1">
             <span class="text-[11px] text-slate-400 mr-1" title="Arraste para reordenar"><i class="fas fa-grip-vertical"></i></span>
             <button type="button" class="ks-btn ks-btn-sm" data-pkg-move="${idx}" data-pkg-dir="up" title="Subir pacote"${idx === 0 ? ' disabled' : ''}>
@@ -5008,20 +5008,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
           <div class="ks-field">
-            <label class="text-slate-300">Nome</label>
+            <label class="text-xs font-bold text-slate-600">Nome</label>
             <input class="ks-input mt-1" data-pkg-field="name" placeholder="Ex.: Pacote Start, Pacote Pro" value="${escapeHtml(p.name || '')}" />
           </div>
           <div class="ks-field">
-            <label class="text-slate-300">Qtd fotos</label>
+            <label class="text-xs font-bold text-slate-600">Qtd fotos</label>
             <input class="ks-input mt-1" type="number" min="1" step="1" data-pkg-field="photo_qty" value="${parseInt(p.photo_qty, 10) || 1}" />
           </div>
           <div class="ks-field">
-            <label class="text-slate-300">Preço (R$)</label>
+            <label class="text-xs font-bold text-slate-600">Preço (R$)</label>
             <input class="ks-input mt-1" type="text" inputmode="decimal" data-money="1" data-pkg-field="price_reais" placeholder="Ex.: 400,00" value="${escapeHtml(formatCentsForInputBr(normalizeLegacyMoneyCents(p.price_cents || 0)))}" />
           </div>
           <div class="ks-field">
-            <label class="text-slate-300">Ação</label>
-            <button type="button" class="ks-btn mt-1 w-full" data-pkg-remove="${idx}"><i class="fas fa-trash"></i> Remover</button>
+            <label class="text-xs font-bold text-slate-600">Ação</label>
+            <button type="button" class="ks-btn mt-1 w-full text-rose-600 border-rose-200 hover:bg-rose-50" data-pkg-remove="${idx}"><i class="fas fa-trash"></i> Remover</button>
           </div>
         </div>
       </div>
@@ -5427,23 +5427,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         .sort((a, b) => b.missingByClient - a.missingByClient)
         .slice(0, 6);
       if (!top.length) {
-        salesTopPending.innerHTML = '<div class="text-xs text-slate-300">Nenhuma pendência no momento.</div>';
+        salesTopPending.innerHTML = '<div class="text-xs font-medium text-slate-500">Nenhuma pendência no momento.</div>';
       } else {
         salesTopPending.innerHTML = top.map((row) => `
-          <div class="rounded-lg border border-amber-300/35 bg-slate-900/55 px-3 py-2">
+          <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-3 shadow-xs">
             <div class="flex items-center justify-between gap-2">
-              <div class="font-semibold text-slate-100 truncate">${escapeHtml(row.nome)}</div>
+              <div class="font-extrabold text-slate-900 truncate">${escapeHtml(row.nome)}</div>
               <div class="flex items-center gap-1.5">
-                <button type="button" class="ks-btn" style="padding:4px 8px;font-size:11px;line-height:1.1" data-sales-top-client="${row.clientId}">
+                <button type="button" class="ks-btn ks-btn-sm" style="padding:4px 8px;font-size:11px;line-height:1.1" data-sales-top-client="${row.clientId}">
                   Abrir
                 </button>
-                <button type="button" class="ks-btn" style="padding:4px 8px;font-size:11px;line-height:1.1;border-color:rgba(16,185,129,.55);background:rgba(16,185,129,.15);color:#d1fae5" data-sales-top-whats="${row.clientId}">
+                <button type="button" class="ks-btn ks-btn-sm text-emerald-800 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 font-bold" style="padding:4px 8px;font-size:11px;line-height:1.1" data-sales-top-whats="${row.clientId}">
                   WhatsApp
                 </button>
               </div>
             </div>
-            <div class="text-xs text-amber-100 mt-1">Falta receber: <b>${formatCentsBr(row.missingByClient)}</b></div>
-            <div class="text-[11px] text-slate-300">${row.pendingBatches} sessão(ões) pendente(s)</div>
+            <div class="text-xs text-amber-900 font-bold mt-1">Falta receber: <b>${formatCentsBr(row.missingByClient)}</b></div>
+            <div class="text-[11px] font-medium text-slate-500">${row.pendingBatches} sessão(ões) pendente(s)</div>
           </div>
         `).join('');
       }
@@ -5598,27 +5598,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       const hasPending = pendingProof > 0;
       const hasBlessedOnly = !hasPending && paidNormalRounds <= 0 && blessedRounds > 0;
       const hasPaid = !hasPending && paidNormalRounds > 0;
-      const activeRing = active ? 'ring-2 ring-rose-400/80 shadow-[0_0_0_1px_rgba(251,113,133,.45)]' : '';
+      const activeRing = active ? 'ring-2 ring-amber-500 shadow-sm' : '';
       const activeCls = hasPending
-        ? `border-amber-400 bg-amber-500/18 ${activeRing}`
+        ? `border-amber-300 bg-amber-50/70 ${activeRing}`
         : (hasPartialBalance
-          ? `border-sky-400 bg-sky-500/14 ${activeRing}`
+          ? `border-sky-300 bg-sky-50/70 ${activeRing}`
           : (hasBlessedOnly
-          ? `border-violet-400 bg-violet-500/14 ${activeRing}`
+          ? `border-purple-300 bg-purple-50/70 ${activeRing}`
           : (hasPaid
-          ? `border-emerald-400 bg-emerald-500/14 ${activeRing}`
-          : `border-slate-700 bg-slate-900/70 ${active ? activeRing : 'hover:border-slate-500'}`)));
+          ? `border-emerald-300 bg-emerald-50/70 ${activeRing}`
+          : `border-slate-200 bg-white ${active ? activeRing : 'hover:border-slate-300 shadow-xs'}`)));
       const priorityBadge = hasPending
-        ? `<span class="text-[11px] rounded-full border border-amber-300/95 bg-amber-300/30 px-2 py-0.5 text-amber-100 font-black">PENDENTE ${pendingProof}</span>`
+        ? `<span class="text-[11px] rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-amber-800 font-extrabold">PENDENTE ${pendingProof}</span>`
         : (hasPartialBalance
-          ? '<span class="text-[11px] rounded-full border border-sky-300/95 bg-sky-400/25 px-2 py-0.5 text-sky-100 font-black">SALDO</span>'
+          ? '<span class="text-[11px] rounded-full border border-sky-300 bg-sky-100 px-2 py-0.5 text-sky-800 font-extrabold">SALDO</span>'
           : (hasBlessedOnly
-          ? '<span class="text-[11px] rounded-full border border-violet-300/95 bg-violet-400/25 px-2 py-0.5 text-violet-100 font-black">CORTESIA</span>'
+          ? '<span class="text-[11px] rounded-full border border-purple-300 bg-purple-100 px-2 py-0.5 text-purple-800 font-extrabold">CORTESIA</span>'
           : (hasPaid
-          ? '<span class="text-[11px] rounded-full border border-emerald-300/95 bg-emerald-400/25 px-2 py-0.5 text-emerald-100 font-black">PAGO</span>'
-          : '<span class="text-[11px] rounded-full border border-slate-600 px-2 py-0.5 text-slate-300">Aguardando</span>')));
+          ? '<span class="text-[11px] rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-emerald-800 font-extrabold">PAGO</span>'
+          : '<span class="text-[11px] rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-slate-600 font-bold">Aguardando</span>')));
       const focusBadge = active
-        ? '<span class="text-[11px] rounded-full border border-rose-300/95 bg-rose-500/28 px-2 py-0.5 text-rose-100 font-black"><i class="fas fa-crosshairs"></i> EM FOCO</span>'
+        ? '<span class="text-[11px] rounded-full border border-amber-400 bg-amber-100 px-2 py-0.5 text-amber-900 font-extrabold"><i class="fas fa-crosshairs"></i> EM FOCO</span>'
         : '';
       const financeBits = (() => {
         const bits = [];
@@ -5638,15 +5638,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         return bits.join(' — ');
       })();
       return `
-        <div class="w-full text-left rounded-xl border ${activeCls} p-3 transition cursor-pointer" data-sales-client-card="${cid}" role="button" tabindex="0">
+        <div class="w-full text-left rounded-2xl border ${activeCls} p-3.5 transition cursor-pointer" data-sales-client-card="${cid}" role="button" tabindex="0">
           <div class="flex items-center justify-between gap-2">
-            <div class="font-semibold text-slate-100">${escapeHtml(c.nome || c.email || `Cliente #${cid}`)}</div>
+            <div class="font-extrabold text-slate-900 text-sm">${escapeHtml(c.nome || c.email || `Cliente #${cid}`)}</div>
             <div class="flex items-center gap-1.5 shrink-0">
-              <button type="button" class="ks-btn" data-sales-copy-link="${cid}" title="Copiar link pessoal (login automático)" style="padding:4px 9px;font-size:11px;line-height:1"><i class="fas fa-link"></i></button>
+              <button type="button" class="ks-btn text-xs px-2 py-1" data-sales-copy-link="${cid}" title="Copiar link pessoal (login automático)"><i class="fas fa-link"></i></button>
               ${focusBadge}${priorityBadge}
             </div>
           </div>
-          <div class="text-xs text-slate-300 mt-1">
+          <div class="text-xs font-medium text-slate-600 mt-1">
             ${selectedCount} foto(s) — ${approvedCount} aprovada(s) — ${rounds.length} sessão(ões) — ${financeBits}
             ${maxInstallmentCount != null ? ` — até ${maxInstallmentCount}x no restante` : ''}
             ${blessedRounds > 0 ? ` — ${blessedRounds} abençoada(s)` : ''}
@@ -5835,23 +5835,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         const hasEdited = !!String(p?.edited_file_path || '').trim();
         const statusBadge = salesApprovalStatusBadge(status);
         const approveOriginalDone = status === 'approved' && delivery === 'original';
-        const pendingBtnStyle = 'background:rgba(245,158,11,.35);border-color:rgba(251,191,36,.95);color:#fef3c7;font-weight:900';
+        const pendingBtnStyle = 'background:#fef3c7;border-color:#fcd34d;color:#92400e;font-weight:800';
         const approveDoneStyle = approveOriginalDone
-          ? 'background:rgba(22,163,74,.35);border-color:rgba(34,197,94,.95);color:#dcfce7;font-weight:900'
+          ? 'background:#dcfce7;border-color:#86efac;color:#166534;font-weight:800'
           : '';
         return `
-          <div class="rounded-xl border border-slate-700 p-3 bg-slate-900/75 text-slate-100" data-sales-photo="${p.photo_id}" style="box-shadow:0 8px 24px rgba(0,0,0,.35)">
-            <div class="rounded-lg overflow-hidden border border-slate-700 bg-black/70">
-              <img data-sales-photo-preview="${p.photo_id}" alt="${escapeHtml(p.original_name || '')}" style="width:100%;height:190px;object-fit:contain;display:block;background:#0b0b0b" />
+          <div class="rounded-2xl border border-slate-200 p-3.5 bg-white text-slate-800 shadow-xs hover:border-slate-300 transition" data-sales-photo="${p.photo_id}">
+            <div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
+              <img data-sales-photo-preview="${p.photo_id}" alt="${escapeHtml(p.original_name || '')}" style="width:100%;height:190px;object-fit:contain;display:block;background:#f8fafc" />
             </div>
-            <div class="font-semibold text-sm mt-2">#${p.photo_id} — ${escapeHtml(p.original_name || '')}</div>
-            <div class="text-xs mt-1">${statusBadge} <span class="ks-muted">— Entrega: <b>${delivery === 'edited' ? 'EDITADA' : 'ORIGINAL'}</b>${hasEdited ? ' — arquivo editado enviado' : ''}</span></div>
-            <div class="mt-2 flex items-center gap-2 flex-wrap">
-              <button type="button" class="ks-btn ks-btn-sm" data-sales-photo-action="approve-original" style="${approveDoneStyle}"><i class="fas fa-check"></i> Aprovar original</button>
-              <button type="button" class="ks-btn ks-btn-sm" data-sales-photo-action="upload-edited"><i class="fas fa-upload"></i> Substituir por editada</button>
-              <button type="button" class="ks-btn ks-btn-sm" data-sales-photo-action="bless" style="background:rgba(139,92,246,.22);border-color:rgba(167,139,250,.82);color:#ede9fe;font-weight:900"><i class="fas fa-gift"></i> Foto abençoada</button>
-              <button type="button" class="ks-btn ks-btn-sm" data-sales-photo-action="pending" style="${pendingBtnStyle}"><i class="fas fa-hourglass-half"></i> Aguardando liberação</button>
-              <button type="button" class="ks-btn ks-btn-sm" data-sales-photo-action="reject"><i class="fas fa-xmark"></i> Rejeitar</button>
+            <div class="font-extrabold text-slate-900 text-sm mt-2">#${p.photo_id} — ${escapeHtml(p.original_name || '')}</div>
+            <div class="text-xs font-semibold text-slate-600 mt-1">${statusBadge} <span class="text-slate-500">— Entrega: <b class="text-slate-700">${delivery === 'edited' ? 'EDITADA' : 'ORIGINAL'}</b>${hasEdited ? ' — arquivo editado enviado' : ''}</span></div>
+            <div class="mt-2.5 flex items-center gap-1.5 flex-wrap">
+              <button type="button" class="ks-btn ks-btn-sm text-xs font-bold px-2.5 py-1" data-sales-photo-action="approve-original" style="${approveDoneStyle}"><i class="fas fa-check"></i> Aprovar original</button>
+              <button type="button" class="ks-btn ks-btn-sm text-xs font-bold px-2.5 py-1" data-sales-photo-action="upload-edited"><i class="fas fa-upload"></i> Substituir por editada</button>
+              <button type="button" class="ks-btn ks-btn-sm text-xs font-bold px-2.5 py-1" data-sales-photo-action="bless" style="background:#f3e8ff;border-color:#d8b4fe;color:#6b21a8;font-weight:800"><i class="fas fa-gift"></i> Foto abençoada</button>
+              <button type="button" class="ks-btn ks-btn-sm text-xs font-bold px-2.5 py-1" data-sales-photo-action="pending" style="${pendingBtnStyle}"><i class="fas fa-hourglass-half"></i> Aguardando liberação</button>
+              <button type="button" class="ks-btn ks-btn-sm text-xs font-bold px-2.5 py-1 text-rose-600 border-rose-200 hover:bg-rose-50" data-sales-photo-action="reject"><i class="fas fa-xmark"></i> Rejeitar</button>
             </div>
           </div>
         `;
