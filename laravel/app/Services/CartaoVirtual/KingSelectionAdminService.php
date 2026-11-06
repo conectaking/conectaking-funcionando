@@ -2776,6 +2776,8 @@ class KingSelectionAdminService
                     'stretch_h_portrait' => isset($query['wm_st_hp']) ? (float) $query['wm_st_hp'] : (isset($g->watermark_stretch_h_pct_portrait) ? (float) $g->watermark_stretch_h_pct_portrait : null),
                     'stretch_w_landscape' => isset($query['wm_st_wl']) ? (float) $query['wm_st_wl'] : (isset($g->watermark_stretch_w_pct_landscape) ? (float) $g->watermark_stretch_w_pct_landscape : null),
                     'stretch_h_landscape' => isset($query['wm_st_hl']) ? (float) $query['wm_st_hl'] : (isset($g->watermark_stretch_h_pct_landscape) ? (float) $g->watermark_stretch_h_pct_landscape : null),
+                    'aspect_w' => isset($query['wm_aspect_w']) ? (float) $query['wm_aspect_w'] : null,
+                    'aspect_h' => isset($query['wm_aspect_h']) ? (float) $query['wm_aspect_h'] : null,
                     'is_landscape' => $isLandscape,
                 ];
             }

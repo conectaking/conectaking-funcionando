@@ -115,8 +115,12 @@ class KingSelectionMediaService
         }
         $isThumb = $maxSide <= 480;
         $wmKey = '';
+        $targetRatio = null;
         if ($watermark && ! empty($watermark['enabled']) && ! $isThumb) {
-            $wmKey = '|wm:'.md5(json_encode($watermark));
+            if (! empty($watermark['aspect_w']) && ! empty($watermark['aspect_h']) && (float) $watermark['aspect_h'] > 0) {
+                $targetRatio = (float) $watermark['aspect_w'] / (float) $watermark['aspect_h'];
+            }
+            $wmKey = '|wm:'.md5(json_encode($watermark)).($targetRatio ? '|ar:'.round($targetRatio, 4) : '');
         }
         $cacheFile = $this->previewCachePath($path, $maxSide, $wmKey);
         if ($cacheFile !== null && is_file($cacheFile) && filesize($cacheFile) > 64) {
@@ -143,7 +147,7 @@ class KingSelectionMediaService
         if ($buf === null) {
             return ['status' => 502, 'message' => 'Não foi possível carregar a imagem (ficheiro em falta no armazenamento).'];
         }
-        $out = $this->resizeJpeg($buf, $maxSide);
+        $out = $this->resizeJpeg($buf, $maxSide, $targetRatio);
         unset($buf);
         if ($out === null) {
             return ['status' => 502, 'message' => 'Falha ao processar imagem'];
@@ -349,6 +353,12 @@ class KingSelectionMediaService
         // É um canvas predefinido (horizontal 7008x4672 / vertical 4672x7008) com o padrão de coroas.
         // Cobrimos a imagem inteira preservando proporção ou ajustando ao tamanho da foto.
         if (! $isCustom || $mode === 'tile_dense') {
+            $scaleWm = max($w / max(1, $wmW), $h / max(1, $wmH));
+            $scaledW = max(1, (int) round($wmW * $scaleWm));
+            $scaledH = max(1, (int) round($wmH * $scaleWm));
+            $dstX = (int) round(($w - $scaledW) / 2);
+            $dstY = (int) round(($h - $scaledH) / 2);
+
             $wmCanvas = imagecreatetruecolor($w, $h);
             imagealphablending($wmCanvas, false);
             imagesavealpha($wmCanvas, true);
@@ -356,7 +366,7 @@ class KingSelectionMediaService
             imagefilledrectangle($wmCanvas, 0, 0, $w, $h, $trans);
             imagealphablending($wmCanvas, true);
 
-            imagecopyresampled($wmCanvas, $wmImg, 0, 0, 0, 0, $w, $h, $wmW, $wmH);
+            imagecopyresampled($wmCanvas, $wmImg, $dstX, $dstY, 0, 0, $scaledW, $scaledH, $wmW, $wmH);
             imagedestroy($wmImg);
 
             $this->imagecopymergeAlpha($img, $wmCanvas, 0, 0, 0, 0, $w, $h, $pct);
@@ -872,7 +882,7 @@ class KingSelectionMediaService
         };
     }
 
-    private function resizeJpeg(string $buf, int $maxSide): ?string
+    private function resizeJpeg(string $buf, int $maxSide, ?float $targetRatio = null): ?string
     {
         $this->bumpImageMemory();
         $img = ImageExif::createOrientedImage($buf);
@@ -883,6 +893,34 @@ class KingSelectionMediaService
         }
         $w = imagesx($img);
         $h = imagesy($img);
+
+        // Se uma proporção de aspecto for requisitada (ex: 16:9 em prévias de paisagem ou 3:4 em retrato),
+        // recorta o centro para garantir que o preview coincida exatamente com a moldura e não sofra zoom/corte CSS
+        if ($targetRatio !== null && $targetRatio > 0.05) {
+            $curRatio = $w / max(1, $h);
+            if (abs($curRatio - $targetRatio) > 0.04) {
+                if ($curRatio > $targetRatio) {
+                    $cropW = max(1, (int) round($h * $targetRatio));
+                    $cropH = $h;
+                    $srcX = (int) round(($w - $cropW) / 2);
+                    $srcY = 0;
+                } else {
+                    $cropW = $w;
+                    $cropH = max(1, (int) round($w / $targetRatio));
+                    $srcX = 0;
+                    $srcY = (int) round(($h - $cropH) / 2);
+                }
+                $cropped = imagecreatetruecolor($cropW, $cropH);
+                if ($cropped !== false) {
+                    imagecopy($cropped, $img, 0, 0, $srcX, $srcY, $cropW, $cropH);
+                    imagedestroy($img);
+                    $img = $cropped;
+                    $w = $cropW;
+                    $h = $cropH;
+                }
+            }
+        }
+
         $scale = min($maxSide / max($w, $h, 1), 1.0);
         $nw = max(1, (int) round($w * $scale));
         $nh = max(1, (int) round($h * $scale));

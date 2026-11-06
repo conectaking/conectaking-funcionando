@@ -1322,7 +1322,7 @@
               </div>
 
               <div class="mt-3 text-xs text-slate-600 bg-white border border-slate-200 rounded-xl p-3 shadow-xs">
-                <strong class="text-slate-800">Preencher</strong>: escala forte + esticar para cobrir a área da foto. <strong class="text-slate-800">Ajustar</strong>: escala contida proporcional sem cortar. Use os botões de <strong>Rotação (0°, 90°, 180°, 270°)</strong> para girar sua marca d'água livremente.
+                <span>Ajuste o tamanho e a transparência da sua marca d'água em tempo real. Use <strong>Ajuste Fino & Posição</strong> para posicionar livremente ou esticar na proporção desejada.</span>
               </div>
 
               <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1344,35 +1344,12 @@
                     <div class="text-xs text-amber-700 font-extrabold font-mono bg-amber-50 px-2 py-0.5 rounded border border-amber-200" id="wm-scale-p-val">120%</div>
                   </div>
                   <input id="wm-scale-p" class="ks-range mt-1.5" type="range" min="10" max="500" step="1" value="120" />
-
-                  <div class="mt-3 flex items-center justify-between gap-2">
-                    <div class="text-xs font-extrabold text-slate-700">Rotação (retrato)</div>
-                    <div class="text-xs text-slate-500 font-extrabold font-mono" id="wm-rotate-p-val">0°</div>
-                  </div>
                   <input type="hidden" id="wm-rotate-p" value="0" />
-                  <div class="mt-1.5 grid grid-cols-4 gap-1.5">
-                    <button type="button" class="ks-btn ks-wm-rot-btn text-[11px] font-bold px-1 py-2 text-center cursor-pointer" data-wm-rotate-p="0" title="Normal">0°</button>
-                    <button type="button" class="ks-btn ks-wm-rot-btn text-[11px] font-bold px-1 py-2 text-center cursor-pointer" data-wm-rotate-p="90" title="90°">90°</button>
-                    <button type="button" class="ks-btn ks-wm-rot-btn text-[11px] font-bold px-1 py-2 text-center cursor-pointer" data-wm-rotate-p="180" title="180°">180°</button>
-                    <button type="button" class="ks-btn ks-wm-rot-btn text-[11px] font-bold px-1 py-2 text-center cursor-pointer" data-wm-rotate-p="270" title="270°">270°</button>
-                  </div>
 
-                  <div class="mt-2.5 grid grid-cols-2 gap-2">
-                    <button type="button" class="ks-btn text-[11px] font-bold px-2 py-2 text-center cursor-pointer" id="btn-wm-fill-p" title="Preencher — escala forte (cobre a área)"><i class="fas fa-expand text-amber-500 mr-1"></i> Preencher</button>
-                    <button type="button" class="ks-btn text-[11px] font-bold px-2 py-2 text-center cursor-pointer" id="btn-wm-fit-p" title="Ajustar — escala mais contida"><i class="fas fa-compress text-slate-500 mr-1"></i> Ajustar</button>
-                  </div>
-
-                  <div class="mt-4 pt-3 border-t border-slate-100 space-y-3">
-                    <div class="text-xs font-extrabold text-slate-800">Posição vertical do padrão</div>
-                    <div class="grid grid-cols-3 gap-1.5">
-                      <button type="button" class="ks-btn text-[10px] font-bold px-1 py-2 cursor-pointer" id="btn-wm-align-top-p" title="Cima">Cima</button>
-                      <button type="button" class="ks-btn text-[10px] font-bold px-1 py-2 cursor-pointer" id="btn-wm-align-center-v-p" title="Centro vertical">Centro</button>
-                      <button type="button" class="ks-btn text-[10px] font-bold px-1 py-2 cursor-pointer" id="btn-wm-align-bottom-p" title="Baixo">Baixo</button>
-                    </div>
-
-                    <details class="mt-3 border border-slate-200 rounded-xl bg-slate-50/70 p-2.5 text-xs">
+                  <div class="mt-3 pt-3 border-t border-slate-100 space-y-3">
+                    <details class="border border-slate-200 rounded-xl bg-slate-50/70 p-2.5 text-xs">
                       <summary class="font-bold text-slate-700 cursor-pointer select-none py-1 flex items-center justify-between">
-                        <span><i class="fas fa-sliders text-amber-500 mr-1.5"></i> Ajuste Fino & Posição Avançada</span>
+                        <span><i class="fas fa-sliders text-amber-500 mr-1.5"></i> Ajuste Fino & Posição</span>
                         <i class="fas fa-chevron-down text-slate-400 text-[10px]"></i>
                       </summary>
                       <div class="mt-2.5 pt-2.5 border-t border-slate-200 space-y-3">
@@ -1387,7 +1364,7 @@
                           <button type="button" class="ks-btn text-[10px] cursor-pointer" id="btn-wm-offset-down-p" title="Baixo"><i class="fas fa-arrow-down"></i></button>
                         </div>
                         <div class="pt-2 border-t border-slate-200">
-                          <div class="text-xs font-extrabold text-slate-800">Esticar o ladrilho (retrato)</div>
+                          <div class="text-xs font-extrabold text-slate-800">Esticar (retrato)</div>
                           <div class="mt-2 flex items-center justify-between gap-2">
                             <div class="text-[11px] font-extrabold text-slate-700">Largura</div>
                             <div class="text-[10px] text-slate-500 font-extrabold" id="wm-stretch-w-val-p">100%</div>
@@ -1422,35 +1399,12 @@
                     <div class="text-xs text-amber-700 font-extrabold font-mono bg-amber-50 px-2 py-0.5 rounded border border-amber-200" id="wm-scale-l-val">120%</div>
                   </div>
                   <input id="wm-scale-l" class="ks-range mt-1.5" type="range" min="10" max="500" step="1" value="120" />
-
-                  <div class="mt-3 flex items-center justify-between gap-2">
-                    <div class="text-xs font-extrabold text-slate-700">Rotação (paisagem)</div>
-                    <div class="text-xs text-slate-500 font-extrabold font-mono" id="wm-rotate-l-val">0°</div>
-                  </div>
                   <input type="hidden" id="wm-rotate-l" value="0" />
-                  <div class="mt-1.5 grid grid-cols-4 gap-1.5">
-                    <button type="button" class="ks-btn ks-wm-rot-btn text-[11px] font-bold px-1 py-2 text-center cursor-pointer" data-wm-rotate-l="0" title="Normal">0°</button>
-                    <button type="button" class="ks-btn ks-wm-rot-btn text-[11px] font-bold px-1 py-2 text-center cursor-pointer" data-wm-rotate-l="90" title="90°">90°</button>
-                    <button type="button" class="ks-btn ks-wm-rot-btn text-[11px] font-bold px-1 py-2 text-center cursor-pointer" data-wm-rotate-l="180" title="180°">180°</button>
-                    <button type="button" class="ks-btn ks-wm-rot-btn text-[11px] font-bold px-1 py-2 text-center cursor-pointer" data-wm-rotate-l="270" title="270°">270°</button>
-                  </div>
 
-                  <div class="mt-2.5 grid grid-cols-2 gap-2">
-                    <button type="button" class="ks-btn text-[11px] font-bold px-2 py-2 text-center cursor-pointer" id="btn-wm-fill-l" title="Preencher"><i class="fas fa-expand text-amber-500 mr-1"></i> Preencher</button>
-                    <button type="button" class="ks-btn text-[11px] font-bold px-2 py-2 text-center cursor-pointer" id="btn-wm-fit-l" title="Ajustar"><i class="fas fa-compress text-slate-500 mr-1"></i> Ajustar</button>
-                  </div>
-
-                  <div class="mt-4 pt-3 border-t border-slate-100 space-y-3">
-                    <div class="text-xs font-extrabold text-slate-800">Posição horizontal do padrão</div>
-                    <div class="grid grid-cols-3 gap-1.5">
-                      <button type="button" class="ks-btn text-[10px] font-bold px-1 py-2 cursor-pointer" id="btn-wm-align-left-l" title="Esquerda">Esquerda</button>
-                      <button type="button" class="ks-btn text-[10px] font-bold px-1 py-2 cursor-pointer" id="btn-wm-align-center-h-l" title="Centro">Centro</button>
-                      <button type="button" class="ks-btn text-[10px] font-bold px-1 py-2 cursor-pointer" id="btn-wm-align-right-l" title="Direita">Direita</button>
-                    </div>
-
-                    <details class="mt-3 border border-slate-200 rounded-xl bg-slate-50/70 p-2.5 text-xs">
+                  <div class="mt-3 pt-3 border-t border-slate-100 space-y-3">
+                    <details class="border border-slate-200 rounded-xl bg-slate-50/70 p-2.5 text-xs">
                       <summary class="font-bold text-slate-700 cursor-pointer select-none py-1 flex items-center justify-between">
-                        <span><i class="fas fa-sliders text-amber-500 mr-1.5"></i> Ajuste Fino & Posição Avançada</span>
+                        <span><i class="fas fa-sliders text-amber-500 mr-1.5"></i> Ajuste Fino & Posição</span>
                         <i class="fas fa-chevron-down text-slate-400 text-[10px]"></i>
                       </summary>
                       <div class="mt-2.5 pt-2.5 border-t border-slate-200 space-y-3">
@@ -1465,7 +1419,7 @@
                           <button type="button" class="ks-btn text-[10px] cursor-pointer" id="btn-wm-offset-down-l" title="Baixo"><i class="fas fa-arrow-down"></i></button>
                         </div>
                         <div class="pt-2 border-t border-slate-200">
-                          <div class="text-xs font-extrabold text-slate-800">Esticar o ladrilho (paisagem)</div>
+                          <div class="text-xs font-extrabold text-slate-800">Esticar (paisagem)</div>
                           <div class="mt-2 flex items-center justify-between gap-2">
                             <div class="text-[11px] font-extrabold text-slate-700">Largura</div>
                             <div class="text-[10px] text-slate-500 font-extrabold" id="wm-stretch-w-val-l">100%</div>
@@ -1977,6 +1931,119 @@
           style="min-height:160px;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;font-size:12px"></textarea>
         <button class="ks-btn ks-btn-primary mt-4 w-full" id="ks-export-copy"><i class="fas fa-copy"></i>
           Copiar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Ajustar e Importar Marca D'água Interativa -->
+  <div id="ks-modal-wm-import" class="fixed inset-0 hidden items-center justify-center p-4"
+    style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.65);z-index:999999;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;" aria-hidden="true">
+    <div class="w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col bg-white text-slate-800 border border-slate-200">
+      <div class="px-6 py-4 flex items-center justify-between gap-3 shrink-0 border-b border-slate-100 bg-slate-50/60">
+        <div>
+          <div class="font-extrabold text-slate-900 text-base sm:text-lg flex items-center gap-2">
+            <i class="fas fa-magic text-amber-500"></i> <span id="ks-wm-import-title">Ajustar Marca D'água antes de Enviar</span>
+          </div>
+          <div class="text-xs text-slate-500 mt-0.5" id="ks-wm-import-subtitle">
+            Dimensões originais: <b id="ks-wm-import-dims" class="text-slate-800 font-mono">-</b> · Arquivo: <span id="ks-wm-import-filename" class="font-mono text-slate-700">-</span>
+          </div>
+        </div>
+        <button type="button" id="ks-wm-import-close" class="text-slate-400 hover:text-slate-700 p-2" aria-label="Fechar"
+          style="background:none;border:none;cursor:pointer;font-size:20px"><i class="fas fa-times"></i></button>
+      </div>
+
+      <div class="p-5 sm:p-6 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-12 gap-6">
+        <!-- Visualizador interativo em tempo real -->
+        <div class="md:col-span-7 flex flex-col">
+          <div class="text-xs font-bold text-slate-700 mb-2 flex items-center justify-between">
+            <span>Prévia Interativa na Foto (<span id="ks-wm-import-aspect-label">Paisagem 16:9</span>)</span>
+            <span class="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-semibold">Tempo Real</span>
+          </div>
+          <div class="relative w-full rounded-xl overflow-hidden border border-slate-300 bg-slate-950 flex items-center justify-center select-none" id="ks-wm-import-canvas-box" style="aspect-ratio: 16/9; max-height: 380px;">
+            <!-- Foto de fundo (amostra da galeria) -->
+            <img id="ks-wm-import-bg" src="" alt="Fundo" class="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-90" />
+            <!-- Marca d'água sobreposta que reage aos sliders -->
+            <div id="ks-wm-import-overlay-wrap" class="absolute inset-0 flex items-center justify-center pointer-events-none" style="overflow:hidden;">
+              <img id="ks-wm-import-overlay" src="" alt="Marca d'água" class="pointer-events-none" style="max-width:none; transition: none;" />
+            </div>
+          </div>
+          <div class="mt-2 text-[11px] text-slate-500 text-center">
+            Esta prévia mostra exatamente como a marca d'água será estampada sobre suas fotos desta orientação.
+          </div>
+        </div>
+
+        <!-- Controles de ajuste -->
+        <div class="md:col-span-5 flex flex-col justify-between space-y-4">
+          <div class="space-y-3.5">
+            <!-- Tamanho / Escala -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+              <div class="flex items-center justify-between text-xs font-extrabold text-slate-800">
+                <span class="flex items-center gap-1.5"><i class="fas fa-expand text-amber-500"></i> Tamanho (Escala)</span>
+                <span id="ks-wm-import-scale-val" class="font-mono text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded">100%</span>
+              </div>
+              <input type="range" id="ks-wm-import-scale" min="10" max="400" step="1" value="100" class="ks-range mt-2" />
+            </div>
+
+            <!-- Transparência / Opacidade -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+              <div class="flex items-center justify-between text-xs font-extrabold text-slate-800">
+                <span class="flex items-center gap-1.5"><i class="fas fa-droplet text-amber-500"></i> Transparência</span>
+                <span id="ks-wm-import-opacity-val" class="font-mono text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded">25%</span>
+              </div>
+              <input type="range" id="ks-wm-import-opacity" min="5" max="100" step="1" value="25" class="ks-range mt-2" />
+            </div>
+
+            <!-- Proporção & Esticar livre -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+              <div class="flex items-center justify-between text-xs font-extrabold text-slate-800">
+                <span class="flex items-center gap-1.5"><i class="fas fa-arrows-alt text-amber-500"></i> Proporção Livre / Esticar</span>
+                <label class="text-[11px] font-semibold text-slate-600 flex items-center gap-1 cursor-pointer">
+                  <input type="checkbox" id="ks-wm-import-lock-ratio" checked class="rounded border-slate-300 text-amber-600 focus:ring-amber-500" />
+                  <span>Travar proporção</span>
+                </label>
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-[11px] text-slate-600">
+                  <span>Largura</span>
+                  <span id="ks-wm-import-stretch-w-val" class="font-mono font-bold text-slate-700">100%</span>
+                </div>
+                <input type="range" id="ks-wm-import-stretch-w" min="40" max="300" step="1" value="100" class="ks-range mt-1" />
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-[11px] text-slate-600">
+                  <span>Altura</span>
+                  <span id="ks-wm-import-stretch-h-val" class="font-mono font-bold text-slate-700">100%</span>
+                </div>
+                <input type="range" id="ks-wm-import-stretch-h" min="40" max="300" step="1" value="100" class="ks-range mt-1" />
+              </div>
+            </div>
+
+            <!-- Ajuste Fino de Posição -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+              <div class="flex items-center justify-between text-xs font-extrabold text-slate-800">
+                <span class="flex items-center gap-1.5"><i class="fas fa-arrows-to-dot text-amber-500"></i> Ajuste Fino de Posição</span>
+                <button type="button" id="ks-wm-import-reset-pos" class="text-[10px] text-amber-700 hover:text-amber-800 font-bold bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded cursor-pointer">Centralizar</button>
+              </div>
+              <div class="grid grid-cols-2 gap-2 text-[11px]">
+                <div>
+                  <div class="flex justify-between text-slate-600"><span>Horizontal (X)</span><span id="ks-wm-import-off-x-val" class="font-mono font-bold text-slate-700">0%</span></div>
+                  <input type="range" id="ks-wm-import-off-x" min="-50" max="50" step="1" value="0" class="ks-range mt-1" />
+                </div>
+                <div>
+                  <div class="flex justify-between text-slate-600"><span>Vertical (Y)</span><span id="ks-wm-import-off-y-val" class="font-mono font-bold text-slate-700">0%</span></div>
+                  <input type="range" id="ks-wm-import-off-y" min="-50" max="50" step="1" value="0" class="ks-range mt-1" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-3">
+            <button type="button" id="ks-wm-import-cancel" class="ks-btn text-xs px-4 py-2 font-bold cursor-pointer">Cancelar</button>
+            <button type="button" id="ks-wm-import-apply" class="ks-btn ks-btn-primary text-xs px-5 py-2 font-extrabold cursor-pointer flex items-center gap-2">
+              <i class="fas fa-check"></i> Salvar e Aplicar
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>

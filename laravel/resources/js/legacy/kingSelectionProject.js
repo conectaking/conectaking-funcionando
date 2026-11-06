@@ -856,6 +856,37 @@ document.addEventListener('DOMContentLoaded', async () => {
   const wmModeCk = document.getElementById('wm-mode-ck');
   const wmModeCkWrap = document.getElementById('wm-mode-ck-wrap');
 
+  // Modal interativo de importação de marca d'água
+  const wmImportModal = document.getElementById('ks-modal-wm-import');
+  const wmImportTitle = document.getElementById('ks-wm-import-title');
+  const wmImportDims = document.getElementById('ks-wm-import-dims');
+  const wmImportFilename = document.getElementById('ks-wm-import-filename');
+  const wmImportClose = document.getElementById('ks-wm-import-close');
+  const wmImportCancel = document.getElementById('ks-wm-import-cancel');
+  const wmImportApply = document.getElementById('ks-wm-import-apply');
+  const wmImportAspectLabel = document.getElementById('ks-wm-import-aspect-label');
+  const wmImportCanvasBox = document.getElementById('ks-wm-import-canvas-box');
+  const wmImportBg = document.getElementById('ks-wm-import-bg');
+  const wmImportOverlay = document.getElementById('ks-wm-import-overlay');
+  const wmImportScale = document.getElementById('ks-wm-import-scale');
+  const wmImportScaleVal = document.getElementById('ks-wm-import-scale-val');
+  const wmImportOpacity = document.getElementById('ks-wm-import-opacity');
+  const wmImportOpacityVal = document.getElementById('ks-wm-import-opacity-val');
+  const wmImportLockRatio = document.getElementById('ks-wm-import-lock-ratio');
+  const wmImportStretchW = document.getElementById('ks-wm-import-stretch-w');
+  const wmImportStretchWVal = document.getElementById('ks-wm-import-stretch-w-val');
+  const wmImportStretchH = document.getElementById('ks-wm-import-stretch-h');
+  const wmImportStretchHVal = document.getElementById('ks-wm-import-stretch-h-val');
+  const wmImportOffX = document.getElementById('ks-wm-import-off-x');
+  const wmImportOffXVal = document.getElementById('ks-wm-import-off-x-val');
+  const wmImportOffY = document.getElementById('ks-wm-import-off-y');
+  const wmImportOffYVal = document.getElementById('ks-wm-import-off-y-val');
+  const wmImportResetPos = document.getElementById('ks-wm-import-reset-pos');
+
+  let wmImportPendingFile = null;
+  let wmImportPendingOrientation = 'portrait';
+  let wmImportPendingObjUrl = null;
+
   // photos
   const pFile = document.getElementById('p-file');
   const addPhotoBtn = document.getElementById('btn-add-photo'); // pode não existir (agora usamos o botão do drop)
@@ -2565,7 +2596,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!pGrid) return null;
     let wrap = document.getElementById('ks-folders-admin');
     // Atualiza toolbar antiga (sem botões novos) sem precisar limpar cache manual
-    if (wrap && wrap.getAttribute('data-ks-toolbar-v') !== '4') {
+    if (wrap && wrap.getAttribute('data-ks-toolbar-v') !== '5') {
       try { wrap.remove(); } catch (_) { /* ignore */ }
       wrap = null;
     }
@@ -2573,12 +2604,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const host = pGrid.parentElement || pGrid;
     wrap = document.createElement('div');
     wrap.id = 'ks-folders-admin';
-    wrap.setAttribute('data-ks-toolbar-v', '4');
+    wrap.setAttribute('data-ks-toolbar-v', '5');
     wrap.style.marginBottom = '12px';
-    wrap.style.border = '1px solid rgba(255,255,255,.12)';
-    wrap.style.borderRadius = '12px';
-    wrap.style.padding = '10px';
-    wrap.style.background = 'rgba(0,0,0,.28)';
+    wrap.style.border = '1px solid #e2e8f0';
+    wrap.style.borderRadius = '16px';
+    wrap.style.padding = '12px 16px';
+    wrap.style.background = '#ffffff';
+    wrap.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05)';
     wrap.innerHTML = `
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;">
         <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
@@ -2589,16 +2621,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           <button type="button" class="ks-btn" id="ks-folder-auto-reprocess-btn"><i class="fas fa-rotate-right"></i> Reprocessar e separar</button>
           <button type="button" class="ks-btn" id="ks-folder-select-all-btn"><i class="far fa-check-square"></i> Selecionar todas as pastas</button>
           <button type="button" class="ks-btn" id="ks-folder-select-none-btn"><i class="far fa-square"></i> Limpar pastas</button>
-          <button type="button" class="ks-btn" id="ks-folder-delete-selected-btn" style="color:#fca5a5;border-color:rgba(248,113,113,.45)">
+          <button type="button" class="ks-btn" id="ks-folder-delete-selected-btn" style="color:#ef4444;border-color:rgba(239,68,68,.35)">
             <i class="fas fa-trash"></i> Excluir pastas selecionadas
           </button>
-          <span style="width:1px;height:22px;background:rgba(255,255,255,.15);margin:0 2px"></span>
+          <span style="width:1px;height:22px;background:#e2e8f0;margin:0 4px"></span>
           <button type="button" class="ks-btn" id="ks-photo-select-all-btn"><i class="fas fa-check-double"></i> Selecionar todas as fotos</button>
           <button type="button" class="ks-btn" id="ks-photo-clear-sel-btn"><i class="fas fa-xmark"></i> Limpar fotos</button>
-          <button type="button" class="ks-btn" id="ks-photo-delete-selected-btn" style="color:#fca5a5;border-color:rgba(248,113,113,.45)">
+          <button type="button" class="ks-btn" id="ks-photo-delete-selected-btn" style="color:#ef4444;border-color:rgba(239,68,68,.35)">
             <i class="fas fa-trash"></i> Excluir fotos selecionadas
           </button>
-          <button type="button" class="ks-btn" id="ks-photo-delete-loose-btn" style="color:#fca5a5;border-color:rgba(248,113,113,.55)">
+          <button type="button" class="ks-btn" id="ks-photo-delete-loose-btn" style="color:#ef4444;border-color:rgba(239,68,68,.35)">
             <i class="fas fa-unlink"></i> Excluir fotos soltas
           </button>
         </div>
@@ -9400,69 +9432,229 @@ document.addEventListener('DOMContentLoaded', async () => {
     pFile?.click();
   });
 
-  uploadWmBtnP?.addEventListener('click', () => wmFileP?.click());
-  wmFileP?.addEventListener('change', async () => {
-    const f = wmFileP.files && wmFileP.files[0];
-    if (!f) return;
-    const origBtnHtml = uploadWmBtnP.innerHTML;
-    try {
-      uploadWmBtnP.disabled = true;
-      uploadWmBtnP.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Enviando...';
-      const objUrl = URL.createObjectURL(f);
-      if (wmFilePreviewP) {
-        wmFilePreviewP.src = objUrl;
-        wmFilePreviewP.classList.remove('hidden');
+  function openWmImportModal(file, orientation) {
+    if (!file || !wmImportModal) return;
+    wmImportPendingFile = file;
+    wmImportPendingOrientation = orientation === 'landscape' ? 'landscape' : 'portrait';
+
+    if (wmImportPendingObjUrl) {
+      try { URL.revokeObjectURL(wmImportPendingObjUrl); } catch (_) {}
+    }
+    wmImportPendingObjUrl = URL.createObjectURL(file);
+
+    if (wmImportFilename) wmImportFilename.textContent = file.name || 'marca_dagua.png';
+    if (wmImportDims) wmImportDims.textContent = 'Carregando dimensões...';
+
+    const img = new Image();
+    img.onload = () => {
+      const nw = img.naturalWidth || 0;
+      const nh = img.naturalHeight || 0;
+      if (wmImportDims) wmImportDims.textContent = `${nw} × ${nh} px`;
+    };
+    img.src = wmImportPendingObjUrl;
+
+    const isLand = wmImportPendingOrientation === 'landscape';
+    if (wmImportTitle) {
+      wmImportTitle.textContent = isLand
+        ? "Ajustar Marca D'água antes de Enviar (Paisagem 16:9)"
+        : "Ajustar Marca D'água antes de Enviar (Retrato 3:4)";
+    }
+    if (wmImportAspectLabel) {
+      wmImportAspectLabel.textContent = isLand ? "Paisagem 16:9" : "Retrato 3:4";
+    }
+    if (wmImportCanvasBox) {
+      wmImportCanvasBox.style.aspectRatio = isLand ? "16/9" : "3/4";
+    }
+
+    // Amostra de imagem de fundo da galeria
+    const pid = pickPreviewPhotoId();
+    if (wmImportBg) {
+      if (pid) {
+        wmImportBg.src = `${API_URL}/api/king-selection/photos/${pid}/preview?wm_mode=none&max=800`;
+      } else {
+        wmImportBg.src = '';
       }
-      wmFileDefaults?.classList.add('hidden');
-      wmFileCustomWrap?.classList.remove('hidden');
-      wmFileFrameP?.classList.remove('hidden');
+    }
+
+    if (wmImportOverlay) {
+      wmImportOverlay.src = wmImportPendingObjUrl;
+    }
+
+    // Inicializar controles com os valores atuais da galeria ou padrões ideais
+    const curSc = isLand
+      ? (gallery?.watermark_scale_landscape ?? gallery?.watermark_scale ?? 1.2)
+      : (gallery?.watermark_scale_portrait ?? gallery?.watermark_scale ?? 1.2);
+    const curOp = gallery?.watermark_opacity ?? 0.25;
+    const curSw = isLand
+      ? (gallery?.watermark_stretch_w_pct_landscape ?? 100)
+      : (gallery?.watermark_stretch_w_pct_portrait ?? 100);
+    const curSh = isLand
+      ? (gallery?.watermark_stretch_h_pct_landscape ?? 100)
+      : (gallery?.watermark_stretch_h_pct_portrait ?? 100);
+    const curOx = isLand
+      ? (gallery?.watermark_logo_offset_x_landscape ?? 0)
+      : (gallery?.watermark_logo_offset_x_portrait ?? 0);
+    const curOy = isLand
+      ? (gallery?.watermark_logo_offset_y_landscape ?? 0)
+      : (gallery?.watermark_logo_offset_y_portrait ?? 0);
+
+    if (wmImportScale) wmImportScale.value = Math.round(curSc * 100);
+    if (wmImportOpacity) wmImportOpacity.value = Math.round(curOp * 100);
+    if (wmImportStretchW) wmImportStretchW.value = Math.round(curSw);
+    if (wmImportStretchH) wmImportStretchH.value = Math.round(curSh);
+    if (wmImportOffX) wmImportOffX.value = Math.round(curOx);
+    if (wmImportOffY) wmImportOffY.value = Math.round(curOy);
+    if (wmImportLockRatio) wmImportLockRatio.checked = Math.abs(curSw - curSh) < 2;
+
+    updateImportPreview();
+
+    wmImportModal.style.display = 'flex';
+    wmImportModal.classList.remove('hidden');
+    wmImportModal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeWmImportModal() {
+    if (!wmImportModal) return;
+    wmImportModal.style.display = 'none';
+    wmImportModal.classList.add('hidden');
+    wmImportModal.setAttribute('aria-hidden', 'true');
+    if (wmFileP) wmFileP.value = '';
+    if (wmFileL) wmFileL.value = '';
+    wmImportPendingFile = null;
+  }
+
+  function updateImportPreview() {
+    const sc = parseInt(wmImportScale?.value || '100', 10);
+    const op = parseInt(wmImportOpacity?.value || '25', 10);
+    const sw = parseInt(wmImportStretchW?.value || '100', 10);
+    const sh = parseInt(wmImportStretchH?.value || '100', 10);
+    const ox = parseInt(wmImportOffX?.value || '0', 10);
+    const oy = parseInt(wmImportOffY?.value || '0', 10);
+
+    if (wmImportScaleVal) wmImportScaleVal.textContent = `${sc}%`;
+    if (wmImportOpacityVal) wmImportOpacityVal.textContent = `${op}%`;
+    if (wmImportStretchWVal) wmImportStretchWVal.textContent = `${sw}%`;
+    if (wmImportStretchHVal) wmImportStretchHVal.textContent = `${sh}%`;
+    if (wmImportOffXVal) wmImportOffXVal.textContent = `${ox > 0 ? '+' : ''}${ox}%`;
+    if (wmImportOffYVal) wmImportOffYVal.textContent = `${oy > 0 ? '+' : ''}${oy}%`;
+
+    if (wmImportOverlay) {
+      wmImportOverlay.style.opacity = (op / 100).toString();
+      const baseWidthPct = 45;
+      const targetWidth = baseWidthPct * (sc / 100) * (sw / 100);
+      const targetHeightScale = (sh / 100);
+      wmImportOverlay.style.width = `${targetWidth}%`;
+      wmImportOverlay.style.height = 'auto';
+      wmImportOverlay.style.transform = `translate(${ox}%, ${oy}%) scaleY(${targetHeightScale})`;
+    }
+  }
+
+  wmImportClose?.addEventListener('click', closeWmImportModal);
+  wmImportCancel?.addEventListener('click', closeWmImportModal);
+  wmImportScale?.addEventListener('input', updateImportPreview);
+  wmImportOpacity?.addEventListener('input', updateImportPreview);
+  wmImportStretchW?.addEventListener('input', () => {
+    if (wmImportLockRatio?.checked && wmImportStretchH) {
+      wmImportStretchH.value = wmImportStretchW.value;
+    }
+    updateImportPreview();
+  });
+  wmImportStretchH?.addEventListener('input', () => {
+    if (wmImportLockRatio?.checked && wmImportStretchW) {
+      wmImportStretchW.value = wmImportStretchH.value;
+    }
+    updateImportPreview();
+  });
+  wmImportOffX?.addEventListener('input', updateImportPreview);
+  wmImportOffY?.addEventListener('input', updateImportPreview);
+  wmImportResetPos?.addEventListener('click', () => {
+    if (wmImportOffX) wmImportOffX.value = '0';
+    if (wmImportOffY) wmImportOffY.value = '0';
+    updateImportPreview();
+  });
+
+  wmImportApply?.addEventListener('click', async () => {
+    if (!wmImportPendingFile) return;
+    const origHtml = wmImportApply.innerHTML;
+    try {
+      wmImportApply.disabled = true;
+      wmImportApply.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Enviando e aplicando...';
+
+      const file = wmImportPendingFile;
+      const orient = wmImportPendingOrientation;
+      const sc = parseInt(wmImportScale?.value || '100', 10);
+      const op = parseInt(wmImportOpacity?.value || '25', 10);
+      const sw = parseInt(wmImportStretchW?.value || '100', 10);
+      const sh = parseInt(wmImportStretchH?.value || '100', 10);
+      const ox = parseInt(wmImportOffX?.value || '0', 10);
+      const oy = parseInt(wmImportOffY?.value || '0', 10);
+
+      // Envia o arquivo de marca d'água para o R2 / backend
+      await setWatermarkLogo(file, orient);
+
+      // Salva os parâmetros ajustados na galeria
+      const payload = {
+        watermark_mode: 'logo',
+        watermark_opacity: op / 100,
+      };
+      if (orient === 'portrait') {
+        payload.watermark_scale_portrait = sc / 100;
+        payload.watermark_stretch_w_pct_portrait = sw;
+        payload.watermark_stretch_h_pct_portrait = sh;
+        payload.watermark_logo_offset_x_portrait = ox;
+        payload.watermark_logo_offset_y_portrait = oy;
+      } else {
+        payload.watermark_scale_landscape = sc / 100;
+        payload.watermark_stretch_w_pct_landscape = sw;
+        payload.watermark_stretch_h_pct_landscape = sh;
+        payload.watermark_logo_offset_x_landscape = ox;
+        payload.watermark_logo_offset_y_landscape = oy;
+      }
+      await savePatch(payload);
+
+      // Atualiza estado local da página
       wmMode = 'logo';
       setRadio('wm_mode', 'logo');
+      if (wmOpacity) wmOpacity.value = op;
+      if (orient === 'portrait') {
+        if (wmScaleP) wmScaleP.value = sc;
+        if (wmStretchWP) wmStretchWP.value = sw;
+        if (wmStretchHP) wmStretchHP.value = sh;
+        wmLogoOffsetXPctPortrait = ox;
+        wmLogoOffsetYPctPortrait = oy;
+      } else {
+        if (wmScaleL) wmScaleL.value = sc;
+        if (wmStretchWL) wmStretchWL.value = sw;
+        if (wmStretchHL) wmStretchHL.value = sh;
+        wmLogoOffsetXPctLandscape = ox;
+        wmLogoOffsetYPctLandscape = oy;
+      }
 
-      await setWatermarkLogo(f, 'portrait');
+      closeWmImportModal();
       await loadGallery();
-      await refreshWatermarkFilePreview().catch(() => { });
+      await refreshWatermarkFilePreview().catch(() => {});
       scheduleWatermarkPreview(true);
-      toast('Marca d\'água (retrato) enviada com sucesso.', { kind: 'ok', title: 'OK' });
+      toast(`Marca d'água (${orient === 'landscape' ? 'paisagem' : 'retrato'}) enviada e ajustada com sucesso!`, { kind: 'ok', title: 'Sucesso' });
     } catch (e) {
-      showError(e.message || 'Erro ao enviar marca d\'água');
+      showError(e?.message || 'Erro ao enviar e aplicar marca d\'água');
     } finally {
-      uploadWmBtnP.disabled = false;
-      uploadWmBtnP.innerHTML = origBtnHtml || '<i class="fas fa-upload text-amber-500 mr-1.5"></i> Enviar retrato';
-      wmFileP.value = '';
+      wmImportApply.disabled = false;
+      wmImportApply.innerHTML = origHtml;
     }
   });
+
+  uploadWmBtnP?.addEventListener('click', () => wmFileP?.click());
+  wmFileP?.addEventListener('change', () => {
+    const f = wmFileP.files && wmFileP.files[0];
+    if (!f) return;
+    openWmImportModal(f, 'portrait');
+  });
+
   uploadWmBtnL?.addEventListener('click', () => wmFileL?.click());
-  wmFileL?.addEventListener('change', async () => {
+  wmFileL?.addEventListener('change', () => {
     const f = wmFileL.files && wmFileL.files[0];
     if (!f) return;
-    const origBtnHtml = uploadWmBtnL.innerHTML;
-    try {
-      uploadWmBtnL.disabled = true;
-      uploadWmBtnL.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Enviando...';
-      const objUrl = URL.createObjectURL(f);
-      if (wmFilePreviewL) {
-        wmFilePreviewL.src = objUrl;
-        wmFilePreviewL.classList.remove('hidden');
-      }
-      wmFileDefaults?.classList.add('hidden');
-      wmFileCustomWrap?.classList.remove('hidden');
-      wmFileFrameL?.classList.remove('hidden');
-      wmMode = 'logo';
-      setRadio('wm_mode', 'logo');
-
-      await setWatermarkLogo(f, 'landscape');
-      await loadGallery();
-      await refreshWatermarkFilePreview().catch(() => { });
-      scheduleWatermarkPreview(true);
-      toast('Marca d\'água (paisagem) enviada com sucesso.', { kind: 'ok', title: 'OK' });
-    } catch (e) {
-      showError(e.message || 'Erro ao enviar marca d\'água');
-    } finally {
-      uploadWmBtnL.disabled = false;
-      uploadWmBtnL.innerHTML = origBtnHtml || '<i class="fas fa-upload text-amber-500 mr-1.5"></i> Enviar paisagem';
-      wmFileL.value = '';
-    }
+    openWmImportModal(f, 'landscape');
   });
 
   saveWmBtn?.addEventListener('click', async () => {
