@@ -642,10 +642,21 @@ class KingSelectionClientService
     {
         try {
             $cols = ['watermark_mode', 'watermark_opacity'];
-            if (SchemaMeta::hasColumn('king_galleries', 'watermark_path')) $cols[] = 'watermark_path';
-            if (SchemaMeta::hasColumn('king_galleries', 'watermark_path_portrait')) $cols[] = 'watermark_path_portrait';
-            if (SchemaMeta::hasColumn('king_galleries', 'watermark_path_landscape')) $cols[] = 'watermark_path_landscape';
-            if (SchemaMeta::hasColumn('king_galleries', 'watermark_scale')) $cols[] = 'watermark_scale';
+            foreach ([
+                'watermark_path', 'watermark_path_portrait', 'watermark_path_landscape',
+                'watermark_scale', 'watermark_scale_portrait', 'watermark_scale_landscape',
+                'watermark_rotate', 'watermark_rotate_portrait', 'watermark_rotate_landscape',
+                'watermark_logo_offset_x', 'watermark_logo_offset_y',
+                'watermark_logo_offset_x_portrait', 'watermark_logo_offset_y_portrait',
+                'watermark_logo_offset_x_landscape', 'watermark_logo_offset_y_landscape',
+                'watermark_stretch_w_pct', 'watermark_stretch_h_pct',
+                'watermark_stretch_w_pct_portrait', 'watermark_stretch_h_pct_portrait',
+                'watermark_stretch_w_pct_landscape', 'watermark_stretch_h_pct_landscape',
+            ] as $c) {
+                if (SchemaMeta::hasColumn('king_galleries', $c)) {
+                    $cols[] = $c;
+                }
+            }
             $g = DB::selectOne(
                 'SELECT '.implode(', ', $cols).' FROM king_galleries WHERE id = ? LIMIT 1',
                 [$galleryId]
@@ -672,6 +683,23 @@ class KingSelectionClientService
             'path_portrait' => $g->watermark_path_portrait ?? null,
             'path_landscape' => $g->watermark_path_landscape ?? null,
             'scale' => (float) ($g->watermark_scale ?? 1.0),
+            'scale_portrait' => isset($g->watermark_scale_portrait) ? (float) $g->watermark_scale_portrait : null,
+            'scale_landscape' => isset($g->watermark_scale_landscape) ? (float) $g->watermark_scale_landscape : null,
+            'rotate' => (int) ($g->watermark_rotate ?? 0),
+            'rotate_portrait' => isset($g->watermark_rotate_portrait) ? (int) $g->watermark_rotate_portrait : null,
+            'rotate_landscape' => isset($g->watermark_rotate_landscape) ? (int) $g->watermark_rotate_landscape : null,
+            'offset_x' => (float) ($g->watermark_logo_offset_x ?? 0),
+            'offset_y' => (float) ($g->watermark_logo_offset_y ?? 0),
+            'offset_x_portrait' => isset($g->watermark_logo_offset_x_portrait) ? (float) $g->watermark_logo_offset_x_portrait : null,
+            'offset_y_portrait' => isset($g->watermark_logo_offset_y_portrait) ? (float) $g->watermark_logo_offset_y_portrait : null,
+            'offset_x_landscape' => isset($g->watermark_logo_offset_x_landscape) ? (float) $g->watermark_logo_offset_x_landscape : null,
+            'offset_y_landscape' => isset($g->watermark_logo_offset_y_landscape) ? (float) $g->watermark_logo_offset_y_landscape : null,
+            'stretch_w' => (float) ($g->watermark_stretch_w_pct ?? 100),
+            'stretch_h' => (float) ($g->watermark_stretch_h_pct ?? 100),
+            'stretch_w_portrait' => isset($g->watermark_stretch_w_pct_portrait) ? (float) $g->watermark_stretch_w_pct_portrait : null,
+            'stretch_h_portrait' => isset($g->watermark_stretch_h_pct_portrait) ? (float) $g->watermark_stretch_h_pct_portrait : null,
+            'stretch_w_landscape' => isset($g->watermark_stretch_w_pct_landscape) ? (float) $g->watermark_stretch_w_pct_landscape : null,
+            'stretch_h_landscape' => isset($g->watermark_stretch_h_pct_landscape) ? (float) $g->watermark_stretch_h_pct_landscape : null,
         ];
     }
 

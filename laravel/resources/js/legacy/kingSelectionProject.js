@@ -2381,9 +2381,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function refreshWatermarkFilePreview() {
+    const mode = getRadio('wm_mode') || wmMode || gallery?.watermark_mode || 'tile_dense';
     const hasCustom = galleryHasCustomWmPath();
 
-    if (!hasCustom) {
+    if (mode === 'tile_dense' || !hasCustom) {
       wmFileCustomWrap?.classList.add('hidden');
       wmFileDefaults?.classList.remove('hidden');
       if (wmFilePh) wmFilePh.textContent = 'Marca Conecta King (fixa — retrato e paisagem)';
@@ -2405,8 +2406,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     wmFileFrameL?.classList.remove('hidden');
     wmFilePreviewP?.classList.toggle('hidden', false);
     wmFilePreviewL?.classList.toggle('hidden', false);
-    const urlP = `${API_URL}/api/king-selection/galleries/${galleryId}/watermark-file?which=portrait`;
-    const urlL = `${API_URL}/api/king-selection/galleries/${galleryId}/watermark-file?which=landscape`;
+    const ts = Date.now();
+    const urlP = `${API_URL}/api/king-selection/galleries/${galleryId}/watermark-file?which=portrait&t=${ts}`;
+    const urlL = `${API_URL}/api/king-selection/galleries/${galleryId}/watermark-file?which=landscape&t=${ts}`;
     wmFilePreviewP?.setAttribute('data-photo-id', '0');
     wmFilePreviewL?.setAttribute('data-photo-id', '0');
     await Promise.all([
@@ -2481,7 +2483,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       p.set('wm_rotate_landscape', String(rotateLandscape));
       p.set('wm_rotate', String(rotatePortrait));
       p.set('wm_strict', '1');
-      p.set('max', '2000');
+      p.set('max', '800');
       return p;
     };
     const paramsP = mkParamsBase();
@@ -4504,14 +4506,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // UI simplificada: só usamos "tile_dense", "logo" e "none".
     // Se não há marca personalizada enviada, força tile_dense (evita selecionar "logo" sem arquivo).
     if (!['tile_dense', 'logo', 'none'].includes(wmMode)) wmMode = 'tile_dense';
-    if (wmMode === 'logo' && !hasCustom) wmMode = 'tile_dense';
     setRadio('wm_mode', wmMode);
-    // Habilitar/desabilitar a opção "Sua marca d\'água personalizada"
-    if (wmModeLogo) wmModeLogo.disabled = !hasCustom;
+    // Habilitar a opção "Sua marca d'água personalizada"
+    if (wmModeLogo) wmModeLogo.disabled = false;
     if (wmModeLogoWrap) {
-      wmModeLogoWrap.style.opacity = hasCustom ? '1' : '0.55';
-      wmModeLogoWrap.style.cursor = hasCustom ? 'pointer' : 'not-allowed';
-      wmModeLogoWrap.title = hasCustom ? '' : 'Envie uma marca d\'água para habilitar esta opção.';
+      wmModeLogoWrap.style.opacity = '1';
+      wmModeLogoWrap.style.cursor = 'pointer';
+      wmModeLogoWrap.title = '';
     }
     // A opção "Marca d'água da Conecta King" está SEMPRE habilitada e disponível
     if (wmModeCk) wmModeCk.disabled = false;
@@ -9403,17 +9404,31 @@ document.addEventListener('DOMContentLoaded', async () => {
   wmFileP?.addEventListener('change', async () => {
     const f = wmFileP.files && wmFileP.files[0];
     if (!f) return;
+    const origBtnHtml = uploadWmBtnP.innerHTML;
     try {
       uploadWmBtnP.disabled = true;
+      uploadWmBtnP.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Enviando...';
+      const objUrl = URL.createObjectURL(f);
+      if (wmFilePreviewP) {
+        wmFilePreviewP.src = objUrl;
+        wmFilePreviewP.classList.remove('hidden');
+      }
+      wmFileDefaults?.classList.add('hidden');
+      wmFileCustomWrap?.classList.remove('hidden');
+      wmFileFrameP?.classList.remove('hidden');
+      wmMode = 'logo';
+      setRadio('wm_mode', 'logo');
+
       await setWatermarkLogo(f, 'portrait');
       await loadGallery();
-      refreshWatermarkFilePreview().catch(() => { });
+      await refreshWatermarkFilePreview().catch(() => { });
       scheduleWatermarkPreview(true);
-      toast('Marca d\'água (retrato) enviada.', { kind: 'ok', title: 'OK' });
+      toast('Marca d\'água (retrato) enviada com sucesso.', { kind: 'ok', title: 'OK' });
     } catch (e) {
-      showError(e.message || 'Erro');
+      showError(e.message || 'Erro ao enviar marca d\'água');
     } finally {
       uploadWmBtnP.disabled = false;
+      uploadWmBtnP.innerHTML = origBtnHtml || '<i class="fas fa-upload text-amber-500 mr-1.5"></i> Enviar retrato';
       wmFileP.value = '';
     }
   });
@@ -9421,17 +9436,31 @@ document.addEventListener('DOMContentLoaded', async () => {
   wmFileL?.addEventListener('change', async () => {
     const f = wmFileL.files && wmFileL.files[0];
     if (!f) return;
+    const origBtnHtml = uploadWmBtnL.innerHTML;
     try {
       uploadWmBtnL.disabled = true;
+      uploadWmBtnL.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Enviando...';
+      const objUrl = URL.createObjectURL(f);
+      if (wmFilePreviewL) {
+        wmFilePreviewL.src = objUrl;
+        wmFilePreviewL.classList.remove('hidden');
+      }
+      wmFileDefaults?.classList.add('hidden');
+      wmFileCustomWrap?.classList.remove('hidden');
+      wmFileFrameL?.classList.remove('hidden');
+      wmMode = 'logo';
+      setRadio('wm_mode', 'logo');
+
       await setWatermarkLogo(f, 'landscape');
       await loadGallery();
-      refreshWatermarkFilePreview().catch(() => { });
+      await refreshWatermarkFilePreview().catch(() => { });
       scheduleWatermarkPreview(true);
-      toast('Marca d\'água (paisagem) enviada.', { kind: 'ok', title: 'OK' });
+      toast('Marca d\'água (paisagem) enviada com sucesso.', { kind: 'ok', title: 'OK' });
     } catch (e) {
-      showError(e.message || 'Erro');
+      showError(e.message || 'Erro ao enviar marca d\'água');
     } finally {
       uploadWmBtnL.disabled = false;
+      uploadWmBtnL.innerHTML = origBtnHtml || '<i class="fas fa-upload text-amber-500 mr-1.5"></i> Enviar paisagem';
       wmFileL.value = '';
     }
   });
@@ -9484,6 +9513,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         watermark_stretch_h_pct_landscape: stretchHPctLandscape
       });
       await loadGallery();
+      await refreshWatermarkFilePreview().catch(() => {});
       scheduleWatermarkPreview(true);
       toast('Configurações salvas.', { kind: 'ok', title: 'Salvo' });
     } catch (e) {
@@ -9828,6 +9858,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   Array.from(document.querySelectorAll('input[name="wm_mode"]')).forEach(r => {
     r.addEventListener('change', () => {
       wmMode = r.value || 'tile_dense';
+      refreshWatermarkFilePreview().catch(() => {});
       scheduleWatermarkPreview(true);
     });
   });
