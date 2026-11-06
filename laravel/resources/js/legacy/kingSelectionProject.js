@@ -9799,11 +9799,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const colorBtnsWmGen = document.querySelectorAll('.ks-wm-color-btn');
   const gridBtnsWmGen = document.querySelectorAll('.ks-wm-grid-btn');
+  const densityBtnsWmGen = document.querySelectorAll('.ks-wm-density-btn');
+  const transpInputWmGen = document.getElementById('ks-wm-gen-transp');
+  const transpValWmGen = document.getElementById('ks-wm-gen-transp-val');
   const scaleInputWmGen = document.getElementById('ks-wm-gen-scale');
   const scaleValWmGen = document.getElementById('ks-wm-gen-scale-val');
-  const gridOpInputWmGen = document.getElementById('ks-wm-gen-grid-op');
-  const gridOpValWmGen = document.getElementById('ks-wm-gen-grid-op-val');
   const textInputWmGen = document.getElementById('ks-wm-gen-text');
+
+  const btnModeSquare = document.getElementById('ks-wm-btn-mode-square');
+  const btnModeLandscape = document.getElementById('ks-wm-btn-mode-landscape');
+  const secondaryBox = document.getElementById('ks-wm-secondary-box');
+  const secondaryTitle = document.getElementById('ks-wm-secondary-title');
+  const secondaryRatio = document.getElementById('ks-wm-secondary-ratio');
+  const secondaryIcon = document.getElementById('ks-wm-secondary-icon');
+  const secondaryDesc = document.getElementById('ks-wm-secondary-desc');
 
   const bgPWmGen = document.getElementById('ks-wm-gen-bg-p');
   const bgLWmGen = document.getElementById('ks-wm-gen-bg-l');
@@ -9812,7 +9821,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let wmGenLoadedImage = null;
   let wmGenColor = 'white';
-  let wmGenGrid = 'diamond';
+  let wmGenGrid = 'conecta_king';
+  let wmGenDensity = 'normal';
+  let wmGenSecondaryMode = 'square';
 
   function openModalWmGen() {
     if (!modalWmGen) return;
@@ -9896,6 +9907,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     return c;
   }
 
+  /**
+   * Renderiza a marca d'água oficial estilo Conecta King:
+   * Grade Diamante 45° com MÚLTIPLAS LOGOS integradas e transparência unificada.
+   */
   function renderWatermarkCanvas(targetWidth, targetHeight) {
     const canvas = document.createElement('canvas');
     canvas.width = targetWidth;
@@ -9903,82 +9918,122 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return canvas;
 
-    const gridOpacity = (parseInt(gridOpInputWmGen?.value || '18', 10) / 100);
-    const logoScalePct = (parseInt(scaleInputWmGen?.value || '45', 10) / 100);
+    const transpPct = Math.max(0.05, Math.min(1.0, (parseInt(transpInputWmGen?.value || '25', 10) / 100)));
+    const logoScale = Math.max(0.2, Math.min(1.0, (parseInt(scaleInputWmGen?.value || '55', 10) / 100)));
     const customText = (textInputWmGen?.value || '').trim();
 
-    // 1. Grade de Segurança (se selecionada)
-    if (wmGenGrid === 'diamond' || wmGenGrid === 'diagonal') {
-      ctx.save();
-      ctx.strokeStyle = `rgba(255, 255, 255, ${gridOpacity})`;
-      ctx.lineWidth = Math.max(1.5, Math.round(targetWidth / 800));
+    // Densidade do passo dos diamantes (calculado proporcionalmente)
+    let densityDiv = 8.5;
+    if (wmGenDensity === 'compact') densityDiv = 10.5;
+    if (wmGenDensity === 'spaced') densityDiv = 6.5;
+    const step = Math.max(50, Math.round(targetWidth / densityDiv));
 
-      const step = Math.round(targetWidth / 6.5);
-      const maxDim = Math.max(targetWidth, targetHeight) * 2;
+    // Paleta de cores para grade e textos
+    let lineR = 255, lineG = 255, lineB = 255;
+    if (wmGenColor === 'gold') { lineR = 245; lineG = 158; lineB = 11; }
+    else if (wmGenColor === 'black') { lineR = 15; lineG = 23; lineB = 42; }
 
-      // Linhas 45°
-      for (let x = -maxDim; x < maxDim; x += step) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x + targetHeight, targetHeight);
-        ctx.stroke();
-      }
+    // 1. Grade Diamante Anti-Print (Linhas cruzadas a +45° e -45°)
+    ctx.save();
+    ctx.strokeStyle = `rgba(${lineR}, ${lineG}, ${lineB}, ${transpPct * 0.75})`;
+    ctx.lineWidth = Math.max(1.2, Math.round(targetWidth / 850));
 
-      // Linhas cruzadas -45° (grade diamante Conecta King)
-      if (wmGenGrid === 'diamond') {
-        for (let x = -maxDim; x < maxDim; x += step) {
-          ctx.beginPath();
-          ctx.moveTo(x, targetHeight);
-          ctx.lineTo(x + targetHeight, 0);
-          ctx.stroke();
-        }
-      }
-      ctx.restore();
+    const maxDim = Math.max(targetWidth, targetHeight) * 2;
+    // Linhas +45°
+    for (let x = -maxDim; x < maxDim; x += step) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x + targetHeight, targetHeight);
+      ctx.stroke();
     }
+    // Linhas -45°
+    for (let x = -maxDim; x < maxDim; x += step) {
+      ctx.beginPath();
+      ctx.moveTo(x, targetHeight);
+      ctx.lineTo(x + targetHeight, 0);
+      ctx.stroke();
+    }
+    ctx.restore();
 
-    // 2. Logo Central
+    // 2. Múltiplas Logos e Textos nos Diamantes
     if (wmGenLoadedImage) {
       const monoCanvas = getColoredLogoCanvas(wmGenLoadedImage, wmGenColor);
       if (monoCanvas) {
-        ctx.save();
-        const targetW = targetWidth * logoScalePct;
+        // Dimensões da logo dentro do diamante
+        const maxCellDim = step * 0.58 * logoScale;
         const ratio = monoCanvas.height / (monoCanvas.width || 1);
-        const targetH = targetW * ratio;
-
-        const x = (targetWidth - targetW) / 2;
-        const y = (targetHeight - targetH) / 2;
-
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-        ctx.shadowBlur = Math.max(3, Math.round(targetWidth / 180));
-        ctx.shadowOffsetX = 1;
-        ctx.shadowOffsetY = 2;
-
-        ctx.drawImage(monoCanvas, x, y, targetW, targetH);
-        ctx.restore();
-
-        // 3. Texto de Proteção Opcional
-        if (customText) {
-          ctx.save();
-          const fontSize = Math.max(13, Math.round(targetWidth / 55));
-          ctx.font = `700 ${fontSize}px sans-serif`;
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'top';
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-          ctx.shadowBlur = 4;
-          ctx.shadowOffsetX = 1;
-          ctx.shadowOffsetY = 1;
-          ctx.fillText(customText, targetWidth / 2, y + targetH + (fontSize * 0.75));
-          ctx.restore();
+        let drawW, drawH;
+        if (ratio <= 1) {
+          drawW = maxCellDim;
+          drawH = drawW * ratio;
+        } else {
+          drawH = maxCellDim;
+          drawW = drawH / ratio;
         }
+
+        ctx.save();
+        ctx.globalAlpha = transpPct;
+
+        // Itera sobre os centros dos diamantes da grade
+        const uMin = -targetHeight - step * 2;
+        const uMax = targetWidth + step * 2;
+        const vMin = -step * 2;
+        const vMax = targetWidth + targetHeight + step * 2;
+
+        for (let u = uMin; u < uMax; u += step) {
+          const uIdx = Math.round(u / step);
+          for (let v = vMin; v < vMax; v += step) {
+            const vIdx = Math.round(v / step);
+            const cx = (u + v + step) / 2;
+            const cy = (v - u) / 2;
+
+            if (cx < -step || cx > targetWidth + step || cy < -step || cy > targetHeight + step) {
+              continue;
+            }
+
+            const isEvenCell = ((uIdx + vIdx) % 2 === 0);
+
+            if (wmGenGrid === 'all_cells' || isEvenCell) {
+              // Desenha uma das múltiplas logos perfeitamente no centro do diamante
+              ctx.drawImage(monoCanvas, cx - drawW / 2, cy - drawH / 2, drawW, drawH);
+            } else if (wmGenGrid === 'conecta_king') {
+              // Célula intercalada (padrão oficial Conecta King):
+              // Se houver texto personalizado ou nome, desenha na diagonal suave
+              if (customText) {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(-45 * Math.PI / 180);
+                const fontSize = Math.max(9, Math.round(step * 0.082));
+                ctx.font = `700 ${fontSize}px sans-serif`;
+                ctx.fillStyle = `rgb(${lineR}, ${lineG}, ${lineB})`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(customText, 0, 0);
+                ctx.restore();
+              }
+            }
+          }
+        }
+
+        // Se o modo for "center_plus_grid", coloca também uma logo de destaque no centro da imagem
+        if (wmGenGrid === 'center_plus_grid') {
+          const centerScale = Math.min(targetWidth, targetHeight) * 0.32 * logoScale;
+          let cW, cH;
+          if (ratio <= 1) { cW = centerScale; cH = cW * ratio; }
+          else { cH = centerScale; cW = cH / ratio; }
+          ctx.drawImage(monoCanvas, (targetWidth - cW) / 2, (targetHeight - cH) / 2, cW, cH);
+        }
+
+        ctx.restore();
       }
     } else {
+      // Estado inicial sem logo selecionada
       ctx.save();
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+      ctx.fillStyle = `rgba(${lineR}, ${lineG}, ${lineB}, 0.55)`;
       ctx.font = `800 ${Math.round(targetWidth / 22)}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
       ctx.shadowBlur = 4;
       ctx.fillText('SELECIONE SUA LOGO', targetWidth / 2, targetHeight / 2);
       ctx.restore();
@@ -9990,7 +10045,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function updateWmGenPreviews() {
     if (!canvasPWmGen || !canvasLWmGen) return;
 
-    // Retrato (preview canvas 3:4)
+    // 1. Prévia Retrato / Vertical (canvas 3:4)
     const pW = 600, pH = 800;
     const pCanvas = renderWatermarkCanvas(pW, pH);
     canvasPWmGen.width = pW;
@@ -10001,17 +10056,45 @@ document.addEventListener('DOMContentLoaded', async () => {
       pCtx.drawImage(pCanvas, 0, 0);
     }
 
-    // Paisagem (preview canvas 16:9)
-    const lW = 800, lH = 450;
-    const lCanvas = renderWatermarkCanvas(lW, lH);
-    canvasLWmGen.width = lW;
-    canvasLWmGen.height = lH;
-    const lCtx = canvasLWmGen.getContext('2d');
-    if (lCtx) {
-      lCtx.clearRect(0, 0, lW, lH);
-      lCtx.drawImage(lCanvas, 0, 0);
+    // 2. Prévia Secundária: Quadrada (1:1) ou Paisagem (16:9)
+    let sW = 600, sH = 600;
+    if (wmGenSecondaryMode === 'landscape') {
+      sW = 800; sH = 450;
+    }
+    const sCanvas = renderWatermarkCanvas(sW, sH);
+    canvasLWmGen.width = sW;
+    canvasLWmGen.height = sH;
+    const sCtx = canvasLWmGen.getContext('2d');
+    if (sCtx) {
+      sCtx.clearRect(0, 0, sW, sH);
+      sCtx.drawImage(sCanvas, 0, 0);
     }
   }
+
+  // Alternância rápida entre Quadrada (1:1) e Paisagem (16:9)
+  btnModeSquare?.addEventListener('click', () => {
+    wmGenSecondaryMode = 'square';
+    btnModeSquare.className = 'text-[11px] px-2.5 py-1 rounded-lg border border-amber-400 bg-amber-50 text-amber-900 font-extrabold cursor-pointer';
+    btnModeLandscape.className = 'text-[11px] px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-600 font-semibold hover:border-slate-300 cursor-pointer';
+    if (secondaryBox) secondaryBox.style.aspectRatio = '1/1';
+    if (secondaryTitle) secondaryTitle.textContent = 'Quadrada (1:1)';
+    if (secondaryRatio) secondaryRatio.textContent = '1:1';
+    if (secondaryIcon) secondaryIcon.className = 'fas fa-square text-amber-500';
+    if (secondaryDesc) secondaryDesc.textContent = 'Grade com múltiplas logos cobrindo a foto quadrada.';
+    updateWmGenPreviews();
+  });
+
+  btnModeLandscape?.addEventListener('click', () => {
+    wmGenSecondaryMode = 'landscape';
+    btnModeLandscape.className = 'text-[11px] px-2.5 py-1 rounded-lg border border-amber-400 bg-amber-50 text-amber-900 font-extrabold cursor-pointer';
+    btnModeSquare.className = 'text-[11px] px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-600 font-semibold hover:border-slate-300 cursor-pointer';
+    if (secondaryBox) secondaryBox.style.aspectRatio = '16/9';
+    if (secondaryTitle) secondaryTitle.textContent = 'Paisagem (16:9)';
+    if (secondaryRatio) secondaryRatio.textContent = '16:9';
+    if (secondaryIcon) secondaryIcon.className = 'fas fa-image text-amber-500';
+    if (secondaryDesc) secondaryDesc.textContent = 'Grade expandida cobrindo toda a foto deitada.';
+    updateWmGenPreviews();
+  });
 
   // Eventos de Abertura / Fechamento
   btnOpenWmGen?.addEventListener('click', openModalWmGen);
@@ -10059,27 +10142,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // Botões de Estilo de Grade
+  // Botões de Distribuição da Grade
   gridBtnsWmGen.forEach((btn) => {
     btn.addEventListener('click', () => {
       gridBtnsWmGen.forEach(b => {
-        b.classList.remove('active', 'border-amber-400', 'font-extrabold');
-        b.classList.add('border-slate-200', 'font-semibold');
+        b.classList.remove('active', 'border-amber-400');
+        b.classList.add('border-slate-200');
+        const check = b.querySelector('.fa-check-circle');
+        if (check) check.remove();
       });
-      btn.classList.add('active', 'border-amber-400', 'font-extrabold');
-      btn.classList.remove('border-slate-200', 'font-semibold');
-      wmGenGrid = btn.getAttribute('data-wm-grid') || 'diamond';
+      btn.classList.add('active', 'border-amber-400');
+      btn.classList.remove('border-slate-200');
+      if (!btn.querySelector('.fa-check-circle')) {
+        const check = document.createElement('i');
+        check.className = 'fas fa-check-circle text-amber-500 text-sm ml-auto';
+        btn.appendChild(check);
+      }
+      wmGenGrid = btn.getAttribute('data-wm-grid') || 'conecta_king';
+      updateWmGenPreviews();
+    });
+  });
+
+  // Botões de Densidade dos Diamantes
+  densityBtnsWmGen.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      densityBtnsWmGen.forEach(b => {
+        b.classList.remove('active', 'border-amber-400', 'bg-amber-50', 'text-amber-900', 'font-extrabold');
+        b.classList.add('border-slate-200', 'bg-white', 'text-slate-700', 'font-semibold');
+      });
+      btn.classList.add('active', 'border-amber-400', 'bg-amber-50', 'text-amber-900', 'font-extrabold');
+      btn.classList.remove('border-slate-200', 'bg-white', 'text-slate-700', 'font-semibold');
+      wmGenDensity = btn.getAttribute('data-wm-density') || 'normal';
       updateWmGenPreviews();
     });
   });
 
   // Sliders e Inputs de Texto
-  scaleInputWmGen?.addEventListener('input', () => {
-    if (scaleValWmGen) scaleValWmGen.textContent = `${scaleInputWmGen.value}%`;
+  transpInputWmGen?.addEventListener('input', () => {
+    if (transpValWmGen) transpValWmGen.textContent = `${transpInputWmGen.value}%`;
     updateWmGenPreviews();
   });
-  gridOpInputWmGen?.addEventListener('input', () => {
-    if (gridOpValWmGen) gridOpValWmGen.textContent = `${gridOpInputWmGen.value}%`;
+  scaleInputWmGen?.addEventListener('input', () => {
+    if (scaleValWmGen) scaleValWmGen.textContent = `${scaleInputWmGen.value}%`;
     updateWmGenPreviews();
   });
   textInputWmGen?.addEventListener('input', updateWmGenPreviews);
@@ -10093,12 +10197,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const origHtml = btnApplyWmGen.innerHTML;
     try {
       btnApplyWmGen.disabled = true;
-      btnApplyWmGen.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Gerando formatos em alta resolução...';
+      btnApplyWmGen.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Gerando grades com múltiplas logos em alta definição...';
 
-      // 1. Renderiza os dois formatos em alta resolução:
+      const transpVal = parseInt(transpInputWmGen?.value || '25', 10);
+      const transpRatio = transpVal / 100;
+
+      // 1. Renderiza os formatos em alta definição:
       // Retrato 3:4 (1200 x 1600 px)
       const canvasP = renderWatermarkCanvas(1200, 1600);
-      // Paisagem 16:9 (1920 x 1080 px)
+      // Paisagem / Quadrada Universal (1920 x 1080 px)
       const canvasL = renderWatermarkCanvas(1920, 1080);
 
       const blobP = await new Promise(res => canvasP.toBlob(res, 'image/png'));
@@ -10115,14 +10222,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       btnApplyWmGen.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Enviando formato retrato...';
       await setWatermarkLogo(fileP, 'portrait');
 
-      btnApplyWmGen.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Enviando formato paisagem...';
+      btnApplyWmGen.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Enviando formato paisagem/quadrada...';
       await setWatermarkLogo(fileL, 'landscape');
 
-      // 3. Salva a configuração da galeria para usar a marca personalizada
+      // 3. Salva a configuração da galeria para cobrir a imagem inteira com a transparência escolhida
       btnApplyWmGen.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Ativando na galeria...';
       await savePatch({
-        watermark_mode: 'logo',
-        watermark_opacity: 0.22,
+        watermark_mode: 'tile_dense',
+        watermark_opacity: transpRatio,
         watermark_scale_portrait: 1.0,
         watermark_scale_landscape: 1.0,
         watermark_rotate: 0,
@@ -10139,17 +10246,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
 
       // Atualiza interface do painel
-      wmMode = 'logo';
-      setRadio('wm_mode', 'logo');
-      if (wmOpacity) wmOpacity.value = 22;
-      if (wmOpacityVal) wmOpacityVal.textContent = '22%';
+      wmMode = 'tile_dense';
+      setRadio('wm_mode', 'tile_dense');
+      if (wmOpacity) wmOpacity.value = transpVal;
+      if (wmOpacityVal) wmOpacityVal.textContent = `${transpVal}%`;
 
       closeModalWmGen();
       await loadGallery();
       await refreshWatermarkFilePreview().catch(() => {});
       scheduleWatermarkPreview(true);
 
-      toast('🎉 Marca d\'água gerada e ativada com sucesso em retrato e paisagem!', { kind: 'ok', title: 'Sucesso' });
+      toast('🎉 Marca d\'água estilo Conecta King (grade com várias logos) gerada e ativada com sucesso!', { kind: 'ok', title: 'Sucesso' });
     } catch (e) {
       showError(e?.message || 'Erro ao gerar e aplicar marca d\'água');
     } finally {

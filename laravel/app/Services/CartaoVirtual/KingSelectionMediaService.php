@@ -301,7 +301,7 @@ class KingSelectionMediaService
         $wmBuf = null;
         $isCustom = false;
 
-        if ($mode === 'logo') {
+        if ($mode === 'logo' || $mode === 'tile_dense') {
             $customPath = $isLandscape
                 ? (trim((string) ($watermark['path_landscape'] ?? '')) ?: trim((string) ($watermark['path'] ?? '')))
                 : (trim((string) ($watermark['path_portrait'] ?? '')) ?: trim((string) ($watermark['path'] ?? '')));
@@ -349,10 +349,11 @@ class KingSelectionMediaService
         $wmW = imagesx($wmImg);
         $wmH = imagesy($wmImg);
 
-        // Marca d'água oficial Conecta King (Adriano King):
-        // É um canvas predefinido (horizontal 7008x4672 / vertical 4672x7008) com o padrão de coroas.
-        // Cobrimos a imagem inteira preservando proporção ou ajustando ao tamanho da foto.
-        if (! $isCustom || $mode === 'tile_dense') {
+        // Marca d'água de grade / tela cheia (oficial Conecta King ou personalizada gerada):
+        // Cobrimos a imagem inteira preservando proporção
+        $isFullCanvasGrid = $mode === 'tile_dense' || ($isCustom && $wmW >= 700 && $wmH >= 700);
+
+        if (! $isCustom || $isFullCanvasGrid) {
             $scaleWm = max($w / max(1, $wmW), $h / max(1, $wmH));
             $scaledW = max(1, (int) round($wmW * $scaleWm));
             $scaledH = max(1, (int) round($wmH * $scaleWm));

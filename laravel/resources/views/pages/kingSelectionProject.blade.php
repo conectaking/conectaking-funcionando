@@ -2160,99 +2160,138 @@
             </p>
           </div>
 
-          <!-- 3. Estilo de Grade & Parâmetros -->
+          <!-- 3. Distribuição das Logos & Grade Anti-Print -->
           <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
             <div class="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-              <i class="fas fa-shield-halved text-amber-500"></i> 3. Grade Anti-Print
+              <i class="fas fa-shield-halved text-amber-500"></i> 3. Distribuição das Logos & Grade
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-              <button type="button" data-wm-grid="diamond" class="ks-wm-grid-btn active py-2 px-2.5 rounded-xl border border-amber-400 bg-white text-slate-800 font-extrabold shadow-xs text-center cursor-pointer">
-                Grade Diamante
+            <div class="grid grid-cols-1 gap-2 text-xs">
+              <button type="button" data-wm-grid="conecta_king" class="ks-wm-grid-btn active py-2.5 px-3 rounded-xl border border-amber-400 bg-white text-slate-800 font-extrabold shadow-xs text-left cursor-pointer flex items-center justify-between">
+                <div>
+                  <div class="font-extrabold text-slate-900 flex items-center gap-1.5"><i class="fas fa-crown text-amber-500"></i> Grade com Várias Logos (Conecta King)</div>
+                  <div class="text-[11px] font-medium text-slate-500 mt-0.5">Várias logos intercaladas com seu nome/assinatura nos diamantes</div>
+                </div>
+                <i class="fas fa-check-circle text-amber-500 text-sm"></i>
               </button>
-              <button type="button" data-wm-grid="diagonal" class="ks-wm-grid-btn py-2 px-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:border-slate-300 text-center cursor-pointer">
-                Diagonais
+              <button type="button" data-wm-grid="all_cells" class="ks-wm-grid-btn py-2 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:border-slate-300 text-left cursor-pointer flex items-center justify-between">
+                <div>
+                  <div class="font-extrabold text-slate-800">Logos em Todas as Células</div>
+                  <div class="text-[11px] font-medium text-slate-500 mt-0.5">A logo se repete em cada diamante da grade (proteção máxima)</div>
+                </div>
               </button>
-              <button type="button" data-wm-grid="none" class="ks-wm-grid-btn py-2 px-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:border-slate-300 text-center cursor-pointer">
-                Apenas Logo
+              <button type="button" data-wm-grid="center_plus_grid" class="ks-wm-grid-btn py-2 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:border-slate-300 text-left cursor-pointer flex items-center justify-between">
+                <div>
+                  <div class="font-extrabold text-slate-800">Logo Central + Múltiplas na Grade</div>
+                  <div class="text-[11px] font-medium text-slate-500 mt-0.5">Destaque no meio e padrão de logos menores ao redor</div>
+                </div>
               </button>
             </div>
 
-            <!-- Slider Tamanho da Logo -->
-            <div class="pt-2">
-              <div class="flex items-center justify-between text-xs font-bold text-slate-700">
-                <span>Tamanho da Logo</span>
-                <span id="ks-wm-gen-scale-val" class="font-mono text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded text-[11px]">45%</span>
+            <!-- Slider Transparência Geral (Grade + Logos juntos) -->
+            <div class="pt-2 border-t border-slate-200/80">
+              <div class="flex items-center justify-between text-xs font-extrabold text-slate-800">
+                <span class="flex items-center gap-1.5"><i class="fas fa-droplet text-amber-500"></i> Transparência Geral (Grade + Logos)</span>
+                <span id="ks-wm-gen-transp-val" class="font-mono text-amber-800 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded font-bold text-xs">25%</span>
               </div>
-              <input type="range" id="ks-wm-gen-scale" min="20" max="80" step="1" value="45" class="ks-range mt-1" />
+              <input type="range" id="ks-wm-gen-transp" min="5" max="90" step="1" value="25" class="ks-range mt-1.5" />
+              <div class="text-[10px] text-slate-500 mt-0.5">Deixa a grade inteira e todas as logos transparentes na mesma proporção.</div>
             </div>
 
-            <!-- Slider Opacidade da Grade -->
-            <div>
+            <!-- Slider Tamanho das Logos na Grade -->
+            <div class="pt-1">
               <div class="flex items-center justify-between text-xs font-bold text-slate-700">
-                <span>Opacidade da Grade</span>
-                <span id="ks-wm-gen-grid-op-val" class="font-mono text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded text-[11px]">18%</span>
+                <span class="flex items-center gap-1.5"><i class="fas fa-expand text-amber-500"></i> Tamanho das Logos na Grade</span>
+                <span id="ks-wm-gen-scale-val" class="font-mono text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded text-[11px]">55%</span>
               </div>
-              <input type="range" id="ks-wm-gen-grid-op" min="5" max="45" step="1" value="18" class="ks-range mt-1" />
+              <input type="range" id="ks-wm-gen-scale" min="20" max="85" step="1" value="55" class="ks-range mt-1" />
             </div>
 
-            <!-- Texto de Proteção Opcional -->
-            <div>
+            <!-- Densidade dos Diamantes -->
+            <div class="pt-1">
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                Densidade dos Diamantes da Grade:
+              </label>
+              <div class="grid grid-cols-3 gap-1.5 text-xs">
+                <button type="button" data-wm-density="compact" class="ks-wm-density-btn py-1.5 px-2 rounded-lg border border-slate-200 bg-white text-slate-700 font-semibold text-center cursor-pointer">
+                  Mais Logos
+                </button>
+                <button type="button" data-wm-density="normal" class="ks-wm-density-btn active py-1.5 px-2 rounded-lg border border-amber-400 bg-amber-50 text-amber-900 font-extrabold text-center cursor-pointer">
+                  Padrão King
+                </button>
+                <button type="button" data-wm-density="spaced" class="ks-wm-density-btn py-1.5 px-2 rounded-lg border border-slate-200 bg-white text-slate-700 font-semibold text-center cursor-pointer">
+                  Espaçado
+                </button>
+              </div>
+            </div>
+
+            <!-- Texto de Proteção / Nome do Fotógrafo -->
+            <div class="pt-1">
               <label for="ks-wm-gen-text" class="block text-[11px] font-bold text-slate-700 mb-1">
-                Texto de Proteção (Opcional):
+                Texto / Nome do Fotógrafo nos Diamantes:
               </label>
               <input type="text" id="ks-wm-gen-text" placeholder="Ex.: Adriano King Fotografia • Proibida Reprodução"
                 class="ks-input text-xs w-full py-2 px-3 rounded-xl border-slate-200 bg-white" />
+              <div class="text-[10px] text-slate-500 mt-1">Intercalado na diagonal entre as logos, idêntico à marca d'água oficial.</div>
             </div>
           </div>
         </div>
 
-        <!-- Coluna Direita: Pré-visualização Dupla em Tempo Real (Retrato + Paisagem) -->
+        <!-- Coluna Direita: Pré-visualização Dupla em Tempo Real (Vertical + Quadrada / Paisagem) -->
         <div class="lg:col-span-7 flex flex-col space-y-4">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-2">
             <div class="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-              <i class="fas fa-eye text-amber-500"></i> Prévia em Tempo Real nos 2 Formatos
+              <i class="fas fa-eye text-amber-500"></i> Prévia em Tempo Real
             </div>
-            <span class="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-bold">
-              Gera Retrato + Paisagem
-            </span>
+            <div class="flex items-center gap-1">
+              <span class="text-[11px] text-slate-500 mr-1">Orientação secundária:</span>
+              <button type="button" id="ks-wm-btn-mode-square" class="text-[11px] px-2.5 py-1 rounded-lg border border-amber-400 bg-amber-50 text-amber-900 font-extrabold cursor-pointer">
+                Quadrada (1:1)
+              </button>
+              <button type="button" id="ks-wm-btn-mode-landscape" class="text-[11px] px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-600 font-semibold hover:border-slate-300 cursor-pointer">
+                Paisagem (16:9)
+              </button>
+            </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <!-- Prévia Retrato (3:4) -->
+            <!-- Prévia Retrato / Vertical (3:4) -->
             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 flex flex-col shadow-xs">
               <div class="flex items-center justify-between text-xs font-bold text-slate-700 mb-2">
-                <span class="flex items-center gap-1"><i class="fas fa-mobile-screen text-amber-500"></i> Retrato (Em Pé)</span>
+                <span class="flex items-center gap-1"><i class="fas fa-mobile-screen text-amber-500"></i> Retrato (Vertical)</span>
                 <span class="text-[10px] text-slate-400 font-mono">3:4</span>
               </div>
               <div class="relative w-full rounded-xl overflow-hidden border border-slate-300 bg-slate-950 flex items-center justify-center" style="aspect-ratio: 3/4;">
-                <img id="ks-wm-gen-bg-p" src="" alt="Fundo" class="absolute inset-0 w-full h-full object-cover opacity-85" />
+                <img id="ks-wm-gen-bg-p" src="" alt="Fundo" class="absolute inset-0 w-full h-full object-cover opacity-90" />
                 <canvas id="ks-wm-gen-canvas-p" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
               </div>
-              <div class="mt-2 text-[10px] text-slate-500 text-center">
-                Logo perfeitamente horizontal e reta no centro.
+              <div class="mt-2 text-[10px] text-slate-500 text-center font-medium">
+                Várias logos e grade cobrindo a foto vertical inteira.
               </div>
             </div>
 
-            <!-- Prévia Paisagem (16:9) -->
+            <!-- Prévia Secundária: Quadrada (1:1) ou Paisagem (16:9) -->
             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 flex flex-col shadow-xs">
               <div class="flex items-center justify-between text-xs font-bold text-slate-700 mb-2">
-                <span class="flex items-center gap-1"><i class="fas fa-image text-amber-500"></i> Paisagem (Deitada)</span>
-                <span class="text-[10px] text-slate-400 font-mono">16:9</span>
+                <span class="flex items-center gap-1">
+                  <i class="fas fa-square text-amber-500" id="ks-wm-secondary-icon"></i>
+                  <span id="ks-wm-secondary-title">Quadrada (1:1)</span>
+                </span>
+                <span class="text-[10px] text-slate-400 font-mono" id="ks-wm-secondary-ratio">1:1</span>
               </div>
-              <div class="relative w-full rounded-xl overflow-hidden border border-slate-300 bg-slate-950 flex items-center justify-center" style="aspect-ratio: 16/9;">
-                <img id="ks-wm-gen-bg-l" src="" alt="Fundo" class="absolute inset-0 w-full h-full object-cover opacity-85" />
+              <div class="relative w-full rounded-xl overflow-hidden border border-slate-300 bg-slate-950 flex items-center justify-center" id="ks-wm-secondary-box" style="aspect-ratio: 1/1;">
+                <img id="ks-wm-gen-bg-l" src="" alt="Fundo" class="absolute inset-0 w-full h-full object-cover opacity-90" />
                 <canvas id="ks-wm-gen-canvas-l" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
               </div>
-              <div class="mt-2 text-[10px] text-slate-500 text-center">
-                Grade expandida cobrindo toda a foto deitada.
+              <div class="mt-2 text-[10px] text-slate-500 text-center font-medium" id="ks-wm-secondary-desc">
+                Grade com múltiplas logos perfeitamente distribuídas.
               </div>
             </div>
           </div>
 
-          <div class="rounded-xl border border-amber-200/80 bg-amber-50/50 p-3 text-xs text-amber-900 flex items-start gap-2.5">
-            <i class="fas fa-circle-check text-amber-600 mt-0.5"></i>
+          <div class="rounded-xl border border-amber-200/80 bg-amber-50/70 p-3.5 text-xs text-amber-950 flex items-start gap-2.5">
+            <i class="fas fa-shield-halved text-amber-600 mt-0.5 text-sm shrink-0"></i>
             <div>
-              <strong>Como vai funcionar ao aplicar:</strong> O sistema gera dois arquivos PNG transparentes em alta definição (um para fotos verticais e outro para horizontais) e já salva automaticamente na galeria com a proteção ativada!
+              <strong>Proteção Anti-Print Idêntica à Conecta King:</strong> As fotos verticais e quadradas/paisagens recebem a grade diamante com as múltiplas logos distribuídas e a transparência uniforme, protegendo o trabalho fotográfico com elegância sem cobrir o rosto dos clientes!
             </div>
           </div>
         </div>
