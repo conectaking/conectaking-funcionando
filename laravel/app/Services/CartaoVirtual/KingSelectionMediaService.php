@@ -288,7 +288,7 @@ class KingSelectionMediaService
 
         $w = imagesx($img);
         $h = imagesy($img);
-        $isLandscape = $w >= $h;
+        $isLandscape = isset($watermark['is_landscape']) ? (bool) $watermark['is_landscape'] : ($w >= $h);
         $opacity = (float) ($watermark['opacity'] ?? 0.22);
         $opacity = max(0.01, min(1.0, $opacity));
         $pct = (int) round($opacity * 100);
@@ -325,8 +325,10 @@ class KingSelectionMediaService
             return $this->applyDiagonalWatermark($jpegBinary, $opacity);
         }
 
-        // Rotação da marca d'água (0, 90, 180, 270)
-        $rotate = (int) ($watermark['rotate'] ?? 0);
+        // Rotação da marca d'água (0, 90, 180, 270) respeitando a orientação
+        $rotate = $isLandscape
+            ? (int) ($watermark['rotate_landscape'] ?? $watermark['rotate'] ?? 0)
+            : (int) ($watermark['rotate_portrait'] ?? $watermark['rotate'] ?? 0);
         if (in_array($rotate, [90, 180, 270], true)) {
             // GD imagerotate gira no sentido anti-horário com graus positivos.
             // Para girar no sentido horário desejado: (360 - $rotate) % 360
@@ -360,12 +362,18 @@ class KingSelectionMediaService
             $this->imagecopymergeAlpha($img, $wmCanvas, 0, 0, 0, 0, $w, $h, $pct);
             imagedestroy($wmCanvas);
         } else {
-            // Marca personalizada (logo)
-            $scale = (float) ($watermark['scale'] ?? 1.0);
+            // Marca personalizada (logo) respeitando a orientação
+            $scale = $isLandscape
+                ? (float) ($watermark['scale_landscape'] ?? $watermark['scale'] ?? 1.0)
+                : (float) ($watermark['scale_portrait'] ?? $watermark['scale'] ?? 1.0);
             $scale = max(0.05, min(5.0, $scale));
 
-            $stretchW = (float) ($watermark['stretch_w'] ?? 100) / 100.0;
-            $stretchH = (float) ($watermark['stretch_h'] ?? 100) / 100.0;
+            $stretchW = $isLandscape
+                ? (float) ($watermark['stretch_w_landscape'] ?? $watermark['stretch_w'] ?? 100) / 100.0
+                : (float) ($watermark['stretch_w_portrait'] ?? $watermark['stretch_w'] ?? 100) / 100.0;
+            $stretchH = $isLandscape
+                ? (float) ($watermark['stretch_h_landscape'] ?? $watermark['stretch_h'] ?? 100) / 100.0
+                : (float) ($watermark['stretch_h_portrait'] ?? $watermark['stretch_h'] ?? 100) / 100.0;
             $stretchW = max(0.5, min(4.0, $stretchW));
             $stretchH = max(0.5, min(4.0, $stretchH));
 
@@ -381,8 +389,12 @@ class KingSelectionMediaService
             imagecopyresampled($wmCanvas, $wmImg, 0, 0, 0, 0, $targetW, $targetH, $wmW, $wmH);
             imagedestroy($wmImg);
 
-            $offXPct = (float) ($watermark['offset_x'] ?? 0);
-            $offYPct = (float) ($watermark['offset_y'] ?? 0);
+            $offXPct = $isLandscape
+                ? (float) ($watermark['offset_x_landscape'] ?? $watermark['offset_x'] ?? 0)
+                : (float) ($watermark['offset_x_portrait'] ?? $watermark['offset_x'] ?? 0);
+            $offYPct = $isLandscape
+                ? (float) ($watermark['offset_y_landscape'] ?? $watermark['offset_y'] ?? 0)
+                : (float) ($watermark['offset_y_portrait'] ?? $watermark['offset_y'] ?? 0);
             $posX = (int) round(($w - $targetW) / 2 + ($w * $offXPct / 100));
             $posY = (int) round(($h - $targetH) / 2 + ($h * $offYPct / 100));
 
@@ -584,8 +596,24 @@ class KingSelectionMediaService
         }
 
         if (! $thumb && SchemaMeta::hasColumn('king_galleries', 'watermark_mode')) {
+            $cols = ['watermark_mode', 'watermark_opacity'];
+            foreach ([
+                'watermark_path', 'watermark_path_portrait', 'watermark_path_landscape',
+                'watermark_scale', 'watermark_scale_portrait', 'watermark_scale_landscape',
+                'watermark_rotate', 'watermark_rotate_portrait', 'watermark_rotate_landscape',
+                'watermark_logo_offset_x', 'watermark_logo_offset_y',
+                'watermark_logo_offset_x_portrait', 'watermark_logo_offset_y_portrait',
+                'watermark_logo_offset_x_landscape', 'watermark_logo_offset_y_landscape',
+                'watermark_stretch_w_pct', 'watermark_stretch_h_pct',
+                'watermark_stretch_w_pct_portrait', 'watermark_stretch_h_pct_portrait',
+                'watermark_stretch_w_pct_landscape', 'watermark_stretch_h_pct_landscape',
+            ] as $c) {
+                if (SchemaMeta::hasColumn('king_galleries', $c)) {
+                    $cols[] = $c;
+                }
+            }
             $wmRow = DB::selectOne(
-                'SELECT watermark_mode, watermark_opacity FROM king_galleries WHERE id = ? LIMIT 1',
+                'SELECT '.implode(', ', $cols).' FROM king_galleries WHERE id = ? LIMIT 1',
                 [(int) $g->id]
             );
             $mode = strtolower(trim((string) ($wmRow->watermark_mode ?? 'tile_dense')));
@@ -594,6 +622,27 @@ class KingSelectionMediaService
                     'enabled' => true,
                     'mode'    => $mode,
                     'opacity' => min(1.0, max(0.01, (float) ($wmRow->watermark_opacity ?? 0.22))),
+                    'path'    => $wmRow->watermark_path ?? null,
+                    'path_portrait' => $wmRow->watermark_path_portrait ?? null,
+                    'path_landscape' => $wmRow->watermark_path_landscape ?? null,
+                    'scale'   => (float) ($wmRow->watermark_scale ?? 1.0),
+                    'scale_portrait' => isset($wmRow->watermark_scale_portrait) ? (float) $wmRow->watermark_scale_portrait : null,
+                    'scale_landscape' => isset($wmRow->watermark_scale_landscape) ? (float) $wmRow->watermark_scale_landscape : null,
+                    'rotate'  => (int) ($wmRow->watermark_rotate ?? 0),
+                    'rotate_portrait' => isset($wmRow->watermark_rotate_portrait) ? (int) $wmRow->watermark_rotate_portrait : null,
+                    'rotate_landscape' => isset($wmRow->watermark_rotate_landscape) ? (int) $wmRow->watermark_rotate_landscape : null,
+                    'offset_x' => (float) ($wmRow->watermark_logo_offset_x ?? 0),
+                    'offset_y' => (float) ($wmRow->watermark_logo_offset_y ?? 0),
+                    'offset_x_portrait' => isset($wmRow->watermark_logo_offset_x_portrait) ? (float) $wmRow->watermark_logo_offset_x_portrait : null,
+                    'offset_y_portrait' => isset($wmRow->watermark_logo_offset_y_portrait) ? (float) $wmRow->watermark_logo_offset_y_portrait : null,
+                    'offset_x_landscape' => isset($wmRow->watermark_logo_offset_x_landscape) ? (float) $wmRow->watermark_logo_offset_x_landscape : null,
+                    'offset_y_landscape' => isset($wmRow->watermark_logo_offset_y_landscape) ? (float) $wmRow->watermark_logo_offset_y_landscape : null,
+                    'stretch_w' => (float) ($wmRow->watermark_stretch_w_pct ?? 100),
+                    'stretch_h' => (float) ($wmRow->watermark_stretch_h_pct ?? 100),
+                    'stretch_w_portrait' => isset($wmRow->watermark_stretch_w_pct_portrait) ? (float) $wmRow->watermark_stretch_w_pct_portrait : null,
+                    'stretch_h_portrait' => isset($wmRow->watermark_stretch_h_pct_portrait) ? (float) $wmRow->watermark_stretch_h_pct_portrait : null,
+                    'stretch_w_landscape' => isset($wmRow->watermark_stretch_w_pct_landscape) ? (float) $wmRow->watermark_stretch_w_pct_landscape : null,
+                    'stretch_h_landscape' => isset($wmRow->watermark_stretch_h_pct_landscape) ? (float) $wmRow->watermark_stretch_h_pct_landscape : null,
                 ];
                 $wmed = $this->applyWatermark($out, $wm);
                 if ($wmed !== null) {
