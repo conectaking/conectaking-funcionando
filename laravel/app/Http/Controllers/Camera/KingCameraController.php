@@ -1131,7 +1131,7 @@ class KingCameraController extends Controller
 
         $isAiCheck = (bool) $request->input('is_ai_check', false);
         $isReinforcement = str_contains($description, 'REFORÇO');
-        $breachConfirmed = !in_array($eventType, ['crib_fence', 'fence_breach', 'baby_stand']);
+        $breachConfirmed = !in_array($eventType, ['crib_fence', 'fence_breach', 'baby_stand', 'motion']);
         $aiAnalysis = null;
 
         // Se o cliente enviou as coordenadas atualizadas do cerco no disparo do evento, atualiza o modelo
@@ -1169,7 +1169,7 @@ class KingCameraController extends Controller
         $shouldSend = true;
 
         // ── VALIDAÇÃO E DETECÇÃO DE ALTA PRECISÃO COM IA VISION (OPENAI / GEMINI) ──
-        if ($jpegBinary && in_array($eventType, ['baby_stand', 'crib_fence', 'fence_breach']) && $this->aiVision->isAvailable()) {
+        if ($jpegBinary && in_array($eventType, ['baby_stand', 'crib_fence', 'fence_breach', 'motion']) && $this->aiVision->isAvailable()) {
             $aiAnalysis = $this->aiVision->analyzeBabySafetySnapshot($jpegBinary, $eventType, $camera->crib_roi_json, !$isClientAnnotated);
             if ($aiAnalysis['evaluated']) {
                 // Caso 0: Presença de Adulto/Cuidador (Pai ou Mãe) ajeitando o bebê
@@ -1260,6 +1260,30 @@ class KingCameraController extends Controller
                         $breachConfirmed = false;
                         \Illuminate\Support\Facades\Cache::forget("kc_fence_alert_{$camera->id}");
                         $description = 'Bebê seguro dentro do berço (' . ($aiAnalysis['description'] ?: 'IA confirmou bebê protegido') . '). Falso alerta evitado.';
+                    }
+                }
+                // Caso 3: Detecção de Movimento Humano Especializada (Filtro rigoroso de panos, lençóis, cortinas e objetos inanimados)
+                elseif ($eventType === 'motion') {
+                    $isHumanMotion = !empty($aiAnalysis['motion_is_human']) || !empty($aiAnalysis['adult_present']) || (!empty($aiAnalysis['baby_detected']) && empty($aiAnalysis['is_lying_down']));
+                    $isClothOrEmpty = !empty($aiAnalysis['is_blanket_or_empty']) || (!empty($aiAnalysis['is_lying_down']) && empty($aiAnalysis['motion_is_human']) && empty($aiAnalysis['adult_present']));
+
+                    if ($isClothOrEmpty || !$isHumanMotion) {
+                        \Illuminate\Support\Facades\Log::info('kc.recordEvent.ai_motion_cloth_filtered', [
+                            'camera_id' => $camera->id,
+                            'desc' => $aiAnalysis['description'] ?: 'Movimento atribuído a tecido/pano/objeto inanimado ou bebê dormindo imóvel.',
+                        ]);
+                        $shouldSend = false;
+                        $breachConfirmed = false;
+                        $description = 'Movimento de tecido/objeto inanimado filtrado pela IA Vision (bebê dormindo tranquilo no berço). Alerta falso evitado.';
+                    } else {
+                        $breachConfirmed = true;
+                        $shouldSend = true;
+                        $aiDesc = trim((string) ($aiAnalysis['description'] ?? ''));
+                        if (!empty($aiAnalysis['adult_present'])) {
+                            $description = "🚶 Presença de pessoa/cuidador detectada no quarto! " . ($aiDesc ? "({$aiDesc})" : '');
+                        } else {
+                            $description = "👶 Movimento real do bebê detectado no berço! " . ($aiDesc ? "({$aiDesc})" : '');
+                        }
                     }
                 }
             } else {

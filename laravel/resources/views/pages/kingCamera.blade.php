@@ -11420,13 +11420,14 @@
             }
 
             const canvas = document.createElement('canvas');
-            canvas.width = 120;
+            canvas.width = 160;
             canvas.height = 90;
             const ctx = canvas.getContext('2d', { willReadFrequently: true });
             let prevData = null;
             let motionStreak = 0;
+            let isEvaluating = false;
 
-            window.babyMotionIntervals[camId] = setInterval(() => {
+            window.babyMotionIntervals[camId] = setInterval(async () => {
                 const currentCam = (typeof camerasData !== 'undefined' ? camerasData : []).find(x => x.id === camId);
                 if (!window.babyMotionAlerts[camId] || (currentCam && !currentCam.motion_detection_enabled)) {
                     stopBabyMotionWatcher(camId);
@@ -11434,31 +11435,112 @@
                 }
 
                 const video = document.getElementById(`video-${camId}`);
-                if (!video || video.readyState < 2) return;
+                if (!video || video.readyState < 2 || isEvaluating) return;
 
-                ctx.drawImage(video, 0, 0, 120, 90);
-                const currentData = ctx.getImageData(0, 0, 120, 90).data;
+                // 1. Delimitação inteligente da área do berço/interesse
+                // Se houver cerco do berço configurado, o foco de movimento deve ser ESTRITAMENTE na área do berço e bebê!
+                // Panos, cortinas e lençóis soltos fora do berço nunca disparam o alerta!
+                const s = cribFenceState[camId] || {};
+                const r = (s && s.roi) ? s.roi : (currentCam.crib_roi_json ? (typeof currentCam.crib_roi_json === 'string' ? JSON.parse(currentCam.crib_roi_json) : currentCam.crib_roi_json) : null);
+
+                let bb = { x: 0, y: 0, w: 100, h: 100 };
+                if (r) {
+                    if (r.type === 'circle' && r.circle) {
+                        bb = {
+                            x: Math.max(0, (r.circle.cx || 50) - (r.circle.rx || 25)),
+                            y: Math.max(0, (r.circle.cy || 50) - (r.circle.ry || 20)),
+                            w: Math.min(100, (r.circle.rx || 25) * 2),
+                            h: Math.min(100, (r.circle.ry || 20) * 2)
+                        };
+                    } else if (Array.isArray(r.points) && r.points.length >= 3) {
+                        const xs = r.points.map(p => p.x);
+                        const ys = r.points.map(p => p.y);
+                        const minX = Math.min(...xs);
+                        const maxX = Math.max(...xs);
+                        const minY = Math.min(...ys);
+                        const maxY = Math.max(...ys);
+                        bb = { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+                    } else if (r.x !== undefined && r.w !== undefined) {
+                        bb = { x: r.x, y: r.y, w: r.w, h: r.h };
+                    }
+                }
+
+                ctx.drawImage(video, 0, 0, 160, 90);
+                const currentData = ctx.getImageData(0, 0, 160, 90).data;
 
                 if (prevData) {
-                    let diff = 0;
-                    for (let i = 0; i < currentData.length; i += 8) {
-                        const d = Math.abs(currentData[i] - prevData[i]) +
-                                  Math.abs(currentData[i+1] - prevData[i+1]) +
-                                  Math.abs(currentData[i+2] - prevData[i+2]);
-                        if (d > 35) diff++;
+                    // Calcula movimento focado na região do bebê com filtro anti-ruído infravermelho de 75 diff
+                    const startX = Math.max(0, Math.min(159, Math.floor((bb.x / 100) * 160)));
+                    const endX = Math.max(0, Math.min(160, Math.ceil(((bb.x + bb.w) / 100) * 160)));
+                    const startY = Math.max(0, Math.min(89, Math.floor((bb.y / 100) * 90)));
+                    const endY = Math.max(0, Math.min(90, Math.ceil(((bb.y + bb.h) / 100) * 90)));
+
+                    let movingPixels = 0;
+                    let totalRegionPixels = 0;
+
+                    for (let y = startY; y < endY; y++) {
+                        for (let x = startX; x < endX; x++) {
+                            const idx = (y * 160 + x) * 4;
+                            const d = Math.abs(currentData[idx] - prevData[idx]) +
+                                      Math.abs(currentData[idx+1] - prevData[idx+1]) +
+                                      Math.abs(currentData[idx+2] - prevData[idx+2]);
+                            if (d > 75) movingPixels++;
+                            totalRegionPixels++;
+                        }
                     }
 
-                    // Calibrado para movimentos reais do bebê (eliminando ruído térmico e artefatos IR)
-                    if (diff > 140) {
+                    const pctRegionMotion = totalRegionPixels > 0 ? (movingPixels / totalRegionPixels) * 100 : 0;
+
+                    // Requer movimento relevante (> 6.0% da área do berço se movendo)
+                    if (pctRegionMotion >= 6.0) {
                         motionStreak++;
-                        if (motionStreak >= 2) {
-                            triggerBabyMotionDetected(camId);
+                        if (motionStreak >= 3) {
+                            // 2. VALIDAÇÃO BIOLÓGICA/HUMANA COM IA LOCAL (COCO-SSD / MOVENET POSE)
+                            // Não dispara alarme para panos balançando, lençóis ou objetos inanimados!
+                            isEvaluating = true;
+                            try {
+                                let isPersonConfirmed = false;
+
+                                if (window.kingVisionAI) {
+                                    const [persons, poses] = await Promise.all([
+                                        window.kingVisionAI.detectPersons(video),
+                                        window.kingVisionAI.detectPose(video)
+                                    ]);
+
+                                    // Verifica se detectou pose humana real (articulações com pontuação)
+                                    if (poses && poses.length > 0 && poses[0].keypoints) {
+                                        const validKps = poses[0].keypoints.filter(k => k.score >= 0.22);
+                                        if (validKps.length >= 2) {
+                                            isPersonConfirmed = true;
+                                        }
+                                    }
+
+                                    // Verifica se COCO-SSD detectou pessoa
+                                    if (persons && persons.length > 0) {
+                                        isPersonConfirmed = true;
+                                    }
+                                } else {
+                                    isPersonConfirmed = true;
+                                }
+
+                                if (isPersonConfirmed) {
+                                    triggerBabyMotionDetected(camId);
+                                    motionStreak = 0;
+                                } else {
+                                    console.log(`[KingCamera] Movimento ignorado na cam ${camId}: pano/objeto inanimado (sem pessoa detectada).`);
+                                    motionStreak = 0;
+                                }
+                            } catch (e) {
+                                console.warn('[KingCamera] Erro na validação de pessoa:', e);
+                            } finally {
+                                isEvaluating = false;
+                            }
                         }
                     } else {
                         motionStreak = 0;
                     }
                 }
-                prevData = currentData;
+                prevData = new Uint8ClampedArray(currentData);
             }, 1200);
         }
 
@@ -11478,6 +11560,13 @@
                 return;
             }
 
+            const now = Date.now();
+            window.lastMotionTriggerTimes = window.lastMotionTriggerTimes || {};
+            if (now - (window.lastMotionTriggerTimes[camId] || 0) < 25000) {
+                return;
+            }
+            window.lastMotionTriggerTimes[camId] = now;
+
             const banner = document.getElementById(`motion-alert-${camId}`);
             if (banner) {
                 banner.style.display = 'flex';
@@ -11486,18 +11575,11 @@
             }
             playToneSound(660, 0.15);
 
-            const now = Date.now();
-            window.lastMotionTriggerTimes = window.lastMotionTriggerTimes || {};
-            if (now - (window.lastMotionTriggerTimes[camId] || 0) < 20000) {
-                return;
-            }
-            window.lastMotionTriggerTimes[camId] = now;
-
             // 1. Tira foto instantânea e guarda no histórico
             captureAutoSnapshot(camId);
 
-            // 1.1 Captura snapshot direto do vídeo para enviar junto ao alerta do Telegram (evita timeout de RTSP)
-            const liveSnapshotBase64 = getLiveVideoSnapshotBase64(camId, false);
+            // 1.1 Captura snapshot direto do vídeo para enviar junto ao alerta do Telegram (com o cerco anotado para a IA)
+            const liveSnapshotBase64 = getLiveVideoSnapshotBase64(camId, true);
 
             // 2. Grava vídeo de 10 segundos
             if (!isMotionRecordingMap[camId]) {
@@ -11511,8 +11593,10 @@
                 }, 10000);
             }
 
-            // 3. Notifica Telegram e Banco de Dados COM A FOTO EMBUTIDA
+            // 3. Notifica Telegram e Banco de Dados com validação rigorosa de IA Vision (elimina panos/objetos)
             try {
+                const s = cribFenceState[camId];
+                const roiPayload = (s && s.roi) ? s.roi : (cam.crib_roi_json ? (typeof cam.crib_roi_json === 'string' ? JSON.parse(cam.crib_roi_json) : cam.crib_roi_json) : null);
                 fetch(`/api/cameras/${camId}/events`, {
                     method: 'POST',
                     credentials: 'include',
@@ -11520,9 +11604,16 @@
                     body: JSON.stringify({
                         event_type: 'motion',
                         description: '🏃 Movimento detectado! Foto tirada e vídeo de 10s gravado.',
-                        snapshot_base64: liveSnapshotBase64
+                        snapshot_base64: liveSnapshotBase64,
+                        crib_roi_json: roiPayload
                     })
-                });
+                }).then(r => r.json()).then(res => {
+                    if (res && res.breach_confirmed === false) {
+                        // Backend IA confirmou que foi pano/objeto inanimado ou bebê dormindo imóvel
+                        if (banner) banner.style.display = 'none';
+                        console.log('[KingCamera] Alerta de movimento cancelado pela IA Vision: pano/objeto inanimado.');
+                    }
+                }).catch(() => {});
             } catch(e) {}
         }
 

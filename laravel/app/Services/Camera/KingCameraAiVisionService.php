@@ -78,6 +78,9 @@ class KingCameraAiVisionService
             'adult_action' => '',
             'is_face_covered' => false,
             'baby_posture' => 'sleeping_back',
+            'motion_is_human' => false,
+            'motion_cause' => 'none',
+            'baby_detected' => false,
             'confidence' => 0.5,
             'description' => 'Bebê no berço (análise preliminar)',
             'source' => 'fallback'
@@ -208,15 +211,21 @@ DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
      x: 0 (borda esquerda) a 100 (borda direita)
      y: 0 (borda superior) a 100 (borda inferior)
 
-2. DIFERENCIAÇÃO ENTRE O BEBÊ E ALMOFADAS/PROTETORES/COBERTORES:
-   - ATENÇÃO MÁXIMA: As bordas do berço possuem almofadas brancas/rolinhos protetores acolchoados (protetor de berço), travesseiros e cobertores de tecido.
-   - Almofadas, travesseiros, rolinhos protetores de grade, lençóis e cobertores são OBJETOS INANIMADOS de tecido.
-   - NUNCA confunda uma almofada branca, protetor de berço ou cobertor com a cabeça, perna ou pé do bebê!
+2. DIFERENCIAÇÃO ENTRE O BEBÊ E ALMOFADAS/PROTETORES/COBERTORES/PANOS:
+   - ATENÇÃO MÁXIMA: As bordas do berço possuem almofadas brancas/rolinhos protetores acolchoados (protetor de berço), travesseiros, panos soltos, cortinas e cobertores de tecido.
+   - Almofadas, travesseiros, rolinhos protetores de grade, lençóis, panos e cobertores são OBJETOS INANIMADOS de tecido.
+   - NUNCA confunda um pano balançando, almofada branca, protetor de berço ou cobertor com o bebê ou uma pessoa!
    - Se almofadas, travesseiros ou protetores estiverem fora da linha ciano na área avermelhada, mas o bebê humano estiver com a cabeça, tronco e pernas dentro da linha ciano: O BEBÊ ESTÁ TOTALMENTE SEGURO!
    - Mesmo que o bebê esteja encostado numa almofada que toca a borda, se o corpinho da criança não passou para fora: O BEBÊ ESTÁ 100% SEGURO.
-   - Nesse caso, responda "is_limb_outside": false, "is_baby_outside": false, "limb_outside_part": "nenhum". NÃO CRIE FALSO ALARME POR CAUSA DE ALMOFADAS!
+   - Nesse caso, responda "is_limb_outside": false, "is_baby_outside": false, "limb_outside_part": "nenhum". NÃO CRIE FALSO ALARME POR CAUSA DE ALMOFADAS OU TECIDOS!
 
-3. INFRAÇÃO REAL DO CERCO (SOMENTE PARA CORPO HUMANO REAL):
+3. DETECÇÃO ESPECÍFICA DE MOVIMENTO DE PESSOAS vs OBJETOS/PANOS:
+   - O sistema precisa diferenciar MOVIMENTO REAL DE PESSOAS (bebê se mexendo ativamente, braços/pernas em movimento, acordando, sentando, virando, ou adulto/cuidador andando/em pé) de MOVIMENTO DE OBJETOS OU TECIDOS (vento balançando pano, lençol tremendo, cortina, almofada, sombra ou ruído térmico infravermelho).
+   - "motion_is_human": true SOMENTE SE houver movimento ativo real do corpo do bebê (braços levantados, pernas se movimentando, tronco virando, cabeça erguida) OU se um adulto/pessoa estiver no quarto.
+   - Se o bebê estiver deitado dormindo tranquilamente (imóvel) e o que se mexeu foi apenas um pano, cobertor, lençol ou objeto inanimado: declare "motion_is_human": false, "motion_cause": "cloth_or_inanimate".
+   - Se o berço estiver vazio ou apenas com lençol/cobertor: declare "is_blanket_or_empty": true, "motion_is_human": false, "motion_cause": "cloth_or_inanimate".
+
+4. INFRAÇÃO REAL DO CERCO (SOMENTE PARA CORPO HUMANO REAL):
    - Há infração "is_limb_outside": true SOMENTE SE:
      a) A cabeça humana real do bebê estiver cruzando a linha ciano e penetrando na área avermelhada externa (head_is_outside_cyan_fence: true) -> limb_outside_part: "cabeca".
      b) Os pés/perninhas reais do bebê estiverem cruzando a linha ciano e penetrando na área avermelhada externa (feet_are_outside_cyan_fence: true) -> limb_outside_part: "pe_perna".
@@ -225,11 +234,11 @@ DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
    - Se o bebê estiver inteiro contido dentro da linha ciano (área azulada interna): "is_limb_outside": false, "is_baby_outside": false, "limb_outside_part": "nenhum".
    - Em caso de dúvida ou se o que estiver saindo for apenas a almofada/tecido, declare "is_limb_outside": false.
 
-4. POSTURA E RISCOS:
+5. POSTURA E RISCOS:
    - "is_standing": true SOMENTE se o bebê estiver em pé erguido nas pernas ou apoiado em pé na grade.
    - "is_lying_down": true se estiver deitado no colchão dormindo ou descansando.
    - "is_face_covered": true se o rostinho da criança estiver abafado por pano/travesseiro (risco de sufocamento).
-   - "description": diagnóstico detalhado explicando a posição exata do bebê humano, confirmando se a cabeça e os membros estão dentro ou fora da demarcação ciano e diferenciando-o das almofadas.
+   - "description": diagnóstico detalhado explicando a posição exata do bebê humano, confirmando se há movimento de pessoas reais ou apenas tecidos/panos inanimados.
 
 Responda ESTRITAMENTE em JSON:
 {
@@ -251,6 +260,8 @@ Responda ESTRITAMENTE em JSON:
   "adult_action": string,
   "is_face_covered": boolean,
   "baby_posture": string,
+  "motion_is_human": boolean,
+  "motion_cause": "baby_movement" | "adult_present" | "cloth_or_inanimate" | "none",
   "confidence": float,
   "description": string
 }
@@ -532,19 +543,33 @@ PROMPT;
             }
         }
 
+        $motionIsHuman = (bool) ($json['motion_is_human'] ?? false);
+        $motionCause = (string) ($json['motion_cause'] ?? 'none');
+        $babyDetected = (bool) ($json['baby_detected'] ?? false);
+        $isLyingDown = (bool) ($json['is_lying_down'] ?? true);
+        $adultPresent = (bool) ($json['adult_present'] ?? false);
+
+        // Se o bebê está deitado dormindo tranquilo e não há adulto presente, não é movimento humano ativo
+        if ($isLyingDown && !$adultPresent && in_array($motionCause, ['cloth_or_inanimate', 'none'], true)) {
+            $motionIsHuman = false;
+        }
+
         return [
             'evaluated' => true,
+            'baby_detected' => $babyDetected,
             'is_standing' => (bool) ($json['is_standing'] ?? false),
-            'is_lying_down' => (bool) ($json['is_lying_down'] ?? true),
+            'is_lying_down' => $isLyingDown,
             'is_limb_outside' => $isLimbOutside,
             'is_baby_outside' => $isBabyOutside,
             'limb_outside_part' => $normPart,
             'is_blanket_or_empty' => (bool) ($json['is_blanket_or_empty'] ?? false),
-            'adult_present' => (bool) ($json['adult_present'] ?? false),
+            'adult_present' => $adultPresent,
             'adult_label' => trim((string) ($json['adult_label'] ?? 'Pai ou Mãe')),
             'adult_action' => trim((string) ($json['adult_action'] ?? 'interagindo com o bebê no berço')),
             'is_face_covered' => (bool) ($json['is_face_covered'] ?? false),
             'baby_posture' => trim((string) ($json['baby_posture'] ?? 'sleeping_back')),
+            'motion_is_human' => $motionIsHuman,
+            'motion_cause' => $motionCause,
             'confidence' => (float) ($json['confidence'] ?? 0.95),
             'description' => $desc,
             'source' => $source
