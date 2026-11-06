@@ -1286,7 +1286,37 @@
 
         <!-- Watermark -->
         <div class="ks-card p-5 hidden" data-pane="watermark">
-          <div class="font-extrabold text-slate-900">Marca d'água</div>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div class="font-extrabold text-slate-900 text-lg">Marca d'água</div>
+              <div class="text-xs text-slate-500 mt-0.5">Proteja suas fotos contra cópias e capturas de tela durante a seleção do cliente.</div>
+            </div>
+            <button type="button" id="btn-open-wm-generator" class="ks-btn bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition transform hover:-translate-y-0.5 border-0" style="background: linear-gradient(135deg, #f59e0b, #d97706) !important; color: #ffffff !important; border: none !important;">
+              <i class="fas fa-wand-magic-sparkles text-amber-200"></i> Gerador Automático de Marca d'Água
+            </button>
+          </div>
+
+          <!-- Banner Informativo do Gerador Inteligente -->
+          <div class="rounded-2xl border-2 border-amber-300/80 bg-gradient-to-br from-amber-50/70 via-white to-amber-50/30 p-4 shadow-xs mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+                <i class="fas fa-wand-magic-sparkles text-lg"></i>
+              </div>
+              <div>
+                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-extrabold uppercase tracking-wider mb-1">
+                  NOVIDADE INTELIGENTE
+                </div>
+                <div class="font-extrabold text-slate-900 text-sm">Crie sua grade oficial com 1 clique</div>
+                <div class="text-xs text-slate-600 mt-0.5">
+                  Envie sua logo (em qualquer cor). O gerador converte para branco puro e monta as grades nos dois formatos (retrato e paisagem) sem distorcer.
+                </div>
+              </div>
+            </div>
+            <button type="button" id="btn-banner-open-generator" class="ks-btn text-xs font-bold py-2 px-4 rounded-xl shrink-0 cursor-pointer text-amber-800 bg-amber-100/80 hover:bg-amber-200 border-amber-300">
+              <i class="fas fa-plus mr-1"></i> Criar Marca Agora
+            </button>
+          </div>
+
           <div class="mt-4 space-y-3">
             <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-white">
               <input type="radio" name="wm_mode" value="none" class="mt-1" />
@@ -2043,6 +2073,197 @@
               <i class="fas fa-check"></i> Salvar e Aplicar
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Gerador Inteligente de Marca d'Água (Grade + Logo Branca) -->
+  <div id="ks-modal-wm-generator" class="fixed inset-0 hidden items-center justify-center p-3 sm:p-4"
+    style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.7);z-index:999999;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;" aria-hidden="true">
+    <div class="w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden max-h-[94vh] flex flex-col bg-white text-slate-800 border border-slate-200">
+      <!-- Topo Modal -->
+      <div class="px-5 py-3.5 sm:px-6 sm:py-4 flex items-center justify-between gap-3 shrink-0 border-b border-slate-100 bg-gradient-to-r from-amber-50/70 via-white to-slate-50">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center shrink-0">
+            <i class="fas fa-wand-magic-sparkles text-lg"></i>
+          </div>
+          <div>
+            <div class="font-extrabold text-slate-900 text-base sm:text-lg flex items-center gap-2">
+              Gerador Automático de Marca d'Água
+              <span class="text-[10px] uppercase font-black bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Exclusivo</span>
+            </div>
+            <div class="text-xs text-slate-500 mt-0.5">
+              Envie sua logo em qualquer cor: criamos as grades e a logo branca nos dois formatos (retrato e paisagem).
+            </div>
+          </div>
+        </div>
+        <button type="button" id="ks-wm-gen-close" class="text-slate-400 hover:text-slate-700 p-2 cursor-pointer" aria-label="Fechar"
+          style="background:none;border:none;font-size:20px"><i class="fas fa-times"></i></button>
+      </div>
+
+      <!-- Corpo Modal: 2 Colunas -->
+      <div class="p-5 sm:p-6 overflow-y-auto flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Coluna Esquerda: Controles -->
+        <div class="lg:col-span-5 flex flex-col space-y-4">
+          <!-- 1. Enviar Logo -->
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+            <div class="text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <i class="fas fa-cloud-arrow-up text-amber-500"></i> 1. Selecione sua Logo
+            </div>
+            <input type="file" id="ks-wm-gen-file" accept="image/png,image/jpeg,image/webp" class="hidden" />
+            <div id="ks-wm-gen-dropzone" class="border-2 border-dashed border-slate-300 hover:border-amber-400 rounded-xl p-4 text-center cursor-pointer bg-white transition hover:bg-amber-50/30">
+              <div id="ks-wm-gen-no-file">
+                <i class="fas fa-image text-3xl text-slate-400 mb-2"></i>
+                <div class="text-xs font-extrabold text-slate-700">Clique ou arraste a imagem da sua logo</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">Qualquer cor (PNG transparente ou JPEG)</div>
+              </div>
+              <div id="ks-wm-gen-has-file" class="hidden flex items-center gap-3 text-left">
+                <div class="w-12 h-12 rounded-lg bg-slate-900 border border-slate-200 p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                  <img id="ks-wm-gen-thumb" src="" alt="Logo" class="w-full h-full object-contain" />
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="text-xs font-bold text-slate-800 truncate" id="ks-wm-gen-filename">logo.png</div>
+                  <div class="text-[10px] text-slate-500" id="ks-wm-gen-dimensions">1000 × 500 px</div>
+                  <button type="button" id="ks-wm-gen-change-btn" class="text-[10px] text-amber-700 hover:text-amber-800 font-extrabold underline mt-0.5 cursor-pointer">Trocar imagem</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Cor da Logo -->
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2.5">
+            <div class="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fas fa-palette text-amber-500"></i> 2. Cor da Logo
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <button type="button" data-wm-color="white" class="ks-wm-color-btn active flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-amber-400 bg-white text-slate-800 font-extrabold shadow-xs cursor-pointer">
+                <span class="w-3.5 h-3.5 rounded-full bg-white border border-slate-300 shadow-xs"></span> Branco Puro
+              </button>
+              <button type="button" data-wm-color="gold" class="ks-wm-color-btn flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:border-slate-300 cursor-pointer">
+                <span class="w-3.5 h-3.5 rounded-full bg-amber-500 shadow-xs"></span> Dourado King
+              </button>
+              <button type="button" data-wm-color="black" class="ks-wm-color-btn flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:border-slate-300 cursor-pointer">
+                <span class="w-3.5 h-3.5 rounded-full bg-slate-900 shadow-xs"></span> Preto
+              </button>
+              <button type="button" data-wm-color="original" class="ks-wm-color-btn flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:border-slate-300 cursor-pointer">
+                <i class="fas fa-brush text-slate-400 text-xs"></i> Original
+              </button>
+            </div>
+            <p class="text-[11px] text-slate-500">
+              * Branco puro é a cor ideal e recomendada para destacar em todas as fotos.
+            </p>
+          </div>
+
+          <!-- 3. Estilo de Grade & Parâmetros -->
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+            <div class="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fas fa-shield-halved text-amber-500"></i> 3. Grade Anti-Print
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+              <button type="button" data-wm-grid="diamond" class="ks-wm-grid-btn active py-2 px-2.5 rounded-xl border border-amber-400 bg-white text-slate-800 font-extrabold shadow-xs text-center cursor-pointer">
+                Grade Diamante
+              </button>
+              <button type="button" data-wm-grid="diagonal" class="ks-wm-grid-btn py-2 px-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:border-slate-300 text-center cursor-pointer">
+                Diagonais
+              </button>
+              <button type="button" data-wm-grid="none" class="ks-wm-grid-btn py-2 px-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:border-slate-300 text-center cursor-pointer">
+                Apenas Logo
+              </button>
+            </div>
+
+            <!-- Slider Tamanho da Logo -->
+            <div class="pt-2">
+              <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+                <span>Tamanho da Logo</span>
+                <span id="ks-wm-gen-scale-val" class="font-mono text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded text-[11px]">45%</span>
+              </div>
+              <input type="range" id="ks-wm-gen-scale" min="20" max="80" step="1" value="45" class="ks-range mt-1" />
+            </div>
+
+            <!-- Slider Opacidade da Grade -->
+            <div>
+              <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+                <span>Opacidade da Grade</span>
+                <span id="ks-wm-gen-grid-op-val" class="font-mono text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded text-[11px]">18%</span>
+              </div>
+              <input type="range" id="ks-wm-gen-grid-op" min="5" max="45" step="1" value="18" class="ks-range mt-1" />
+            </div>
+
+            <!-- Texto de Proteção Opcional -->
+            <div>
+              <label for="ks-wm-gen-text" class="block text-[11px] font-bold text-slate-700 mb-1">
+                Texto de Proteção (Opcional):
+              </label>
+              <input type="text" id="ks-wm-gen-text" placeholder="Ex.: Adriano King Fotografia • Proibida Reprodução"
+                class="ks-input text-xs w-full py-2 px-3 rounded-xl border-slate-200 bg-white" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Coluna Direita: Pré-visualização Dupla em Tempo Real (Retrato + Paisagem) -->
+        <div class="lg:col-span-7 flex flex-col space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fas fa-eye text-amber-500"></i> Prévia em Tempo Real nos 2 Formatos
+            </div>
+            <span class="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-bold">
+              Gera Retrato + Paisagem
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Prévia Retrato (3:4) -->
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 flex flex-col shadow-xs">
+              <div class="flex items-center justify-between text-xs font-bold text-slate-700 mb-2">
+                <span class="flex items-center gap-1"><i class="fas fa-mobile-screen text-amber-500"></i> Retrato (Em Pé)</span>
+                <span class="text-[10px] text-slate-400 font-mono">3:4</span>
+              </div>
+              <div class="relative w-full rounded-xl overflow-hidden border border-slate-300 bg-slate-950 flex items-center justify-center" style="aspect-ratio: 3/4;">
+                <img id="ks-wm-gen-bg-p" src="" alt="Fundo" class="absolute inset-0 w-full h-full object-cover opacity-85" />
+                <canvas id="ks-wm-gen-canvas-p" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+              </div>
+              <div class="mt-2 text-[10px] text-slate-500 text-center">
+                Logo perfeitamente horizontal e reta no centro.
+              </div>
+            </div>
+
+            <!-- Prévia Paisagem (16:9) -->
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 flex flex-col shadow-xs">
+              <div class="flex items-center justify-between text-xs font-bold text-slate-700 mb-2">
+                <span class="flex items-center gap-1"><i class="fas fa-image text-amber-500"></i> Paisagem (Deitada)</span>
+                <span class="text-[10px] text-slate-400 font-mono">16:9</span>
+              </div>
+              <div class="relative w-full rounded-xl overflow-hidden border border-slate-300 bg-slate-950 flex items-center justify-center" style="aspect-ratio: 16/9;">
+                <img id="ks-wm-gen-bg-l" src="" alt="Fundo" class="absolute inset-0 w-full h-full object-cover opacity-85" />
+                <canvas id="ks-wm-gen-canvas-l" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+              </div>
+              <div class="mt-2 text-[10px] text-slate-500 text-center">
+                Grade expandida cobrindo toda a foto deitada.
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-amber-200/80 bg-amber-50/50 p-3 text-xs text-amber-900 flex items-start gap-2.5">
+            <i class="fas fa-circle-check text-amber-600 mt-0.5"></i>
+            <div>
+              <strong>Como vai funcionar ao aplicar:</strong> O sistema gera dois arquivos PNG transparentes em alta definição (um para fotos verticais e outro para horizontais) e já salva automaticamente na galeria com a proteção ativada!
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rodapé Modal -->
+      <div class="px-6 py-3.5 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-3 shrink-0">
+        <button type="button" id="ks-wm-gen-cancel" class="ks-btn text-xs px-4 py-2 font-bold cursor-pointer">
+          Cancelar
+        </button>
+        <button type="button" id="ks-wm-gen-apply" class="ks-btn ks-btn-primary text-xs px-6 py-2.5 font-extrabold cursor-pointer flex items-center gap-2 shadow-md" style="background: linear-gradient(135deg, #f59e0b, #d97706) !important; color: #ffffff !important; border: none !important;">
+          <i class="fas fa-wand-magic-sparkles"></i> Gerar e Aplicar na Galeria
+        </button>
+      </div>
+    </div>
+  </div>
         </div>
       </div>
     </div>

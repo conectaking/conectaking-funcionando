@@ -9764,6 +9764,386 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // =========================================================================
+  // ✨ GERADOR INTELIGENTE DE MARCA D'ÁGUA (GRADE + LOGO BRANCA)
+  // =========================================================================
+  const modalWmGen = document.getElementById('ks-modal-wm-generator');
+  const btnOpenWmGen = document.getElementById('btn-open-wm-generator');
+  const btnBannerOpenWmGen = document.getElementById('btn-banner-open-generator');
+  const btnCloseWmGen = document.getElementById('ks-wm-gen-close');
+  const btnCancelWmGen = document.getElementById('ks-wm-gen-cancel');
+  const btnApplyWmGen = document.getElementById('ks-wm-gen-apply');
+
+  const fileInputWmGen = document.getElementById('ks-wm-gen-file');
+  const dropzoneWmGen = document.getElementById('ks-wm-gen-dropzone');
+  const noFileWmGen = document.getElementById('ks-wm-gen-no-file');
+  const hasFileWmGen = document.getElementById('ks-wm-gen-has-file');
+  const thumbWmGen = document.getElementById('ks-wm-gen-thumb');
+  const filenameWmGen = document.getElementById('ks-wm-gen-filename');
+  const dimsWmGen = document.getElementById('ks-wm-gen-dimensions');
+  const changeBtnWmGen = document.getElementById('ks-wm-gen-change-btn');
+
+  const colorBtnsWmGen = document.querySelectorAll('.ks-wm-color-btn');
+  const gridBtnsWmGen = document.querySelectorAll('.ks-wm-grid-btn');
+  const scaleInputWmGen = document.getElementById('ks-wm-gen-scale');
+  const scaleValWmGen = document.getElementById('ks-wm-gen-scale-val');
+  const gridOpInputWmGen = document.getElementById('ks-wm-gen-grid-op');
+  const gridOpValWmGen = document.getElementById('ks-wm-gen-grid-op-val');
+  const textInputWmGen = document.getElementById('ks-wm-gen-text');
+
+  const bgPWmGen = document.getElementById('ks-wm-gen-bg-p');
+  const bgLWmGen = document.getElementById('ks-wm-gen-bg-l');
+  const canvasPWmGen = document.getElementById('ks-wm-gen-canvas-p');
+  const canvasLWmGen = document.getElementById('ks-wm-gen-canvas-l');
+
+  let wmGenLoadedImage = null;
+  let wmGenColor = 'white';
+  let wmGenGrid = 'diamond';
+
+  function openModalWmGen() {
+    if (!modalWmGen) return;
+    const pid = pickPreviewPhotoId();
+    if (pid) {
+      const sampleUrl = `${API_URL}/api/king-selection/photos/${pid}/preview?wm_mode=none&max=800`;
+      if (bgPWmGen) bgPWmGen.src = sampleUrl;
+      if (bgLWmGen) bgLWmGen.src = sampleUrl;
+    }
+    updateWmGenPreviews();
+    modalWmGen.style.display = 'flex';
+    modalWmGen.classList.remove('hidden');
+    modalWmGen.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeModalWmGen() {
+    if (!modalWmGen) return;
+    modalWmGen.style.display = 'none';
+    modalWmGen.classList.add('hidden');
+    modalWmGen.setAttribute('aria-hidden', 'true');
+  }
+
+  function handleWmGenFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        wmGenLoadedImage = img;
+        if (thumbWmGen) thumbWmGen.src = e.target.result;
+        if (filenameWmGen) filenameWmGen.textContent = file.name || 'logo.png';
+        if (dimsWmGen) dimsWmGen.textContent = `${img.naturalWidth || img.width} × ${img.naturalHeight || img.height} px`;
+        noFileWmGen?.classList.add('hidden');
+        hasFileWmGen?.classList.remove('hidden');
+        updateWmGenPreviews();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function getColoredLogoCanvas(img, colorType) {
+    if (!img) return null;
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth || img.width || 400;
+    c.height = img.naturalHeight || img.height || 200;
+    const ctx = c.getContext('2d');
+    if (!ctx) return null;
+
+    ctx.drawImage(img, 0, 0);
+    if (colorType === 'original') {
+      return c;
+    }
+
+    let targetR = 255, targetG = 255, targetB = 255;
+    if (colorType === 'gold') {
+      targetR = 245; targetG = 158; targetB = 11;
+    } else if (colorType === 'black') {
+      targetR = 15; targetG = 23; targetB = 42;
+    }
+
+    try {
+      const imgData = ctx.getImageData(0, 0, c.width, c.height);
+      const data = imgData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const a = data[i + 3];
+        if (a > 6) {
+          const isWhiteBg = (data[i] > 240 && data[i + 1] > 240 && data[i + 2] > 240);
+          if (isWhiteBg && a > 240) {
+            data[i + 3] = 0;
+          } else {
+            data[i] = targetR;
+            data[i + 1] = targetG;
+            data[i + 2] = targetB;
+          }
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+    } catch (_) {}
+
+    return c;
+  }
+
+  function renderWatermarkCanvas(targetWidth, targetHeight) {
+    const canvas = document.createElement('canvas');
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return canvas;
+
+    const gridOpacity = (parseInt(gridOpInputWmGen?.value || '18', 10) / 100);
+    const logoScalePct = (parseInt(scaleInputWmGen?.value || '45', 10) / 100);
+    const customText = (textInputWmGen?.value || '').trim();
+
+    // 1. Grade de Segurança (se selecionada)
+    if (wmGenGrid === 'diamond' || wmGenGrid === 'diagonal') {
+      ctx.save();
+      ctx.strokeStyle = `rgba(255, 255, 255, ${gridOpacity})`;
+      ctx.lineWidth = Math.max(1.5, Math.round(targetWidth / 800));
+
+      const step = Math.round(targetWidth / 6.5);
+      const maxDim = Math.max(targetWidth, targetHeight) * 2;
+
+      // Linhas 45°
+      for (let x = -maxDim; x < maxDim; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x + targetHeight, targetHeight);
+        ctx.stroke();
+      }
+
+      // Linhas cruzadas -45° (grade diamante Conecta King)
+      if (wmGenGrid === 'diamond') {
+        for (let x = -maxDim; x < maxDim; x += step) {
+          ctx.beginPath();
+          ctx.moveTo(x, targetHeight);
+          ctx.lineTo(x + targetHeight, 0);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+
+    // 2. Logo Central
+    if (wmGenLoadedImage) {
+      const monoCanvas = getColoredLogoCanvas(wmGenLoadedImage, wmGenColor);
+      if (monoCanvas) {
+        ctx.save();
+        const targetW = targetWidth * logoScalePct;
+        const ratio = monoCanvas.height / (monoCanvas.width || 1);
+        const targetH = targetW * ratio;
+
+        const x = (targetWidth - targetW) / 2;
+        const y = (targetHeight - targetH) / 2;
+
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+        ctx.shadowBlur = Math.max(3, Math.round(targetWidth / 180));
+        ctx.shadowOffsetX = 1;
+        ctx.shadowOffsetY = 2;
+
+        ctx.drawImage(monoCanvas, x, y, targetW, targetH);
+        ctx.restore();
+
+        // 3. Texto de Proteção Opcional
+        if (customText) {
+          ctx.save();
+          const fontSize = Math.max(13, Math.round(targetWidth / 55));
+          ctx.font = `700 ${fontSize}px sans-serif`;
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+          ctx.shadowBlur = 4;
+          ctx.shadowOffsetX = 1;
+          ctx.shadowOffsetY = 1;
+          ctx.fillText(customText, targetWidth / 2, y + targetH + (fontSize * 0.75));
+          ctx.restore();
+        }
+      }
+    } else {
+      ctx.save();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+      ctx.font = `800 ${Math.round(targetWidth / 22)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowBlur = 4;
+      ctx.fillText('SELECIONE SUA LOGO', targetWidth / 2, targetHeight / 2);
+      ctx.restore();
+    }
+
+    return canvas;
+  }
+
+  function updateWmGenPreviews() {
+    if (!canvasPWmGen || !canvasLWmGen) return;
+
+    // Retrato (preview canvas 3:4)
+    const pW = 600, pH = 800;
+    const pCanvas = renderWatermarkCanvas(pW, pH);
+    canvasPWmGen.width = pW;
+    canvasPWmGen.height = pH;
+    const pCtx = canvasPWmGen.getContext('2d');
+    if (pCtx) {
+      pCtx.clearRect(0, 0, pW, pH);
+      pCtx.drawImage(pCanvas, 0, 0);
+    }
+
+    // Paisagem (preview canvas 16:9)
+    const lW = 800, lH = 450;
+    const lCanvas = renderWatermarkCanvas(lW, lH);
+    canvasLWmGen.width = lW;
+    canvasLWmGen.height = lH;
+    const lCtx = canvasLWmGen.getContext('2d');
+    if (lCtx) {
+      lCtx.clearRect(0, 0, lW, lH);
+      lCtx.drawImage(lCanvas, 0, 0);
+    }
+  }
+
+  // Eventos de Abertura / Fechamento
+  btnOpenWmGen?.addEventListener('click', openModalWmGen);
+  btnBannerOpenWmGen?.addEventListener('click', openModalWmGen);
+  btnCloseWmGen?.addEventListener('click', closeModalWmGen);
+  btnCancelWmGen?.addEventListener('click', closeModalWmGen);
+
+  // Upload / Seleção de Logo
+  dropzoneWmGen?.addEventListener('click', () => fileInputWmGen?.click());
+  changeBtnWmGen?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    fileInputWmGen?.click();
+  });
+  fileInputWmGen?.addEventListener('change', () => {
+    const file = fileInputWmGen.files && fileInputWmGen.files[0];
+    if (file) handleWmGenFile(file);
+  });
+
+  // Drag & Drop no dropzone
+  dropzoneWmGen?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzoneWmGen.classList.add('border-amber-400', 'bg-amber-50/50');
+  });
+  dropzoneWmGen?.addEventListener('dragleave', () => {
+    dropzoneWmGen.classList.remove('border-amber-400', 'bg-amber-50/50');
+  });
+  dropzoneWmGen?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzoneWmGen.classList.remove('border-amber-400', 'bg-amber-50/50');
+    const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) handleWmGenFile(file);
+  });
+
+  // Botões de Cor da Logo
+  colorBtnsWmGen.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      colorBtnsWmGen.forEach(b => {
+        b.classList.remove('active', 'border-amber-400', 'font-extrabold');
+        b.classList.add('border-slate-200', 'font-semibold');
+      });
+      btn.classList.add('active', 'border-amber-400', 'font-extrabold');
+      btn.classList.remove('border-slate-200', 'font-semibold');
+      wmGenColor = btn.getAttribute('data-wm-color') || 'white';
+      updateWmGenPreviews();
+    });
+  });
+
+  // Botões de Estilo de Grade
+  gridBtnsWmGen.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      gridBtnsWmGen.forEach(b => {
+        b.classList.remove('active', 'border-amber-400', 'font-extrabold');
+        b.classList.add('border-slate-200', 'font-semibold');
+      });
+      btn.classList.add('active', 'border-amber-400', 'font-extrabold');
+      btn.classList.remove('border-slate-200', 'font-semibold');
+      wmGenGrid = btn.getAttribute('data-wm-grid') || 'diamond';
+      updateWmGenPreviews();
+    });
+  });
+
+  // Sliders e Inputs de Texto
+  scaleInputWmGen?.addEventListener('input', () => {
+    if (scaleValWmGen) scaleValWmGen.textContent = `${scaleInputWmGen.value}%`;
+    updateWmGenPreviews();
+  });
+  gridOpInputWmGen?.addEventListener('input', () => {
+    if (gridOpValWmGen) gridOpValWmGen.textContent = `${gridOpInputWmGen.value}%`;
+    updateWmGenPreviews();
+  });
+  textInputWmGen?.addEventListener('input', updateWmGenPreviews);
+
+  // Botão Aplicar na Galeria (Gerar Retrato e Paisagem e Salvar)
+  btnApplyWmGen?.addEventListener('click', async () => {
+    if (!wmGenLoadedImage) {
+      toast('Por favor, selecione a imagem da sua logo antes de aplicar.', { kind: 'warn' });
+      return;
+    }
+    const origHtml = btnApplyWmGen.innerHTML;
+    try {
+      btnApplyWmGen.disabled = true;
+      btnApplyWmGen.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Gerando formatos em alta resolução...';
+
+      // 1. Renderiza os dois formatos em alta resolução:
+      // Retrato 3:4 (1200 x 1600 px)
+      const canvasP = renderWatermarkCanvas(1200, 1600);
+      // Paisagem 16:9 (1920 x 1080 px)
+      const canvasL = renderWatermarkCanvas(1920, 1080);
+
+      const blobP = await new Promise(res => canvasP.toBlob(res, 'image/png'));
+      const blobL = await new Promise(res => canvasL.toBlob(res, 'image/png'));
+
+      if (!blobP || !blobL) {
+        throw new Error('Falha ao processar imagens da marca d\'água.');
+      }
+
+      const fileP = new File([blobP], 'marca_dagua_retrato.png', { type: 'image/png' });
+      const fileL = new File([blobL], 'marca_dagua_paisagem.png', { type: 'image/png' });
+
+      // 2. Envia para o Cloudflare R2 / backend
+      btnApplyWmGen.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Enviando formato retrato...';
+      await setWatermarkLogo(fileP, 'portrait');
+
+      btnApplyWmGen.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Enviando formato paisagem...';
+      await setWatermarkLogo(fileL, 'landscape');
+
+      // 3. Salva a configuração da galeria para usar a marca personalizada
+      btnApplyWmGen.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Ativando na galeria...';
+      await savePatch({
+        watermark_mode: 'logo',
+        watermark_opacity: 0.22,
+        watermark_scale_portrait: 1.0,
+        watermark_scale_landscape: 1.0,
+        watermark_rotate: 0,
+        watermark_rotate_portrait: 0,
+        watermark_rotate_landscape: 0,
+        watermark_logo_offset_x_portrait: 0,
+        watermark_logo_offset_y_portrait: 0,
+        watermark_logo_offset_x_landscape: 0,
+        watermark_logo_offset_y_landscape: 0,
+        watermark_stretch_w_pct_portrait: 100,
+        watermark_stretch_h_pct_portrait: 100,
+        watermark_stretch_w_pct_landscape: 100,
+        watermark_stretch_h_pct_landscape: 100
+      });
+
+      // Atualiza interface do painel
+      wmMode = 'logo';
+      setRadio('wm_mode', 'logo');
+      if (wmOpacity) wmOpacity.value = 22;
+      if (wmOpacityVal) wmOpacityVal.textContent = '22%';
+
+      closeModalWmGen();
+      await loadGallery();
+      await refreshWatermarkFilePreview().catch(() => {});
+      scheduleWatermarkPreview(true);
+
+      toast('🎉 Marca d\'água gerada e ativada com sucesso em retrato e paisagem!', { kind: 'ok', title: 'Sucesso' });
+    } catch (e) {
+      showError(e?.message || 'Erro ao gerar e aplicar marca d\'água');
+    } finally {
+      btnApplyWmGen.disabled = false;
+      btnApplyWmGen.innerHTML = origHtml;
+    }
+  });
+
   const btnCleanupDry = document.getElementById('btn-cleanup-r2-dry');
   const btnCleanupR2 = document.getElementById('btn-cleanup-r2');
   const btnR2Refresh = document.getElementById('ks-r2-refresh');
