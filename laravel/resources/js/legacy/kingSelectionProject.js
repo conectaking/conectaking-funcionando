@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const panes = Array.from(document.querySelectorAll('[data-pane]'));
   const sideLinks = Array.from(document.querySelectorAll('.ks-side a[data-tab]'));
 
-  const navProjects = document.getElementById('ks-nav-projects');
+  const navProjects = document.getElementById('ks-nav-projects') || document.getElementById('ks-side-back-projects');
   const btnBack = document.getElementById('ks-back');
   const btnPanel = document.getElementById('ks-panel');
   const btnDeleteProject = document.getElementById('ks-delete-project');
@@ -7739,17 +7739,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     e.preventDefault();
     window.location.href = kingSelectionPainelUrl();
   });
-  document.getElementById('ks-nav-clients')?.addEventListener('click', (e) => {
+  document.getElementById('ks-side-back-projects')?.addEventListener('click', (e) => {
     e.preventDefault();
-    setActiveTab('clients');
-    document.querySelectorAll('.ks-nav a').forEach(a => a.classList.remove('active'));
-    document.getElementById('ks-nav-clients')?.classList.add('active');
-  });
-  document.getElementById('ks-nav-settings')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    setActiveTab('details');
-    document.querySelectorAll('.ks-nav a').forEach(a => a.classList.remove('active'));
-    document.getElementById('ks-nav-settings')?.classList.add('active');
+    window.location.href = kingSelectionPainelUrl();
   });
 
   // Botão "Voltar" (página anterior). Se não houver histórico, volta para "Meus projetos".

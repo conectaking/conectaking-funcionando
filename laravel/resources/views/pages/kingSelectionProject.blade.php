@@ -372,12 +372,6 @@
           <img src="https://i.ibb.co/60sW9k75/logo.png" alt="Conecta King" class="w-7 h-7 object-contain" />
           <span class="font-extrabold text-base tracking-tight text-white">KingSelection</span>
         </a>
-
-        <div class="ks-nav flex items-center gap-1 ml-2 sm:ml-4">
-          <a href="#" id="ks-nav-projects" class="active">Meus projetos</a>
-          <a href="#" id="ks-nav-clients">Clientes</a>
-          <a href="#" id="ks-nav-settings">Configurações</a>
-        </div>
       </div>
       <div class="flex items-center gap-3 text-sm text-slate-300">
         <span id="ks-user-pill"
@@ -409,11 +403,23 @@
       <!-- Sidebar Retrátil -->
       <aside id="ks-sidebar" class="w-72 shrink-0 transition-all duration-300 ease-in-out">
         <div class="ks-card ks-card--side-nav p-3">
+          <!-- Botão Meus Projetos -->
+          <a href="/kingSelection" id="ks-side-back-projects"
+            class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-slate-700 hover:text-amber-700 hover:bg-amber-100/60 font-extrabold text-xs transition mb-2.5 border border-amber-200/70 bg-gradient-to-r from-amber-50 to-orange-50 text-slate-800 no-underline shadow-xs cursor-pointer group"
+            title="Voltar para a lista de todas as galerias">
+            <span class="w-6 h-6 rounded-lg bg-amber-500/15 text-amber-600 flex items-center justify-center text-xs group-hover:-translate-x-0.5 transition-transform">
+              <i class="fas fa-arrow-left"></i>
+            </span>
+            <span class="font-extrabold tracking-tight">Meus Projetos</span>
+          </a>
+
           <div class="ks-side flex flex-col gap-1 max-h-none overflow-y-visible">
             <a href="#" data-tab="activity" class="active"><i class="fas fa-wave-square"></i> Atividades do cliente</a>
             <a href="#" data-tab="photos"><i class="fas fa-images"></i> Fotos</a>
+            <a href="#" data-tab="clients"><i class="fas fa-users"></i> Clientes</a>
+            <a href="#" data-tab="details"><i class="fas fa-gear"></i> Configurações da galeria</a>
             <a href="#" data-tab="facial"><i class="fas fa-face-smile"></i> Reconhecimento Facial</a>
-            <a href="#" data-tab="details"><i class="fas fa-pen"></i> Dados da galeria de fotos</a>
+            <a href="#" data-tab="watermark"><i class="fas fa-droplet"></i> Marca d'água</a>
             <a href="#" id="ks-link-config-finalizacao" title="Configurar título, mensagem e imagem da tela de obrigado"><i class="fas fa-hand-holding-heart"></i> Página de finalização</a>
             <a href="#" data-tab="privacy"><i class="fas fa-lock"></i> Acesso e privacidade</a>
             <a href="#" data-tab="sales"><i class="fas fa-receipt"></i> Fotos vendidas</a>
@@ -421,7 +427,6 @@
             <a href="#" data-tab="links"><i class="fas fa-link"></i> Link e compartilhamento</a>
             <a href="#" data-tab="support"><i class="fab fa-whatsapp"></i> Suporte WhatsApp</a>
             <a href="#" data-tab="download"><i class="fas fa-download"></i> Download</a>
-            <a href="#" data-tab="watermark"><i class="fas fa-droplet"></i> Marca d'água</a>
           </div>
         </div>
       </aside>
