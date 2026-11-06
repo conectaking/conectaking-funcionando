@@ -44,7 +44,451 @@
   <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png" />
   <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png" />
   <style>
-    html, body { background-color: #000000; color: #ffffff; }
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #22c55e;
+      --accent-dim: rgba(34, 197, 94, 0.15);
+      --danger: #ef4444;
+      --warn: #f59e0b;
+      --gold: #d97706;
+    }
+
+    html, body {
+      background-color: #f8fafc !important;
+      background: #f8fafc !important;
+      color: #0f172a !important;
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif;
+      margin: 0;
+    }
+
+    /* Topbar de Luxo Conecta King (Preto Ônix com Dourado) */
+    .ks-top {
+      background: linear-gradient(135deg, #060709 0%, #0e0f14 50%, #15120c 100%) !important;
+      border-bottom: 1px solid rgba(245, 158, 11, 0.28) !important;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.85), 0 1px 0 0 rgba(245, 158, 11, 0.18) !important;
+      color: #ffffff !important;
+    }
+
+    /* Resumo Sticky no Topo */
+    .ks-summary-sticky {
+      position: sticky;
+      top: 56px;
+      z-index: 40;
+      background: rgba(255, 255, 255, 0.96) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+      color: #0f172a !important;
+      padding: 10px 18px !important;
+    }
+    .ks-summary-line--top {
+      color: #64748b !important;
+      font-weight: 600 !important;
+    }
+    .ks-header-sel-pill {
+      background: #22c55e !important;
+      color: #ffffff !important;
+      border-radius: 9999px !important;
+      padding: 4px 14px !important;
+      font-weight: 800 !important;
+      box-shadow: 0 2px 8px rgba(34, 197, 94, 0.25) !important;
+    }
+    .ks-header-sel-pill__label {
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      opacity: 0.95;
+    }
+    .ks-header-sel-pill__num {
+      font-weight: 900;
+      font-size: 14px;
+      margin-left: 6px;
+    }
+    .ks-summary-livre {
+      color: #64748b !important;
+      font-weight: 700 !important;
+      background: #f1f5f9 !important;
+      padding: 3px 10px !important;
+      border-radius: 9999px !important;
+      border: 1px solid #e2e8f0 !important;
+    }
+
+    /* Cards e Toolbar */
+    .ks-card {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 16px !important;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+      color: #0f172a !important;
+    }
+    .ks-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* Botões */
+    .ks-btn {
+      border-radius: 12px !important;
+      font-weight: 700 !important;
+      padding: 9px 15px !important;
+      font-size: 12px !important;
+      transition: all 0.15s ease !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+      cursor: pointer !important;
+      text-transform: none !important;
+      letter-spacing: normal !important;
+    }
+    .ks-btn-outline {
+      background: #ffffff !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #334155 !important;
+    }
+    .ks-btn-outline:hover {
+      background: #f8fafc !important;
+      color: #0f172a !important;
+      border-color: #94a3b8 !important;
+    }
+    .ks-btn-danger {
+      background: #fef2f2 !important;
+      border: 1px solid #fecaca !important;
+      color: #dc2626 !important;
+    }
+    .ks-btn-danger:hover {
+      background: #fee2e2 !important;
+      color: #b91c1c !important;
+    }
+    .ks-btn-yellow {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+      color: #000000 !important;
+      border: 1px solid rgba(251, 191, 36, 0.6) !important;
+      font-weight: 900 !important;
+      box-shadow: 0 2px 10px rgba(245, 158, 11, 0.25) !important;
+    }
+    .ks-btn-yellow:hover {
+      filter: brightness(1.08) !important;
+      transform: translateY(-1px);
+    }
+
+    /* Barra de Ações do Cliente (Alinhada e Moderna) */
+    .ks-client-action-card {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 16px !important;
+      padding: 12px 18px !important;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+      display: flex !important;
+      flex-wrap: wrap !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 12px !important;
+      margin: 16px auto 0 !important;
+      max-width: 1440px !important;
+    }
+    .ks-client-btn-group {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      align-items: center !important;
+      gap: 8px !important;
+    }
+    .ks-client-btn-group-right {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      align-items: center !important;
+      gap: 10px !important;
+    }
+    .ks-sort-wrapper {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+    }
+    .ks-sort-label {
+      font-size: 12px !important;
+      font-weight: 700 !important;
+      color: #64748b !important;
+      margin: 0 !important;
+    }
+    .ks-select {
+      background: #ffffff !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #1e293b !important;
+      border-radius: 10px !important;
+      padding: 7px 12px !important;
+      font-size: 12.5px !important;
+      font-weight: 600 !important;
+      outline: none !important;
+      cursor: pointer !important;
+    }
+    .ks-select:focus {
+      border-color: #f59e0b !important;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15) !important;
+    }
+
+    /* Barra de Busca Compacta (Elegante e Centralizada) */
+    .ks-compact-search-block {
+      max-width: 520px !important;
+      margin: 18px auto 22px !important;
+      padding: 0 16px !important;
+    }
+    .ks-compact-search-inner {
+      width: 100% !important;
+      text-align: center !important;
+    }
+    .ks-search-input-wrap {
+      position: relative !important;
+      display: flex !important;
+      align-items: center !important;
+      width: 100% !important;
+    }
+    .ks-search-icon {
+      position: absolute !important;
+      left: 16px !important;
+      color: #f59e0b !important;
+      font-size: 14px !important;
+      pointer-events: none !important;
+    }
+    .ks-search-input-compact {
+      width: 100% !important;
+      background: #ffffff !important;
+      border: 1.5px solid #cbd5e1 !important;
+      color: #0f172a !important;
+      border-radius: 9999px !important;
+      padding: 11px 44px 11px 42px !important;
+      font-size: 13.5px !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+      outline: none !important;
+      transition: all 0.2s ease !important;
+    }
+    .ks-search-input-compact:focus {
+      border-color: #f59e0b !important;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18) !important;
+    }
+    .ks-search-input-compact::placeholder {
+      color: #94a3b8 !important;
+      font-size: 13px !important;
+    }
+    .ks-search-clear-btn {
+      position: absolute !important;
+      right: 8px !important;
+      width: 28px !important;
+      height: 28px !important;
+      border-radius: 9999px !important;
+      background: #f1f5f9 !important;
+      border: 1px solid #e2e8f0 !important;
+      color: #64748b !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      cursor: pointer !important;
+      transition: all 0.15s ease !important;
+      font-size: 11px !important;
+    }
+    .ks-search-clear-btn:hover {
+      background: #fee2e2 !important;
+      color: #dc2626 !important;
+      border-color: #fca5a5 !important;
+    }
+    .ks-search-helper-text {
+      font-size: 11.5px !important;
+      color: #64748b !important;
+      margin-top: 6px !important;
+      font-weight: 500 !important;
+    }
+
+    /* Drawer Lateral do Cliente */
+    #ks-client-drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    #ks-client-drawer-backdrop.ks-open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #ks-client-drawer {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 320px;
+      max-width: 85vw;
+      background: linear-gradient(180deg, #0a0b0e 0%, #12131a 100%);
+      border-right: 1px solid rgba(245, 158, 11, 0.25);
+      box-shadow: 10px 0 30px rgba(0, 0, 0, 0.6);
+      z-index: 1000;
+      transform: translateX(-100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      color: #f8fafc;
+    }
+    #ks-client-drawer.ks-open {
+      transform: translateX(0);
+    }
+    .ks-drawer-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.4);
+    }
+    .ks-drawer-body {
+      padding: 20px 16px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .ks-drawer-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: #f1f5f9;
+      font-size: 13.5px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+    }
+    .ks-drawer-item:hover {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: rgba(245, 158, 11, 0.35);
+      color: #fbbf24;
+      transform: translateX(3px);
+    }
+    .ks-drawer-item i {
+      font-size: 15px;
+      width: 20px;
+      text-align: center;
+      color: #fbbf24;
+    }
+    .ks-drawer-footer {
+      padding: 16px 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 11px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    /* Grid de Fotos e Cards */
+    .ks-grid {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+      gap: 16px !important;
+    }
+    @media (max-width: 700px) {
+      .ks-grid {
+        grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)) !important;
+        gap: 10px !important;
+      }
+    }
+    .ks-ph {
+      position: relative !important;
+      border-radius: 16px !important;
+      overflow: hidden !important;
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+      transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease !important;
+    }
+    .ks-ph:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08) !important;
+      border-color: #cbd5e1 !important;
+    }
+    .ks-ph.selected {
+      border: 2px solid #22c55e !important;
+      box-shadow: 0 0 0 1px #22c55e, 0 6px 20px rgba(34, 197, 94, 0.22) !important;
+    }
+    .ks-ph-imgwrap {
+      background: #f8fafc !important;
+    }
+    .ks-ph-bar {
+      background: #ffffff !important;
+      border-top: 1px solid #e2e8f0 !important;
+      min-height: 40px !important;
+    }
+    .ks-ph-act {
+      font-weight: 800 !important;
+      font-size: 11px !important;
+      letter-spacing: 0.03em !important;
+      transition: all 0.15s ease !important;
+    }
+    .ks-ph-act--add {
+      background: #f1f5f9 !important;
+      color: #1e293b !important;
+    }
+    .ks-ph-act--add:hover {
+      background: #dcfce7 !important;
+      color: #15803d !important;
+    }
+    .ks-ph.selected .ks-ph-act--add {
+      background: #fee2e2 !important;
+      color: #dc2626 !important;
+    }
+    .ks-ph.selected .ks-ph-act--add:hover {
+      background: #fecaca !important;
+      color: #b91c1c !important;
+    }
+    .ks-ph-bar .r {
+      background: #f8fafc !important;
+      color: #64748b !important;
+      border-left: 1px solid #e2e8f0 !important;
+    }
+    .ks-ph-bar .r:hover {
+      background: #e2e8f0 !important;
+      color: #0f172a !important;
+    }
+
+    /* Cartão de Login */
+    .ks-login-wrap {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.08) !important;
+      color: #0f172a !important;
+    }
+    .ks-login-wrap h1 {
+      color: #0f172a !important;
+    }
+    .ks-input {
+      background: #ffffff !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+    .ks-input:focus {
+      border-color: #f59e0b !important;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15) !important;
+    }
+
+    /* Lightbox Modal permanece escuro para foco total na foto */
+    .ks-viewer {
+      background: rgba(0, 0, 0, 0.95) !important;
+    }
+
     .ks-password-wrap { position: relative; display: flex; align-items: center; width: 100%; }
     .ks-password-wrap input { width: 100%; padding-right: 42px !important; }
     .ks-pass-toggle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #9ca3af; cursor: pointer; padding: 6px 10px; font-size: 14px; transition: color 0.15s ease; }
@@ -53,7 +497,7 @@
   <script src="/config.js?v=2026-09-10-apex1"></script>
   @vite(['resources/css/fontawesome.css', 'resources/css/app.css', 'resources/js/pages/kingSelectionCliente.js'])
 </head>
-<body class="bg-black text-white">
+<body class="bg-slate-50 text-slate-900" style="background-color: #f8fafc !important; color: #0f172a !important;">
   <!-- Capa do evento (modo público, configurvel no painel) -->
   <div id="ks-entry-splash" class="ks-hidden" style="position:fixed;inset:0;z-index:360;background:radial-gradient(120% 80% at 50% 0%,#1a1a1a 0%,#000 55%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0;overflow:auto" aria-hidden="true">
     <button type="button" id="ks-entry-splash-close" class="ks-btn" style="position:absolute;top:max(16px,env(safe-area-inset-top));right:16px;background:rgba(0,0,0,0.65);border:1px solid rgba(255,255,255,0.25);color:#fff;border-radius:999px;padding:8px 16px;z-index:20;font-size:13px;cursor:pointer" title="Fechar capa">
@@ -202,84 +646,127 @@
   </div>
 
   <div id="ks-app" class="ks-hidden">
+    <!-- Topbar Luxo Conecta King (Preto com Dourado e Logomarca) -->
+    <header class="ks-top" style="position: sticky; top: 0; z-index: 50; width: 100%;">
+      <div style="max-width: 1440px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <!-- Botão Hambúrguer Dourado -->
+          <button id="ks-client-hamburger" type="button"
+            style="width: 40px; height: 40px; border-radius: 12px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"
+            title="Menu de Opções">
+            <svg style="width: 22px; height: 22px;" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+          </button>
+
+          <!-- Logo e Identidade Conecta King -->
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); display: flex; align-items: center; justify-content: center; padding: 4px;">
+              <img src="https://i.ibb.co/60sW9k75/logo.png" alt="Conecta King" style="width: 100%; height: 100%; object-fit: contain;" />
+            </div>
+            <div>
+              <div style="font-weight: 900; font-size: 17px; letter-spacing: -0.02em; background: linear-gradient(135deg, #fef08a 0%, #f59e0b 50%, #d97706 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                KingSelection
+              </div>
+              <div style="font-size: 11px; font-weight: 700; color: #fbbf24; opacity: 0.9; margin-top: -1px; text-transform: uppercase; letter-spacing: 0.05em;">
+                <span id="ks-proj">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botões rápidos no topo direito -->
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button type="button" id="ks-top-advance-btn" class="ks-btn ks-btn-yellow" style="padding: 7px 18px !important; font-size: 13px !important; border-radius: 9999px !important; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3) !important;">
+            <i class="fas fa-arrow-right"></i> <span class="hidden sm:inline">Avançar</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
     <div class="ks-wrap ks-app-top" style="padding-top:12px;padding-bottom:0;max-width:1400px;margin:0 auto">
       <div class="ks-banner ks-hidden" id="ks-promo-banner" style="border-color:rgba(250,204,21,.45);background:rgba(234,179,8,.12);color:#fef3c7"></div>
       <div class="ks-hidden" id="ks-public-dl-hint" style="max-width:1400px;margin:0 auto"></div>
     </div>
+
     <div id="ks-step-gallery">
+      <!-- RESUMO STICKY (CONTADOR DE FOTOS E SELEÇÃO) -->
       <div class="ks-summary-sticky" id="ks-summary-sticky" aria-label="Resumo da seleção">
-        <div class="ks-summary-sticky-inner">
+        <div class="ks-summary-sticky-inner" style="max-width: 1440px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
           <div class="ks-meta ks-meta--summary" id="ks-counts">-</div>
         </div>
       </div>
+
       <div class="ks-gallery-scroll">
-        <div class="ks-top-inner">
-          <div class="ks-top-row-primary">
-            <div class="ks-brand">KINGSELECTION<small id="ks-proj">-</small></div>
-            <div class="ks-top-sort-meta">
-              <label class="ks-muted" for="ks-sort" style="font-size:12px;font-weight:700;margin:0">Ordenar:</label>
+        <!-- BARRA DE AÇÕES ORGANIZADA E ALINHADA -->
+        <div class="ks-client-action-card">
+          <!-- Grupo da Esquerda: Ações da Galeria -->
+          <div class="ks-client-btn-group">
+            <button type="button" class="ks-btn ks-btn-outline" id="ks-btn-view-cover" title="Ver capa do evento">
+              <i class="fas fa-image"></i> <span>Capa</span>
+            </button>
+            <button type="button" class="ks-btn ks-btn-outline" id="ks-filter-selected-only" title="Mostrar apenas as fotos que você selecionou">
+              <i class="fas fa-filter"></i> <span id="ks-filter-selected-text">Ver selecionadas</span>
+            </button>
+            <button type="button" class="ks-btn ks-btn-outline" id="ks-compare" title="Comparar duas fotos lado a lado">
+              <i class="fas fa-columns"></i> <span>Comparar e ajustar</span>
+            </button>
+            <button type="button" class="ks-btn ks-btn-danger" id="ks-clear" title="Limpa só a seleção atual">
+              <i class="fas fa-trash-alt"></i> <span>Limpar seleção</span>
+            </button>
+            <button type="button" class="ks-btn ks-btn-edit-req ks-hidden" id="ks-send-edit" title="Enviar fotos marcadas para edição" aria-hidden="true">
+              <i class="fas fa-magic"></i> Enviar para edição
+            </button>
+            <button type="button" class="ks-btn ks-dl-btn-selected ks-hidden" id="ks-pub-dl-selected" title="Baixar fotos marcadas na galeria">
+              <i class="fas fa-download"></i> Baixar selecionadas
+            </button>
+            <button type="button" class="ks-btn ks-dl-btn-all ks-hidden" id="ks-pub-dl-all" title="Baixar todas as fotos da galeria">
+              <i class="fas fa-download"></i> Baixar todas
+            </button>
+            <button type="button" class="ks-btn ks-dl-btn-zip ks-hidden" id="ks-pub-dl-zip" title="ZIP com todas as fotos">
+              <i class="fas fa-file-archive"></i> ZIP
+            </button>
+            <button type="button" class="ks-btn ks-hidden" id="ks-folder-select-all" title="Selecionar todas as fotos deste álbum">
+              <i class="fas fa-check-double"></i> Selecionar todas
+            </button>
+            <button type="button" class="ks-btn ks-hidden" id="ks-folder-back-top" title="Voltar para pastas">
+              <i class="fas fa-arrow-left"></i> Voltar para pastas
+            </button>
+            <button type="button" class="ks-btn ks-hidden" id="ks-open-downloads" title="Ver fotos liberadas para baixar">
+              <i class="fas fa-download"></i> Fotos para baixar
+            </button>
+          </div>
+
+          <!-- Grupo da Direita: Ordenação, Avançar e Sair -->
+          <div class="ks-client-btn-group-right">
+            <div class="ks-sort-wrapper">
+              <label class="ks-sort-label" for="ks-sort">Ordenar:</label>
               <select id="ks-sort" class="ks-select" title="Ordenação">
                 <option value="order">Sequência original</option>
                 <option value="name">Nome do arquivo</option>
                 <option value="id">Número da foto (ID)</option>
               </select>
             </div>
-          </div>
-          <div class="ks-top-row-actions">
-            <div class="ks-toolbar">
-              <button type="button" class="ks-btn ks-btn-outline" id="ks-btn-view-cover" title="Ver capa do evento">
-                <i class="fas fa-image"></i> Capa
-              </button>
-              <button type="button" class="ks-btn ks-btn-outline" id="ks-filter-selected-only" title="Mostrar apenas as fotos que você selecionou">
-                <i class="fas fa-filter"></i> <span id="ks-filter-selected-text">Ver selecionadas</span>
-              </button>
-              <button type="button" class="ks-btn ks-btn-outline" id="ks-compare" title="Comparar duas fotos lado a lado">
-                <i class="fas fa-columns"></i> Comparar e ajustar
-              </button>
-              <button type="button" class="ks-btn ks-btn-danger" id="ks-clear" title="Limpa só a seleção atual">
-                <i class="fas fa-trash-alt"></i> Limpar seleção
-              </button>
-              <button type="button" class="ks-btn ks-btn-edit-req ks-hidden" id="ks-send-edit" title="Enviar fotos marcadas para edição" aria-hidden="true">
-                <i class="fas fa-magic"></i> Enviar para edição
-              </button>
-              <button type="button" class="ks-btn ks-dl-btn-selected ks-hidden" id="ks-pub-dl-selected" title="Baixar fotos marcadas na galeria">
-                <i class="fas fa-download"></i> Baixar selecionadas
-              </button>
-              <button type="button" class="ks-btn ks-dl-btn-all ks-hidden" id="ks-pub-dl-all" title="Baixar todas as fotos da galeria">
-                <i class="fas fa-download"></i> Baixar todas
-              </button>
-              <button type="button" class="ks-btn ks-dl-btn-zip ks-hidden" id="ks-pub-dl-zip" title="ZIP com todas as fotos">
-                <i class="fas fa-file-archive"></i> ZIP
-              </button>
-              <button type="button" class="ks-btn ks-btn-yellow" id="ks-advance" title="Ir para comparar e ajustar">
-                <i class="fas fa-arrow-right"></i> Avançar
-              </button>
-              <button type="button" class="ks-btn ks-hidden" id="ks-folder-select-all" title="Selecionar todas as fotos deste álbum">
-                <i class="fas fa-check-double"></i> Selecionar todas
-              </button>
-              <button type="button" class="ks-btn ks-hidden" id="ks-folder-back-top" title="Voltar para pastas">
-                <i class="fas fa-arrow-left"></i> Voltar para pastas
-              </button>
-              <button type="button" class="ks-btn ks-hidden" id="ks-open-downloads" title="Ver fotos liberadas para baixar">
-                <i class="fas fa-download"></i> Fotos para baixar
-              </button>
-              <button type="button" class="ks-btn" id="ks-logout" title="Sair"><i class="fas fa-sign-out-alt"></i> Sair</button>
-            </div>
+            <button type="button" class="ks-btn ks-btn-yellow" id="ks-advance" title="Ir para comparar e ajustar">
+              <i class="fas fa-arrow-right"></i> <span>Avançar</span>
+            </button>
+            <button type="button" class="ks-btn ks-btn-outline" id="ks-logout" title="Sair">
+              <i class="fas fa-sign-out-alt"></i> <span>Sair</span>
+            </button>
           </div>
         </div>
-        <div class="ks-top-inner ks-search-block" id="ks-search-block">
-          <div style="flex:1;min-width:0">
-            <label for="ks-search">Buscar fotos por número ou código</label>
-            <div class="ks-search-row">
-              <div class="ks-search-wrap">
-                <i class="fas fa-search" aria-hidden="true"></i>
-                <input type="text" id="ks-search" class="ks-input" placeholder="Ex.: 1642 1615 ou ADR0003 - espaço ou vírgula" autocomplete="off" />
-              </div>
-              <button type="button" class="ks-btn" id="ks-search-clear" title="Mostrar todas">
-                <i class="fas fa-times"></i> Limpar busca
+
+        <!-- BARRA DE BUSCA COMPACTA (DESIGN ELEGANTE E CENTRALIZADO) -->
+        <div class="ks-compact-search-block" id="ks-search-block">
+          <div class="ks-compact-search-inner">
+            <div class="ks-search-input-wrap">
+              <i class="fas fa-search ks-search-icon" aria-hidden="true"></i>
+              <input type="text" id="ks-search" class="ks-input ks-search-input-compact" placeholder="Buscar fotos por número ou código..." autocomplete="off" />
+              <button type="button" class="ks-search-clear-btn" id="ks-search-clear" title="Limpar busca">
+                <i class="fas fa-times"></i>
               </button>
             </div>
-            <div class="ks-muted" style="font-size:12px;margin-top:6px;line-height:1.4">Separe por espaço ou vírgula. Vazio = galeria completa.</div>
+            <div class="ks-search-helper-text">Separe por espaço ou vírgula. Vazio = galeria completa.</div>
           </div>
         </div>
       </div>
@@ -652,5 +1139,137 @@
       <i class="fas fa-paper-plane"></i> Finalizar seleção
     </button>
   </div>
+
+  <!-- Backdrop do Menu Lateral do Cliente -->
+  <div id="ks-client-drawer-backdrop"></div>
+
+  <!-- Menu Lateral do Cliente (Hambúrguer) -->
+  <aside id="ks-client-drawer" aria-label="Menu de Navegação">
+    <div class="ks-drawer-header">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="width: 34px; height: 34px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); display: flex; align-items: center; justify-content: center; padding: 4px;">
+          <img src="https://i.ibb.co/60sW9k75/logo.png" alt="Conecta King" style="width: 100%; height: 100%; object-fit: contain;" />
+        </div>
+        <div>
+          <div style="font-weight: 900; font-size: 16px; background: linear-gradient(135deg, #fef08a 0%, #f59e0b 50%, #d97706 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            KingSelection
+          </div>
+          <div style="font-size: 11px; font-weight: 700; color: #fbbf24; opacity: 0.9;" id="ks-drawer-proj-title">
+            Galeria do Cliente
+          </div>
+        </div>
+      </div>
+      <button type="button" id="ks-drawer-close" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #cbd5e1; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s;" title="Fechar Menu">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="ks-drawer-body">
+      <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin: 4px 0 6px 6px;">
+        Ações da Galeria
+      </div>
+
+      <button type="button" class="ks-drawer-item" id="ks-drawer-cover">
+        <i class="fas fa-image"></i>
+        <span>Ver Capa do Evento</span>
+      </button>
+
+      <button type="button" class="ks-drawer-item" id="ks-drawer-selected">
+        <i class="fas fa-filter"></i>
+        <span>Ver Selecionadas</span>
+      </button>
+
+      <button type="button" class="ks-drawer-item" id="ks-drawer-compare">
+        <i class="fas fa-columns"></i>
+        <span>Comparar e Ajustar</span>
+      </button>
+
+      <button type="button" class="ks-drawer-item" id="ks-drawer-clear" style="color: #fca5a5;">
+        <i class="fas fa-trash-alt" style="color: #ef4444;"></i>
+        <span>Limpar Seleção</span>
+      </button>
+
+      <div style="height: 1px; background: rgba(255, 255, 255, 0.08); margin: 8px 0;"></div>
+
+      <button type="button" class="ks-drawer-item" id="ks-drawer-advance" style="background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.35); color: #fbbf24;">
+        <i class="fas fa-arrow-right"></i>
+        <span>Avançar para Envio</span>
+      </button>
+
+      <button type="button" class="ks-drawer-item" id="ks-drawer-logout" style="margin-top: auto;">
+        <i class="fas fa-sign-out-alt" style="color: #94a3b8;"></i>
+        <span>Sair da Galeria</span>
+      </button>
+    </div>
+
+    <div class="ks-drawer-footer">
+      <span>Conecta King &copy; 2026</span>
+      <span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; font-weight: 800; padding: 2px 8px; border-radius: 9999px; border: 1px solid rgba(245, 158, 11, 0.3);">PRO</span>
+    </div>
+  </aside>
+
+  <script>
+    (function() {
+      function setupClientDrawer() {
+        const hamburgerBtn = document.getElementById('ks-client-hamburger');
+        const drawer = document.getElementById('ks-client-drawer');
+        const backdrop = document.getElementById('ks-client-drawer-backdrop');
+        const closeBtn = document.getElementById('ks-drawer-close');
+
+        if (!hamburgerBtn || !drawer || !backdrop) return;
+
+        function openDrawer() {
+          drawer.classList.add('ks-open');
+          backdrop.classList.add('ks-open');
+          const projEl = document.getElementById('ks-proj');
+          const drawerProj = document.getElementById('ks-drawer-proj-title');
+          if (projEl && drawerProj && projEl.textContent.trim()) {
+            drawerProj.textContent = projEl.textContent.trim();
+          }
+        }
+
+        function closeDrawer() {
+          drawer.classList.remove('ks-open');
+          backdrop.classList.remove('ks-open');
+        }
+
+        hamburgerBtn.addEventListener('click', openDrawer);
+        if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+        backdrop.addEventListener('click', closeDrawer);
+
+        function linkBtn(drawerId, targetId) {
+          const dEl = document.getElementById(drawerId);
+          const tEl = document.getElementById(targetId);
+          if (dEl && tEl) {
+            dEl.addEventListener('click', function() {
+              closeDrawer();
+              tEl.click();
+            });
+          }
+        }
+
+        linkBtn('ks-drawer-cover', 'ks-btn-view-cover');
+        linkBtn('ks-drawer-selected', 'ks-filter-selected-only');
+        linkBtn('ks-drawer-compare', 'ks-compare');
+        linkBtn('ks-drawer-clear', 'ks-clear');
+        linkBtn('ks-drawer-advance', 'ks-advance');
+        linkBtn('ks-drawer-logout', 'ks-logout');
+
+        const topAdvBtn = document.getElementById('ks-top-advance-btn');
+        const advBtn = document.getElementById('ks-advance');
+        if (topAdvBtn && advBtn) {
+          topAdvBtn.addEventListener('click', function() {
+            advBtn.click();
+          });
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupClientDrawer);
+      } else {
+        setupClientDrawer();
+      }
+    })();
+  </script>
 </body>
 </html>
