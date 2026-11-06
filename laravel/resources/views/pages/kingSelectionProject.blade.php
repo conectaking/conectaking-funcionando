@@ -73,9 +73,9 @@
 
     /* Conecta King Luxury Dark & Gold Header */
     .ks-top {
-      background: linear-gradient(135deg, #07080a 0%, #0f1015 50%, #171410 100%) !important;
+      background: linear-gradient(135deg, #060709 0%, #0e0f14 50%, #15120c 100%) !important;
       border-bottom: 1px solid rgba(245, 158, 11, 0.28) !important;
-      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.75), 0 1px 0 0 rgba(245, 158, 11, 0.2) !important;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.85), 0 1px 0 0 rgba(245, 158, 11, 0.18) !important;
       color: #f8fafc !important;
     }
     .ks-nav a {
@@ -378,7 +378,7 @@
       </div>
       <div class="flex items-center gap-3 text-sm text-slate-300">
         <span id="ks-user-pill"
-          class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/70 border border-amber-500/30 text-xs shadow-xs">
+          class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/75 border border-amber-500/30 text-xs shadow-xs">
           <span class="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 inline-flex items-center justify-center font-black text-[11px] shadow-xs">CK</span>
           <span class="font-extrabold text-amber-200/90 tracking-wider text-[11px]">CONECTA KING</span>
         </span>
@@ -408,9 +408,9 @@
         <div class="ks-card ks-card--side-nav p-3">
           <!-- Botão Meus Projetos -->
           <a href="/kingSelection" id="ks-side-back-projects"
-            class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-slate-700 hover:text-amber-700 hover:bg-amber-100/60 font-extrabold text-xs transition mb-2.5 border border-amber-200/70 bg-gradient-to-r from-amber-50 to-orange-50 text-slate-800 no-underline shadow-xs cursor-pointer group"
+            class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 font-extrabold text-xs transition mb-2.5 border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-amber-600/5 no-underline shadow-xs cursor-pointer group"
             title="Voltar para a lista de todas as galerias">
-            <span class="w-6 h-6 rounded-lg bg-amber-500/15 text-amber-600 flex items-center justify-center text-xs group-hover:-translate-x-0.5 transition-transform">
+            <span class="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs group-hover:-translate-x-0.5 transition-transform">
               <i class="fas fa-arrow-left"></i>
             </span>
             <span class="font-extrabold tracking-tight">Meus Projetos</span>
