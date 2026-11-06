@@ -9802,6 +9802,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const densityBtnsWmGen = document.querySelectorAll('.ks-wm-density-btn');
   const transpInputWmGen = document.getElementById('ks-wm-gen-transp');
   const transpValWmGen = document.getElementById('ks-wm-gen-transp-val');
+  const logoOpInputWmGen = document.getElementById('ks-wm-gen-logo-op');
+  const logoOpValWmGen = document.getElementById('ks-wm-gen-logo-op-val');
   const scaleInputWmGen = document.getElementById('ks-wm-gen-scale');
   const scaleValWmGen = document.getElementById('ks-wm-gen-scale-val');
   const textInputWmGen = document.getElementById('ks-wm-gen-text');
@@ -9868,15 +9870,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   function getColoredLogoCanvas(img, colorType) {
     if (!img) return null;
     const c = document.createElement('canvas');
-    c.width = img.naturalWidth || img.width || 400;
-    c.height = img.naturalHeight || img.height || 200;
+    const w = img.naturalWidth || img.width || 400;
+    const h = img.naturalHeight || img.height || 200;
+    c.width = w;
+    c.height = h;
     const ctx = c.getContext('2d');
     if (!ctx) return null;
 
     ctx.drawImage(img, 0, 0);
-    if (colorType === 'original') {
-      return c;
-    }
 
     let targetR = 255, targetG = 255, targetB = 255;
     if (colorType === 'gold') {
@@ -9886,21 +9887,84 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
-      const imgData = ctx.getImageData(0, 0, c.width, c.height);
+      const imgData = ctx.getImageData(0, 0, w, h);
       const data = imgData.data;
+
+      // 1. Detectar se a imagem já tem canal alfa nativo (PNG transparente) ou se é opaca
+      let transparentPixelCount = 0;
+      const sampleStep = Math.max(1, Math.floor(data.length / (4 * 2000)));
+      for (let i = 0; i < data.length; i += 4 * sampleStep) {
+        if (data[i + 3] < 200) transparentPixelCount++;
+      }
+      const hasNativeTransparency = transparentPixelCount > 25;
+
+      if (hasNativeTransparency) {
+        // Já tem fundo transparente! Apenas repinta a cor desejada (branco/ouro/preto) ou mantém original
+        if (colorType !== 'original') {
+          for (let i = 0; i < data.length; i += 4) {
+            if (data[i + 3] > 8) {
+              data[i] = targetR;
+              data[i + 1] = targetG;
+              data[i + 2] = targetB;
+            }
+          }
+          ctx.putImageData(imgData, 0, 0);
+        }
+        return c;
+      }
+
+      // 2. Imagem opaca (JPEG ou PNG sem transparência): detectar luminosidade das bordas
+      const sampleCoords = [
+        [4, 4], [w - 5, 4], [4, h - 5], [w - 5, h - 5],
+        [Math.floor(w / 2), 4], [Math.floor(w / 2), h - 5],
+        [4, Math.floor(h / 2)], [w - 5, Math.floor(h / 2)]
+      ];
+      let borderLumSum = 0;
+      let borderSamples = 0;
+      for (const [sx, sy] of sampleCoords) {
+        if (sx >= 0 && sx < w && sy >= 0 && sy < h) {
+          const idx = (sy * w + sx) * 4;
+          const lum = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+          borderLumSum += lum;
+          borderSamples++;
+        }
+      }
+      const avgBorderLum = borderSamples > 0 ? (borderLumSum / borderSamples) : 255;
+      const isDarkBackground = avgBorderLum < 125; // Fundo escuro (preto/marinho) vs fundo claro (branco/cinza)
+
       for (let i = 0; i < data.length; i += 4) {
-        const a = data[i + 3];
-        if (a > 6) {
-          const isWhiteBg = (data[i] > 240 && data[i + 1] > 240 && data[i + 2] > 240);
-          if (isWhiteBg && a > 240) {
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+        if (isDarkBackground) {
+          // Fundo escuro: remove os pixels escuros e preserva os claros (logo branca/dourada)
+          if (lum < 45) {
             data[i + 3] = 0;
           } else {
-            data[i] = targetR;
-            data[i + 1] = targetG;
-            data[i + 2] = targetB;
+            const alphaFactor = Math.min(1, Math.max(0, (lum - 40) / 90));
+            data[i + 3] = Math.round(255 * alphaFactor);
+            if (colorType !== 'original') {
+              data[i] = targetR;
+              data[i + 1] = targetG;
+              data[i + 2] = targetB;
+            }
+          }
+        } else {
+          // Fundo claro: remove os pixels claros e preserva os escuros
+          if (lum > 225) {
+            data[i + 3] = 0;
+          } else {
+            const alphaFactor = Math.min(1, Math.max(0, (235 - lum) / 90));
+            data[i + 3] = Math.round(255 * alphaFactor);
+            if (colorType !== 'original') {
+              data[i] = targetR;
+              data[i + 1] = targetG;
+              data[i + 2] = targetB;
+            }
           }
         }
       }
+
       ctx.putImageData(imgData, 0, 0);
     } catch (_) {}
 
@@ -9908,8 +9972,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   /**
-   * Renderiza a marca d'água oficial estilo Conecta King:
-   * Grade Diamante 45° com MÚLTIPLAS LOGOS integradas e transparência unificada.
+   * Renderiza a marca d'água oficial estilo Conecta King / Adriano King:
+   * Grade Diamante 45° com MÚLTIPLAS LOGOS entre as linhas,
+   * ÁREA DO ROSTO (CENTRO) 100% LIVRE e controles independentes de transparência.
    */
   function renderWatermarkCanvas(targetWidth, targetHeight) {
     const canvas = document.createElement('canvas');
@@ -9918,15 +9983,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return canvas;
 
-    const transpPct = Math.max(0.05, Math.min(1.0, (parseInt(transpInputWmGen?.value || '25', 10) / 100)));
+    const lineTranspPct = Math.max(0.02, Math.min(1.0, (parseInt(transpInputWmGen?.value || '20', 10) / 100)));
+    const logoOpPct = Math.max(0.05, Math.min(1.0, (parseInt(logoOpInputWmGen?.value || '45', 10) / 100)));
     const logoScale = Math.max(0.2, Math.min(1.0, (parseInt(scaleInputWmGen?.value || '55', 10) / 100)));
     const customText = (textInputWmGen?.value || '').trim();
 
     // Densidade do passo dos diamantes (calculado proporcionalmente)
-    let densityDiv = 8.5;
-    if (wmGenDensity === 'compact') densityDiv = 10.5;
-    if (wmGenDensity === 'spaced') densityDiv = 6.5;
-    const step = Math.max(50, Math.round(targetWidth / densityDiv));
+    let densityDiv = 7.5;
+    if (wmGenDensity === 'compact') densityDiv = 9.5;
+    if (wmGenDensity === 'spaced') densityDiv = 5.5;
+    const step = Math.max(55, Math.round(targetWidth / densityDiv));
 
     // Paleta de cores para grade e textos
     let lineR = 255, lineG = 255, lineB = 255;
@@ -9935,7 +10001,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 1. Grade Diamante Anti-Print (Linhas cruzadas a +45° e -45°)
     ctx.save();
-    ctx.strokeStyle = `rgba(${lineR}, ${lineG}, ${lineB}, ${transpPct * 0.75})`;
+    ctx.strokeStyle = `rgba(${lineR}, ${lineG}, ${lineB}, ${lineTranspPct})`;
     ctx.lineWidth = Math.max(1.2, Math.round(targetWidth / 850));
 
     const maxDim = Math.max(targetWidth, targetHeight) * 2;
@@ -9971,8 +10037,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           drawW = drawH / ratio;
         }
 
-        ctx.save();
-        ctx.globalAlpha = transpPct;
+        const centerX = targetWidth / 2;
+        const centerY = targetHeight / 2;
+        // Raio de proteção do rosto (centro 100% livre de logos e textos para não cobrir as pessoas)
+        const faceClearRadius = Math.max(step * 0.95, Math.min(targetWidth, targetHeight) * 0.26);
 
         // Itera sobre os centros dos diamantes da grade
         const uMin = -targetHeight - step * 2;
@@ -9991,16 +10059,30 @@ document.addEventListener('DOMContentLoaded', async () => {
               continue;
             }
 
+            // Pula qualquer célula que caia na área do rosto / centro
+            const distFromCenter = Math.hypot(cx - centerX, cy - centerY);
+            if (distFromCenter < faceClearRadius) {
+              continue;
+            }
+
+            if (wmGenGrid === 'corners_only' && distFromCenter < faceClearRadius * 1.45) {
+              continue;
+            }
+
             const isEvenCell = ((uIdx + vIdx) % 2 === 0);
 
             if (wmGenGrid === 'all_cells' || isEvenCell) {
-              // Desenha uma das múltiplas logos perfeitamente no centro do diamante
+              // Desenha a logo no diamante ao redor com a opacidade específica de logo
+              ctx.save();
+              ctx.globalAlpha = logoOpPct;
               ctx.drawImage(monoCanvas, cx - drawW / 2, cy - drawH / 2, drawW, drawH);
-            } else if (wmGenGrid === 'conecta_king') {
+              ctx.restore();
+            } else if (wmGenGrid === 'conecta_king' || wmGenGrid === 'corners_only') {
               // Célula intercalada (padrão oficial Conecta King):
               // Se houver texto personalizado ou nome, desenha na diagonal suave
               if (customText) {
                 ctx.save();
+                ctx.globalAlpha = Math.min(1.0, logoOpPct * 0.9);
                 ctx.translate(cx, cy);
                 ctx.rotate(-45 * Math.PI / 180);
                 const fontSize = Math.max(9, Math.round(step * 0.082));
@@ -10014,17 +10096,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
           }
         }
-
-        // Se o modo for "center_plus_grid", coloca também uma logo de destaque no centro da imagem
-        if (wmGenGrid === 'center_plus_grid') {
-          const centerScale = Math.min(targetWidth, targetHeight) * 0.32 * logoScale;
-          let cW, cH;
-          if (ratio <= 1) { cW = centerScale; cH = cW * ratio; }
-          else { cH = centerScale; cW = cH / ratio; }
-          ctx.drawImage(monoCanvas, (targetWidth - cW) / 2, (targetHeight - cH) / 2, cW, cH);
-        }
-
-        ctx.restore();
       }
     } else {
       // Estado inicial sem logo selecionada
@@ -10182,6 +10253,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (transpValWmGen) transpValWmGen.textContent = `${transpInputWmGen.value}%`;
     updateWmGenPreviews();
   });
+  logoOpInputWmGen?.addEventListener('input', () => {
+    if (logoOpValWmGen) logoOpValWmGen.textContent = `${logoOpInputWmGen.value}%`;
+    updateWmGenPreviews();
+  });
   scaleInputWmGen?.addEventListener('input', () => {
     if (scaleValWmGen) scaleValWmGen.textContent = `${scaleInputWmGen.value}%`;
     updateWmGenPreviews();
@@ -10198,9 +10273,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       btnApplyWmGen.disabled = true;
       btnApplyWmGen.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Gerando grades com múltiplas logos em alta definição...';
-
-      const transpVal = parseInt(transpInputWmGen?.value || '25', 10);
-      const transpRatio = transpVal / 100;
 
       // 1. Renderiza os formatos em alta definição:
       // Retrato 3:4 (1200 x 1600 px)
@@ -10225,11 +10297,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       btnApplyWmGen.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Enviando formato paisagem/quadrada...';
       await setWatermarkLogo(fileL, 'landscape');
 
-      // 3. Salva a configuração da galeria para cobrir a imagem inteira com a transparência escolhida
+      // 3. Salva a configuração da galeria para cobrir a imagem inteira com 100% da fidelidade das transparências geradas
       btnApplyWmGen.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Ativando na galeria...';
       await savePatch({
         watermark_mode: 'tile_dense',
-        watermark_opacity: transpRatio,
+        watermark_opacity: 1.0,
         watermark_scale_portrait: 1.0,
         watermark_scale_landscape: 1.0,
         watermark_rotate: 0,
@@ -10248,8 +10320,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Atualiza interface do painel
       wmMode = 'tile_dense';
       setRadio('wm_mode', 'tile_dense');
-      if (wmOpacity) wmOpacity.value = transpVal;
-      if (wmOpacityVal) wmOpacityVal.textContent = `${transpVal}%`;
+      if (wmOpacity) wmOpacity.value = 100;
+      if (wmOpacityVal) wmOpacityVal.textContent = '100%';
 
       closeModalWmGen();
       await loadGallery();
@@ -11478,5 +11550,760 @@ document.addEventListener('DOMContentLoaded', async () => {
   function prevent(e) { e.preventDefault(); e.stopPropagation(); }
   dropEl?.addEventListener('dragenter', (e) => { prevent(e); dropEl.classList.add('drag'); });
   dropEl?.addEventListener('dragover', (e) => { prevent(e); dropEl.classList.add('drag'); });
-  dropEl?.addEventListener('dragleave',
-... [truncated for diff preview]
+  dropEl?.addEventListener('dragleave', (e) => { prevent(e); dropEl.classList.remove('drag'); });
+  dropEl?.addEventListener('drop', async (e) => {
+    prevent(e);
+    dropEl.classList.remove('drag');
+    try {
+      const dropped = await extractDroppedFiles(e.dataTransfer);
+      if (!dropped.files.length) {
+        toast('Nenhum arquivo encontrado no que foi arrastado.', { kind: 'warn', title: 'Upload' });
+        return;
+      }
+      if (dropped.hasDirectory) {
+        await importFoldersFromDirectory(dropped.files);
+      } else {
+        enqueueFiles(dropped.files);
+      }
+    } catch (err) {
+      showError(err?.message || 'Erro ao processar item arrastado');
+      toast(err?.message || 'Erro ao processar item arrastado', { kind: 'err', title: 'Erro' });
+    }
+  });
+
+  // filtros da aba Fotos
+  pFilterAll?.addEventListener('click', () => { photoFilter = 'all'; photoPageIndex = 0; renderPhotos(); });
+  pFilterFav?.addEventListener('click', () => { photoFilter = 'fav'; photoPageIndex = 0; renderPhotos(); });
+  pSearch?.addEventListener('input', () => { photoSearch = pSearch.value || ''; photoPageIndex = 0; renderPhotos(); });
+
+  // paginação
+  pPagePrev?.addEventListener('click', () => { photoPageIndex = Math.max(0, (photoPageIndex || 0) - 1); renderPhotos(); });
+  pPageNext?.addEventListener('click', () => { photoPageIndex = (photoPageIndex || 0) + 1; renderPhotos(); });
+  pPageNumbers?.addEventListener('click', (e) => {
+    const btn = e.target?.closest && e.target.closest('button[data-page]');
+    if (!btn) return;
+    const n = parseInt(btn.getAttribute('data-page') || '0', 10) || 0;
+    if (!n) return;
+    photoPageIndex = Math.max(0, n - 1);
+    renderPhotos();
+  });
+
+  // seleção em lote (igual Alboom)
+  pSelectAll?.addEventListener('click', () => {
+    const visible = getVisiblePhotos();
+    if (!visible.length) return;
+    selectedPhotoIds = new Set(visible.map(p => p.id).filter(Boolean));
+    renderPhotos();
+  });
+  pClearSel?.addEventListener('click', () => { selectedPhotoIds = new Set(); renderPhotos(); });
+  pDeleteSel?.addEventListener('click', () => {
+    deleteSelectedPhotosBatch().catch((e) => showError(e?.message || 'Erro ao excluir fotos'));
+  });
+  pDeleteLoose?.addEventListener('click', () => {
+    deleteLoosePhotosBatch().catch((e) => showError(e?.message || 'Erro ao excluir fotos soltas'));
+  });
+  pDownloadSel?.addEventListener('click', async () => {
+    if (!selectedPhotoIds.size) return;
+    const ids = Array.from(selectedPhotoIds);
+    for (const id of ids) {
+      const p = (gallery?.photos || []).find(x => x.id === id);
+      // eslint-disable-next-line no-await-in-loop
+      await downloadPhoto(id, p?.original_name);
+    }
+  });
+
+  // viewer binds
+  viewerClose?.addEventListener('click', closeViewer);
+  viewer?.addEventListener('click', (e) => { if (e.target === viewer) closeViewer(); });
+  viewerPrev?.addEventListener('click', () => { viewerIndex = Math.max(0, viewerIndex - 1); renderViewer(); });
+  viewerNext?.addEventListener('click', () => { viewerIndex = viewerIndex + 1; renderViewer(); });
+
+  // Botão Selecionar no viewer (funciona quando a foto está ampliada)
+  viewerSelect?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const list = getVisiblePhotos();
+    const p = list[viewerIndex];
+    if (!p) return;
+    const next = !selectedPhotoIds.has(p.id);
+    if (next) selectedPhotoIds.add(p.id);
+    else selectedPhotoIds.delete(p.id);
+    renderViewer();
+    renderPhotos();
+  });
+
+  // Swipe/drag para navegar entre fotos (touch + mouse)
+  (function initViewerSwipe() {
+    const el = viewerArea || viewerImg;
+    if (!el) return;
+    let startX = 0;
+    let startY = 0;
+    const SWIPE_MIN = 50;
+    const onStart = (e) => {
+      const t = e.type === 'touchstart' ? e.touches[0] : e;
+      startX = t.clientX;
+      startY = t.clientY;
+    };
+    const onEnd = (e) => {
+      const t = e.type === 'touchend' ? e.changedTouches[0] : e;
+      if (!t) return;
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+      const list = getVisiblePhotos();
+      if (list.length <= 1) return;
+      if (Math.abs(dx) > SWIPE_MIN && Math.abs(dx) > Math.abs(dy)) {
+        e.preventDefault();
+        if (dx > 0 && viewerIndex > 0) {
+          viewerIndex -= 1;
+          renderViewer();
+        } else if (dx < 0 && viewerIndex < list.length - 1) {
+          viewerIndex += 1;
+          renderViewer();
+        }
+      }
+    };
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchend', onEnd, { passive: false });
+    el.addEventListener('mousedown', onStart);
+    el.addEventListener('mouseup', onEnd);
+  })();
+
+  document.addEventListener('keydown', (e) => {
+    if (viewer?.classList.contains('flex')) {
+      if (e.key === 'Escape') closeViewer();
+      if (e.key === 'ArrowLeft') { viewerIndex = Math.max(0, viewerIndex - 1); renderViewer(); }
+      if (e.key === 'ArrowRight') { viewerIndex = viewerIndex + 1; renderViewer(); }
+    }
+  });
+
+  // Export modal
+  function openExportModal() {
+    rebuildExportBatchOptions();
+    if (expBatchSel && actBatchFilter) {
+      const bf = actBatchFilter.value;
+      const ok = bf && Array.from(expBatchSel.options).some(o => o.value === bf);
+      expBatchSel.value = ok ? bf : 'all';
+    }
+    applyExportModalOutput();
+    expModal.classList.remove('hidden');
+    expModal.classList.add('flex');
+    expModal.style.display = 'flex';
+  }
+  function closeExportModal() {
+    expModal.classList.add('hidden');
+    expModal.classList.remove('flex');
+    expModal.style.display = 'none';
+  }
+  expClose?.addEventListener('click', closeExportModal);
+  expModal?.addEventListener('click', (e) => { if (e.target === expModal) closeExportModal(); });
+
+  expBtns.forEach(b => b.addEventListener('click', () => setExportModalKind(b.getAttribute('data-exp'))));
+  expScopeAll?.addEventListener('change', () => applyExportModalOutput());
+  expScopeFilter?.addEventListener('change', () => applyExportModalOutput());
+  expBatchSel?.addEventListener('change', () => applyExportModalOutput());
+  actBatchFilter?.addEventListener('change', () => {
+    if (galleryId) activityBatchPrefByGallery[galleryId] = actBatchFilter.value;
+    renderAll();
+  });
+  expFilterInput?.addEventListener('input', () => scheduleExportModalRefresh());
+  expFilterApply?.addEventListener('click', () => flushExportFilterAndApply());
+
+  expCopy?.addEventListener('click', async () => {
+    const names = getExportNamesForModal();
+    if (!names.length) {
+      toast('Nada para copiar. Escolha ?otodas— ou ajuste números/códigos no filtro.', { kind: 'warn', title: 'Lista vazia' });
+      return;
+    }
+    await copyToClipboard(expTa.value || '');
+    toast('Copiado.', { kind: 'ok', title: 'Copiado' });
+  });
+
+  openExportBtn?.addEventListener('click', async () => {
+    try {
+      await loadExport();
+      resetExportModalUi();
+      openExportModal();
+    } catch (e) {
+      showError(e.message || 'Erro');
+    }
+  });
+
+  // Compartilhar: abre a aba com link visível + opções de cópia (não copia às cegas)
+  document.getElementById('ks-share')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    try {
+      document.querySelectorAll('.ks-nav a').forEach(n => n.classList.remove('active'));
+      document.getElementById('ks-nav-projects')?.classList.add('active');
+      setActiveTab('links');
+      toast('Veja o link, abra para testar e use os botões para copiar só o link ou a mensagem inteira.', { kind: 'ok', title: 'Link e compartilhamento' });
+    } catch (err) {
+      showError(err?.message || 'Erro');
+    }
+  });
+
+  document.getElementById('ks-links-copy-prod')?.addEventListener('click', async () => {
+    const v = document.getElementById('ks-links-prod-url')?.value || buildClientShareLink();
+    await copyToClipboard(v);
+    toast('Link de produção copiado.', { kind: 'ok', title: 'Copiado' });
+  });
+  document.getElementById('ks-links-open-prod')?.addEventListener('click', () => {
+    const v = document.getElementById('ks-links-prod-url')?.value || buildClientShareLink();
+    if (v) window.open(v, '_blank', 'noopener,noreferrer');
+  });
+  document.getElementById('ks-links-copy-local')?.addEventListener('click', async () => {
+    const v = document.getElementById('ks-links-local-url')?.value || buildClientLink();
+    await copyToClipboard(v);
+    toast('URL local copiada.', { kind: 'ok', title: 'Copiado' });
+  });
+  document.getElementById('ks-links-open-local')?.addEventListener('click', () => {
+    const v = document.getElementById('ks-links-local-url')?.value || buildClientLink();
+    if (v) window.open(v, '_blank', 'noopener,noreferrer');
+  });
+  document.getElementById('ks-links-copy-full')?.addEventListener('click', async () => {
+    try {
+      await loadExport();
+    } catch (_) { }
+    const msg = shareLinkHasFullOverride() ? getShareFullMessageText() : await resolveShareFullMessageForSend();
+    if (linksFullMsg && !shareLinkHasFullOverride()) linksFullMsg.value = msg;
+    await copyToClipboard(msg);
+    toast('Mensagem completa copiada.', { kind: 'ok', title: 'Copiado' });
+  });
+  document.getElementById('ks-links-whats')?.addEventListener('click', async () => {
+    try {
+      const msg = await resolveShareFullMessageForSend();
+      if (linksFullMsg && !shareLinkHasFullOverride()) linksFullMsg.value = msg;
+      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+    } catch (e) {
+      showError(e?.message || 'Erro ao montar mensagem para o WhatsApp');
+    }
+  });
+  linksCustomMsg?.addEventListener('input', () => {
+    customShareMsgByGallery[galleryId] = String(linksCustomMsg.value || '').trim();
+    scheduleShareLinkSave({ share_link_custom_append: trimShareField(linksCustomMsg.value, 4000) });
+    if (!shareLinkHasFullOverride()) {
+      void refreshShareMessagePreview({ forceAuto: true }).catch(() => {});
+    }
+  });
+  linksFullMsg?.addEventListener('input', () => {
+    scheduleShareLinkSave({ share_link_full_message: trimShareField(linksFullMsg.value, 12000) });
+  });
+  document.getElementById('ks-links-full-reset')?.addEventListener('click', async () => {
+    const btn = document.getElementById('ks-links-full-reset');
+    try {
+      if (btn) btn.disabled = true;
+      await savePatch({ share_link_full_message: null });
+      if (gallery && typeof gallery === 'object') gallery.share_link_full_message = null;
+      await refreshShareMessagePreview({ forceAuto: true });
+      toast('Modelo automático aplicado à mensagem completa.', { kind: 'ok', title: 'Partilha' });
+    } catch (e) {
+      showError(e?.message || 'Erro ao restaurar modelo');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+
+  async function callShareTextAi(kind) {
+    const hintRaw = window.prompt(
+      'Instruções opcionais para a IA (tom, detalhes, ou deixe em branco):',
+      ''
+    );
+    if (hintRaw === null) return null;
+    const hint = String(hintRaw).trim().slice(0, 600);
+    const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/ai/share-text`, {
+      method: 'POST',
+      headers: HEADERS,
+      body: JSON.stringify({
+        kind,
+        hint: hint || undefined,
+        shareLink: buildClientShareLink(),
+        projectName: gallery?.nome_projeto || '',
+        currentCustom: linksCustomMsg?.value || '',
+        currentFull: linksFullMsg?.value || ''
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Erro ao gerar texto com IA');
+    return String(data.text || '').trim();
+  }
+
+  async function callSalesWaTemplateAi(kind) {
+    const hintRaw = window.prompt(
+      'Instruções opcionais para a IA (tom, detalhes, ou deixe em branco):',
+      ''
+    );
+    if (hintRaw === null) return null;
+    const hint = String(hintRaw).trim().slice(0, 600);
+    const textareaMap = {
+      pending: salesWaTplPending,
+      rejected: salesWaTplRejected,
+      awaiting: salesWaTplAwaiting,
+      approved: salesWaTplApproved
+    };
+    const ta = textareaMap[kind];
+    const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/ai/sales-whatsapp-template`, {
+      method: 'POST',
+      headers: HEADERS,
+      body: JSON.stringify({
+        kind,
+        hint: hint || undefined,
+        currentText: ta?.value || ''
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Erro ao gerar texto com IA');
+    return String(data.text || '').trim();
+  }
+
+  function wireSalesWaTemplateAiButton(btnId, kind) {
+    document.getElementById(btnId)?.addEventListener('click', async () => {
+      const btn = document.getElementById(btnId);
+      try {
+        if (!galleryId) throw new Error('ID da galeria inválido.');
+        if (btn) btn.disabled = true;
+        const text = await callSalesWaTemplateAi(kind);
+        if (text == null) return;
+        if (!text) throw new Error('A IA devolveu texto vazio.');
+        const textareaMap = {
+          pending: salesWaTplPending,
+          rejected: salesWaTplRejected,
+          awaiting: salesWaTplAwaiting,
+          approved: salesWaTplApproved
+        };
+        const ta = textareaMap[kind];
+        if (ta) ta.value = text;
+        toast('Texto gerado pela IA. Use "Salvar textos de vendas" para gravar no servidor.', { kind: 'ok', title: 'IA' });
+      } catch (e) {
+        showError(e?.message || 'Erro na IA');
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+  }
+  wireSalesWaTemplateAiButton('ks-sales-wa-tpl-ai-pending', 'pending');
+  wireSalesWaTemplateAiButton('ks-sales-wa-tpl-ai-rejected', 'rejected');
+  wireSalesWaTemplateAiButton('ks-sales-wa-tpl-ai-awaiting', 'awaiting');
+  wireSalesWaTemplateAiButton('ks-sales-wa-tpl-ai-approved', 'approved');
+
+  document.getElementById('ks-links-ai-custom')?.addEventListener('click', async () => {
+    const btn = document.getElementById('ks-links-ai-custom');
+    try {
+      if (btn) btn.disabled = true;
+      const text = await callShareTextAi('custom_append');
+      if (text == null) return;
+      if (!text) throw new Error('A IA devolveu texto vazio.');
+      if (linksCustomMsg) linksCustomMsg.value = text;
+      customShareMsgByGallery[galleryId] = text;
+      await persistShareLinkFields({ share_link_custom_append: trimShareField(text, 4000) });
+      if (!shareLinkHasFullOverride()) await refreshShareMessagePreview({ forceAuto: true });
+      toast('Texto opcional gerado pela IA.', { kind: 'ok', title: 'IA' });
+    } catch (e) {
+      showError(e?.message || 'Erro na IA');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+
+  document.getElementById('ks-links-ai-full')?.addEventListener('click', async () => {
+    const btn = document.getElementById('ks-links-ai-full');
+    try {
+      if (btn) btn.disabled = true;
+      const text = await callShareTextAi('full_message');
+      if (text == null) return;
+      if (!text) throw new Error('A IA devolveu texto vazio.');
+      if (linksFullMsg) linksFullMsg.value = text;
+      await persistShareLinkFields({ share_link_full_message: trimShareField(text, 12000) });
+      toast('Mensagem completa gerada pela IA e guardada.', { kind: 'ok', title: 'IA' });
+    } catch (e) {
+      showError(e?.message || 'Erro na IA');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+  linkCoverPhotoSel?.addEventListener('change', () => {
+    const pid = parseInt(linkCoverPhotoSel.value || '0', 10) || 0;
+    if (!pid) {
+      linkCoverDraftPhotoId = 0;
+      refreshLinkCoverPreviewImage(0, { strict: true });
+      return;
+    }
+    linkCoverDraftPhotoId = pid;
+    refreshLinkCoverPreviewImage(pid, { strict: true });
+  });
+  linkCoverSaveBtn?.addEventListener('click', async () => {
+    try {
+      if (linkCoverSaveBtn) linkCoverSaveBtn.disabled = true;
+      await saveLinkCoverNow({ silent: false });
+    } catch (e) {
+      showError(e?.message || 'Erro ao salvar capa do link');
+    } finally {
+      if (linkCoverSaveBtn) linkCoverSaveBtn.disabled = false;
+    }
+  });
+  linkCoverOpenGalleryBtn?.addEventListener('click', () => {
+    openLinkCoverPicker();
+  });
+  linkCoverPickerCloseBtn?.addEventListener('click', () => {
+    closeLinkCoverPicker();
+  });
+  linkCoverSearchInput?.addEventListener('input', () => {
+    linkCoverSearchTerm = String(linkCoverSearchInput.value || '');
+    renderLinkCoverPickerGrid();
+  });
+  linkCoverPicker?.addEventListener('click', (e) => {
+    if (e.target === linkCoverPicker) closeLinkCoverPicker();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && linkCoverPicker && !linkCoverPicker.classList.contains('hidden')) {
+      closeLinkCoverPicker();
+    }
+  });
+  linkCoverGrid?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-link-cover-card]');
+    if (!btn) return;
+    const pid = parseInt(btn.getAttribute('data-link-cover-card') || '0', 10) || 0;
+    if (!pid) return;
+    linkCoverDraftPhotoId = pid;
+    if (linkCoverPhotoSel) linkCoverPhotoSel.value = String(pid);
+    renderLinkCoverPickerGrid();
+    refreshLinkCoverPreviewImage(pid, { strict: true });
+  });
+  linkCoverPickerApplyBtn?.addEventListener('click', async () => {
+    try {
+      if (linkCoverPickerApplyBtn) linkCoverPickerApplyBtn.disabled = true;
+      await saveLinkCoverNow({ silent: false });
+    } catch (e) {
+      showError(e?.message || 'Erro ao salvar capa do link');
+    } finally {
+      if (linkCoverPickerApplyBtn) linkCoverPickerApplyBtn.disabled = false;
+    }
+  });
+  linkCoverUploadBtn?.addEventListener('click', () => {
+    linkCoverUploadFile?.click();
+  });
+  linkCoverUploadFile?.addEventListener('change', () => {
+    try {
+      const file = linkCoverUploadFile.files && linkCoverUploadFile.files[0];
+      if (!file) return;
+      if (!String(file.type || '').toLowerCase().startsWith('image/')) {
+        if (linkCoverUploadFile) linkCoverUploadFile.value = '';
+        throw new Error('Envie apenas imagem (JPG, PNG, WEBP...).');
+      }
+      linkCoverDraftPhotoId = 0;
+      closeLinkCoverPicker();
+      showLinkCoverPendingExternalPreview(file);
+      toast('Arquivo selecionado. Clique em «Salvar capa do link» para confirmar.', { kind: 'warn', title: 'Capa do link' });
+    } catch (e) {
+      showError(e?.message || 'Erro ao selecionar capa externa');
+    }
+  });
+  linksSupportSave?.addEventListener('click', async () => {
+    try {
+      linksSupportSave.disabled = true;
+      const payload = buildSupportPayload(linksSupportWhats?.value, linksSupportLabel?.value, linksSupportMsg?.value);
+      await savePatch(payload);
+      await loadGallery();
+      toast('Botão de suporte salvo.', { kind: 'ok', title: 'WhatsApp' });
+    } catch (e) {
+      showError(e?.message || 'Erro ao salvar WhatsApp de suporte');
+    } finally {
+      linksSupportSave.disabled = false;
+    }
+  });
+  supportSave?.addEventListener('click', async () => {
+    try {
+      supportSave.disabled = true;
+      const payload = buildSupportPayload(supportWhats?.value, supportLabel?.value, supportMsg?.value);
+      await savePatch(payload);
+      await loadGallery();
+      toast('Suporte WhatsApp salvo.', { kind: 'ok', title: 'WhatsApp' });
+    } catch (e) {
+      showError(e?.message || 'Erro ao salvar suporte WhatsApp');
+    } finally {
+      supportSave.disabled = false;
+    }
+  });
+  document.getElementById('ks-support-ai')?.addEventListener('click', async () => {
+    const btn = document.getElementById('ks-support-ai');
+    try {
+      if (!galleryId) throw new Error('ID da galeria inválido.');
+      if (btn) btn.disabled = true;
+      const hintRaw = window.prompt(
+        'Instruções opcionais para a IA (tom, detalhes, ou deixe em branco):',
+        ''
+      );
+      if (hintRaw === null) return;
+      const hint = String(hintRaw).trim().slice(0, 600);
+      const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/ai/support-default-message`, {
+        method: 'POST',
+        headers: HEADERS,
+        body: JSON.stringify({
+          hint: hint || undefined,
+          currentText: supportMsg?.value || '',
+          buttonLabel: supportLabel?.value || ''
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Erro ao gerar texto com IA');
+      const text = String(data.text || '').trim();
+      if (!text) throw new Error('A IA devolveu texto vazio.');
+      if (supportMsg) supportMsg.value = text;
+      toast('Mensagem gerada pela IA. Revise e clique em «Salvar suporte WhatsApp».', { kind: 'ok', title: 'IA' });
+    } catch (e) {
+      showError(e?.message || 'Erro na IA');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+  salesWaTplSave?.addEventListener('click', async () => {
+    try {
+      salesWaTplSave.disabled = true;
+      await commitLinkCoverDraftIfNeeded({ silent: false }).catch(() => { });
+      await savePatch(buildSalesWaTemplatesPayload());
+      await loadGallery();
+      toast('Capa (se alterada) e textos de vendas salvos.', { kind: 'ok', title: 'Capa do link' });
+    } catch (e) {
+      showError(e?.message || 'Erro ao salvar textos de vendas');
+    } finally {
+      salesWaTplSave.disabled = false;
+    }
+  });
+  salesWaTplReset?.addEventListener('click', async () => {
+    try {
+      salesWaTplReset.disabled = true;
+      await savePatch({
+        sales_whatsapp_template_approved: null,
+        sales_whatsapp_template_pending: null,
+        sales_whatsapp_template_rejected: null,
+        sales_whatsapp_template_awaiting: null
+      });
+      await loadGallery();
+      toast('Modelos padrão aplicados.', { kind: 'ok', title: 'Fotos e vendas' });
+    } catch (e) {
+      showError(e?.message || 'Erro ao aplicar padrões');
+    } finally {
+      salesWaTplReset.disabled = false;
+    }
+  });
+
+  promoAddSocial?.addEventListener('click', () => {
+    const cur = collectPromoSocialLinks();
+    cur.push({ handle: '', url: '' });
+    renderPromoSocialEditor(cur);
+  });
+
+  document.getElementById('ks-promo-gen-instructions')?.addEventListener('click', () => {
+    if (!promoInstructions) return;
+    const salesOn = isSalesModeEnabled();
+    const maxFree = salesOn ? 50 : 5000;
+    const code = String(promoCode?.value || '').trim();
+    const n = Math.max(1, Math.min(maxFree, parseInt(promoFreePhotos?.value || '1', 10) || 1));
+    const links = collectPromoSocialLinks();
+    const handles = links.map((l) => String(l.handle || '').trim()).filter(Boolean);
+    const codeDisp = code || '(defina o código do cupom acima)';
+    let lines;
+    if (salesOn) {
+      lines = [
+        `1) Siga o(s) perfil(is) do fotógrafo indicado(s) abaixo e marque a confirmação.`,
+        `2) Digite o cupom «${codeDisp}» no campo e toque em «Validar cupom».`,
+        n === 1
+          ? `3) Benefício: ${n} foto fica de fora do valor estimado (o total no topo usa as demais fotos para calcular pacotes/preço).`
+          : `3) Benefício: até ${n} fotos ficam de fora do valor estimado (o total no topo usa só as que entram na cobrança).`,
+        `4) Depois de enviar a seleção, o fotógrafo aprova cada foto normalmente (cortesia, pago, etc.) — o cupom não substitui essa etapa.`,
+        handles.length
+          ? `Perfis: ${handles.map((h) => (h.startsWith('@') ? h : `@${h}`)).join(', ')}.`
+          : `Dica: adicione ao menos um perfil (Instagram etc.) na lista abaixo — o cliente precisa seguir antes de validar o cupom.`
+      ];
+    } else {
+      lines = [
+        `1) Abra cada rede abaixo, siga o perfil do fotógrafo e volte marcando a confirmação nesta página.`,
+        `2) Digite o cupom «${codeDisp}» e toque em «Validar cupom».`,
+        n === 1
+          ? `3) Benefício: pode baixar até ${n} foto selecionada (entre as liberadas pelo retratista).`
+          : `3) Benefício: pode baixar até ${n} foto(s) selecionada(s) (entre as liberadas pelo retratista).`,
+        handles.length
+          ? `Perfis: ${handles.map((h) => (h.startsWith('@') ? h : `@${h}`)).join(', ')}.`
+          : `Dica: adicione ao menos um perfil com URL (ex.: Instagram) na lista abaixo.`
+      ];
+    }
+    promoInstructions.value = lines.join('\n');
+    toast('Texto sugerido colado nas instruções. Revise, salve o cupom e atualize o link de partilha.', { kind: 'ok', title: 'Cupom' });
+  });
+
+  promoSave?.addEventListener('click', async () => {
+    try {
+      promoSave.disabled = true;
+      const vdRaw = String(promoValidDays?.value || '').trim();
+      const vd = vdRaw ? parseInt(vdRaw, 10) : NaN;
+      const maxFree = isSalesModeEnabled() ? 50 : 5000;
+      const payload = {
+        promo_enabled: !!promoEnabled?.checked,
+        promo_coupon_code: String(promoCode?.value || '').trim() || null,
+        promo_free_photo_count: Math.max(1, Math.min(maxFree, parseInt(promoFreePhotos?.value || '1', 10) || 1)),
+        promo_instructions: String(promoInstructions?.value || '').trim() || null,
+        promo_social_links: collectPromoSocialLinks()
+      };
+      if (Number.isFinite(vd) && vd > 0) payload.promo_valid_days = vd;
+      else payload.promo_valid_until = null;
+      await savePatch(payload);
+      await loadGallery();
+      refreshLinksPane().catch(() => {});
+      toast('Cupom salvo.', { kind: 'ok', title: 'OK' });
+    } catch (e) {
+      showError(e?.message || 'Erro ao salvar cupom');
+    } finally {
+      promoSave.disabled = false;
+    }
+  });
+  document.getElementById('ks-publish')?.addEventListener('click', async () => {
+    try {
+      const next = !(gallery?.is_published);
+      await savePatch({ is_published: next });
+      await loadGallery();
+      toast(next ? 'Publicado!' : 'Despublicado!', { kind: 'ok', title: 'OK' });
+    } catch (e) {
+      showError(e.message || 'Erro');
+    }
+  });
+
+  async function saveClientImageQualityFromUi() {
+    const picked = document.querySelector('input[name="ks-client-img-q"]:checked');
+    const val = picked ? String(picked.value || 'low') : 'low';
+    await savePatch({ client_image_quality: val });
+    await loadGallery();
+    loadImageQualityFromGallery();
+    toast('Resolução salva para a galeria.', { kind: 'ok', title: 'OK' });
+  }
+
+  document.getElementById('btn-save-image-quality')?.addEventListener('click', async () => {
+    try {
+      await saveClientImageQualityFromUi();
+    } catch (e) {
+      toast(e.message || 'Erro ao salvar.', { kind: 'err', title: 'Erro' });
+    }
+  });
+
+  async function loadFacialConfig() {
+    try {
+      const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}`, {
+        headers: HEADERS
+      });
+      const data = await res.json();
+      if (res.ok && data.gallery) {
+        if (fFaceEnabled) fFaceEnabled.checked = !!data.gallery.face_recognition_enabled;
+      }
+      pollFacialStatus();
+    } catch (e) {
+      console.error('Erro ao carregar config facial:', e);
+    }
+  }
+
+  async function saveFacialConfig() {
+    try {
+      if (btnSaveFacial) btnSaveFacial.disabled = true;
+      const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}`, {
+        method: 'PUT',
+        headers: HEADERS,
+        body: JSON.stringify({
+          face_recognition_enabled: !!fFaceEnabled.checked
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast('Configuração facial salva!', { kind: 'ok', title: 'Sucesso' });
+        await loadGallery();
+      } else {
+        toast(data.message || 'Erro ao salvar configuração.', { kind: 'err', title: 'Erro' });
+      }
+    } catch (e) {
+      toast('Erro de conexão.', { kind: 'err', title: 'Erro' });
+    } finally {
+      if (btnSaveFacial) btnSaveFacial.disabled = false;
+    }
+  }
+
+  async function processFacialAll(opts = {}) {
+    const isSilent = opts.silent === true;
+    if (!isSilent) {
+      if (!confirm('Deseja enviar TODAS as fotos desta galeria para processamento de IA (Reconhecimento Facial)?')) return;
+    }
+    try {
+      if (btnProcessFacial) btnProcessFacial.disabled = true;
+      const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/process-all-faces`, {
+        method: 'POST',
+        headers: HEADERS
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (!isSilent) toast('Processamento em lote iniciado!', { kind: 'ok', title: 'Sucesso' });
+        pollFacialStatus();
+      } else {
+        if (!isSilent) toast(data.message || 'Erro ao iniciar processamento.', { kind: 'err', title: 'Erro' });
+      }
+    } catch (e) {
+      if (!isSilent) toast('Erro de conexão.', { kind: 'err', title: 'Erro' });
+    } finally {
+      if (btnProcessFacial) btnProcessFacial.disabled = false;
+    }
+  }
+
+  let facialPollTimer = null;
+  async function pollFacialStatus() {
+    if (facialPollTimer) clearTimeout(facialPollTimer);
+    try {
+      const res = await fetch(`${API_URL}/api/king-selection/facial/status?galleryId=${galleryId}`, {
+        headers: HEADERS
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (data.rekogOnDemand) {
+          if (facialStatusLabel) facialStatusLabel.textContent = 'Modo sob demanda';
+          if (facialSpinner) facialSpinner.classList.add('hidden');
+          if (facialProgressBar) facialProgressBar.style.width = '100%';
+          if (facialProgressText) {
+            facialProgressText.textContent =
+              'Não é obrigatório processar todas: o visitante compara o rosto na hora; resultados repetidos usam cache (sem cobrar de novo).';
+          }
+        } else {
+          const total = parseInt(data.totalPhotos || 0, 10);
+          const processed = parseInt(data.processedPhotos || 0, 10);
+
+          const isProcessing = total > 0 && processed < total;
+
+          if (facialStatusLabel) {
+            facialStatusLabel.textContent = isProcessing ? 'Processando...' : (processed >= total && total > 0 ? 'Concluído' : 'Aguardando');
+          }
+          if (facialSpinner) facialSpinner.classList.toggle('hidden', !isProcessing);
+
+          const pct = total > 0 ? (processed / total) * 100 : 0;
+          if (facialProgressBar) facialProgressBar.style.width = `${pct}%`;
+          if (facialProgressText) facialProgressText.textContent = `${processed}/${total} fotos processadas`;
+
+          if (isProcessing) {
+            facialPollTimer = setTimeout(pollFacialStatus, 4000);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Erro ao verificar status facial:', e);
+    }
+  }
+
+  // init
+  (async () => {
+    try {
+      ensurePublicEditRequestPrivacyMarkup();
+      const savedTab = String(localStorage.getItem(TAB_PREF_KEY) || '').trim();
+      const startTab = savedTab || 'activity';
+      await loadGallery();
+      ensurePublicEditRequestPrivacyMarkup();
+      syncPublicEditRequestPrivacyUi();
+      setActiveTab(startTab);
+    } catch (e) {
+      showError(e.message || 'Erro ao carregar');
+    } finally {
+      document.getElementById('ks-preloader')?.classList.add('ks-loaded');
+    }
+  })();
+  setTimeout(() => document.getElementById('ks-preloader')?.classList.add('ks-loaded'), 2500);
+});
+

@@ -2168,37 +2168,47 @@
             <div class="grid grid-cols-1 gap-2 text-xs">
               <button type="button" data-wm-grid="conecta_king" class="ks-wm-grid-btn active py-2.5 px-3 rounded-xl border border-amber-400 bg-white text-slate-800 font-extrabold shadow-xs text-left cursor-pointer flex items-center justify-between">
                 <div>
-                  <div class="font-extrabold text-slate-900 flex items-center gap-1.5"><i class="fas fa-crown text-amber-500"></i> Grade com Várias Logos (Conecta King)</div>
-                  <div class="text-[11px] font-medium text-slate-500 mt-0.5">Várias logos intercaladas com seu nome/assinatura nos diamantes</div>
+                  <div class="font-extrabold text-slate-900 flex items-center gap-1.5"><i class="fas fa-crown text-amber-500"></i> Grade Conecta King (Rosto Livre)</div>
+                  <div class="text-[11px] font-medium text-slate-500 mt-0.5">Logos entre as linhas da grade e centro livre para ver o rosto perfeitamente</div>
                 </div>
                 <i class="fas fa-check-circle text-amber-500 text-sm"></i>
               </button>
               <button type="button" data-wm-grid="all_cells" class="ks-wm-grid-btn py-2 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:border-slate-300 text-left cursor-pointer flex items-center justify-between">
                 <div>
                   <div class="font-extrabold text-slate-800">Logos em Todas as Células</div>
-                  <div class="text-[11px] font-medium text-slate-500 mt-0.5">A logo se repete em cada diamante da grade (proteção máxima)</div>
+                  <div class="text-[11px] font-medium text-slate-500 mt-0.5">A logo se repete em cada diamante ao redor do centro (proteção total)</div>
                 </div>
               </button>
-              <button type="button" data-wm-grid="center_plus_grid" class="ks-wm-grid-btn py-2 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:border-slate-300 text-left cursor-pointer flex items-center justify-between">
+              <button type="button" data-wm-grid="corners_only" class="ks-wm-grid-btn py-2 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:border-slate-300 text-left cursor-pointer flex items-center justify-between">
                 <div>
-                  <div class="font-extrabold text-slate-800">Logo Central + Múltiplas na Grade</div>
-                  <div class="text-[11px] font-medium text-slate-500 mt-0.5">Destaque no meio e padrão de logos menores ao redor</div>
+                  <div class="font-extrabold text-slate-800">Logos Discretas nas Bordas</div>
+                  <div class="text-[11px] font-medium text-slate-500 mt-0.5">Linhas em toda a foto, mas logos presentes apenas nas bordas</div>
                 </div>
               </button>
             </div>
 
-            <!-- Slider Transparência Geral (Grade + Logos juntos) -->
+            <!-- Slider Transparência das Linhas da Grade -->
             <div class="pt-2 border-t border-slate-200/80">
               <div class="flex items-center justify-between text-xs font-extrabold text-slate-800">
-                <span class="flex items-center gap-1.5"><i class="fas fa-droplet text-amber-500"></i> Transparência Geral (Grade + Logos)</span>
-                <span id="ks-wm-gen-transp-val" class="font-mono text-amber-800 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded font-bold text-xs">25%</span>
+                <span class="flex items-center gap-1.5"><i class="fas fa-border-all text-amber-500"></i> Transparência das Linhas da Grade</span>
+                <span id="ks-wm-gen-transp-val" class="font-mono text-amber-800 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded font-bold text-xs">20%</span>
               </div>
-              <input type="range" id="ks-wm-gen-transp" min="5" max="90" step="1" value="25" class="ks-range mt-1.5" />
-              <div class="text-[10px] text-slate-500 mt-0.5">Deixa a grade inteira e todas as logos transparentes na mesma proporção.</div>
+              <input type="range" id="ks-wm-gen-transp" min="5" max="80" step="1" value="20" class="ks-range mt-1.5" />
+              <div class="text-[10px] text-slate-500 mt-0.5">Controla a intensidade das linhas diagonais da grade.</div>
+            </div>
+
+            <!-- Slider Opacidade das Logos na Grade (Independente) -->
+            <div class="pt-1.5">
+              <div class="flex items-center justify-between text-xs font-extrabold text-slate-800">
+                <span class="flex items-center gap-1.5"><i class="fas fa-droplet text-amber-500"></i> Opacidade da Logo</span>
+                <span id="ks-wm-gen-logo-op-val" class="font-mono text-amber-800 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded font-bold text-xs">45%</span>
+              </div>
+              <input type="range" id="ks-wm-gen-logo-op" min="5" max="100" step="1" value="45" class="ks-range mt-1.5" />
+              <div class="text-[10px] text-slate-500 mt-0.5">Deixe a logo mais suave ou mais nítida que as linhas conforme desejar.</div>
             </div>
 
             <!-- Slider Tamanho das Logos na Grade -->
-            <div class="pt-1">
+            <div class="pt-1.5">
               <div class="flex items-center justify-between text-xs font-bold text-slate-700">
                 <span class="flex items-center gap-1.5"><i class="fas fa-expand text-amber-500"></i> Tamanho das Logos na Grade</span>
                 <span id="ks-wm-gen-scale-val" class="font-mono text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded text-[11px]">55%</span>
