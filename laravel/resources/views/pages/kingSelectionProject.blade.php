@@ -38,6 +38,10 @@
       display: none !important;
     }
 
+    .hidden, [hidden] {
+      display: none !important;
+    }
+
     #ks-preloader {
       position: fixed;
       inset: 0;
@@ -1043,21 +1047,21 @@
             </div>
 
             <select id="ks-link-cover-photo" class="ks-input mt-2 hidden"></select>
-            <div id="ks-link-cover-picker" class="hidden mt-4 rounded-xl border border-amber-500/40 bg-slate-900/95 p-4 shadow-2xl">
+            <div id="ks-link-cover-picker" class="hidden mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
               <div class="ks-link-cover-picker-card">
-                <div class="ks-link-cover-picker-head flex items-center justify-between gap-2 mb-3">
-                  <div class="text-sm font-extrabold text-white flex items-center gap-2">
-                    <i class="fas fa-images text-amber-400"></i> Escolher foto da galeria atual
+                <div class="ks-link-cover-picker-head flex items-center justify-between gap-2 mb-3 border-b border-slate-100 pb-2">
+                  <div class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                    <i class="fas fa-images text-amber-500"></i> Escolher foto da galeria atual
                   </div>
                   <button type="button" class="ks-btn ks-btn-sm" id="ks-link-cover-picker-close"><i class="fas fa-times"></i> Fechar</button>
                 </div>
                 <div class="mb-3">
-                  <input type="text" id="ks-link-cover-search" class="ks-input" placeholder="Buscar foto pelo nome..." />
+                  <input type="text" id="ks-link-cover-search" class="ks-input w-full" placeholder="Buscar foto pelo nome..." />
                 </div>
                 <div id="ks-link-cover-grid" class="ks-link-cover-picker-grid grid grid-cols-2 md:grid-cols-3 gap-2 max-h-[360px] overflow-y-auto p-1"></div>
-                <div class="mt-4 flex flex-wrap gap-2 items-center border-t border-white/10 pt-3">
+                <div class="mt-4 flex flex-wrap gap-2 items-center border-t border-slate-100 pt-3">
                   <button type="button" class="ks-btn ks-btn-primary" id="ks-link-cover-picker-apply"><i class="fas fa-check"></i> Usar foto selecionada</button>
-                  <span class="text-xs text-slate-300">Essa capa será usada na tela cheia ao abrir o link e na miniatura do WhatsApp.</span>
+                  <span class="text-xs text-slate-500">Essa capa será usada na tela cheia ao abrir o link e na miniatura do WhatsApp.</span>
                 </div>
               </div>
             </div>
@@ -1775,13 +1779,11 @@
 
   <!-- Modal: Dashboard vendas — detalhe recebido / falta / cortesia -->
   <div id="ks-sales-dash-detail-modal" class="fixed inset-0 hidden items-center justify-center p-4"
-    style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:999999;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;" aria-hidden="true">
-    <div class="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col text-white"
-      style="background:#111116 !important; border: 1px solid rgba(250,204,21,.35) !important; box-shadow: 0 25px 60px rgba(0,0,0,0.95) !important;">
-      <div class="px-5 py-4 flex items-center justify-between gap-3 shrink-0"
-        style="border-bottom: 1px solid rgba(255,255,255,.1);">
-        <div class="font-extrabold text-white text-base" id="ks-sales-dash-detail-title">Detalhe</div>
-        <button type="button" id="ks-sales-dash-detail-close" class="text-slate-500 hover:text-slate-900" aria-label="Fechar"><i class="fas fa-times"></i></button>
+    style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.6);z-index:999999;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:center;justify-content:center;" aria-hidden="true">
+    <div class="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col bg-white text-slate-800 border border-slate-200">
+      <div class="px-5 py-4 flex items-center justify-between gap-3 shrink-0 border-b border-slate-100">
+        <div class="font-extrabold text-slate-900 text-base" id="ks-sales-dash-detail-title">Detalhe</div>
+        <button type="button" id="ks-sales-dash-detail-close" class="text-slate-400 hover:text-slate-700" aria-label="Fechar" style="background:none;border:none;cursor:pointer;font-size:18px"><i class="fas fa-times"></i></button>
       </div>
       <div class="p-5 overflow-y-auto flex-1 text-slate-800" id="ks-sales-dash-detail-body"></div>
       <div class="px-5 py-3 border-t border-slate-200 bg-slate-50 shrink-0">
@@ -1792,50 +1794,43 @@
 
   <!-- Modal: Cliente (Adicionar/Editar) -->
   <div id="ks-client-modal" class="fixed inset-0 hidden items-center justify-center p-4"
-    style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:999999;align-items:center;justify-content:center;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);" aria-hidden="true">
-    <div class="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden text-white"
-      style="background:#111116 !important; border: 1px solid rgba(250,204,21,.35) !important; box-shadow: 0 25px 60px rgba(0,0,0,0.95) !important;">
-      <div class="px-5 py-4 flex items-center justify-between gap-3"
-        style="border-bottom: 1px solid rgba(255,255,255,.1);">
-        <div class="font-extrabold text-base text-white" id="ks-client-modal-title">Adicionar cliente</div>
-        <button type="button" id="ks-client-modal-close" class="text-white/60 hover:text-white"
+    style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.6);z-index:999999;align-items:center;justify-content:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);" aria-hidden="true">
+    <div class="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden bg-white text-slate-800 border border-slate-200">
+      <div class="px-5 py-4 flex items-center justify-between gap-3 border-b border-slate-100">
+        <div class="font-extrabold text-base text-slate-900" id="ks-client-modal-title">Adicionar cliente</div>
+        <button type="button" id="ks-client-modal-close" class="text-slate-400 hover:text-slate-700"
           style="background:none;border:none;cursor:pointer;font-size:18px"><i class="fas fa-times"></i></button>
       </div>
       <div class="p-5">
         <div class="grid grid-cols-1 gap-4">
           <div class="ks-field">
-            <label class="text-xs uppercase font-extrabold tracking-wider text-white/70">Nome</label>
-            <input id="ks-client-form-name" class="ks-input mt-2 w-full" placeholder="Nome do cliente"
-              style="background:#181820 !important; color:#fff !important; border: 1px solid rgba(255,255,255,.2) !important;" />
+            <label class="text-xs uppercase font-extrabold tracking-wider text-slate-500">Nome</label>
+            <input id="ks-client-form-name" class="ks-input mt-2 w-full" placeholder="Nome do cliente" />
           </div>
           <div class="ks-field">
-            <label class="text-xs uppercase font-extrabold tracking-wider text-white/70">E-mail</label>
-            <input id="ks-client-form-email" type="email" class="ks-input mt-2 w-full" placeholder="E-mail do cliente"
-              style="background:#181820 !important; color:#fff !important; border: 1px solid rgba(255,255,255,.2) !important;" />
+            <label class="text-xs uppercase font-extrabold tracking-wider text-slate-500">E-mail</label>
+            <input id="ks-client-form-email" type="email" class="ks-input mt-2 w-full" placeholder="E-mail do cliente" />
           </div>
           <div class="ks-field">
-            <label class="text-xs uppercase font-extrabold tracking-wider text-white/70">Telefone (opcional)</label>
-            <input id="ks-client-form-phone" class="ks-input mt-2 w-full" placeholder="+55 (11) 99999-9999"
-              style="background:#181820 !important; color:#fff !important; border: 1px solid rgba(255,255,255,.2) !important;" />
+            <label class="text-xs uppercase font-extrabold tracking-wider text-slate-500">Telefone (opcional)</label>
+            <input id="ks-client-form-phone" class="ks-input mt-2 w-full" placeholder="+55 (11) 99999-9999" />
           </div>
           <div class="ks-field">
-            <label class="text-xs uppercase font-extrabold tracking-wider text-white/70">Senha</label>
+            <label class="text-xs uppercase font-extrabold tracking-wider text-slate-500">Senha</label>
             <div class="flex gap-2 mt-2">
-              <input id="ks-client-form-pass" class="ks-input flex-1 font-mono" placeholder="Digite uma nova senha ou deixe vazio para manter"
-                style="background:#181820 !important; color:#fff !important; border: 1px solid rgba(255,255,255,.2) !important;" />
+              <input id="ks-client-form-pass" class="ks-input flex-1 font-mono" placeholder="Digite uma nova senha ou deixe vazio para manter" />
               <button type="button" class="ks-btn" id="ks-client-generate-pass" title="Gerar senha aleatória"><i
                   class="fas fa-wand-magic-sparkles"></i> Gerar</button>
             </div>
-            <div class="text-xs text-white/50 mt-1.5">Você pode digitar a senha que preferir ou clicar em Gerar.</div>
+            <div class="text-xs text-slate-500 mt-1.5">Você pode digitar a senha que preferir ou clicar em Gerar.</div>
           </div>
           <div class="ks-field">
-            <label class="text-xs uppercase font-extrabold tracking-wider text-white/70">Nota (opcional)</label>
-            <textarea id="ks-client-form-note" class="ks-input mt-2 w-full" style="min-height:90px;font-size:13px;background:#181820 !important; color:#fff !important; border: 1px solid rgba(255,255,255,.2) !important;"></textarea>
+            <label class="text-xs uppercase font-extrabold tracking-wider text-slate-500">Nota (opcional)</label>
+            <textarea id="ks-client-form-note" class="ks-input mt-2 w-full" style="min-height:90px;font-size:13px;"></textarea>
           </div>
         </div>
       </div>
-      <div class="px-5 py-4 flex items-center justify-end gap-2"
-        style="border-top: 1px solid rgba(255,255,255,.1); background: rgba(0,0,0,.35);">
+      <div class="px-5 py-4 flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50">
         <button type="button" class="ks-btn" id="ks-client-cancel">Cancelar</button>
         <button type="button" class="ks-btn ks-btn-primary" id="ks-client-save"><i class="fas fa-save"></i> Salvar</button>
       </div>
@@ -1844,29 +1839,25 @@
 
   <!-- Modal: Alterar Senha do Cliente -->
   <div id="ks-client-pass-modal" class="fixed inset-0 hidden items-center justify-center p-4"
-    style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:999999;align-items:center;justify-content:center;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);" aria-hidden="true">
-    <div class="w-full max-w-md rounded-2xl shadow-2xl overflow-hidden text-white"
-      style="background:#111116 !important; border: 1px solid rgba(250,204,21,.35) !important; box-shadow: 0 25px 60px rgba(0,0,0,0.95) !important;">
-      <div class="px-5 py-4 flex items-center justify-between gap-3"
-        style="border-bottom: 1px solid rgba(255,255,255,.1);">
-        <div class="font-extrabold text-white text-base flex items-center gap-2"><i class="fas fa-key text-yellow-400"></i> Alterar Senha do Cliente</div>
-        <button type="button" id="ks-client-pass-close" class="text-white/60 hover:text-white"
+    style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.6);z-index:999999;align-items:center;justify-content:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);" aria-hidden="true">
+    <div class="w-full max-w-md rounded-2xl shadow-2xl overflow-hidden bg-white text-slate-800 border border-slate-200">
+      <div class="px-5 py-4 flex items-center justify-between gap-3 border-b border-slate-100">
+        <div class="font-extrabold text-slate-900 text-base flex items-center gap-2"><i class="fas fa-key text-amber-500"></i> Alterar Senha do Cliente</div>
+        <button type="button" id="ks-client-pass-close" class="text-slate-400 hover:text-slate-700"
           style="background:none;border:none;cursor:pointer;font-size:18px"><i class="fas fa-times"></i></button>
       </div>
       <div class="p-5">
-        <div class="text-sm text-white/80 mb-3" id="ks-client-pass-desc">Defina uma nova senha para o cliente:</div>
+        <div class="text-sm text-slate-700 mb-3" id="ks-client-pass-desc">Defina uma nova senha para o cliente:</div>
         <div class="ks-field">
-          <label class="text-xs uppercase font-extrabold tracking-wider text-white/70">Nova Senha</label>
+          <label class="text-xs uppercase font-extrabold tracking-wider text-slate-500">Nova Senha</label>
           <div class="flex gap-2 mt-2">
-            <input id="ks-client-pass-input" class="ks-input flex-1 font-mono text-base font-bold text-yellow-400" placeholder="Digite a nova senha" autocomplete="off"
-              style="background:#181820 !important; color:#facc15 !important; border: 1px solid rgba(250,204,21,.4) !important;" />
+            <input id="ks-client-pass-input" class="ks-input flex-1 font-mono text-base font-bold text-amber-600" placeholder="Digite a nova senha" autocomplete="off" />
             <button type="button" class="ks-btn" id="ks-client-pass-random" title="Gerar senha aleatória de 6 dígitos"><i class="fas fa-wand-magic-sparkles"></i> Gerar</button>
           </div>
-          <div class="text-xs text-white/50 mt-2">A nova senha passará a valer imediatamente no login da galeria.</div>
+          <div class="text-xs text-slate-500 mt-2">A nova senha passará a valer imediatamente no login da galeria.</div>
         </div>
       </div>
-      <div class="px-5 py-4 flex items-center justify-end gap-2"
-        style="border-top: 1px solid rgba(255,255,255,.1); background: rgba(0,0,0,.35);">
+      <div class="px-5 py-4 flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50">
         <button type="button" class="ks-btn" id="ks-client-pass-cancel">Cancelar</button>
         <button type="button" class="ks-btn ks-btn-primary" id="ks-client-pass-save"><i class="fas fa-check"></i> Salvar Senha</button>
       </div>
@@ -1941,7 +1932,7 @@
 
   <!-- Export modal simples -->
   <div id="ks-export-modal" class="fixed inset-0 hidden items-center justify-center p-4"
-    style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.6);z-index:999999;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+    style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.6);z-index:999999;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:center;justify-content:center;">
     <div class="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden bg-white text-slate-800 border border-slate-200">
       <div class="px-5 py-4 flex items-center justify-between border-b border-slate-100">
         <div class="font-extrabold text-slate-900 text-base">Exportar fotos</div>

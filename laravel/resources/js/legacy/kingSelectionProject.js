@@ -4500,13 +4500,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Watermark
     const hasCustom = galleryHasCustomWmPath();
-    wmMode = gallery?.watermark_mode || 'x';
+    wmMode = gallery?.watermark_mode || 'tile_dense';
     // UI simplificada: só usamos "tile_dense", "logo" e "none".
     // Se não há marca personalizada enviada, força tile_dense (evita selecionar "logo" sem arquivo).
     if (!['tile_dense', 'logo', 'none'].includes(wmMode)) wmMode = 'tile_dense';
     if (wmMode === 'logo' && !hasCustom) wmMode = 'tile_dense';
-    // Se existe marca personalizada enviada, força o modo "logo" (e desabilita Conecta King)
-    if (wmMode === 'tile_dense' && hasCustom) wmMode = 'logo';
     setRadio('wm_mode', wmMode);
     // Habilitar/desabilitar a opção "Sua marca d\'água personalizada"
     if (wmModeLogo) wmModeLogo.disabled = !hasCustom;
@@ -10893,10 +10891,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     applyExportModalOutput();
     expModal.classList.remove('hidden');
     expModal.classList.add('flex');
+    expModal.style.display = 'flex';
   }
   function closeExportModal() {
     expModal.classList.add('hidden');
     expModal.classList.remove('flex');
+    expModal.style.display = 'none';
   }
   expClose?.addEventListener('click', closeExportModal);
   expModal?.addEventListener('click', (e) => { if (e.target === expModal) closeExportModal(); });
