@@ -10285,6 +10285,7 @@
 
                     // Nível de movimento focado ESTRITAMENTE dentro do perímetro do berço (com filtro anti-ruído infravermelho de 78 diff)
                     const cribMotion = getRegionMotionPct(rx1, ry1, rx2, ry2);
+                    const fullMotion = getRegionMotionPct(0, 0, 100, 100);
 
                     // Indicador visual de movimento em tempo real na tela do berço: requer movimento consistente real por 3 ciclos
                     if (cribMotion >= 5.5) {
