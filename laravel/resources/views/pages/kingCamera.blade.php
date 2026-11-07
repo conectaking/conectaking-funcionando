@@ -10443,7 +10443,7 @@
                             const candidateMsg = isReinf
                                 ? '⚠️ REFORÇO: O bebê continua com parte do corpo fora do cerco!'
                                 : '🚨 Verificação de segurança da Cerca do Berço';
-                            triggerFenceBreachAlert(camId, isReinf ? 2 : 1, candidateMsg, !wasImmediate && !isReinf);
+                            triggerFenceBreachAlert(camId, isReinf ? 2 : 1, candidateMsg, !isReinf);
                         }
                     }
 
@@ -10505,6 +10505,16 @@
                         if (wasOutside) {
                             drawCribBox(camId);
                         }
+                        return;
+                    }
+
+                    // Se foi checagem de verificação silenciosa e a IA NÃO confirmou violação categoricamente:
+                    if (isSilentCheck && (!res || res.breach_confirmed !== true)) {
+                        return;
+                    }
+
+                    // Se o backend não confirmou quebra (evita falso positivo quando IA estiver indisponível):
+                    if (!res || res.breach_confirmed !== true) {
                         return;
                     }
 
