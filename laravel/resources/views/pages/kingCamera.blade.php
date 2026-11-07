@@ -10341,12 +10341,12 @@
 
                             const isPtInsideStrict = (px, py) => {
                                 if (r.type === 'circle' && r.circle) {
-                                    return isPointInCircle(px, py, r.circle, 3.5);
+                                    return isPointInCircle(px, py, r.circle, 0.5);
                                 }
                                 if (Array.isArray(r.points) && r.points.length >= 3) {
-                                    return isPointInsidePolygonWithTolerance(px, py, r.points, 3.5);
+                                    return isPointInsidePolygonWithTolerance(px, py, r.points, 0.5);
                                 }
-                                return isPointInCribFence(px, py, r, 3.5);
+                                return isPointInCribFence(px, py, r, 0.5);
                             };
 
                             const allLimbCheck = [
@@ -10362,8 +10362,8 @@
                             for (const limbGroup of allLimbCheck) {
                                 for (const keyName of limbGroup.keys) {
                                     const pt = kpMap[keyName];
-                                    // Confiança elevada para 0.52: evita que o modelo alucine membros em cima de almofadas ou dobras de lençóis
-                                    if (pt && pt.score >= 0.52) {
+                                    // Sensibilidade calibrada para 0.20 para garantir detecção precisa em visão noturna infravermelha
+                                    if (pt && pt.score >= 0.20) {
                                         const px = (pt.x / vw) * 100;
                                         const py = (pt.y / vh) * 100;
 
@@ -10409,12 +10409,26 @@
                         s.calmCycles = 0;
                         s.hasSeenInCrib = true;
 
-                        if (s.breachStreak >= 3) {
+                        if (s.breachStreak >= 2) {
                             const msg = limbBreached
                                 ? (breachMsg || '🚨 Parte do corpo do bebê passou para fora do cerco do berço!')
                                 : '🚨 ALERTA: Bebê saiu do cerco seguro do berço!';
 
-                            if (s.fenceState !== 'OUTSIDE') {
+                            // Feedback visual e sonoro imediato no navegador
+                            s.fenceState = 'OUTSIDE';
+                            s.isLimbBreached = true;
+                            drawCribBox(camId);
+                            const alertEl = document.getElementById(`fence-alert-${camId}`);
+                            if (alertEl) {
+                                alertEl.style.display = 'flex';
+                                const span = alertEl.querySelector('span');
+                                if (span) {
+                                    span.innerHTML = `⚠️ <b>${escapeHtml(msg)}</b>`;
+                                }
+                            }
+                            playToneSound(880, 0.25);
+
+                            if (s.alertCount === 0) {
                                 s.lastAiVisionCheck = now;
                                 s.needsImmediateAiCheck = false;
                                 triggerFenceBreachAlert(camId, 1, msg, false);
@@ -10513,8 +10527,15 @@
                         return;
                     }
 
-                    // Se o backend não confirmou quebra (evita falso positivo quando IA estiver indisponível):
-                    if (!res || res.breach_confirmed !== true) {
+                    // Se o backend explicitamente filtrou como falso alarme:
+                    if (res && res.breach_confirmed === false) {
+                        currentS.fenceState = 'INSIDE';
+                        currentS.isLimbBreached = false;
+                        currentS.breachStreak = 0;
+                        currentS.alertCount = 0;
+                        const alertEl = document.getElementById(`fence-alert-${camId}`);
+                        if (alertEl) alertEl.style.display = 'none';
+                        drawCribBox(camId);
                         return;
                     }
 

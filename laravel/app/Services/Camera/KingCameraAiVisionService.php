@@ -92,7 +92,11 @@ class KingCameraAiVisionService
 
         try {
             if ($this->getOpenAiKey() !== '') {
-                return $this->analyzeWithOpenAi($jpegBinary, $candidateEvent, $roi, $needsAnnotation);
+                try {
+                    return $this->analyzeWithOpenAi($jpegBinary, $candidateEvent, $roi, $needsAnnotation);
+                } catch (\Throwable $oe) {
+                    Log::warning('kc.ai_vision.openai_fallback', ['msg' => $oe->getMessage()]);
+                }
             }
             if ($this->getGeminiKey() !== '') {
                 return $this->analyzeWithGemini($jpegBinary, $candidateEvent, $roi, $needsAnnotation);
