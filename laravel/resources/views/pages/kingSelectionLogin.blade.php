@@ -762,19 +762,36 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Autenticando...';
 
+            const headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            };
+            try {
+                const csrfMatch = document.cookie.match(/(?:^|; )ck_csrf=([^;]*)/);
+                const xsrfMatch = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
+                if (csrfMatch) headers['X-CK-CSRF'] = decodeURIComponent(csrfMatch[1]);
+                if (xsrfMatch) headers['X-XSRF-TOKEN'] = decodeURIComponent(xsrfMatch[1]);
+            } catch (_) {}
+
             try {
                 const res = await fetch('/api/king-selection/auth/login', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
+                    headers: headers,
                     body: JSON.stringify({ email, password })
                 });
 
                 const data = await res.json();
 
                 if (res.ok && data.success) {
+                    if (data.token) {
+                        try {
+                            localStorage.setItem('conectaKingToken', data.token);
+                            localStorage.setItem('conectaKingSession', '1');
+                            if (data.user) {
+                                localStorage.setItem('conectaKingUser', JSON.stringify(data.user));
+                            }
+                        } catch (_) {}
+                    }
                     Swal.fire({
                         icon: 'success',
                         title: 'Bem-vindo ao King Selection!',
