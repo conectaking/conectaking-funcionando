@@ -56,9 +56,15 @@ Route::domain('kingselection.conectaking.com.br')->group(function () use ($cardS
     Route::get('/kingSelectionEdit', fn (\Illuminate\Http\Request $req) => app(\App\Http\Controllers\LegacyPageController::class)->show($req, 'kingSelectionEdit'));
     Route::get('/kingSelectionEdit.html', fn (\Illuminate\Http\Request $req) => app(\App\Http\Controllers\LegacyPageController::class)->show($req, 'kingSelectionEdit'));
 
-    // Galerias públicas de clientes (exclui termos de sistema para nunca conflitar)
+    // Config e scripts de bootstrap acessíveis no subdomínio
+    Route::get('/config.js', function () {
+        return app(\App\Http\Controllers\FrontLegacyController::class)->page(request(), 'config.js');
+    });
+    Route::get('/api-config.js', [\App\Http\Controllers\FrontLegacyController::class, 'apiConfigJs']);
+
+    // Galerias públicas de clientes (slug alfanumérico sem ponto/extensão para não conflitar com assets)
     Route::get('/{slug}', [KingSelectionPublicController::class, 'show'])
-        ->where('slug', '^(?!(kingSelection|kingSelectionProject|kingSelectionEdit|admin|dashboard|login|conta|api)$)[A-Za-z0-9._-]+$');
+        ->where('slug', '^(?!(kingSelection|kingSelectionProject|kingSelectionEdit|admin|dashboard|login|conta|api|config|api-config)$)[A-Za-z0-9_-]+$');
 });
 
 Route::get('/', function () {

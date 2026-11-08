@@ -23,9 +23,9 @@
                 <a href="#" class="nav-link active" data-target="overview-pane"><i class="fas fa-tachometer-alt"></i> <span>Visão Geral</span></a>
                 <a href="#" class="nav-link" data-target="users-pane"><i class="fas fa-users"></i> <span>Gerenciar Usuários</span></a>
                 <a href="#" class="nav-link" data-target="codes-pane"><i class="fas fa-key"></i> <span>Gerenciar Códigos</span></a>
-                <a href="#" class="nav-link" data-target="branding-pane"><i class="fas fa-image"></i> <span>Logomarca padrão</span></a>
-                <a href="#" class="nav-link" data-target="king-selection-pane"><i class="fas fa-crown" style="color: #f59e0b;"></i> <span>👑 King Selection</span></a>
-                <a href="#" class="nav-link" data-target="r2-pane"><i class="fas fa-cloud"></i> <span>Armazenamento R2</span></a>
+                <a href="#" class="nav-link" data-target="branding-pane" title="Logomarca padrão"><i class="fas fa-image"></i> <span>Logomarca padrão</span></a>
+                <a href="#" class="nav-link" data-target="king-selection-pane" title="King Selection"><i class="fas fa-crown" style="color: #f59e0b;"></i> <span>King Selection</span></a>
+                <a href="#" class="nav-link" data-target="r2-pane" title="Armazenamento R2"><i class="fas fa-cloud"></i> <span>Armazenamento R2</span></a>
                 <a href="/admin-devocionais-365" class="nav-link"><i class="fas fa-book-open"></i> <span>Bíblia &amp; Devocionais</span></a>
                 <a href="/admin-devocionais-365#prosperidade" class="nav-link"><i class="fas fa-moon"></i> <span>Prosperidade antes de dormir</span></a>
             </nav>

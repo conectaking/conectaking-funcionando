@@ -154,6 +154,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
+    // Auto-ativação de aba por Hash na URL (ex: #king-selection, #king-selection-pane, #r2-pane, #users-pane)
+    function activatePaneByHash() {
+        const raw = (window.location.hash || '').replace(/^#/, '').trim();
+        if (!raw) return;
+        const normalized = raw.endsWith('-pane') ? raw : (raw + '-pane');
+        const targetLink = document.querySelector(`.nav-link[data-target="${normalized}"]`)
+            || document.querySelector(`.nav-link[data-target="${raw}"]`);
+        if (targetLink) {
+            activateAdminPane(targetLink);
+        }
+    }
+    activatePaneByHash();
+    window.addEventListener('hashchange', activatePaneByHash);
+
     // --- Logomarca padrão (ADM): upload em vez de URL ---
     function updateDefaultLogoPreview() {
         const urlInput = document.getElementById('default-logo-url');
