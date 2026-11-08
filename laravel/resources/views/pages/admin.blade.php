@@ -24,6 +24,7 @@
                 <a href="#" class="nav-link" data-target="users-pane"><i class="fas fa-users"></i> <span>Gerenciar Usuários</span></a>
                 <a href="#" class="nav-link" data-target="codes-pane"><i class="fas fa-key"></i> <span>Gerenciar Códigos</span></a>
                 <a href="#" class="nav-link" data-target="branding-pane"><i class="fas fa-image"></i> <span>Logomarca padrão</span></a>
+                <a href="#" class="nav-link" data-target="king-selection-pane"><i class="fas fa-crown" style="color: #f59e0b;"></i> <span>👑 King Selection</span></a>
                 <a href="#" class="nav-link" data-target="r2-pane"><i class="fas fa-cloud"></i> <span>Armazenamento R2</span></a>
                 <a href="/admin-devocionais-365" class="nav-link"><i class="fas fa-book-open"></i> <span>Bíblia &amp; Devocionais</span></a>
                 <a href="/admin-devocionais-365#prosperidade" class="nav-link"><i class="fas fa-moon"></i> <span>Prosperidade antes de dormir</span></a>
@@ -599,7 +600,85 @@
             </div>
         </section>
 
-        <section id="codes-pane" class="content-pane">
+        <!-- King Selection Master Admin Pane -->
+        <section id="king-selection-pane" class="content-pane">
+            <div class="overview-header-flex">
+                <div>
+                    <h2><i class="fas fa-crown" style="color:#f59e0b"></i> King Selection — Gestão Master &amp; Faturamento R2</h2>
+                    <p class="ck-text-dark-09" style="margin-top:6px;max-width:760px">
+                        Acompanhe o consumo total em GB no Cloudflare R2, audite a fatura mensal em Dólar e Real (considerando os 10 GB grátis da Cloudflare), configure os planos dos fotógrafos (20 GB, 30 GB, 70 GB) e libere ou bloqueie acessos ao módulo.
+                    </p>
+                </div>
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                    <div style="display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.04);padding:4px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);font-size:12px;">
+                        <span>Dólar (USD): R$</span>
+                        <input type="number" id="ks-master-usd-rate" value="5.70" step="0.05" style="width:65px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:4px;font-weight:700;font-size:12px;">
+                    </div>
+                    <button type="button" class="btn btn-secondary ck-btn-md" id="ks-master-refresh-btn">
+                        <i class="fas fa-sync-alt"></i> Atualizar Dados
+                    </button>
+                </div>
+            </div>
+
+            <!-- Cards de Métricas Econômicas & Fatura Cloudflare R2 -->
+            <div class="stats-grid" style="margin-top:20px" id="ks-master-summary-grid">
+                <div class="stat-card">
+                    <span class="stat-label"><i class="fas fa-database text-amber-500"></i> Armazenamento R2 Utilizado</span>
+                    <span class="stat-value" id="ks-master-stat-storage" style="font-size:22px">—</span>
+                    <small class="ck-hint" id="ks-master-stat-substorage" style="margin-top:4px;display:block">0 fotos em 0 projetos</small>
+                </div>
+                <div class="stat-card" style="border-left:4px solid #f59e0b">
+                    <span class="stat-label"><i class="fas fa-receipt" style="color:#f59e0b"></i> Fatura Cloudflare R2 (Mês)</span>
+                    <span class="stat-value" id="ks-master-stat-bill" style="font-size:22px;color:#d97706">$0.00 / R$ 0,00</span>
+                    <small class="ck-hint" id="ks-master-stat-subbill" style="margin-top:4px;display:block">10 GB grátis/mês inclusos</small>
+                </div>
+                <div class="stat-card" style="border-left:4px solid #3b82f6">
+                    <span class="stat-label"><i class="fas fa-money-bill-wave" style="color:#3b82f6"></i> Faturamento Fotógrafos</span>
+                    <span class="stat-value" id="ks-master-stat-revenue" style="font-size:22px;color:#2563eb">R$ 0,00</span>
+                    <small class="ck-hint" id="ks-master-stat-subrevenue" style="margin-top:4px;display:block">0 fotógrafos contratantes</small>
+                </div>
+                <div class="stat-card" style="border-left:4px solid #10b981">
+                    <span class="stat-label"><i class="fas fa-chart-line" style="color:#10b981"></i> Lucro Líquido Real</span>
+                    <span class="stat-value" id="ks-master-stat-profit" style="font-size:22px;color:#059669">R$ 0,00</span>
+                    <small class="ck-hint" id="ks-master-stat-subprofit" style="margin-top:4px;display:block">Margem após pagar o R2: ~98%</small>
+                </div>
+            </div>
+
+            <!-- Tabela de Gestão de Fotógrafos -->
+            <div style="margin-top:32px">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+                    <h3 style="margin:0;font-size:17px;font-weight:800;color:#0f172a">
+                        <i class="fas fa-camera text-amber-500 mr-1.5"></i> Fotógrafos do King Selection
+                    </h3>
+                    <div style="display:flex;gap:10px;align-items:center">
+                        <input type="text" id="ks-master-search-input" placeholder="Buscar por nome, email ou telefone..." style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;width:280px;">
+                    </div>
+                </div>
+
+                <div class="table-responsive" style="border-radius:12px;border:1px solid #e2e8f0;background:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.05)">
+                    <table class="data-table" style="width:100%;margin:0;font-size:13px;">
+                        <thead>
+                            <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;text-align:left">
+                                <th style="padding:12px 14px;font-weight:700;color:#475569">Fotógrafo / Contato</th>
+                                <th style="padding:12px 14px;font-weight:700;color:#475569">Acesso KS</th>
+                                <th style="padding:12px 14px;font-weight:700;color:#475569">Plano Ativo</th>
+                                <th style="padding:12px 14px;font-weight:700;color:#475569">Armazenamento Usado</th>
+                                <th style="padding:12px 14px;font-weight:700;color:#475569">Custo R2</th>
+                                <th style="padding:12px 14px;font-weight:700;color:#475569">Lucro Gerado</th>
+                                <th style="padding:12px 14px;font-weight:700;color:#475569;text-align:right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ks-master-photographers-tbody">
+                            <tr>
+                                <td colspan="7" style="padding:28px;text-align:center;color:#64748b">
+                                    <i class="fas fa-spinner fa-spin mr-2"></i> Carregando fotógrafos do King Selection...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
             <h2>Gerenciar Códigos de Registro</h2>
             
             <!-- Cards de Estatísticas para Códigos -->

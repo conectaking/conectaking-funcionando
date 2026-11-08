@@ -376,8 +376,22 @@
           <span class="font-black text-lg tracking-tight bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-transparent drop-shadow-xs">KingSelection</span>
         </a>
       </div>
-      <!-- Lado Direito: Avatar do Usuário com Menu de Configuração -->
+      <!-- Lado Direito: Storage Meter Widget e Avatar do Usuário -->
       <div class="flex items-center gap-3 text-sm">
+        <!-- Storage Meter Badge do Fotógrafo -->
+        <div id="ks-storage-pill" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 border border-amber-500/35 text-xs shadow-xs" title="Consumo de Armazenamento do seu Plano">
+          <i class="fas fa-database text-amber-400 text-xs"></i>
+          <div class="flex flex-col text-[11px] leading-tight">
+            <span class="font-bold text-amber-100 flex items-center gap-1.5" id="ks-storage-label">
+              <span id="ks-storage-used">0.0 GB</span> / <span id="ks-storage-limit">20 GB</span>
+              <span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-extrabold" id="ks-storage-plan-tag">20 GB</span>
+            </span>
+            <div class="w-24 sm:w-28 h-1.5 bg-slate-800 rounded-full overflow-hidden mt-0.5 border border-white/5">
+              <div id="ks-storage-progress" class="h-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-300 rounded-full transition-all duration-500" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
         <div class="relative" id="ks-user-menu-container" style="position: relative;">
           <button id="ks-user-avatar-btn" type="button"
             style="display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 5px; border-radius: 9999px; background: rgba(0, 0, 0, 0.75); border: 1px solid rgba(245, 158, 11, 0.35); cursor: pointer; transition: all 0.2s;"
@@ -1759,6 +1773,32 @@
               </div>
               <div class="mt-3 text-xs ks-muted">Dica: se der erro, normalmente é permissão no Cloudflare ou limite
                 temporário (aguarde alguns segundos).</div>
+
+              <!-- Redutor Inteligente de Fotos no Upload -->
+              <div class="mt-3.5 pt-3 border-t border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-2.5 bg-slate-50/80 -mx-4 -mb-4 px-4 py-3 rounded-b-xl">
+                <div class="flex items-center gap-2 text-xs text-slate-700 font-bold">
+                  <span class="w-6 h-6 rounded-lg bg-amber-500/15 text-amber-600 flex items-center justify-center font-black">⚡</span>
+                  <span>Otimização &amp; Redução Automática no Upload:</span>
+                </div>
+                <div class="flex items-center gap-1.5 flex-wrap text-xs" id="ks-upload-reducer-radios">
+                  <label class="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:border-amber-400 font-semibold transition shadow-2xs">
+                    <input type="radio" name="ks-photo-reducer" value="original" class="accent-amber-500 cursor-pointer">
+                    <span>Original</span>
+                  </label>
+                  <label class="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-400 bg-amber-50 text-amber-950 font-extrabold transition shadow-2xs">
+                    <input type="radio" name="ks-photo-reducer" value="7mb" checked class="accent-amber-500 cursor-pointer">
+                    <span>⚡ Reduzir p/ ~7 MB <span class="text-[10px] text-amber-700 font-normal">(Recomendado)</span></span>
+                  </label>
+                  <label class="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:border-amber-400 font-semibold transition shadow-2xs">
+                    <input type="radio" name="ks-photo-reducer" value="3mb" class="accent-amber-500 cursor-pointer">
+                    <span>Reduzir p/ ~3 MB <span class="text-[10px] text-slate-500 font-normal">(Ultra Rápido)</span></span>
+                  </label>
+                  <label class="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:border-amber-400 font-semibold transition shadow-2xs">
+                    <input type="radio" name="ks-photo-reducer" value="10mb" class="accent-amber-500 cursor-pointer">
+                    <span>Até ~10 MB</span>
+                  </label>
+                </div>
+              </div>
 
               <!-- Bolinha de progresso -->
               <div class="ks-bubble hidden" id="ks-bubble">

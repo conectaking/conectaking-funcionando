@@ -126,6 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         if (targetId === 'branding-pane') loadDefaultBranding();
         if (targetId === 'r2-pane') loadR2InventoryAdmin();
+        if (targetId === 'king-selection-pane') loadKingSelectionMasterAdmin();
         try { window.scrollTo(0, 0); } catch (_) {}
         return true;
     }
@@ -477,6 +478,230 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, true);
     }
     document.querySelectorAll('#users-pane .table-container, #codes-pane .table-container').forEach(setupDragToScroll);
+
+    // --- KING SELECTION MASTER ADMIN ---
+    let ksMasterData = null;
+    let ksMasterLoading = false;
+
+    async function loadKingSelectionMasterAdmin(force) {
+        if (ksMasterLoading) return;
+        ksMasterLoading = true;
+        const tbody = document.getElementById('ks-master-photographers-tbody');
+        const refreshBtn = document.getElementById('ks-master-refresh-btn');
+        if (refreshBtn) refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Atualizando...';
+        
+        const usdRateInput = document.getElementById('ks-master-usd-rate');
+        const usdRate = parseFloat(usdRateInput?.value || '5.70') || 5.70;
+
+        try {
+            const res = await fetch(`${API_BASE}/api/admin/king-selection/overview?usd_rate=${usdRate}`, {
+                headers: { Authorization: HEADERS.Authorization }
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.message || 'Erro ao carregar dados do King Selection');
+            
+            ksMasterData = json.data || {};
+            renderKingSelectionMaster(ksMasterData);
+        } catch (e) {
+            console.error('[KS Master] Erro:', e);
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="7" style="padding:20px;text-align:center;color:#ef4444">
+                    <i class="fas fa-exclamation-triangle mr-1"></i> Erro ao carregar dados: ${escapeHtml(e?.message || 'Falha de conexão')}
+                </td></tr>`;
+            }
+        } finally {
+            ksMasterLoading = false;
+            if (refreshBtn) refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar Dados';
+        }
+    }
+
+    function renderKingSelectionMaster(data) {
+        const eco = data.r2_economics || {};
+        const sum = data.summary || {};
+        const photogs = data.photographers || [];
+
+        // 1. Armazenamento Utilizado
+        const statStorage = document.getElementById('ks-master-stat-storage');
+        const statSubStorage = document.getElementById('ks-master-stat-substorage');
+        if (statStorage) statStorage.textContent = `${eco.total_storage_used_gb || 0} GB`;
+        if (statSubStorage) statSubStorage.textContent = `${(sum.total_photos || 0).toLocaleString('pt-BR')} fotos em ${sum.total_galleries || 0} projetos`;
+
+        // 2. Fatura Cloudflare R2
+        const statBill = document.getElementById('ks-master-stat-bill');
+        const statSubBill = document.getElementById('ks-master-stat-subbill');
+        if (statBill) statBill.textContent = `$${(eco.estimated_monthly_bill_usd || 0).toFixed(2)} / R$ ${(eco.estimated_monthly_bill_brl || 0).toFixed(2)}`;
+        if (statSubBill) {
+            if ((eco.billable_gb || 0) <= 0) {
+                statSubBill.textContent = `100% Grátis (Dentro da cota de 10 GB/mês)`;
+            } else {
+                statSubBill.textContent = `10 GB grátis aplicados (${eco.billable_gb} GB faturáveis a $0.015)`;
+            }
+        }
+
+        // 3. Faturamento
+        const statRev = document.getElementById('ks-master-stat-revenue');
+        const statSubRev = document.getElementById('ks-master-stat-subrevenue');
+        if (statRev) statRev.textContent = `R$ ${(sum.total_revenue_brl || 0).toFixed(2)}`;
+        if (statSubRev) statSubRev.textContent = `${sum.active_contracting_photographers || 0} fotógrafo(s) com plano ativo`;
+
+        // 4. Lucro Líquido
+        const statProfit = document.getElementById('ks-master-stat-profit');
+        const statSubProfit = document.getElementById('ks-master-stat-subprofit');
+        if (statProfit) statProfit.textContent = `R$ ${(sum.total_profit_brl || 0).toFixed(2)}`;
+        if (statSubProfit) statSubProfit.textContent = `Margem de Lucro: ${sum.profit_margin_pct || 98}%`;
+
+        // Render Photographers Table
+        renderKingSelectionPhotographersTable(photogs);
+    }
+
+    function renderKingSelectionPhotographersTable(photogs) {
+        const tbody = document.getElementById('ks-master-photographers-tbody');
+        if (!tbody) return;
+
+        const searchVal = (document.getElementById('ks-master-search-input')?.value || '').toLowerCase().trim();
+        const filtered = photogs.filter(p => {
+            if (!searchVal) return true;
+            return (p.name || '').toLowerCase().includes(searchVal) ||
+                   (p.email || '').toLowerCase().includes(searchVal) ||
+                   (p.phone || '').toLowerCase().includes(searchVal);
+        });
+
+        if (!filtered.length) {
+            tbody.innerHTML = `<tr><td colspan="7" style="padding:28px;text-align:center;color:#64748b">
+                Nenhum fotógrafo encontrado.
+            </td></tr>`;
+            return;
+        }
+
+        let html = '';
+        filtered.forEach(p => {
+            const isEnabled = !!p.king_selection_enabled;
+            const usedPct = p.storage_used_pct || 0;
+            const progressColor = usedPct >= 90 ? '#ef4444' : usedPct >= 75 ? '#f59e0b' : '#10b981';
+
+            const planOptions = [
+                { id: 'plan_20gb', label: 'Starter 20 GB (R$ 39,90)', gb: 20, price: 39.90 },
+                { id: 'plan_30gb', label: 'Pro 30 GB (R$ 59,90)', gb: 30, price: 59.90 },
+                { id: 'plan_70gb', label: 'Studio King 70 GB (R$ 99,90)', gb: 70, price: 99.90 },
+                { id: 'unlimited', label: 'Ilimitado (R$ 199,90)', gb: 1000, price: 199.90 },
+                { id: 'custom', label: 'Personalizado', gb: p.storage_limit_gb || 20, price: p.plan_price || 39.90 }
+            ];
+
+            const planSelectHtml = `
+                <select class="ks-row-plan-select" data-user-id="${p.id}" style="padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;font-weight:600;background:#fff">
+                    ${planOptions.map(opt => `<option value="${opt.id}" ${p.king_selection_plan === opt.id ? 'selected' : ''}>${opt.label}</option>`).join('')}
+                </select>
+            `;
+
+            const phoneClean = (p.phone || '').replace(/\D/g, '');
+            const waLink = phoneClean ? `https://wa.me/55${phoneClean}` : null;
+
+            html += `
+                <tr style="border-bottom:1px solid #f1f5f9;transition:background 0.15s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                    <td style="padding:12px 14px">
+                        <div style="font-weight:700;color:#0f172a">${escapeHtml(p.name || 'Sem nome')}</div>
+                        <div style="font-size:11.5px;color:#64748b">${escapeHtml(p.email || '')}</div>
+                        ${waLink ? `<a href="${waLink}" target="_blank" style="font-size:11px;color:#10b981;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-top:2px"><i class="fab fa-whatsapp"></i> ${escapeHtml(p.phone)}</a>` : ''}
+                    </td>
+                    <td style="padding:12px 14px">
+                        <label style="position:relative;display:inline-block;width:38px;height:20px;margin:0;cursor:pointer">
+                            <input type="checkbox" class="ks-row-toggle" data-user-id="${p.id}" ${isEnabled ? 'checked' : ''} style="opacity:0;width:0;height:0">
+                            <span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:${isEnabled ? '#10b981' : '#cbd5e1'};transition:.3s;border-radius:20px;">
+                                <span style="position:absolute;content:'';height:14px;width:14px;left:${isEnabled ? '20px' : '3px'};bottom:3px;background-color:white;transition:.3s;border-radius:50%"></span>
+                            </span>
+                        </label>
+                    </td>
+                    <td style="padding:12px 14px">
+                        ${planSelectHtml}
+                    </td>
+                    <td style="padding:12px 14px">
+                        <div style="font-size:11.5px;font-weight:700;color:#334155;margin-bottom:3px">
+                            ${p.storage_used_gb || 0} GB de ${p.storage_limit_gb || 0} GB (${usedPct}%)
+                        </div>
+                        <div style="width:110px;height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden">
+                            <div style="width:${Math.min(100, usedPct)}%;height:100%;background:${progressColor};border-radius:99px"></div>
+                        </div>
+                        <small style="font-size:10.5px;color:#94a3b8">${p.total_photos || 0} fotos</small>
+                    </td>
+                    <td style="padding:12px 14px;font-weight:600;color:#64748b">
+                        R$ ${(p.cost_brl || 0).toFixed(2)}
+                    </td>
+                    <td style="padding:12px 14px;font-weight:700;color:#059669">
+                        R$ ${(p.profit_brl || 0).toFixed(2)}
+                    </td>
+                    <td style="padding:12px 14px;text-align:right">
+                        <button type="button" class="btn btn-secondary btn-sm ks-save-photog-btn" data-user-id="${p.id}" style="padding:4px 10px;font-size:12px;font-weight:700">
+                            <i class="fas fa-check"></i> Salvar
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+
+        // Listeners nos botões salvar e toggles
+        tbody.querySelectorAll('.ks-save-photog-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const userId = btn.getAttribute('data-user-id');
+                const row = btn.closest('tr');
+                const select = row?.querySelector('.ks-row-plan-select');
+                const plan = select?.value || 'plan_20gb';
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/king-selection/users/${userId}/plan`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: HEADERS.Authorization
+                        },
+                        body: JSON.stringify({ plan })
+                    });
+                    const resJson = await res.json().catch(() => ({}));
+                    if (!res.ok) throw new Error(resJson.message || 'Erro ao salvar plano');
+                    alert('Plano atualizado com sucesso!');
+                    loadKingSelectionMasterAdmin(true);
+                } catch (err) {
+                    alert('Erro: ' + (err.message || 'Falha ao salvar'));
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-check"></i> Salvar';
+                }
+            });
+        });
+
+        tbody.querySelectorAll('.ks-row-toggle').forEach(toggle => {
+            toggle.addEventListener('change', async () => {
+                const userId = toggle.getAttribute('data-user-id');
+                const enabled = toggle.checked;
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/king-selection/users/${userId}/toggle`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: HEADERS.Authorization
+                        },
+                        body: JSON.stringify({ enabled })
+                    });
+                    const resJson = await res.json().catch(() => ({}));
+                    if (!res.ok) throw new Error(resJson.message || 'Erro ao alterar acesso');
+                    loadKingSelectionMasterAdmin(true);
+                } catch (err) {
+                    alert('Erro ao alterar acesso: ' + (err.message || 'Falha'));
+                    toggle.checked = !enabled;
+                }
+            });
+        });
+    }
+
+    document.getElementById('ks-master-refresh-btn')?.addEventListener('click', () => loadKingSelectionMasterAdmin(true));
+    document.getElementById('ks-master-usd-rate')?.addEventListener('change', () => loadKingSelectionMasterAdmin(true));
+    document.getElementById('ks-master-search-input')?.addEventListener('input', () => {
+        if (ksMasterData && ksMasterData.photographers) {
+            renderKingSelectionPhotographersTable(ksMasterData.photographers);
+        }
+    });
 
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {

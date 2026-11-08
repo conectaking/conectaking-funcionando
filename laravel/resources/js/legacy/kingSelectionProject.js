@@ -155,6 +155,114 @@ document.addEventListener('DOMContentLoaded', async () => {
     _previewObjectUrls.clear();
   }
 
+  // --- King Selection Storage & Quota System ---
+  let _currentStorageStats = null;
+  async function loadMyStorageWidget() {
+    try {
+      const res = await fetch(`${API_URL}/api/king-selection/my-storage`, { headers: HEADERS });
+      if (!res.ok) return;
+      const json = await res.json().catch(() => ({}));
+      if (json && json.success && json.data) {
+        _currentStorageStats = json.data;
+        const usedEl = document.getElementById('ks-storage-used');
+        const limitEl = document.getElementById('ks-storage-limit');
+        const tagEl = document.getElementById('ks-storage-plan-tag');
+        const barEl = document.getElementById('ks-storage-progress');
+        if (usedEl) usedEl.textContent = `${json.data.storage_used_gb} GB`;
+        if (limitEl) limitEl.textContent = `${json.data.storage_limit_gb} GB`;
+        if (tagEl) tagEl.textContent = json.data.plan_label || `${json.data.storage_limit_gb} GB`;
+        if (barEl) {
+          barEl.style.width = `${Math.min(100, json.data.storage_used_pct || 0)}%`;
+          if (json.data.storage_used_pct >= 90) {
+            barEl.className = 'h-full bg-red-500 rounded-full transition-all duration-500';
+          } else if (json.data.storage_used_pct >= 75) {
+            barEl.className = 'h-full bg-amber-500 rounded-full transition-all duration-500';
+          } else {
+            barEl.className = 'h-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-300 rounded-full transition-all duration-500';
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  function showQuotaExceededModal(customMsg) {
+    const msg = customMsg || 'Você atingiu o limite de armazenamento do seu plano. Para enviar novas fotos de ensaios, faça upgrade para um plano maior ou entre em contato com o suporte.';
+    if (window.Swal) {
+      window.Swal.fire({
+        icon: 'warning',
+        title: 'Limite do Plano Atingido',
+        html: `<p style="font-size:14px;color:#334155;margin-bottom:12px;">${msg}</p>
+               <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:10px;font-size:12px;color:#92400e;">
+                 💡 Planos disponíveis: <b>20 GB (R$ 39,90)</b>, <b>30 GB (R$ 59,90)</b> e <b>70 GB (R$ 99,90)</b>.
+               </div>`,
+        showCancelButton: true,
+        confirmButtonColor: '#f59e0b',
+        confirmButtonText: '<i class="fab fa-whatsapp"></i> Falar com Suporte / Upgrade',
+        cancelButtonText: 'Fechar'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.open('https://wa.me/5594991321743?text=Olá!+Gostaria+de+fazer+upgrade+do+meu+plano+no+King+Selection.', '_blank');
+        }
+      });
+    } else {
+      alert(msg);
+    }
+  }
+
+  async function maybeReducePhoto(file, targetSizeStr) {
+    if (!targetSizeStr || targetSizeStr === 'original') return file;
+    if (!file || !file.type || !file.type.startsWith('image/')) return file;
+    
+    const targetBytes = targetSizeStr === '3mb' ? 3.2 * 1024 * 1024
+                      : targetSizeStr === '7mb' ? 7.2 * 1024 * 1024
+                      : targetSizeStr === '10mb' ? 10.2 * 1024 * 1024
+                      : 7.2 * 1024 * 1024;
+
+    if (file.size <= targetBytes) return file;
+
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const canvas = document.createElement('canvas');
+        let w = img.width;
+        let h = img.height;
+        const maxDim = targetSizeStr === '3mb' ? 3200 : 4200;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const quality = targetSizeStr === '3mb' ? 0.82 : 0.90;
+        canvas.toBlob((blob) => {
+          if (!blob || blob.size >= file.size) {
+            resolve(file);
+            return;
+          }
+          const reduced = new File([blob], file.name, {
+            type: 'image/jpeg',
+            lastModified: file.lastModified || Date.now()
+          });
+          resolve(reduced);
+        }, 'image/jpeg', quality);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(file);
+      };
+      img.src = url;
+    });
+  }
+
   async function fetchPreviewObjectUrl(url) {
     const key = String(url || '');
     if (_previewObjectUrls.has(key)) return _previewObjectUrls.get(key);
@@ -6752,7 +6860,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         }
         let msg = text || `Falha no upload (proxy) (${xhr.status})`;
-        try { msg = (JSON.parse(text || '{}')?.message) || msg; } catch (_) { }
+        let parsed = null;
+        try { parsed = JSON.parse(text || '{}'); msg = parsed?.message || msg; } catch (_) { }
+        if (xhr.status === 403 && parsed?.code === 'QUOTA_EXCEEDED') {
+          showQuotaExceededModal(msg);
+        }
         const err = new Error(msg);
         err.status = xhr.status || 0;
         reject(err);
@@ -6999,7 +7111,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       })
     }, 35000);
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.message || 'Falha ao presign (R2)');
+    if (!res.ok) {
+      if (res.status === 403 && data.code === 'QUOTA_EXCEEDED') {
+        showQuotaExceededModal(data.message);
+      }
+      throw new Error(data.message || 'Falha ao presign (R2)');
+    }
     const items = Array.isArray(data.items) ? data.items : [];
     const map = new Map();
     items.forEach(it => {
@@ -10931,10 +11048,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const baseTotal = uploadState.ok + uploadState.errors.length;
 
     const toQueue = [];
-    batch.forEach((entry, idx) => {
-      const file = entry?.file || entry;
+    const reducerVal = document.querySelector('input[name="ks-photo-reducer"]:checked')?.value || '7mb';
+    for (let idx = 0; idx < batch.length; idx++) {
+      const entry = batch[idx];
+      let file = entry?.file || entry;
       const folderId = toPosInt(entry?.folderId);
-      if (!file) return;
+      if (!file) continue;
+      if (reducerVal !== 'original') {
+        try {
+          updateOverallUi(`Otimizando foto ${idx + 1}/${batch.length}…`, file.name || 'foto');
+          file = await maybeReducePhoto(file, reducerVal);
+          if (entry && entry.file) entry.file = file;
+        } catch (_) {}
+      }
       const id = `u_${Date.now()}_${Math.random().toString(16).slice(2)}_${idx}`;
       const rowEl = createUploadRow({ id, file });
       const controller = new AbortController();
@@ -10946,7 +11072,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
       toQueue.push({ id, file, folderId, rowEl, controller, loaded: 0 });
-    });
+    }
 
     // 1) Presign (mais rápido: PUT direto do navegador pro R2). 2) Worker. 3) Proxy.
     let mode = 'worker';
@@ -12313,6 +12439,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const savedTab = String(localStorage.getItem(TAB_PREF_KEY) || '').trim();
       const startTab = savedTab || 'activity';
       await loadGallery();
+      void loadMyStorageWidget();
       ensurePublicEditRequestPrivacyMarkup();
       syncPublicEditRequestPrivacyUi();
       setActiveTab(startTab);

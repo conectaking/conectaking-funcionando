@@ -751,6 +751,22 @@ class KingSelectionAdminService
             return ['status' => 501, 'body' => ['message' => 'R2 não configurado.']];
         }
 
+        // Validação de cota do plano do fotógrafo
+        $incomingBytes = strlen($binary);
+        $quota = app(\App\Services\CartaoVirtual\KingSelectionQuotaService::class);
+        if (! $quota->canUploadBytes($userId, $incomingBytes)) {
+            $stats = $quota->getUserStorageStats($userId);
+            return [
+                'status' => 403,
+                'body' => [
+                    'success' => false,
+                    'code' => 'QUOTA_EXCEEDED',
+                    'message' => "Você atingiu o limite de {$stats['storage_limit_gb']} GB do seu plano. Faça upgrade para continuar enviando fotos.",
+                    'stats' => $stats,
+                ]
+            ];
+        }
+
         $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION) ?: 'jpg');
         $ext = preg_replace('/[^a-z0-9]/', '', $ext) ?: 'jpg';
         $key = 'galleries/'.$galleryId.'/'.(string) Str::uuid().'.'.$ext;
@@ -771,6 +787,9 @@ class KingSelectionAdminService
             $order,
             $folderId
         );
+        if ($photo && isset($photo->id)) {
+            $quota->recordPhotoSize((int) $photo->id, $incomingBytes);
+        }
         $this->dispatchWarmThumbs($galleryId, 24);
 
         return ['status' => 201, 'body' => ['success' => true, 'photo' => $photo]];
@@ -787,6 +806,21 @@ class KingSelectionAdminService
         }
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
+        }
+
+        // Validação de cota do fotógrafo no upload em lote
+        $quota = app(\App\Services\CartaoVirtual\KingSelectionQuotaService::class);
+        if (! $quota->canUploadBytes($userId, 1024 * 1024)) {
+            $stats = $quota->getUserStorageStats($userId);
+            return [
+                'status' => 403,
+                'body' => [
+                    'success' => false,
+                    'code' => 'QUOTA_EXCEEDED',
+                    'message' => "Você atingiu o limite de {$stats['storage_limit_gb']} GB do seu plano. Faça upgrade para continuar enviando fotos.",
+                    'stats' => $stats,
+                ]
+            ];
         }
         $list = is_array($body['files'] ?? null) ? $body['files'] : [];
         if ($list === []) {

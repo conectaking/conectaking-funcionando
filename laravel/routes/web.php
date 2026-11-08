@@ -323,6 +323,21 @@ Route::get('/biblia/{bookId}/{chapter}', [SatellitePublicController::class, 'bib
 Route::get('/bible', fn () => redirect('/biblia', 302));
 Route::get('/bibliaking', fn () => redirect('/biblia', 302));
 Route::get('/bibliaking.html', fn () => redirect('/biblia', 302));
+// King Selection (Subdomínio oficial kingselection.conectaking.com.br)
+Route::domain('kingselection.conectaking.com.br')->group(function () use ($cardSlug) {
+    Route::get('/', function (\Illuminate\Http\Request $request) {
+        return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionLogin');
+    });
+    Route::get('/login', function (\Illuminate\Http\Request $request) {
+        return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionLogin');
+    });
+    Route::get('/{slug}', [KingSelectionPublicController::class, 'show'])->where('slug', $cardSlug);
+});
+
+// King Selection Auth direto para fotógrafos
+Route::post('/api/king-selection/auth/login', [\App\Http\Controllers\CartaoVirtual\KingSelectionMasterController::class, 'login'])
+    ->middleware('throttle:20,1');
+
 // King Selection (read-only público)
 Route::get('/kingSelection/{slug}', [KingSelectionPublicController::class, 'show'])->where('slug', $cardSlug);
 Route::get('/api/king-selection/public/gallery', [KingSelectionPublicController::class, 'gallery'])
@@ -423,7 +438,8 @@ Route::middleware('jwt')->group(function () {
         Route::get('/api/analytics/details', [\App\Http\Controllers\Analytics\AnalyticsController::class, 'details']);
         Route::put('/api/business/branding', [\App\Http\Controllers\Business\BrandingController::class, 'update']);
         Route::get('/api/business/team', [\App\Http\Controllers\Business\TeamController::class, 'index']);
-        // Fatia 4b — KS painel fotógrafo (boot: list/create/get/status)
+        // Fatia 4b — KS painel fotógrafo (boot: list/create/get/status/storage)
+    Route::get('/api/king-selection/my-storage', [\App\Http\Controllers\CartaoVirtual\KingSelectionMasterController::class, 'myStorage']);
     Route::get('/api/king-selection/galleries', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'index']);
         Route::post('/api/king-selection/galleries', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'store'])
         ->middleware('throttle:30,1');
@@ -822,6 +838,12 @@ Route::middleware(['admin', 'audit'])->group(function () {
         Route::delete($p.'/api/admin/codes/{code}', [$adminCodes, 'destroy'])->middleware('throttle:20,1');
         // Rota legada sem prefixo /codes.
         Route::post($p.'/api/admin/generate-code', [$adminCodes, 'generateCode'])->middleware('throttle:20,1');
+
+        // King Selection Master Admin (Gestão de Planos, Cotas e Fatura Cloudflare R2)
+        $kingMaster = \App\Http\Controllers\CartaoVirtual\KingSelectionMasterController::class;
+        Route::get($p.'/api/admin/king-selection/overview', [$kingMaster, 'masterOverview'])->middleware('throttle:60,1');
+        Route::put($p.'/api/admin/king-selection/users/{userId}/plan', [$kingMaster, 'updatePlan'])->middleware('throttle:30,1');
+        Route::post($p.'/api/admin/king-selection/users/{userId}/toggle', [$kingMaster, 'toggleAccess'])->middleware('throttle:30,1');
     }
 });
 
@@ -954,7 +976,7 @@ Route::get('/mr/kingSelection/{slug}', [\App\Http\Controllers\CartaoVirtual\King
 $bladePages = [
     'login', 'dashboard', 'registro', 'recuperar-senha', 'resetar-senha', 'conta',
     'admin',
-    'kingSelectionEdit', 'kingSelectionProject', 'kingSelectionCliente',
+    'kingSelectionLogin', 'kingSelectionEdit', 'kingSelectionProject', 'kingSelectionCliente',
     'kingSelectionGallery', 'kingSelectionReview', 'kingSelectionSuccess',
     'formPageEdit', 'salesPageEdit', 'guestListEdit',
     'kingDocs', 'kingDocsShare', 'kingForms', 'kingCamera',
