@@ -25,6 +25,19 @@ use App\Http\Controllers\CartaoVirtual\UploadController;
 use App\Http\Controllers\CartaoVirtual\VcardController;
 use Illuminate\Support\Facades\Route;
 
+$cardSlug = '[A-Za-z0-9._-]+';
+
+// King Selection (Subdomínio oficial kingselection.conectaking.com.br)
+Route::domain('kingselection.conectaking.com.br')->group(function () use ($cardSlug) {
+    Route::get('/', function (\Illuminate\Http\Request $request) {
+        return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionLogin');
+    });
+    Route::get('/login', function (\Illuminate\Http\Request $request) {
+        return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionLogin');
+    });
+    Route::get('/{slug}', [KingSelectionPublicController::class, 'show'])->where('slug', $cardSlug);
+});
+
 Route::get('/', function () {
     return app(\App\Http\Controllers\LegacyPageController::class)->show(request(), 'index');
 });
@@ -323,17 +336,6 @@ Route::get('/biblia/{bookId}/{chapter}', [SatellitePublicController::class, 'bib
 Route::get('/bible', fn () => redirect('/biblia', 302));
 Route::get('/bibliaking', fn () => redirect('/biblia', 302));
 Route::get('/bibliaking.html', fn () => redirect('/biblia', 302));
-// King Selection (Subdomínio oficial kingselection.conectaking.com.br)
-Route::domain('kingselection.conectaking.com.br')->group(function () use ($cardSlug) {
-    Route::get('/', function (\Illuminate\Http\Request $request) {
-        return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionLogin');
-    });
-    Route::get('/login', function (\Illuminate\Http\Request $request) {
-        return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionLogin');
-    });
-    Route::get('/{slug}', [KingSelectionPublicController::class, 'show'])->where('slug', $cardSlug);
-});
-
 // King Selection Auth direto para fotógrafos
 Route::post('/api/king-selection/auth/login', [\App\Http\Controllers\CartaoVirtual\KingSelectionMasterController::class, 'login'])
     ->middleware('throttle:20,1');
