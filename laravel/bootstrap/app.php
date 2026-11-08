@@ -39,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'guest-list/view-full/*/checkin/*',
             'guest-list/confirm/qr/*',
             'guest-list/confirm/cpf',
+            'api/king-selection/auth/login',
             'api/king-selection/client/login',
             'api/king-selection/client/login-by-details',
             'api/king-selection/client/register',
