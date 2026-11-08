@@ -13,6 +13,7 @@ class KingSelectionQuotaService
         'plan_30gb' => 32212254720,   // 30 * 1024 * 1024 * 1024
         'plan_60gb' => 64424509440,   // 60 * 1024 * 1024 * 1024 (R$ 99,90)
         'plan_70gb' => 64424509440,   // compatibilidade legada -> 60 GB
+        'plan_100gb' => 107374182400, // 100 * 1024 * 1024 * 1024 (R$ 149,90)
         'custom'    => 21474836480,
         'unlimited' => 1099511627776, // 1 TB (praticamente ilimitado para testes)
     ];
@@ -22,6 +23,7 @@ class KingSelectionQuotaService
         'plan_30gb' => 59.90,
         'plan_60gb' => 99.90,
         'plan_70gb' => 99.90,
+        'plan_100gb' => 149.90,
         'custom'    => 49.90,
         'unlimited' => 199.90,
     ];
@@ -31,8 +33,9 @@ class KingSelectionQuotaService
         'plan_30gb' => 'Pro 30 GB',
         'plan_60gb' => 'Studio King 60 GB',
         'plan_70gb' => 'Studio King 60 GB',
+        'plan_100gb' => 'Studio Max 100 GB',
         'custom'    => 'Personalizado',
-        'unlimited' => 'Ilimitado',
+        'unlimited' => 'Ilimitado Master',
     ];
 
     public const CLOUDFLARE_FREE_TIER_GB = 10.0;
@@ -202,6 +205,22 @@ class KingSelectionQuotaService
         $totalRevenueBrl = 0.0;
         $formattedList = [];
 
+        $adminStats = [
+            'id' => null,
+            'name' => null,
+            'email' => null,
+            'plan' => 'unlimited',
+            'plan_label' => 'Ilimitado Master',
+            'used_bytes' => 0,
+            'used_gb' => 0.0,
+            'limit_gb' => 1000.0,
+            'used_pct' => 0.0,
+            'total_photos' => 0,
+            'total_galleries' => 0,
+            'cost_usd' => 0.0,
+            'cost_brl' => 0.0,
+        ];
+
         foreach ($photographers as $ph) {
             $usedBytes = (int) $ph->used_bytes;
             $limitBytes = (int) $ph->limit_bytes;
@@ -209,9 +228,12 @@ class KingSelectionQuotaService
             $totalPhotosAll += (int) $ph->total_photos;
             $totalGalleriesAll += (int) $ph->total_galleries;
 
-            $plan = $ph->plan ?: 'plan_20gb';
-            $price = (float) $ph->plan_price;
-            $totalRevenueBrl += $price;
+            $isAdminUser = (bool) ($ph->is_admin || in_array($ph->account_type, ['admin', 'adm_principal'], true));
+            $plan = $ph->plan ?: ($isAdminUser ? 'unlimited' : 'plan_20gb');
+            $price = $isAdminUser ? 0.0 : (float) $ph->plan_price;
+            if (!$isAdminUser) {
+                $totalRevenueBrl += $price;
+            }
 
             $usedGb = round($usedBytes / (1024 * 1024 * 1024), 2);
             $limitGb = round($limitBytes / (1024 * 1024 * 1024), 2);
@@ -220,13 +242,29 @@ class KingSelectionQuotaService
             // Custo Cloudflare R2 individual (sem franquia, custo bruto de armazenamento)
             $phCostUsd = round($usedGb * self::CLOUDFLARE_PRICE_PER_GB_USD, 4);
             $phCostBrl = round($phCostUsd * $usdRate, 2);
-            $phProfitBrl = round($price - $phCostBrl, 2);
+            $phProfitBrl = $isAdminUser ? 0.0 : round($price - $phCostBrl, 2);
+
+            if ($isAdminUser) {
+                $adminStats['id'] = (string) $ph->id;
+                $adminStats['name'] = $ph->name ?: 'Administrador';
+                $adminStats['email'] = $ph->email;
+                $adminStats['plan'] = $plan;
+                $adminStats['plan_label'] = self::PLAN_LABELS[$plan] ?? 'Ilimitado Master';
+                $adminStats['used_bytes'] = $usedBytes;
+                $adminStats['used_gb'] = $usedGb;
+                $adminStats['limit_gb'] = $limitGb;
+                $adminStats['used_pct'] = $usedPct;
+                $adminStats['total_photos'] = (int) $ph->total_photos;
+                $adminStats['total_galleries'] = (int) $ph->total_galleries;
+                $adminStats['cost_usd'] = $phCostUsd;
+                $adminStats['cost_brl'] = $phCostBrl;
+            }
 
             $formattedList[] = [
                 'id' => (string) $ph->id,
-                'name' => $ph->name ?: 'Fotógrafo',
+                'name' => $ph->name ?: ($isAdminUser ? 'Administrador Master' : 'Fotógrafo'),
                 'email' => $ph->email,
-                'is_admin' => (bool) ($ph->is_admin || $ph->account_type === 'admin'),
+                'is_admin' => $isAdminUser,
                 'enabled' => (bool) $ph->king_selection_enabled,
                 'plan' => $plan,
                 'plan_label' => self::PLAN_LABELS[$plan] ?? 'Starter 20 GB',
@@ -269,10 +307,13 @@ class KingSelectionQuotaService
                 'usd_rate' => $usdRate,
                 'estimated_bill_usd' => $totalBillUsd,
                 'estimated_bill_brl' => $totalBillBrl,
+                'admin_cost_brl' => $adminStats['cost_brl'],
+                'clients_cost_brl' => max(0, round($totalBillBrl - $adminStats['cost_brl'], 2)),
                 'total_revenue_brl' => round($totalRevenueBrl, 2),
                 'net_profit_brl' => $netProfitBrl,
                 'net_margin_pct' => $netMarginPct,
             ],
+            'admin_stats' => $adminStats,
             'photographers' => $formattedList,
         ];
     }

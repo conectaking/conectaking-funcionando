@@ -35,7 +35,30 @@ Route::domain('kingselection.conectaking.com.br')->group(function () use ($cardS
     Route::get('/login', function (\Illuminate\Http\Request $request) {
         return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionLogin');
     });
-    Route::get('/{slug}', [KingSelectionPublicController::class, 'show'])->where('slug', $cardSlug);
+    Route::get('/admin', function (\Illuminate\Http\Request $request) {
+        return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'admin');
+    });
+    Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
+        return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'dashboard');
+    });
+    Route::get('/conta', function (\Illuminate\Http\Request $request) {
+        return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'conta');
+    });
+
+    $ksPhotographer = function (\Illuminate\Http\Request $request) {
+        $page = $request->filled('galleryId') ? 'kingSelectionProject' : 'kingSelectionEdit';
+        return app(\App\Http\Controllers\LegacyPageController::class)->show($request, $page);
+    };
+    Route::get('/kingSelection', $ksPhotographer);
+    Route::get('/kingSelection.html', $ksPhotographer);
+    Route::get('/kingSelectionProject', fn (\Illuminate\Http\Request $req) => app(\App\Http\Controllers\LegacyPageController::class)->show($req, 'kingSelectionProject'));
+    Route::get('/kingSelectionProject.html', fn (\Illuminate\Http\Request $req) => app(\App\Http\Controllers\LegacyPageController::class)->show($req, 'kingSelectionProject'));
+    Route::get('/kingSelectionEdit', fn (\Illuminate\Http\Request $req) => app(\App\Http\Controllers\LegacyPageController::class)->show($req, 'kingSelectionEdit'));
+    Route::get('/kingSelectionEdit.html', fn (\Illuminate\Http\Request $req) => app(\App\Http\Controllers\LegacyPageController::class)->show($req, 'kingSelectionEdit'));
+
+    // Galerias públicas de clientes (exclui termos de sistema para nunca conflitar)
+    Route::get('/{slug}', [KingSelectionPublicController::class, 'show'])
+        ->where('slug', '^(?!(kingSelection|kingSelectionProject|kingSelectionEdit|admin|dashboard|login|conta|api)$)[A-Za-z0-9._-]+$');
 });
 
 Route::get('/', function () {
@@ -846,6 +869,7 @@ Route::middleware(['admin', 'audit'])->group(function () {
         Route::get($p.'/api/admin/king-selection/overview', [$kingMaster, 'masterOverview'])->middleware('throttle:60,1');
         Route::put($p.'/api/admin/king-selection/users/{userId}/plan', [$kingMaster, 'updatePlan'])->middleware('throttle:30,1');
         Route::post($p.'/api/admin/king-selection/users/{userId}/toggle', [$kingMaster, 'toggleAccess'])->middleware('throttle:30,1');
+        Route::post($p.'/api/admin/king-selection/self-plan', [$kingMaster, 'updateSelfPlan'])->middleware('throttle:30,1');
     }
 });
 

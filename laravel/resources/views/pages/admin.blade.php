@@ -620,6 +620,62 @@
                 </div>
             </div>
 
+            <!-- Card de Gestão da Conta de Fotógrafo do Admin (Uso Pessoal Isento) -->
+            <div style="margin-top:20px;padding:18px 22px;border-radius:14px;background:linear-gradient(135deg, #0b0f19 0%, #1e1b13 100%);border:1px solid rgba(245, 158, 11, 0.4);color:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.15)">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px">
+                    <div style="display:flex;align-items:center;gap:12px">
+                        <div style="width:44px;height:44px;border-radius:12px;background:rgba(245, 158, 11, 0.15);border:1px solid rgba(245, 158, 11, 0.35);display:flex;align-items:center;justify-content:center;color:#fbbf24;font-size:20px">
+                            <i class="fas fa-camera-retro"></i>
+                        </div>
+                        <div>
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <h3 style="margin:0;font-size:16px;font-weight:800;color:#f8fafc">Meu Estúdio de Fotos (Conta do Administrador)</h3>
+                                <span style="font-size:10.5px;padding:2px 8px;border-radius:99px;background:rgba(34, 197, 94, 0.2);color:#4ade80;border:1px solid rgba(34, 197, 94, 0.35);font-weight:800">ISENTO / CUSTO ZERO R$ 0,00</span>
+                            </div>
+                            <p style="margin:4px 0 0;font-size:12.5px;color:#94a3b8">
+                                Você tem permissão total para criar galerias e subir suas fotos. Seu consumo entra no cálculo da fatura Cloudflare R2 da plataforma.
+                            </p>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                        <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.06);padding:6px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.1)">
+                            <span style="font-size:12px;color:#cbd5e1;font-weight:600">Meu Pacote:</span>
+                            <select id="ks-admin-self-plan" style="background:#0f172a;color:#fbbf24;border:1px solid rgba(245,158,11,0.5);border-radius:6px;padding:4px 10px;font-size:12.5px;font-weight:700">
+                                <option value="unlimited" selected>Ilimitado Master (Livre)</option>
+                                <option value="plan_20gb">Starter 20 GB (Cortesia R$ 0,00)</option>
+                                <option value="plan_30gb">Pro 30 GB (Cortesia R$ 0,00)</option>
+                                <option value="plan_60gb">Studio King 60 GB (Cortesia R$ 0,00)</option>
+                                <option value="plan_100gb">Studio Max 100 GB (Cortesia R$ 0,00)</option>
+                            </select>
+                            <button type="button" id="ks-admin-save-self-plan-btn" class="btn btn-sm" style="background:#f59e0b;color:#000;font-weight:800;padding:5px 12px;border-radius:6px;border:none;cursor:pointer">
+                                Salvar
+                            </button>
+                        </div>
+                        <a href="/kingSelection" target="_blank" class="btn" style="background:linear-gradient(135deg, #f59e0b 0%, #d97706 100%);color:#000;font-weight:800;font-size:13px;padding:8px 16px;border-radius:10px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(245,158,11,0.3)">
+                            <i class="fas fa-images"></i> Abrir Meu Estúdio de Fotos <i class="fas fa-external-link-alt" style="font-size:11px"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Barra de consumo do próprio Admin -->
+                <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:12px">
+                    <div style="display:flex;align-items:center;gap:14px">
+                        <div>
+                            <span style="color:#94a3b8">Espaço Pessoal Usado:</span>
+                            <b id="ks-admin-used-storage" style="color:#fbbf24;font-size:13px;margin-left:4px">0.0 GB</b>
+                        </div>
+                        <div>
+                            <span style="color:#94a3b8">Fotos &amp; Projetos:</span>
+                            <b id="ks-admin-photos-count" style="color:#e2e8f0;margin-left:4px">0 fotos em 0 projetos</b>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <span style="color:#94a3b8">Impacto na fatura Cloudflare R2:</span>
+                        <span style="padding:2px 8px;border-radius:6px;background:rgba(245,158,11,0.15);color:#fbbf24;font-weight:800" id="ks-admin-r2-cost">R$ 0,00</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Cards de Métricas Econômicas & Fatura Cloudflare R2 -->
             <div class="stats-grid" style="margin-top:20px" id="ks-master-summary-grid">
                 <div class="stat-card">

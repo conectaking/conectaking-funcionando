@@ -783,6 +783,7 @@
                 const data = await res.json();
 
                 if (res.ok && data.success) {
+                    const isAdmin = !!(data.user?.isAdmin || data.isAdmin);
                     if (data.token) {
                         try {
                             localStorage.setItem('conectaKingToken', data.token);
@@ -794,14 +795,14 @@
                     }
                     Swal.fire({
                         icon: 'success',
-                        title: 'Bem-vindo ao King Selection!',
-                        text: data.message || 'Abrindo seus projetos...',
+                        title: isAdmin ? '👑 Bem-vindo, Administrador!' : 'Bem-vindo ao King Selection!',
+                        text: data.message || (isAdmin ? 'Acessando Painel Master e Estúdio...' : 'Abrindo seus projetos...'),
                         timer: 1500,
                         showConfirmButton: false,
                         background: '#0f172a',
                         color: '#fff'
                     }).then(() => {
-                        window.location.href = data.redirect || '/kingSelection';
+                        window.location.href = data.redirect || (isAdmin ? '/admin#king-selection' : '/kingSelection');
                     });
                 } else if (data.code === 'MODULE_NOT_ENABLED') {
                     Swal.fire({

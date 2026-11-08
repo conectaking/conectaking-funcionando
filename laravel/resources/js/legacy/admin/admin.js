@@ -516,39 +516,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function renderKingSelectionMaster(data) {
-        const eco = data.r2_economics || {};
         const sum = data.summary || {};
+        const admin = data.admin_stats || {};
         const photogs = data.photographers || [];
+
+        // 0. Card de Gestão da Conta Pessoal do Admin
+        const selfPlanSelect = document.getElementById('ks-admin-self-plan');
+        if (selfPlanSelect && admin.plan) {
+            selfPlanSelect.value = admin.plan;
+        }
+        const adminUsedStorage = document.getElementById('ks-admin-used-storage');
+        if (adminUsedStorage) adminUsedStorage.textContent = `${admin.used_gb || 0} GB`;
+        const adminPhotosCount = document.getElementById('ks-admin-photos-count');
+        if (adminPhotosCount) adminPhotosCount.textContent = `${(admin.total_photos || 0).toLocaleString('pt-BR')} fotos em ${admin.total_galleries || 0} projetos`;
+        const adminR2Cost = document.getElementById('ks-admin-r2-cost');
+        if (adminR2Cost) adminR2Cost.textContent = `R$ ${(admin.cost_brl || 0).toFixed(2)}`;
 
         // 1. Armazenamento Utilizado
         const statStorage = document.getElementById('ks-master-stat-storage');
         const statSubStorage = document.getElementById('ks-master-stat-substorage');
-        if (statStorage) statStorage.textContent = `${eco.total_storage_used_gb || 0} GB`;
+        if (statStorage) statStorage.textContent = `${sum.total_used_gb || 0} GB`;
         if (statSubStorage) statSubStorage.textContent = `${(sum.total_photos || 0).toLocaleString('pt-BR')} fotos em ${sum.total_galleries || 0} projetos`;
 
         // 2. Fatura Cloudflare R2
         const statBill = document.getElementById('ks-master-stat-bill');
         const statSubBill = document.getElementById('ks-master-stat-subbill');
-        if (statBill) statBill.textContent = `$${(eco.estimated_monthly_bill_usd || 0).toFixed(2)} / R$ ${(eco.estimated_monthly_bill_brl || 0).toFixed(2)}`;
+        if (statBill) statBill.textContent = `$${(sum.estimated_bill_usd || 0).toFixed(2)} / R$ ${(sum.estimated_bill_brl || 0).toFixed(2)}`;
         if (statSubBill) {
-            if ((eco.billable_gb || 0) <= 0) {
-                statSubBill.textContent = `100% Grátis (Dentro da cota de 10 GB/mês)`;
-            } else {
-                statSubBill.textContent = `10 GB grátis aplicados (${eco.billable_gb} GB faturáveis a $0.015)`;
-            }
+            statSubBill.textContent = `Admin: R$ ${(sum.admin_cost_brl || 0).toFixed(2)} | Clientes: R$ ${(sum.clients_cost_brl || 0).toFixed(2)} (10 GB grátis inclusos)`;
         }
 
         // 3. Faturamento
         const statRev = document.getElementById('ks-master-stat-revenue');
         const statSubRev = document.getElementById('ks-master-stat-subrevenue');
         if (statRev) statRev.textContent = `R$ ${(sum.total_revenue_brl || 0).toFixed(2)}`;
-        if (statSubRev) statSubRev.textContent = `${sum.active_contracting_photographers || 0} fotógrafo(s) com plano ativo`;
+        if (statSubRev) statSubRev.textContent = `${sum.total_photographers || 0} fotógrafo(s) cadastrados`;
 
         // 4. Lucro Líquido
         const statProfit = document.getElementById('ks-master-stat-profit');
         const statSubProfit = document.getElementById('ks-master-stat-subprofit');
-        if (statProfit) statProfit.textContent = `R$ ${(sum.total_profit_brl || 0).toFixed(2)}`;
-        if (statSubProfit) statSubProfit.textContent = `Margem de Lucro: ${sum.profit_margin_pct || 98}%`;
+        if (statProfit) statProfit.textContent = `R$ ${(sum.net_profit_brl || 0).toFixed(2)}`;
+        if (statSubProfit) statSubProfit.textContent = `Margem de Lucro: ${sum.net_margin_pct || 98}%`;
 
         // Render Photographers Table
         renderKingSelectionPhotographersTable(photogs);
@@ -700,6 +708,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('ks-master-search-input')?.addEventListener('input', () => {
         if (ksMasterData && ksMasterData.photographers) {
             renderKingSelectionPhotographersTable(ksMasterData.photographers);
+        }
+    });
+
+    document.getElementById('ks-admin-save-self-plan-btn')?.addEventListener('click', async () => {
+        const btn = document.getElementById('ks-admin-save-self-plan-btn');
+        const plan = document.getElementById('ks-admin-self-plan')?.value || 'unlimited';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        }
+        try {
+            const res = await fetch(`${API_BASE}/api/admin/king-selection/self-plan`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: HEADERS.Authorization
+                },
+                body: JSON.stringify({ plan })
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.message || 'Erro ao salvar plano do Administrador');
+            alert(json.message || 'Pacote pessoal atualizado com sucesso!');
+            loadKingSelectionMasterAdmin(true);
+        } catch (e) {
+            alert('Erro: ' + (e?.message || 'Falha ao salvar'));
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = 'Salvar';
+            }
         }
     });
 

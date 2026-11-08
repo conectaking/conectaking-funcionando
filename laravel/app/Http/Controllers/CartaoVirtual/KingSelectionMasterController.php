@@ -88,16 +88,22 @@ class KingSelectionMasterController extends Controller
 
         $cookie = cookie('token', $token, 43200, '/', null, true, false, false, 'Lax');
 
+        $redirect = $isAdmin ? '/admin#king-selection' : '/kingSelection';
+        $message = $isAdmin
+            ? 'Bem-vindo, Administrador! Acessando Painel Master e Estúdio...'
+            : 'Login realizado com sucesso! Redirecionando para seus projetos...';
+
         return response()->json([
             'success' => true,
-            'message' => 'Login realizado com sucesso! Redirecionando para seus projetos...',
+            'message' => $message,
             'token' => $token,
-            'redirect' => '/kingSelection',
+            'redirect' => $redirect,
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'plan' => $user->king_selection_plan ?: 'plan_20gb',
+                'isAdmin' => $isAdmin,
+                'plan' => $user->king_selection_plan ?: ($isAdmin ? 'unlimited' : 'plan_20gb'),
             ],
         ])->withCookie($cookie);
     }
@@ -162,6 +168,32 @@ class KingSelectionMasterController extends Controller
             'success' => true,
             'message' => $enabled ? 'Acesso ao King Selection liberado!' : 'Acesso ao King Selection desativado.',
             'enabled' => $enabled,
+        ]);
+    }
+
+    /**
+     * [ADMIN MASTER] O próprio Administrador adquire ou altera seu pacote de fotos pessoal.
+     * Custo R$ 0,00 no sistema (isento), com consumo contabilizado na fatura Cloudflare R2.
+     */
+    public function updateSelfPlan(Request $request): JsonResponse
+    {
+        $userId = (string) $request->attributes->get('auth_user_id', '');
+        if ($userId === '') {
+            return response()->json(['success' => false, 'message' => 'Não autenticado'], 401);
+        }
+
+        $plan = (string) $request->input('plan', 'unlimited');
+        $limitBytes = KingSelectionQuotaService::PLAN_LIMITS[$plan] ?? KingSelectionQuotaService::PLAN_LIMITS['unlimited'];
+
+        DB::update(
+            'UPDATE users SET king_selection_enabled = TRUE, king_selection_plan = ?, king_selection_storage_limit_bytes = ?, king_selection_plan_price = 0 WHERE id = ?',
+            [$plan, $limitBytes, $userId]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pacote pessoal do Administrador atualizado com sucesso (Isento de mensalidade)!',
+            'data' => $this->quota->getUserStorageStats($userId),
         ]);
     }
 }
