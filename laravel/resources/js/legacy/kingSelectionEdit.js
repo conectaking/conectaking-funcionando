@@ -885,12 +885,208 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (exportModal?.classList.contains('active')) closeExportModal();
   });
 
+  // --- Gestão de Armazenamento e Painel Master ADM no King Selection ---
+  async function loadStorageQuotaAndAdmin() {
+    let user = null;
+    try {
+      const uStr = localStorage.getItem('conectaKingUser') || localStorage.getItem('user');
+      if (uStr) user = JSON.parse(uStr);
+    } catch (_) {}
+
+    const isAdmin = Boolean(user && (user.isAdmin || user.is_admin || user.account_type === 'adm_principal' || user.account_type === 'admin'));
+
+    if (isAdmin) {
+      const btnMaster = document.getElementById('ks-btn-admin-master');
+      const dropMaster = document.getElementById('ks-drop-master-btn');
+      const adminControls = document.getElementById('ks-admin-controls');
+      if (btnMaster) btnMaster.style.display = 'inline-flex';
+      if (dropMaster) dropMaster.style.display = 'flex';
+      if (adminControls) adminControls.style.display = 'block';
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/api/king-selection/my-storage`, { headers: HEADERS });
+      if (res.ok) {
+        const json = await res.json();
+        const d = json.data || {};
+        const planNameEl = document.getElementById('ks-quota-plan-name');
+        const badgeEl = document.getElementById('ks-quota-badge');
+        const barEl = document.getElementById('ks-quota-bar');
+        const usedEl = document.getElementById('ks-quota-used-text');
+        const maxEl = document.getElementById('ks-quota-max-text');
+        const selectPlan = document.getElementById('ks-admin-select-plan');
+        const selfCostEl = document.getElementById('ks-admin-self-cost');
+
+        if (planNameEl) planNameEl.textContent = d.is_admin ? 'Estúdio ADM (Cortesia)' : (d.plan_label || 'Plano');
+        if (badgeEl) badgeEl.textContent = d.plan === 'unlimited' ? 'Ilimitado' : `${d.storage_limit_gb} GB`;
+        if (barEl) {
+          const pct = Math.min(100, Math.max(0, d.storage_used_pct || 0));
+          barEl.style.width = `${pct}%`;
+          if (pct > 90) barEl.style.background = '#ef4444';
+          else if (pct > 75) barEl.style.background = '#f59e0b';
+          else barEl.style.background = 'linear-gradient(90deg, #f59e0b, #d97706)';
+        }
+        if (usedEl) usedEl.textContent = `${d.storage_used_gb} GB usados`;
+        if (maxEl) maxEl.textContent = d.plan === 'unlimited' ? 'Ilimitado' : `${d.storage_limit_gb} GB`;
+
+        if (selectPlan && d.plan) {
+          selectPlan.value = d.plan;
+        }
+
+        if (selfCostEl) {
+          const billableGb = Math.max(0, (d.storage_used_gb || 0) - 10);
+          const costBrl = (billableGb * 0.015 * 5.70).toFixed(2).replace('.', ',');
+          selfCostEl.textContent = `R$ ${costBrl} / mês`;
+        }
+      }
+    } catch (err) {
+      console.warn('Erro ao carregar storage quota:', err);
+    }
+  }
+
+  // Salvar pacote do próprio ADM (Cortesia R$ 0,00)
+  document.getElementById('ks-admin-save-plan-btn')?.addEventListener('click', async () => {
+    const selectPlan = document.getElementById('ks-admin-select-plan');
+    const plan = selectPlan ? selectPlan.value : 'unlimited';
+    const btn = document.getElementById('ks-admin-save-plan-btn');
+    if (btn) btn.disabled = true;
+
+    try {
+      const res = await fetch(`${API_URL}/api/admin/king-selection/self-plan`, {
+        method: 'POST',
+        headers: HEADERS,
+        body: JSON.stringify({ plan })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || 'Erro ao alterar plano');
+      alert('Plano do seu Estúdio atualizado com sucesso (Cortesia R$ 0,00)!');
+      await loadStorageQuotaAndAdmin();
+    } catch (e) {
+      alert(e.message || 'Erro ao salvar plano');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+
+  // Modal Master R2 & Fotógrafos
+  const masterModal = document.getElementById('ks-master-modal');
+  const openMasterModal = async () => {
+    if (!masterModal) return;
+    masterModal.style.display = 'flex';
+    await loadMasterOverview();
+  };
+  const closeMasterModal = () => {
+    if (masterModal) masterModal.style.display = 'none';
+  };
+
+  document.getElementById('ks-btn-admin-master')?.addEventListener('click', openMasterModal);
+  document.getElementById('ks-drop-master-btn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openMasterModal();
+  });
+  document.getElementById('ks-admin-open-modal-btn')?.addEventListener('click', openMasterModal);
+  document.getElementById('ks-master-close-btn')?.addEventListener('click', closeMasterModal);
+  masterModal?.addEventListener('click', (e) => {
+    if (e.target === masterModal) closeMasterModal();
+  });
+
+  async function loadMasterOverview() {
+    const tbody = document.getElementById('ks-master-photogs-tbody');
+    try {
+      const res = await fetch(`${API_URL}/api/admin/king-selection/overview`, { headers: HEADERS });
+      if (!res.ok) throw new Error('Não foi possível carregar métricas master');
+      const json = await res.json();
+      const d = json.data || {};
+
+      document.getElementById('ks-m-total-gb').textContent = `${d.stats?.total_storage_gb || 0} GB`;
+      document.getElementById('ks-m-total-photos').textContent = `${d.stats?.total_photos || 0} fotos gravadas`;
+      document.getElementById('ks-m-billable-gb').textContent = `${d.cloudflare_r2?.billable_gb || 0} GB`;
+      document.getElementById('ks-m-cost-brl').textContent = `R$ ${Number(d.cloudflare_r2?.cost_brl || 0).toFixed(2).replace('.', ',')}`;
+      document.getElementById('ks-m-cost-usd').textContent = `US$ ${Number(d.cloudflare_r2?.cost_usd || 0).toFixed(2)} / mês`;
+      document.getElementById('ks-m-photogs-count').textContent = d.stats?.total_photographers || 0;
+
+      const photogs = d.photographers || [];
+      if (!photogs.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #94a3b8;">Nenhum fotógrafo cadastrado ainda.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = photogs.map(p => `
+        <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.06);">
+          <td style="padding: 12px 14px;">
+            <div style="font-weight: 800; color: #f8fafc;">${p.name || 'Sem nome'}</div>
+            <div style="font-size: 11px; color: #94a3b8;">${p.email}</div>
+          </td>
+          <td style="padding: 12px 14px;">
+            <select class="ks-m-plan-sel" data-uid="${p.id}" style="padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: #1e293b; color: #f8fafc; font-size: 11px;">
+              <option value="plan_20gb" ${p.plan === 'plan_20gb' ? 'selected' : ''}>20 GB (R$ 39,90)</option>
+              <option value="plan_30gb" ${p.plan === 'plan_30gb' ? 'selected' : ''}>30 GB (R$ 59,90)</option>
+              <option value="plan_60gb" ${p.plan === 'plan_60gb' ? 'selected' : ''}>60 GB (R$ 99,90)</option>
+              <option value="plan_100gb" ${p.plan === 'plan_100gb' ? 'selected' : ''}>100 GB (R$ 149,90)</option>
+              <option value="unlimited" ${p.plan === 'unlimited' ? 'selected' : ''}>Ilimitado</option>
+            </select>
+          </td>
+          <td style="padding: 12px 14px;">
+            <div style="font-weight: 700; color: #38bdf8;">${p.storage_used_gb} GB / ${p.storage_limit_gb} GB</div>
+            <div style="font-size: 10.5px; color: #94a3b8;">${p.storage_used_pct}% consumido (${p.total_photos} fotos)</div>
+          </td>
+          <td style="padding: 12px 14px; color: #fbbf24; font-weight: 700;">
+            R$ ${Number(p.r2_cost_brl || 0).toFixed(2).replace('.', ',')}
+          </td>
+          <td style="padding: 12px 14px;">
+            <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+              <input type="checkbox" class="ks-m-toggle-chk" data-uid="${p.id}" ${p.enabled ? 'checked' : ''} />
+              <span style="font-size: 11px; font-weight: 700; color: ${p.enabled ? '#10b981' : '#ef4444'};">${p.enabled ? 'Ativo' : 'Bloqueado'}</span>
+            </label>
+          </td>
+        </tr>
+      `).join('');
+
+      tbody.querySelectorAll('.ks-m-plan-sel').forEach(sel => {
+        sel.addEventListener('change', async () => {
+          const uid = sel.dataset.uid;
+          const plan = sel.value;
+          try {
+            await fetch(`${API_URL}/api/admin/king-selection/users/${uid}/plan`, {
+              method: 'PUT',
+              headers: HEADERS,
+              body: JSON.stringify({ plan })
+            });
+            await loadMasterOverview();
+          } catch (e) {
+            alert('Erro ao alterar plano do fotógrafo');
+          }
+        });
+      });
+
+      tbody.querySelectorAll('.ks-m-toggle-chk').forEach(chk => {
+        chk.addEventListener('change', async () => {
+          const uid = chk.dataset.uid;
+          const enabled = chk.checked;
+          try {
+            await fetch(`${API_URL}/api/admin/king-selection/users/${uid}/toggle`, {
+              method: 'POST',
+              headers: HEADERS,
+              body: JSON.stringify({ enabled })
+            });
+            await loadMasterOverview();
+          } catch (e) {
+            alert('Erro ao alterar acesso do fotógrafo');
+          }
+        });
+      });
+
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="5" style="padding: 20px; text-align: center; color: #ef4444;">Erro ao carregar dados: ${e.message}</td></tr>`;
+    }
+  }
+
   (async () => {
     try {
       await ensureProfileItemId();
       const el = document.getElementById('ks-itemid');
       if (el) el.textContent = itemId ? `(itemId: ${itemId})` : '';
-      await loadGalleries();
+      await Promise.all([loadGalleries(), loadStorageQuotaAndAdmin()]);
     } catch (e) {
       alert(e.message || 'Erro ao carregar');
     }

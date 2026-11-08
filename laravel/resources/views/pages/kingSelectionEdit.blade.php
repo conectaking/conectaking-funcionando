@@ -438,8 +438,9 @@
 
       <!-- Lado Direito: Voltar + Nova Galeria + Avatar do Usuário (depois de galeria) -->
       <div style="display: flex; align-items: center; gap: 10px;">
-        <button class="ks-btn secondary" id="ks-back-btn" style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.15); color: #e2e8f0; font-weight: 800; border-radius: 12px; padding: 9px 15px; cursor: pointer;" title="Voltar ao Painel Geral">
-          <i class="fas fa-arrow-left"></i> Voltar
+        <!-- Botão Gestão Master R2 (Visível apenas para o Administrador) -->
+        <button class="ks-btn" id="ks-btn-admin-master" style="display: none; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #000; font-weight: 900; border: 1px solid rgba(251, 191, 36, 0.8); box-shadow: 0 0 15px rgba(245, 158, 11, 0.25); border-radius: 12px; padding: 9px 15px; cursor: pointer;" title="Gestão Master King Selection (Cloudflare R2 & Fotógrafos)">
+          <i class="fas fa-crown"></i> Gestão Master R2
         </button>
 
         <button class="ks-btn primary" id="ks-new-btn" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #000; font-weight: 900; border: 1px solid rgba(251, 191, 36, 0.6); box-shadow: 0 0 15px rgba(245, 158, 11, 0.25); border-radius: 12px; padding: 9px 16px; cursor: pointer;" title="Criar Nova Galeria">
@@ -472,14 +473,9 @@
               </div>
             </div>
 
-            <a href="/conta" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; color: #e2e8f0; font-size: 12px; font-weight: 700; text-decoration: none; transition: all 0.15s;" onmouseover="this.style.background='rgba(245,158,11,0.15)';this.style.color='#fbbf24';" onmouseout="this.style.background='transparent';this.style.color='#e2e8f0';">
-              <i class="fas fa-user-gear" style="color: #fbbf24; width: 16px; text-align: center;"></i>
-              <span>Configurar Perfil & Foto</span>
-            </a>
-
-            <a href="/dashboard" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; color: #e2e8f0; font-size: 12px; font-weight: 700; text-decoration: none; transition: all 0.15s;" onmouseover="this.style.background='rgba(245,158,11,0.15)';this.style.color='#fbbf24';" onmouseout="this.style.background='transparent';this.style.color='#e2e8f0';">
-              <i class="fas fa-house" style="color: #fbbf24; width: 16px; text-align: center;"></i>
-              <span>Painel Geral</span>
+            <a href="#" id="ks-drop-master-btn" style="display: none; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; color: #fbbf24; font-size: 12px; font-weight: 700; text-decoration: none; transition: all 0.15s;" onmouseover="this.style.background='rgba(245,158,11,0.15)';" onmouseout="this.style.background='transparent';">
+              <i class="fas fa-crown" style="width: 16px; text-align: center;"></i>
+              <span>Gestão Master R2</span>
             </a>
 
             <div style="height: 1px; background: rgba(255, 255, 255, 0.08); margin: 6px 0;"></div>
@@ -509,8 +505,48 @@
             <a href="#" data-filter="revisao"><i class="fas fa-pen-nib"></i> Em Edição</a>
             <a href="#" data-filter="finalizado"><i class="fas fa-circle-check"></i> Finalizados</a>
             <div style="height: 1px; background: #e2e8f0; margin: 6px 0;"></div>
-            <a href="/dashboard"><i class="fas fa-house"></i> Painel Geral</a>
             <a href="https://wa.me/5581997323674?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20o%20KingSelection" target="_blank" rel="noopener noreferrer"><i class="fab fa-whatsapp"></i> Suporte WhatsApp</a>
+          </div>
+
+          <!-- Widget de Armazenamento do Fotógrafo & Controles Master ADM -->
+          <div id="ks-quota-widget" style="margin-top: 14px; padding: 12px; border-radius: 14px; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-weight: 800; color: #0f172a;" id="ks-quota-plan-name">Plano Studio King</span>
+              <span style="font-weight: 700; color: #b45309;" id="ks-quota-badge">60 GB</span>
+            </div>
+            <div style="width: 100%; height: 7px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; margin-bottom: 6px;">
+              <div id="ks-quota-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #f59e0b, #d97706); border-radius: 9999px; transition: width 0.3s;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 11px; color: #64748b;">
+              <span id="ks-quota-used-text">0 GB usados</span>
+              <span id="ks-quota-max-text">60 GB</span>
+            </div>
+
+            <!-- Controles Master do Administrador (Visível para o ADM) -->
+            <div id="ks-admin-controls" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cbd5e1;">
+              <div style="font-weight: 800; color: #d97706; display: flex; align-items: center; gap: 5px; margin-bottom: 4px;">
+                <i class="fas fa-crown"></i> <span>Meu Estúdio (Conta ADM)</span>
+              </div>
+              <div style="font-size: 11px; color: #475569; margin-bottom: 8px;">
+                Cortesia Plataforma: <strong style="color: #16a34a;">R$ 0,00</strong><br>
+                Seu consumo R2: <strong id="ks-admin-self-cost">R$ 0,00</strong>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <select id="ks-admin-select-plan" style="width: 100%; padding: 6px 8px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 11px; background: #fff; font-weight: 600;">
+                  <option value="unlimited">Ilimitado (Cortesia ADM)</option>
+                  <option value="plan_20gb">Essencial 20 GB (Cortesia ADM)</option>
+                  <option value="plan_30gb">Pro 30 GB (Cortesia ADM)</option>
+                  <option value="plan_60gb">Studio King 60 GB (Cortesia ADM)</option>
+                  <option value="plan_100gb">King Master 100 GB (Cortesia ADM)</option>
+                </select>
+                <button type="button" id="ks-admin-save-plan-btn" style="width: 100%; padding: 6px; border-radius: 8px; background: #0f172a; color: #fbbf24; font-weight: 800; font-size: 11px; border: 1px solid rgba(251, 191, 36, 0.3); cursor: pointer;">
+                  Ativar no Meu Estúdio
+                </button>
+                <button type="button" id="ks-admin-open-modal-btn" style="width: 100%; padding: 7px; border-radius: 8px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 900; font-size: 11px; border: none; cursor: pointer; margin-top: 4px;">
+                  <i class="fas fa-chart-line"></i> Gestão Master R2 & Fotógrafos
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </aside>
@@ -850,6 +886,80 @@
       }
     })();
   </script>
+  <!-- Modal Gestão Master King Selection (Cloudflare R2 & Fotógrafos) -->
+  <div id="ks-master-modal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 999999; align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: #0f1016; border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 20px; width: 100%; max-width: 960px; max-height: 90vh; overflow-y: auto; color: #f8fafc; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8); padding: 24px;">
+      
+      <!-- Cabeçalho do Modal -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 16px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-crown" style="color: #f59e0b; font-size: 20px;"></i>
+          </div>
+          <div>
+            <h2 style="font-size: 18px; font-weight: 900; color: #fbbf24; margin: 0;">King Selection — Gestão Master & Faturamento R2</h2>
+            <p style="font-size: 12px; color: #94a3b8; margin: 2px 0 0 0;">Auditoria de faturamento do Cloudflare R2 e gestão dos fotógrafos da plataforma</p>
+          </div>
+        </div>
+        <button type="button" id="ks-master-close-btn" style="background: transparent; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; padding: 4px 8px; border-radius: 8px;">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Cards de Métricas R2 -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 24px;">
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 14px;">
+          <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Armazenamento Total R2</div>
+          <div style="font-size: 22px; font-weight: 900; color: #38bdf8; margin: 6px 0;" id="ks-m-total-gb">0.00 GB</div>
+          <div style="font-size: 11px; color: #64748b;" id="ks-m-total-photos">0 fotos gravadas</div>
+        </div>
+
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 14px;">
+          <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Excedente Faturável R2</div>
+          <div style="font-size: 22px; font-weight: 900; color: #f59e0b; margin: 6px 0;" id="ks-m-billable-gb">0.00 GB</div>
+          <div style="font-size: 11px; color: #10b981;">Primeiros 10 GB grátis pela Cloudflare</div>
+        </div>
+
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 14px;">
+          <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Fatura Prevista Cloudflare</div>
+          <div style="font-size: 22px; font-weight: 900; color: #ef4444; margin: 6px 0;" id="ks-m-cost-brl">R$ 0,00</div>
+          <div style="font-size: 11px; color: #94a3b8;" id="ks-m-cost-usd">US$ 0.00 / mês</div>
+        </div>
+
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 14px;">
+          <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Fotógrafos Ativos</div>
+          <div style="font-size: 22px; font-weight: 900; color: #a855f7; margin: 6px 0;" id="ks-m-photogs-count">0</div>
+          <div style="font-size: 11px; color: #64748b;">Utilizando o sistema</div>
+        </div>
+      </div>
+
+      <!-- Tabela de Fotógrafos -->
+      <div style="margin-top: 16px;">
+        <h3 style="font-size: 14px; font-weight: 800; color: #f8fafc; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-camera" style="color: #f59e0b;"></i> Fotógrafos e Consumo Individual
+        </h3>
+        <div style="overflow-x: auto; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
+            <thead>
+              <tr style="background: rgba(255, 255, 255, 0.04); color: #94a3b8; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+                <th style="padding: 10px 14px;">Fotógrafo</th>
+                <th style="padding: 10px 14px;">Plano Atual</th>
+                <th style="padding: 10px 14px;">Uso (GB / %)</th>
+                <th style="padding: 10px 14px;">Custo R2 (R$)</th>
+                <th style="padding: 10px 14px;">Status / Acesso</th>
+              </tr>
+            </thead>
+            <tbody id="ks-master-photogs-tbody">
+              <tr>
+                <td colspan="5" style="padding: 20px; text-align: center; color: #64748b;">Carregando dados dos fotógrafos...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
 </body>
 </html>
 

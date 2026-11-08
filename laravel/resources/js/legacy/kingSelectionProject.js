@@ -7873,10 +7873,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.location.href = kingSelectionPainelUrl();
   });
 
-  // Botão "Painel" (dashboard principal)
+  // Botão "Galerias" (retorna para o painel de projetos do King Selection)
   btnPanel?.addEventListener('click', (e) => {
     e.preventDefault();
-    window.location.href = '/dashboard';
+    window.location.href = '/kingSelection';
   });
 
   // Botão "Excluir projeto" (remove galeria + todas as fotos do R2)

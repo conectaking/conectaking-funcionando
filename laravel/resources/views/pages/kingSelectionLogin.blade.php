@@ -802,7 +802,7 @@
                         background: '#0f172a',
                         color: '#fff'
                     }).then(() => {
-                        window.location.href = data.redirect || (isAdmin ? '/admin#king-selection' : '/kingSelection');
+                        window.location.href = data.redirect || '/kingSelection';
                     });
                 } else if (data.code === 'MODULE_NOT_ENABLED') {
                     Swal.fire({

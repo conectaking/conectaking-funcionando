@@ -88,9 +88,10 @@ class KingSelectionMasterController extends Controller
 
         $cookie = cookie('token', $token, 43200, '/', null, true, false, false, 'Lax');
 
-        $redirect = $isAdmin ? '/admin#king-selection' : '/kingSelection';
+        // O destino oficial do King Selection é sempre o estúdio do fotógrafo /kingSelection
+        $redirect = '/kingSelection';
         $message = $isAdmin
-            ? 'Bem-vindo, Administrador! Acessando Painel Master e Estúdio...'
+            ? 'Bem-vindo, Administrador! Acessando seu Estúdio King Selection...'
             : 'Login realizado com sucesso! Redirecionando para seus projetos...';
 
         return response()->json([

@@ -417,14 +417,9 @@
               </div>
             </div>
 
-            <a href="/conta" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; color: #e2e8f0; font-size: 12px; font-weight: 700; text-decoration: none; transition: all 0.15s;" onmouseover="this.style.background='rgba(245,158,11,0.15)';this.style.color='#fbbf24';" onmouseout="this.style.background='transparent';this.style.color='#e2e8f0';">
-              <i class="fas fa-user-gear" style="color: #fbbf24; width: 16px; text-align: center;"></i>
-              <span>Configurar Perfil & Foto</span>
-            </a>
-
-            <a href="/dashboard" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; color: #e2e8f0; font-size: 12px; font-weight: 700; text-decoration: none; transition: all 0.15s;" onmouseover="this.style.background='rgba(245,158,11,0.15)';this.style.color='#fbbf24';" onmouseout="this.style.background='transparent';this.style.color='#e2e8f0';">
-              <i class="fas fa-house" style="color: #fbbf24; width: 16px; text-align: center;"></i>
-              <span>Painel Geral</span>
+            <a href="/kingSelection" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; color: #e2e8f0; font-size: 12px; font-weight: 700; text-decoration: none; transition: all 0.15s;" onmouseover="this.style.background='rgba(245,158,11,0.15)';this.style.color='#fbbf24';" onmouseout="this.style.background='transparent';this.style.color='#e2e8f0';">
+              <i class="fas fa-folder-open" style="color: #fbbf24; width: 16px; text-align: center;"></i>
+              <span>Minhas Galerias</span>
             </a>
 
             <div style="height: 1px; background: rgba(255, 255, 255, 0.08); margin: 6px 0;"></div>
@@ -447,7 +442,7 @@
       </div>
       <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
         <button class="ks-btn" id="ks-back" title="Voltar"><i class="fas fa-arrow-left"></i> Voltar</button>
-        <button class="ks-btn" id="ks-panel" title="Ir para o painel"><i class="fas fa-house"></i> Painel</button>
+        <button class="ks-btn" id="ks-panel" title="Ir para Minhas Galerias"><i class="fas fa-folder-open"></i> Galerias</button>
         <button class="ks-btn" id="ks-share"><i class="fas fa-share"></i> Compartilhar</button>
         <button class="ks-btn ks-btn-primary" id="ks-publish"><i class="fas fa-bullhorn"></i> Publicar</button>
         <button class="ks-btn" id="ks-delete-project" title="Excluir projeto inteiro"><i class="fas fa-trash"></i> Excluir projeto</button>

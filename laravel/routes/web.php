@@ -35,15 +35,10 @@ Route::domain('kingselection.conectaking.com.br')->group(function () use ($cardS
     Route::get('/login', function (\Illuminate\Http\Request $request) {
         return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionLogin');
     });
-    Route::get('/admin', function (\Illuminate\Http\Request $request) {
-        return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'admin');
-    });
-    Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
-        return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'dashboard');
-    });
-    Route::get('/conta', function (\Illuminate\Http\Request $request) {
-        return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'conta');
-    });
+    // No subdomínio King Selection, rotas como /admin ou /dashboard sempre mantêm o usuário no ecossistema King Selection
+    Route::get('/admin', fn () => redirect('/kingSelection'));
+    Route::get('/dashboard', fn () => redirect('/kingSelection'));
+    Route::get('/conta', fn () => redirect('/kingSelection'));
 
     $ksPhotographer = function (\Illuminate\Http\Request $request) {
         $page = $request->filled('galleryId') ? 'kingSelectionProject' : 'kingSelectionEdit';
