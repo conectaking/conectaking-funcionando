@@ -193,7 +193,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         title: 'Limite do Plano Atingido',
         html: `<p style="font-size:14px;color:#334155;margin-bottom:12px;">${msg}</p>
                <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:10px;font-size:12px;color:#92400e;">
-                 💡 Planos disponíveis: <b>20 GB (R$ 39,90)</b>, <b>30 GB (R$ 59,90)</b> e <b>70 GB (R$ 99,90)</b>.
+                 💡 Planos disponíveis: <b>20 GB (R$ 39,90)</b>, <b>30 GB (R$ 59,90)</b> e <b>60 GB (R$ 99,90)</b>.
                </div>`,
         showCancelButton: true,
         confirmButtonColor: '#f59e0b',

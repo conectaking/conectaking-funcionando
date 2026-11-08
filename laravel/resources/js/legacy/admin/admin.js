@@ -582,7 +582,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const planOptions = [
                 { id: 'plan_20gb', label: 'Starter 20 GB (R$ 39,90)', gb: 20, price: 39.90 },
                 { id: 'plan_30gb', label: 'Pro 30 GB (R$ 59,90)', gb: 30, price: 59.90 },
-                { id: 'plan_70gb', label: 'Studio King 70 GB (R$ 99,90)', gb: 70, price: 99.90 },
+                { id: 'plan_60gb', label: 'Studio King 60 GB (R$ 99,90)', gb: 60, price: 99.90 },
                 { id: 'unlimited', label: 'Ilimitado (R$ 199,90)', gb: 1000, price: 199.90 },
                 { id: 'custom', label: 'Personalizado', gb: p.storage_limit_gb || 20, price: p.plan_price || 39.90 }
             ];

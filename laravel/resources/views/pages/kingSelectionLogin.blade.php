@@ -705,22 +705,22 @@
                     </a>
                 </div>
 
-                <!-- 70 GB -->
+                <!-- 60 GB -->
                 <div class="ks-plan-card">
                     <div class="ks-plan-header">
                         <div class="ks-plan-name">Plano Studio King</div>
-                        <div class="ks-plan-storage">70 GB</div>
+                        <div class="ks-plan-storage">60 GB</div>
                         <div class="ks-plan-price">R$ 99,90 <span>/ mês</span></div>
                     </div>
 
                     <div class="ks-capacity-box">
                         <div class="ks-cap-metric">
                             <span class="label"><i class="fas fa-images"></i> Total de Fotos:</span>
-                            <span class="val" id="plan-70-photos">~10.150 fotos</span>
+                            <span class="val" id="plan-60-photos">~8.700 fotos</span>
                         </div>
                         <div class="ks-cap-metric">
                             <span class="label"><i class="fas fa-folder-open"></i> Eventos & Casamentos:</span>
-                            <span class="val" id="plan-70-shoots">~35 ensaios / 10 casamentos</span>
+                            <span class="val" id="plan-60-shoots">~30 ensaios / 8 casamentos</span>
                         </div>
                         <div class="ks-cap-metric">
                             <span class="label"><i class="fas fa-crown"></i> Prioridade Máxima:</span>
@@ -728,8 +728,8 @@
                         </div>
                     </div>
 
-                    <a href="https://wa.me/5594991599815?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Studio%20King%20de%2070%20GB%20do%20King%20Selection." target="_blank" class="ks-plan-btn ks-btn-outline">
-                        <span>Escolher 70 GB</span>
+                    <a href="https://wa.me/5594991599815?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Studio%20King%20de%2060%20GB%20do%20King%20Selection." target="_blank" class="ks-plan-btn ks-plan-btn-outline">
+                        <span>Escolher 60 GB</span>
                         <i class="fas fa-chevron-right"></i>
                     </a>
                 </div>
@@ -840,9 +840,9 @@
             const p30Photos = Math.floor(30720 / size);
             const p30Shoots = Math.floor(p30Photos / 300);
 
-            // 70 GB = 71.680 MB
-            const p70Photos = Math.floor(71680 / size);
-            const p70Shoots = Math.floor(p70Photos / 300);
+            // 60 GB = 61.440 MB
+            const p60Photos = Math.floor(61440 / size);
+            const p60Shoots = Math.floor(p60Photos / 300);
 
             document.getElementById('plan-20-photos').innerText = '~' + p20Photos.toLocaleString('pt-BR') + ' fotos';
             document.getElementById('plan-20-shoots').innerText = '~' + p20Shoots + ' ensaios (300 fotos)';
@@ -850,8 +850,8 @@
             document.getElementById('plan-30-photos').innerText = '~' + p30Photos.toLocaleString('pt-BR') + ' fotos';
             document.getElementById('plan-30-shoots').innerText = '~' + p30Shoots + ' ensaios (300 fotos)';
 
-            document.getElementById('plan-70-photos').innerText = '~' + p70Photos.toLocaleString('pt-BR') + ' fotos';
-            document.getElementById('plan-70-shoots').innerText = '~' + p70Shoots + ' ensaios / casamentos';
+            document.getElementById('plan-60-photos').innerText = '~' + p60Photos.toLocaleString('pt-BR') + ' fotos';
+            document.getElementById('plan-60-shoots').innerText = '~' + p60Shoots + ' ensaios / casamentos';
         }
 
         function onSliderChange(val) {

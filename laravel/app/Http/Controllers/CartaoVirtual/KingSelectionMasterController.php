@@ -54,19 +54,19 @@ class KingSelectionMasterController extends Controller
         }
 
         $user = DB::selectOne(
-            'SELECT id, name, email, password, is_admin, account_type, king_selection_enabled, king_selection_plan 
+            'SELECT id, name, email, password_hash, is_admin, account_type, king_selection_enabled, king_selection_plan 
              FROM users WHERE LOWER(email) = ? LIMIT 1',
             [$email]
         );
 
-        if (!$user || !Hash::check($password, $user->password)) {
+        if (!$user || !password_verify($password, (string) ($user->password_hash ?? ''))) {
             return response()->json([
                 'success' => false,
                 'message' => 'E-mail ou senha incorretos.',
             ], 401);
         }
 
-        $isAdmin = (bool) ($user->is_admin ?? false) || ($user->account_type ?? '') === 'admin';
+        $isAdmin = (bool) ($user->is_admin ?? false) || in_array($user->account_type ?? '', ['admin', 'adm_principal'], true);
         $isEnabled = $isAdmin || (bool) ($user->king_selection_enabled ?? false);
 
         if (!$isEnabled) {

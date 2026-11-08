@@ -606,7 +606,7 @@
                 <div>
                     <h2><i class="fas fa-crown" style="color:#f59e0b"></i> King Selection — Gestão Master &amp; Faturamento R2</h2>
                     <p class="ck-text-dark-09" style="margin-top:6px;max-width:760px">
-                        Acompanhe o consumo total em GB no Cloudflare R2, audite a fatura mensal em Dólar e Real (considerando os 10 GB grátis da Cloudflare), configure os planos dos fotógrafos (20 GB, 30 GB, 70 GB) e libere ou bloqueie acessos ao módulo.
+                        Acompanhe o consumo total em GB no Cloudflare R2, audite a fatura mensal em Dólar e Real (considerando os 10 GB grátis da Cloudflare), configure os planos dos fotógrafos (20 GB, 30 GB, 60 GB) e libere ou bloqueie acessos ao módulo.
                     </p>
                 </div>
                 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">

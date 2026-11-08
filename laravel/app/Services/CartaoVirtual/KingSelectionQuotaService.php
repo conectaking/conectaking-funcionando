@@ -11,7 +11,8 @@ class KingSelectionQuotaService
     public const PLAN_LIMITS = [
         'plan_20gb' => 21474836480,   // 20 * 1024 * 1024 * 1024
         'plan_30gb' => 32212254720,   // 30 * 1024 * 1024 * 1024
-        'plan_70gb' => 75161927680,   // 70 * 1024 * 1024 * 1024
+        'plan_60gb' => 64424509440,   // 60 * 1024 * 1024 * 1024 (R$ 99,90)
+        'plan_70gb' => 64424509440,   // compatibilidade legada -> 60 GB
         'custom'    => 21474836480,
         'unlimited' => 1099511627776, // 1 TB (praticamente ilimitado para testes)
     ];
@@ -19,6 +20,7 @@ class KingSelectionQuotaService
     public const PLAN_PRICES = [
         'plan_20gb' => 39.90,
         'plan_30gb' => 59.90,
+        'plan_60gb' => 99.90,
         'plan_70gb' => 99.90,
         'custom'    => 49.90,
         'unlimited' => 199.90,
@@ -27,7 +29,8 @@ class KingSelectionQuotaService
     public const PLAN_LABELS = [
         'plan_20gb' => 'Starter 20 GB',
         'plan_30gb' => 'Pro 30 GB',
-        'plan_70gb' => 'Studio King 70 GB',
+        'plan_60gb' => 'Studio King 60 GB',
+        'plan_70gb' => 'Studio King 60 GB',
         'custom'    => 'Personalizado',
         'unlimited' => 'Ilimitado',
     ];
@@ -68,7 +71,7 @@ class KingSelectionQuotaService
         }
 
         // Se for admin, sempre tem acesso liberado
-        $isAdmin = (bool) ($user->is_admin ?? false) || ($user->account_type ?? '') === 'admin';
+        $isAdmin = (bool) ($user->is_admin ?? false) || in_array($user->account_type ?? '', ['admin', 'adm_principal'], true);
         $enabled = $isAdmin || (bool) ($user->king_selection_enabled ?? false);
 
         $plan = $user->king_selection_plan ?: 'plan_20gb';
