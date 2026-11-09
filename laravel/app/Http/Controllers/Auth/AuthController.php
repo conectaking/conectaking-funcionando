@@ -42,7 +42,11 @@ class AuthController extends Controller
         $fromCookie = trim((string) ($request->cookie(self::REFRESH_COOKIE) ?: ''));
         $r = $this->auth->logout($fromBody !== null && $fromBody !== '' ? $fromBody : ($fromCookie !== '' ? $fromCookie : null));
 
-        $response = response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+        if ($request->isMethod('GET') && ! $request->expectsJson()) {
+            $response = redirect('/login?logout=1')->header('X-Conecta-Engine', 'laravel');
+        } else {
+            $response = response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+        }
 
         return $this->forgetAuthCookies($response, $request);
     }
@@ -116,11 +120,17 @@ class AuthController extends Controller
         return $response;
     }
 
-    private function forgetAuthCookies(JsonResponse $response, Request $request): JsonResponse
+    private function forgetAuthCookies(\Symfony\Component\HttpFoundation\Response $response, Request $request): \Symfony\Component\HttpFoundation\Response
     {
-        $response->headers->setCookie($this->makeTokenCookie($request, '', -2628000));
-        $response->headers->setCookie($this->makeRefreshCookie($request, '', -2628000));
-        $response->headers->setCookie(\App\Http\Middleware\RequireCookieCsrf::forgetCookie($request));
+        $domain = AuthCookieDomain::forRequest($request);
+        $domains = array_unique(array_filter([$domain, '.conectaking.com.br', null]));
+
+        foreach ($domains as $d) {
+            $response->headers->setCookie(Cookie::create('token', '', 1, '/', $d, $request->isSecure(), true, false, Cookie::SAMESITE_LAX));
+            $response->headers->setCookie(Cookie::create(self::REFRESH_COOKIE, '', 1, '/', $d, $request->isSecure(), true, false, Cookie::SAMESITE_LAX));
+            $response->headers->setCookie(Cookie::create('ck_csrf', '', 1, '/', $d, $request->isSecure(), false, false, Cookie::SAMESITE_LAX));
+            $response->headers->setCookie(Cookie::create('conectaking-session', '', 1, '/', $d, $request->isSecure(), false, false, Cookie::SAMESITE_LAX));
+        }
 
         return $response;
     }

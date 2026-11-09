@@ -12,7 +12,7 @@ final class AuthCookieDomain
     public static function forRequest(Request $request): ?string
     {
         $host = strtolower($request->getHost());
-        if ($host === 'conectaking.com.br' || $host === 'www.conectaking.com.br') {
+        if ($host === 'conectaking.com.br' || $host === 'www.conectaking.com.br' || $host === 'kingselection.conectaking.com.br') {
             return '.conectaking.com.br';
         }
 

@@ -857,14 +857,24 @@
         });
       });
 
-      // Logout
-      document.getElementById('btn-logout').addEventListener('click', () => {
-        if (confirm('Deseja realmente sair?')) {
-          localStorage.removeItem('conectaKingToken');
-          localStorage.removeItem('token');
-          localStorage.removeItem('conectaKingUser');
-          window.location.href = '/login';
-        }
+      // Logout seguro e completo
+      document.getElementById('btn-logout').addEventListener('click', async () => {
+        if (!confirm('Deseja realmente sair da sua conta?')) return;
+        try {
+          await fetch('/logout', { method: 'POST', credentials: 'include', headers: { 'Accept': 'application/json' } });
+        } catch (_) {}
+        try {
+          await fetch('/api/auth/logout', { method: 'POST', credentials: 'include', headers: { 'Accept': 'application/json' } });
+        } catch (_) {}
+        try {
+          localStorage.clear();
+          sessionStorage.clear();
+        } catch (_) {}
+        ['token', 'refresh_token', 'ck_csrf', 'conectaking-session'].forEach(c => {
+          document.cookie = `${c}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.conectaking.com.br`;
+          document.cookie = `${c}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        });
+        window.location.replace('/login?logout=1');
       });
 
       let masterData = null;
@@ -874,6 +884,10 @@
         const usdRate = parseFloat(document.getElementById('input-usd-rate')?.value || '5.70');
         try {
           const res = await fetch(`${API_BASE}/api/admin/king-selection/overview?usd_rate=${usdRate}`, { credentials: 'include', headers });
+          if (res.status === 401 || res.status === 403) {
+            window.location.replace('/login?logout=1');
+            return;
+          }
           if (!res.ok) throw new Error('Não foi possível carregar os dados master.');
           const json = await res.json();
           masterData = json.data || {};

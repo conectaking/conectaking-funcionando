@@ -184,13 +184,22 @@
 
         .ks-input {
             width: 100%;
-            padding: 0.85rem 1rem 0.85rem 2.65rem;
+            padding: 0.85rem 3rem 0.85rem 2.65rem;
             background: rgba(15, 23, 42, 0.85);
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 12px;
             color: #fff;
             font-size: 0.95rem;
             transition: all 0.2s ease;
+        }
+
+        .ks-input:-webkit-autofill,
+        .ks-input:-webkit-autofill:hover,
+        .ks-input:-webkit-autofill:focus {
+            -webkit-text-fill-color: #fff !important;
+            -webkit-box-shadow: 0 0 0px 1000px #0f172a inset !important;
+            box-shadow: 0 0 0px 1000px #0f172a inset !important;
+            transition: background-color 5000s ease-in-out 0s;
         }
 
         .ks-input:focus {
@@ -202,17 +211,29 @@
 
         .ks-toggle-pwd {
             position: absolute;
-            right: 1rem;
-            background: none;
-            border: none;
-            color: var(--text-muted);
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            border-radius: 8px;
+            color: #fbbf24;
             cursor: pointer;
-            font-size: 0.95rem;
-            padding: 0.25rem;
+            padding: 6px 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: all 0.2s ease;
         }
 
-        .ks-toggle-pwd:hover {
-            color: var(--gold-light);
+        .ks-toggle-pwd:hover,
+        .ks-toggle-pwd:focus {
+            background: rgba(245, 158, 11, 0.3);
+            border-color: #fbbf24;
+            color: #fef08a;
+            outline: none;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
         }
 
         .ks-btn-login {
@@ -592,8 +613,15 @@
                     <div class="ks-input-wrap">
                         <i class="fas fa-lock prefix"></i>
                         <input type="password" id="ks-password" class="ks-input" placeholder="••••••••" required autocomplete="current-password">
-                        <button type="button" class="ks-toggle-pwd" onclick="togglePasswordVisibility()" aria-label="Mostrar Senha">
-                            <i class="fas fa-eye" id="ks-pwd-icon"></i>
+                        <button type="button" class="ks-toggle-pwd" id="ks-toggle-pwd-btn" onclick="togglePasswordVisibility()" aria-label="Mostrar/Ocultar Senha" title="Mostrar senha">
+                            <svg id="ks-pwd-eye-open" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg id="ks-pwd-eye-closed" style="display:none;" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
                         </button>
                     </div>
                 </div>
@@ -739,17 +767,29 @@
     </main>
 
     <script>
+        // Limpar storage residual se foi redirecionado por logout
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('logout') === '1' || urlParams.get('session_expired') === '1') {
+                localStorage.clear();
+                sessionStorage.clear();
+            }
+        } catch (_) {}
+
         function togglePasswordVisibility() {
             const pwd = document.getElementById('ks-password');
-            const icon = document.getElementById('ks-pwd-icon');
-            if (pwd.type === 'password') {
-                pwd.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                pwd.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
+            const openEye = document.getElementById('ks-pwd-eye-open');
+            const closedEye = document.getElementById('ks-pwd-eye-closed');
+            const btn = document.getElementById('ks-toggle-pwd-btn');
+            if (!pwd) return;
+            const isPass = pwd.type === 'password';
+            pwd.type = isPass ? 'text' : 'password';
+            if (openEye && closedEye) {
+                openEye.style.display = isPass ? 'none' : 'block';
+                closedEye.style.display = isPass ? 'block' : 'none';
+            }
+            if (btn) {
+                btn.setAttribute('title', isPass ? 'Ocultar senha' : 'Mostrar senha');
             }
         }
 

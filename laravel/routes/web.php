@@ -29,7 +29,29 @@ $cardSlug = '[A-Za-z0-9._-]+';
 
 // King Selection (Subdomínio oficial kingselection.conectaking.com.br)
 Route::domain('kingselection.conectaking.com.br')->group(function () use ($cardSlug) {
-    Route::get('/', function (\Illuminate\Http\Request $request) {
+    $clearAllCookies = function (\Symfony\Component\HttpFoundation\Response $response) {
+        foreach (['.conectaking.com.br', 'kingselection.conectaking.com.br', null] as $dom) {
+            foreach (['token', 'refresh_token', 'ck_csrf', 'conectaking-session', 'XSRF-TOKEN', 'laravel_session'] as $c) {
+                $response->headers->clearCookie($c, '/', $dom);
+            }
+        }
+        return $response;
+    };
+
+    Route::match(['GET', 'POST'], '/logout', function (\Illuminate\Http\Request $request) use ($clearAllCookies) {
+        if ($request->isMethod('POST') || $request->expectsJson()) {
+            $resp = response()->json(['success' => true, 'redirect' => '/login?logout=1']);
+        } else {
+            $resp = redirect('/login?logout=1');
+        }
+        return $clearAllCookies($resp);
+    });
+
+    Route::get('/', function (\Illuminate\Http\Request $request) use ($clearAllCookies) {
+        if ($request->has('logout')) {
+            $resp = response(app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionLogin'));
+            return $clearAllCookies($resp);
+        }
         $tokenCookie = $request->cookie('token');
         if ($tokenCookie) {
             try {
@@ -40,7 +62,11 @@ Route::domain('kingselection.conectaking.com.br')->group(function () use ($cardS
         }
         return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionLogin');
     });
-    Route::get('/login', function (\Illuminate\Http\Request $request) {
+    Route::get('/login', function (\Illuminate\Http\Request $request) use ($clearAllCookies) {
+        if ($request->has('logout')) {
+            $resp = response(app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionLogin'));
+            return $clearAllCookies($resp);
+        }
         $tokenCookie = $request->cookie('token');
         if ($tokenCookie) {
             try {
@@ -53,7 +79,18 @@ Route::domain('kingselection.conectaking.com.br')->group(function () use ($cardS
     });
     // Painel Master ADM do King Selection (exclusivo para gerenciar fotógrafos, gigas, faturas e seu estúdio)
     Route::get('/admin', function (\Illuminate\Http\Request $request) {
-        return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionAdmin');
+        $tokenCookie = $request->cookie('token');
+        if ($tokenCookie) {
+            try {
+                $payload = app(\App\Services\Auth\JwtService::class)->decode($tokenCookie);
+                $isAdmin = !empty($payload['isAdmin']) || in_array($payload['accountType'] ?? '', ['admin', 'adm_principal'], true);
+                if ($isAdmin) {
+                    return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionAdmin');
+                }
+                return redirect('/kingSelection');
+            } catch (\Throwable $e) {}
+        }
+        return redirect('/login');
     });
     Route::get('/dashboard', fn () => redirect('/kingSelection'));
     Route::get('/conta', fn () => redirect('/kingSelection'));
@@ -66,6 +103,11 @@ Route::domain('kingselection.conectaking.com.br')->group(function () use ($cardS
                 $payload = app(\App\Services\Auth\JwtService::class)->decode($tokenCookie);
                 $isAdmin = !empty($payload['isAdmin']) || in_array($payload['accountType'] ?? '', ['admin', 'adm_principal'], true);
             } catch (\Throwable $e) {}
+        }
+
+        // Se não houver tokenCookie E a requisição não vier com indicação de item/galeria, manda pro login
+        if (!$tokenCookie && !$request->has('token') && !$request->has('auth') && !$request->has('itemId') && !$request->has('galleryId')) {
+            return redirect('/login');
         }
 
         // Se for Administrador e não especificou ?studio=1 ou ?galleryId, manda direto pro Painel Master ADM!
@@ -989,6 +1031,7 @@ Route::post('/api/auth/register', [\App\Http\Controllers\Auth\AuthController::cl
 Route::get('/api/subscription/plans-public', [\App\Http\Controllers\Account\SubscriptionController::class, 'plansPublic']);
 Route::post('/api/auth/refresh', [\App\Http\Controllers\Auth\AuthController::class, 'refresh'])->middleware('throttle:30,1');
 Route::post('/api/auth/logout', [\App\Http\Controllers\Auth\AuthController::class, 'logout'])->middleware('throttle:30,1');
+Route::match(['GET', 'POST'], '/logout', [\App\Http\Controllers\Auth\AuthController::class, 'logout'])->middleware('throttle:30,1');
 Route::post('/api/auth/sync-session-cookie', [\App\Http\Controllers\Auth\AuthController::class, 'syncSessionCookie'])
     ->middleware('throttle:60,1');
 // Páginas já convertidas para Blade (resources/views/pages/*.blade.php).
