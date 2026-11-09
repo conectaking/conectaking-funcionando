@@ -566,7 +566,7 @@
             <a href="#" data-filter="revisao"><i class="fas fa-pen-nib"></i> Em Edição</a>
             <a href="#" data-filter="finalizado"><i class="fas fa-circle-check"></i> Finalizados</a>
             <div style="height: 1px; background: #e2e8f0; margin: 6px 0;"></div>
-            <a href="https://wa.me/5581997323674?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20o%20KingSelection" target="_blank" rel="noopener noreferrer"><i class="fab fa-whatsapp"></i> Suporte WhatsApp</a>
+            <a href="https://wa.me/5511988789417?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20o%20KingSelection" target="_blank" rel="noopener noreferrer"><i class="fab fa-whatsapp"></i> Suporte WhatsApp</a>
           </div>
 
           <!-- Widget de Armazenamento do Fotógrafo (Clicável para simulação e assinatura) -->

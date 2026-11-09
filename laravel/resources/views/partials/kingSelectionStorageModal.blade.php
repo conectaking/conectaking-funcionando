@@ -173,7 +173,7 @@
 
         <div class="pt-2 flex items-center justify-between flex-wrap gap-2 text-xs">
           <span class="text-slate-400">Deseja expandir seu espaço ou tirar dúvidas?</span>
-          <a href="https://wa.me/5581997323674?text=Ol%C3%A1%2C%20gostaria%20de%20tirar%20d%C3%BAvidas%20sobre%20os%20planos%20do%20KingSelection" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 transition">
+          <a href="https://wa.me/5511988789417?text=Ol%C3%A1%2C%20gostaria%20de%20tirar%20d%C3%BAvidas%20sobre%20os%20planos%20do%20KingSelection" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 transition">
             <i class="fab fa-whatsapp"></i> Falar com Suporte
           </a>
         </div>

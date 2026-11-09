@@ -170,7 +170,7 @@
           <span class="material-symbols-outlined text-primary text-[18px]">lock_open</span>
           <span>Área do Fotógrafo</span>
         </a>
-        <a class="inline-flex items-center gap-space-xs px-space-md py-space-sm rounded bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-900/40 hover:text-emerald-300 transition-colors font-label-md text-label-md shadow-[0_0_12px_rgba(16,185,129,0.15)]" href="https://wa.me/5594991599815?text=Ol%C3%A1!%20Gostaria%20de%20conversar%20com%20um%20especialista%20do%20King%20Selection." target="_blank">
+        <a class="inline-flex items-center gap-space-xs px-space-md py-space-sm rounded bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-900/40 hover:text-emerald-300 transition-colors font-label-md text-label-md shadow-[0_0_12px_rgba(16,185,129,0.15)]" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Gostaria%20de%20conversar%20com%20um%20especialista%20do%20King%20Selection." target="_blank">
           <span class="material-symbols-outlined text-[18px]">chat</span>
           <span>Falar no WhatsApp</span>
         </a>
@@ -220,7 +220,7 @@
 
               <!-- Double High-Conversion CTAs -->
               <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-space-sm pt-2">
-                <a class="inline-flex items-center justify-center gap-space-xs px-6 py-3.5 rounded bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-stone-950 font-headline-sm text-label-md font-bold shadow-[0_0_25px_rgba(245,158,11,0.4)] hover:brightness-110 hover:shadow-[0_0_35px_rgba(251,191,36,0.6)] transition-all active:scale-[0.98]" href="https://wa.me/5594991599815?text=Ol%C3%A1!%20Gostaria%20de%20assinar%20o%20King%20Selection%20para%20fot%C3%B3grafos." target="_blank">
+                <a class="inline-flex items-center justify-center gap-space-xs px-6 py-3.5 rounded bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-stone-950 font-headline-sm text-label-md font-bold shadow-[0_0_25px_rgba(245,158,11,0.4)] hover:brightness-110 hover:shadow-[0_0_35px_rgba(251,191,36,0.6)] transition-all active:scale-[0.98]" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Gostaria%20de%20assinar%20o%20King%20Selection%20para%20fot%C3%B3grafos." target="_blank">
                   <span>Contratar Plano Agora</span>
                   <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </a>
@@ -234,7 +234,7 @@
               <div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
                 <span class="material-symbols-outlined text-secondary text-[18px]">support_agent</span>
                 <span>Dúvidas técnicas ou migração?</span>
-                <a class="text-secondary font-semibold hover:underline" href="https://wa.me/5594991599815?text=Ol%C3%A1!%20Gostaria%20de%20conversar%20com%20um%20especialista%20do%20King%20Selection." target="_blank">Falar no WhatsApp oficial (94) 99159-9815</a>
+                <a class="text-secondary font-semibold hover:underline" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Gostaria%20de%20conversar%20com%20um%20especialista%20do%20King%20Selection." target="_blank">Falar no WhatsApp oficial (11) 98878-9417</a>
               </div>
 
               <!-- Badges & Seals Matrix -->
@@ -303,7 +303,7 @@
                   <div class="space-y-1.5">
                     <div class="flex items-center justify-between">
                       <label class="font-label-md text-label-md text-on-surface-variant" for="ks-password">Senha de Acesso</label>
-                      <a class="font-label-sm text-label-sm text-primary hover:underline font-bold" href="https://wa.me/5594991599815?text=Ol%C3%A1!%20Esqueci%20minha%20senha%20de%20acesso%20do%20King%20Selection." target="_blank">Esqueci</a>
+                      <a class="font-label-sm text-label-sm text-primary hover:underline font-bold" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Esqueci%20minha%20senha%20de%20acesso%20do%20King%20Selection." target="_blank">Esqueci</a>
                     </div>
                     <div class="relative">
                       <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">key</span>
@@ -351,11 +351,11 @@
                 <div class="pt-5 mt-5 bg-surface-container-high/60 border border-outline-variant/40 rounded-lg p-4 space-y-2 text-center font-body-sm text-body-sm">
                   <p class="text-on-surface-variant">
                     Ainda não é fotógrafo assinante? 
-                    <a class="text-primary font-bold hover:underline" href="https://wa.me/5594991599815?text=Ol%C3%A1!%20Gostaria%20de%20assinar%20o%20King%20Selection%20para%20fot%C3%B3grafos." target="_blank">Contratar Plano</a>
+                    <a class="text-primary font-bold hover:underline" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Gostaria%20de%20assinar%20o%20King%20Selection%20para%20fot%C3%B3grafos." target="_blank">Contratar Plano</a>
                   </p>
                   <p class="text-on-surface-variant">
                     Problemas no acesso? 
-                    <a class="text-secondary font-semibold hover:underline flex items-center justify-center gap-1" href="https://wa.me/5594991599815?text=Ol%C3%A1!%20Preciso%20de%20ajuda%20para%20acessar%20meu%20painel%20do%20King%20Selection." target="_blank">
+                    <a class="text-secondary font-semibold hover:underline flex items-center justify-center gap-1" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Preciso%20de%20ajuda%20para%20acessar%20meu%20painel%20do%20King%20Selection." target="_blank">
                       <span class="material-symbols-outlined text-[16px]">chat</span> Falar com Suporte WhatsApp
                     </a>
                   </p>
@@ -618,7 +618,7 @@
                     </div>
                   </div>
                 </div>
-                <a class="w-full h-12 rounded bg-surface-container-high border border-outline-variant/50 hover:bg-surface-container-highest hover:text-primary hover:border-primary/40 text-on-surface font-label-md text-label-md font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer" href="https://wa.me/5594991599815?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Starter%20de%2020%20GB%20do%20King%20Selection." target="_blank">
+                <a class="w-full h-12 rounded bg-surface-container-high border border-outline-variant/50 hover:bg-surface-container-highest hover:text-primary hover:border-primary/40 text-on-surface font-label-md text-label-md font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Starter%20de%2020%20GB%20do%20King%20Selection." target="_blank">
                   <span>Escolher 20 GB</span>
                   <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </a>
@@ -673,7 +673,7 @@
                     </div>
                   </div>
                 </div>
-                <a class="w-full h-12 rounded bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-stone-950 font-headline-sm text-label-md font-extrabold flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(245,158,11,0.5)] hover:brightness-110 hover:shadow-[0_0_35px_rgba(251,191,36,0.7)] transition-all active:scale-[0.98] cursor-pointer" href="https://wa.me/5594991599815?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Pro%20de%2030%20GB%20do%20King%20Selection." target="_blank">
+                <a class="w-full h-12 rounded bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-stone-950 font-headline-sm text-label-md font-extrabold flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(245,158,11,0.5)] hover:brightness-110 hover:shadow-[0_0_35px_rgba(251,191,36,0.7)] transition-all active:scale-[0.98] cursor-pointer" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Pro%20de%2030%20GB%20do%20King%20Selection." target="_blank">
                   <span>Escolher 30 GB</span>
                   <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </a>
@@ -721,7 +721,7 @@
                     </div>
                   </div>
                 </div>
-                <a class="w-full h-12 rounded bg-surface-container-high border border-outline-variant/50 hover:bg-surface-container-highest hover:text-primary hover:border-primary/40 text-on-surface font-label-md text-label-md font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer" href="https://wa.me/5594991599815?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Studio%20King%20de%2060%20GB%20do%20King%20Selection." target="_blank">
+                <a class="w-full h-12 rounded bg-surface-container-high border border-outline-variant/50 hover:bg-surface-container-highest hover:text-primary hover:border-primary/40 text-on-surface font-label-md text-label-md font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Studio%20King%20de%2060%20GB%20do%20King%20Selection." target="_blank">
                   <span>Escolher 60 GB</span>
                   <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </a>
@@ -805,11 +805,11 @@
             </div>
 
             <div class="flex flex-col sm:flex-row items-center gap-space-sm z-10 shrink-0 w-full sm:w-auto">
-              <a class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-6 py-3.5 rounded bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-headline-sm text-label-md font-bold shadow-[0_0_20px_rgba(16,185,129,0.35)] transition-all active:scale-[0.98]" href="https://wa.me/5594991599815?text=Ol%C3%A1!%20Gostaria%20de%20falar%20com%20um%20especialista%20do%20King%20Selection%20agora." target="_blank">
+              <a class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-6 py-3.5 rounded bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-headline-sm text-label-md font-bold shadow-[0_0_20px_rgba(16,185,129,0.35)] transition-all active:scale-[0.98]" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Gostaria%20de%20falar%20com%20um%20especialista%20do%20King%20Selection%20agora." target="_blank">
                 <span class="material-symbols-outlined text-[20px]">chat</span>
-                <span>Falar no WhatsApp: (94) 99159-9815</span>
+                <span>Falar no WhatsApp: (11) 98878-9417</span>
               </a>
-              <a class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-6 py-3.5 rounded bg-surface-container-high border border-outline-variant/60 text-on-surface font-label-md text-label-md font-bold hover:bg-surface-container-highest hover:text-primary hover:border-primary/40 transition-all" href="https://wa.me/5594991599815?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Pro%20de%2030%20GB%20do%20King%20Selection." target="_blank">
+              <a class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-6 py-3.5 rounded bg-surface-container-high border border-outline-variant/60 text-on-surface font-label-md text-label-md font-bold hover:bg-surface-container-highest hover:text-primary hover:border-primary/40 transition-all" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Pro%20de%2030%20GB%20do%20King%20Selection." target="_blank">
                 <span>Assinar Plano Pro (R$ 59,90)</span>
                 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
               </a>
@@ -861,7 +861,7 @@
         <div class="flex flex-col gap-space-sm">
           <span class="font-label-md text-label-md text-on-surface font-bold uppercase tracking-wider">Atendimento Oficial</span>
           <p class="font-body-sm text-body-sm text-on-surface-variant">Central executiva para fotógrafos, estúdios e produtoras de eventos.</p>
-          <a class="inline-flex items-center justify-center gap-space-xs px-space-md py-space-sm rounded bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high hover:text-emerald-400 hover:border-emerald-500/30 transition-colors font-label-md text-label-md w-fit" href="https://wa.me/5594991599815?text=Ol%C3%A1!%20Gostaria%20de%20falar%20com%20o%20suporte%20do%20King%20Selection." target="_blank">
+          <a class="inline-flex items-center justify-center gap-space-xs px-space-md py-space-sm rounded bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high hover:text-emerald-400 hover:border-emerald-500/30 transition-colors font-label-md text-label-md w-fit" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Gostaria%20de%20falar%20com%20o%20suporte%20do%20King%20Selection." target="_blank">
             <span class="material-symbols-outlined text-[16px]">support_agent</span>
             <span>Canal WhatsApp Dedicado</span>
           </a>
@@ -1049,7 +1049,7 @@
             color: '#dfe2ec'
           }).then((result) => {
             if (result.isConfirmed) {
-              window.open('https://wa.me/5594991599815?text=Ol%C3%A1!%20Meu%20e-mail%20%C3%A9%20' + encodeURIComponent(email) + '%20e%20gostaria%20de%20ativar%20meu%20plano%20do%20King%20Selection.', '_blank');
+              window.open('https://wa.me/5511988789417?text=Ol%C3%A1!%20Meu%20e-mail%20%C3%A9%20' + encodeURIComponent(email) + '%20e%20gostaria%20de%20ativar%20meu%20plano%20do%20King%20Selection.', '_blank');
             }
           });
         } else {
