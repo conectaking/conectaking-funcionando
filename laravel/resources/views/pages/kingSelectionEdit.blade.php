@@ -68,7 +68,9 @@
       transition: all 0.3s ease-in-out;
     }
     #ks-sidebar {
-      width: 18rem;
+      width: 18.5rem;
+      min-width: 18.5rem;
+      max-width: 18.5rem;
       flex-shrink: 0;
       transition: all 0.3s ease-in-out;
     }
@@ -89,36 +91,59 @@
         flex-direction: column;
       }
       #ks-sidebar {
-        width: 100%;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
       }
     }
 
-    /* Cards e Sidebar */
-    .ks-card {
+    /* Sidebar Container Card (Sem conflito com .ks-card do kanban) */
+    .ks-sidebar-card {
+      display: flex !important;
+      flex-direction: column !important;
+      grid-template-columns: none !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
       background: #ffffff !important;
       border: 1px solid #e2e8f0 !important;
       border-radius: 16px !important;
       box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
       color: #0f172a !important;
+      padding: 14px !important;
+      cursor: default !important;
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
     }
-    .ks-card:before {
+    .ks-sidebar-card:before {
       display: none !important;
     }
+    .ks-sidebar-card:hover {
+      transform: none !important;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+    }
 
+    .ks-side {
+      display: flex !important;
+      flex-direction: column !important;
+      width: 100% !important;
+      gap: 4px !important;
+      grid-column: auto !important;
+    }
     .ks-side a {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 14px;
-      border-radius: 12px;
-      font-weight: 600;
-      font-size: 13px;
+      display: flex !important;
+      align-items: center !important;
+      gap: 10px !important;
+      padding: 10px 14px !important;
+      border-radius: 12px !important;
+      font-weight: 600 !important;
+      font-size: 13px !important;
       color: #475569 !important;
-      border: 1px solid transparent;
-      transition: all .15s ease;
-      text-decoration: none;
+      border: 1px solid transparent !important;
+      transition: all .15s ease !important;
+      text-decoration: none !important;
+      white-space: nowrap !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
     }
     .ks-side a:hover {
       background: #f8fafc !important;
@@ -131,6 +156,13 @@
       border-color: #fde68a !important;
       font-weight: 700 !important;
       box-shadow: 0 1px 2px rgba(245, 158, 11, 0.08) !important;
+    }
+
+    #ks-quota-widget {
+      width: 100% !important;
+      box-sizing: border-box !important;
+      display: block !important;
+      grid-column: auto !important;
     }
 
     /* Botão Nova Galeria no Topo */
@@ -506,12 +538,12 @@
     <div id="ks-main-container" class="mt-6 flex gap-6 items-start transition-all duration-300">
       
       <!-- Sidebar Retrátil -->
-      <aside id="ks-sidebar" class="w-72 shrink-0 transition-all duration-300 ease-in-out">
-        <div class="ks-card ks-card--side-nav p-3">
+      <aside id="ks-sidebar" class="shrink-0 transition-all duration-300 ease-in-out">
+        <div class="ks-sidebar-card ks-card--side-nav">
           <div class="ks-side flex flex-col gap-1 max-h-none overflow-y-visible">
             @if($isAdminUser)
-            <a href="/admin" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.35) 100%); color: #fbbf24; font-weight: 800; border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; gap: 8px; text-decoration: none; margin-bottom: 8px;">
-              <i class="fas fa-crown" style="color: #fbbf24;"></i> <span>Voltar ao Painel ADM</span>
+            <a href="/admin" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.25) 100%) !important; color: #b45309 !important; font-weight: 800 !important; border: 1px solid rgba(245, 158, 11, 0.35) !important; border-radius: 12px !important; padding: 10px 14px !important; display: flex !important; align-items: center !important; gap: 8px !important; text-decoration: none !important; margin-bottom: 8px !important; box-shadow: 0 1px 3px rgba(245, 158, 11, 0.08) !important;">
+              <i class="fas fa-crown" style="color: #d97706; font-size: 14px;"></i> <span style="white-space: nowrap;">Voltar ao Painel ADM</span>
             </a>
             @endif
             <a href="/kingSelection" class="active" id="ks-tab-all"><i class="fas fa-folder-open"></i> Todas as Galerias</a>
