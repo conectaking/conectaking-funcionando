@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>KingSelection — Login & Planos para Fotógrafos | Conecta King</title>
+  <title>King Selection — Plataforma de Seleção e Venda para Fotógrafos | Conecta King</title>
   <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -21,7 +21,7 @@
       main > :last-child { margin-bottom: 0 !important; }
     }
     ::-webkit-scrollbar { display: none; }
-    
+
     /* Previne autofill branco no Android/Chrome */
     input:-webkit-autofill,
     input:-webkit-autofill:hover,
@@ -44,95 +44,95 @@
         extend: {
           colors: {
             "secondary-fixed": "#6ffbbe",
-            "tertiary-fixed": "#ffddb8",
-            "surface-variant": "#31353d",
-            "surface-dim": "#0f131b",
-            "on-tertiary": "#472a00",
-            "on-error-container": "#ffdad6",
-            "surface-tint": "#f59e0b",
-            "inverse-surface": "#dfe2ec",
-            "tertiary": "#ffb95f",
-            "secondary-fixed-dim": "#4edea3",
-            "on-primary-fixed": "#2a1700",
-            "on-secondary-container": "#00311f",
-            "on-primary-container": "#472a00",
-            "surface-container": "#1c2027",
-            "outline": "#a08e7a",
-            "error": "#ffb4ab",
-            "surface-bright": "#353941",
-            "primary-fixed-dim": "#ffb95f",
-            "on-tertiary-fixed-variant": "#653e00",
-            "surface-container-lowest": "#0a0e15",
-            "tertiary-container": "#d97706",
-            "surface-container-low": "#181c23",
-            "surface": "#0f131b",
-            "surface-container-highest": "#31353d",
-            "surface-container-high": "#262a32",
-            "secondary-container": "#065f46",
-            "primary-fixed": "#ffddb8",
-            "inverse-primary": "#855300",
-            "on-secondary-fixed": "#002113",
-            "background": "#0f131b",
             "on-surface": "#dfe2ec",
-            "primary": "#f59e0b",
-            "secondary": "#10b981",
-            "tertiary-fixed-dim": "#ffb95f",
-            "error-container": "#93000a",
-            "on-secondary": "#003824",
-            "outline-variant": "#2a313d",
-            "primary-container": "#f59e0b",
-            "on-primary-fixed-variant": "#653e00",
-            "on-secondary-fixed-variant": "#005236",
-            "inverse-on-surface": "#2d3038",
-            "on-surface-variant": "#94a3b8",
+            "tertiary-fixed": "#c9e6ff",
             "on-background": "#dfe2ec",
+            "surface-bright": "#353941",
+            "background": "#0f131b",
+            "outline-variant": "#534434",
+            "primary-container": "#f59e0b",
+            "error": "#ffb4ab",
+            "on-error-container": "#ffdad6",
+            "inverse-on-surface": "#2d3038",
+            "primary": "#fbbf24",
+            "surface-container-lowest": "#0a0e15",
+            "surface": "#0f131b",
+            "on-tertiary": "#00344d",
+            "tertiary-container": "#42bbff",
+            "surface-tint": "#fbbf24",
+            "tertiary": "#98d3ff",
+            "tertiary-fixed-dim": "#89ceff",
+            "surface-container-highest": "#31353d",
+            "outline": "#a08e7a",
+            "on-tertiary-fixed": "#001e2f",
+            "surface-dim": "#0f131b",
+            "on-secondary-fixed": "#002113",
+            "surface-container-high": "#262a32",
+            "inverse-surface": "#dfe2ec",
+            "primary-fixed": "#ffddb8",
+            "on-primary-fixed": "#2a1700",
+            "secondary-fixed-dim": "#4edea3",
+            "on-secondary": "#003824",
+            "primary-fixed-dim": "#fbbf24",
+            "secondary-container": "#00a572",
+            "on-surface-variant": "#d8c3ad",
+            "on-primary": "#000000",
+            "surface-container": "#1c2027",
+            "surface-variant": "#31353d",
+            "secondary": "#4edea3",
+            "on-secondary-fixed-variant": "#005236",
+            "on-primary-container": "#613b00",
+            "surface-container-low": "#181c23",
+            "inverse-primary": "#855300",
             "on-error": "#690005",
-            "on-tertiary-container": "#563400",
-            "on-tertiary-fixed": "#2a1700",
-            "on-primary": "#2a1700"
+            "on-tertiary-container": "#004869",
+            "on-primary-fixed-variant": "#653e00",
+            "on-secondary-container": "#00311f",
+            "error-container": "#93000a",
+            "on-tertiary-fixed-variant": "#004c6e"
           },
           borderRadius: {
-            "DEFAULT": "0.25rem",
-            "lg": "0.5rem",
-            "xl": "0.75rem",
-            "full": "9999px"
+            DEFAULT: "0.25rem",
+            lg: "0.5rem",
+            xl: "0.75rem",
+            full: "9999px"
           },
           spacing: {
             "margin": "2rem",
-            "space-md": "1rem",
-            "space-lg": "1.5rem",
-            "space-xl": "2.5rem",
-            "margin-mobile": "1rem",
             "space-sm": "0.5rem",
+            "space-md": "1rem",
             "gutter-mobile": "1rem",
+            "space-xs": "0.25rem",
+            "margin-mobile": "1rem",
+            "space-lg": "1.5rem",
             "gutter": "1.5rem",
-            "space-xs": "0.25rem"
+            "space-xl": "2.5rem"
           },
           fontFamily: {
-            "body-sm": ["Plus Jakarta Sans", "sans-serif"],
-            "label-sm": ["Plus Jakarta Sans", "sans-serif"],
-            "body-md": ["Plus Jakarta Sans", "sans-serif"],
-            "label-md": ["Plus Jakarta Sans", "sans-serif"],
-            "headline-xl": ["Plus Jakarta Sans", "sans-serif"],
+            "headline-lg-mobile": ["Plus Jakarta Sans", "sans-serif"],
+            "headline-lg": ["Plus Jakarta Sans", "sans-serif"],
             "headline-md": ["Plus Jakarta Sans", "sans-serif"],
-            "headline-xl-mobile": ["Plus Jakarta Sans", "sans-serif"],
-            "display-lg": ["Plus Jakarta Sans", "sans-serif"],
+            "label-mono-lg": ["JetBrains Mono", "monospace"],
             "display-lg-mobile": ["Plus Jakarta Sans", "sans-serif"],
             "headline-sm": ["Plus Jakarta Sans", "sans-serif"],
-            "body-lg": ["Plus Jakarta Sans", "sans-serif"]
+            "body-lg": ["Plus Jakarta Sans", "sans-serif"],
+            "body-sm": ["Plus Jakarta Sans", "sans-serif"],
+            "label-mono-sm": ["JetBrains Mono", "monospace"],
+            "body-md": ["Plus Jakarta Sans", "sans-serif"],
+            "display-lg": ["Plus Jakarta Sans", "sans-serif"]
           },
           fontSize: {
-            "body-sm": ["12px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "400" }],
-            "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.08em", "fontWeight": "700" }],
-            "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
-            "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "600" }],
-            "headline-xl": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
-            "headline-md": ["22px", { "lineHeight": "30px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
-            "headline-xl-mobile": ["26px", { "lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "700" }],
-            "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.03em", "fontWeight": "800" }],
-            "display-lg-mobile": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.025em", "fontWeight": "800" }],
-            "headline-sm": ["18px", { "lineHeight": "26px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
-            "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }]
+            "headline-lg-mobile": ["26px", { lineHeight: "34px", letterSpacing: "-0.01em", fontWeight: "700" }],
+            "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+            "headline-md": ["24px", { lineHeight: "32px", letterSpacing: "-0.01em", fontWeight: "600" }],
+            "label-mono-lg": ["14px", { lineHeight: "20px", letterSpacing: "0.02em", fontWeight: "500" }],
+            "display-lg-mobile": ["36px", { lineHeight: "44px", letterSpacing: "-0.02em", fontWeight: "800" }],
+            "headline-sm": ["20px", { lineHeight: "28px", letterSpacing: "0", fontWeight: "600" }],
+            "body-lg": ["16px", { lineHeight: "26px", letterSpacing: "0", fontWeight: "400" }],
+            "body-sm": ["12px", { lineHeight: "18px", letterSpacing: "0.01em", fontWeight: "400" }],
+            "label-mono-sm": ["11px", { lineHeight: "16px", letterSpacing: "0.04em", fontWeight: "500" }],
+            "body-md": ["14px", { lineHeight: "22px", letterSpacing: "0", fontWeight: "400" }],
+            "display-lg": ["56px", { lineHeight: "64px", letterSpacing: "-0.03em", fontWeight: "800" }]
           }
         }
       }
@@ -140,807 +140,1099 @@
   </script>
 </head>
 
-<body class="bg-background font-body-md text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container min-h-screen">
+<body class="bg-background font-body-md text-on-surface antialiased selection:bg-amber-400 selection:text-slate-950 min-h-screen">
 
   <!-- TOP HEADER -->
-  <header class="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl border-b border-primary/10 shadow-[0_4px_20px_rgba(0,0,0,0.6)]">
-    <div class="h-20 max-w-[1440px] mx-auto px-margin flex items-center justify-between gap-space-md">
+  <header class="fixed top-0 left-0 right-0 z-50 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.4)] border-b border-amber-500/10">
+    <div class="h-20 w-full px-margin flex items-center justify-between gap-space-md">
       
       <!-- Brand Logo -->
-      <a href="/" class="flex items-center gap-space-md shrink-0 text-decoration-none">
-        <img alt="King Selection Logo" class="h-8 w-auto object-contain filter drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]" src="https://i.ibb.co/60sW9k75/logo.png"/>
-        <div class="hidden sm:flex flex-col">
-          <span class="font-headline-sm text-headline-sm font-bold text-on-surface tracking-tight leading-none">King Selection</span>
-          <span class="font-label-sm text-label-sm text-primary/80 leading-none mt-1">Conecta King Fotografia</span>
+      <a href="/" class="flex items-center gap-space-lg flex-shrink-0 text-decoration-none">
+        <div class="flex items-center gap-space-sm">
+          <div class="w-10 h-10 rounded-lg bg-surface-container-high border border-amber-400/30 flex items-center justify-center text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.35)]">
+            <span class="material-symbols-outlined text-[24px] text-amber-400">crown</span>
+          </div>
+          <div class="flex flex-col">
+            <span class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold leading-none">King Selection</span>
+            <div class="flex items-center gap-1 mt-1">
+              <span class="font-label-mono-sm text-label-mono-sm text-on-surface-variant uppercase tracking-wider">Powered by</span>
+              <span class="font-label-mono-sm text-label-mono-sm text-amber-400 font-bold flex items-center gap-0.5">
+                <span class="material-symbols-outlined text-[13px] text-amber-400">military_tech</span>Conecta King
+              </span>
+            </div>
+          </div>
         </div>
       </a>
 
       <!-- Navigation Links -->
-      <nav class="hidden xl:flex items-center gap-space-md">
-        <a class="px-space-sm py-space-xs rounded transition-colors bg-surface-container-high text-primary font-semibold border border-primary/20 shadow-[0_0_12px_rgba(245,158,11,0.15)]" href="#">Início</a>
-        <a class="px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded transition-colors" href="#como-funciona">Como Funciona</a>
-        <a class="px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded transition-colors" href="#simulador">Simulador de Fotos</a>
-        <a class="px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded transition-colors" href="#planos">Planos & Preços</a>
-        <a class="px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded transition-colors" href="#diferenciais">Diferenciais</a>
+      <nav class="hidden xl:flex items-center gap-space-sm">
+        <a class="px-3 py-2 text-on-surface-variant hover:text-amber-400 hover:bg-surface-container transition-colors rounded-lg font-body-md text-body-md" href="#recursos">Recursos</a>
+        <a class="px-3 py-2 text-on-surface-variant hover:text-amber-400 hover:bg-surface-container transition-colors rounded-lg font-body-md text-body-md" href="#comparativo">Comparativo</a>
+        <a class="px-3 py-2 text-on-surface-variant hover:text-amber-400 hover:bg-surface-container transition-colors rounded-lg font-body-md text-body-md" href="#simulador">Simulador</a>
+        <a class="px-3 py-2 text-on-surface-variant hover:text-amber-400 hover:bg-surface-container transition-colors rounded-lg font-body-md text-body-md" href="#planos-e-precos">Planos e Preços</a>
+        <a class="px-3 py-2 text-on-surface-variant hover:text-amber-400 hover:bg-surface-container transition-colors rounded-lg font-body-md text-body-md" href="#faq">FAQ</a>
       </nav>
 
-      <!-- Action Buttons -->
-      <div class="flex items-center gap-space-sm">
-        <a class="hidden sm:inline-flex items-center gap-space-xs px-space-md py-space-sm rounded bg-surface-container-high border border-outline-variant text-on-surface hover:bg-surface-container-highest hover:text-primary hover:border-primary/40 transition-colors font-label-md text-label-md" href="#painel-fotografo">
-          <span class="material-symbols-outlined text-primary text-[18px]">lock_open</span>
-          <span>Área do Fotógrafo</span>
-        </a>
-        <a class="inline-flex items-center gap-space-xs px-space-md py-space-sm rounded bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-900/40 hover:text-emerald-300 transition-colors font-label-md text-label-md shadow-[0_0_12px_rgba(16,185,129,0.15)]" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Gostaria%20de%20conversar%20com%20um%20especialista%20do%20King%20Selection." target="_blank">
+      <!-- Right Header Actions (WhatsApp + Botão Separado Área do Fotógrafo) -->
+      <div class="flex items-center gap-2 sm:gap-space-md flex-shrink-0">
+        <a class="hidden md:inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-secondary-container hover:bg-secondary text-on-secondary hover:text-on-secondary font-headline-sm text-body-sm font-semibold tracking-wide transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_28px_rgba(16,185,129,0.35)]" href="https://wa.me/5511988789417" rel="noopener noreferrer" target="_blank">
           <span class="material-symbols-outlined text-[18px]">chat</span>
-          <span>Falar no WhatsApp</span>
+          <span>(11) 98878-9417</span>
         </a>
-        <a href="#painel-fotografo" class="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 shadow-[0_0_12px_rgba(245,158,11,0.4)] flex items-center justify-center shrink-0 text-decoration-none" title="Ir para Login">
-          <span class="material-symbols-outlined text-stone-950 text-[18px] font-bold">person</span>
-        </a>
+        
+        <!-- Botão Exclusivo de Login para Fotógrafo -->
+        <button type="button" onclick="openLoginModal()" class="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-headline-sm text-body-sm font-bold tracking-wide transition-all shadow-[0_0_25px_rgba(245,158,11,0.45)] hover:shadow-[0_0_35px_rgba(245,158,11,0.65)] cursor-pointer">
+          <span class="material-symbols-outlined text-[18px] text-slate-950 font-bold">lock_open</span>
+          <span>Área do Fotógrafo</span>
+        </button>
+        
+        <button type="button" onclick="openLoginModal()" class="w-8 h-8 rounded-full bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 flex items-center justify-center flex-shrink-0 shadow-[0_0_12px_rgba(245,158,11,0.4)] cursor-pointer" title="Fazer Login">
+          <span class="material-symbols-outlined text-slate-950 text-[18px]">person</span>
+        </button>
       </div>
-
     </div>
   </header>
 
   <main class="w-full pt-20 bg-background">
-    <div class="flex flex-col w-full text-on-surface">
+    <div class="flex flex-col w-full">
 
-      <!-- Ambient Glow Elements -->
-      <div class="relative w-full overflow-hidden">
-        <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[850px] h-[450px] bg-primary/10 blur-[140px] pointer-events-none rounded-full"></div>
-        <div class="absolute top-[750px] -left-32 w-[400px] h-[400px] bg-primary/5 blur-[120px] pointer-events-none rounded-full"></div>
-        <div class="absolute top-[1300px] -right-32 w-[450px] h-[450px] bg-emerald-500/10 blur-[130px] pointer-events-none rounded-full"></div>
-
-        <!-- HERO & LOGIN SECTION -->
-        <section class="relative max-w-[1440px] mx-auto px-margin pt-space-lg lg:pt-space-xl pb-space-xl">
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
+      <!-- HERO SECTION -->
+      <section class="relative w-full overflow-hidden px-margin py-space-xl lg:py-28">
+        <div class="absolute -top-40 -left-40 w-96 h-96 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute top-1/2 right-0 w-[500px] h-[500px] bg-secondary-container/10 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-center relative z-10">
+          
+          <!-- Coluna de Texto e CTAs -->
+          <div class="lg:col-span-7 flex flex-col items-start gap-space-md">
             
-            <!-- Left Column: Copy & Value Proposition -->
-            <div class="lg:col-span-7 flex flex-col space-y-5 pt-2 z-10">
-              <!-- Prestige Eyebrow Badge -->
-              <div class="inline-flex items-center gap-space-xs px-3 py-1.5 rounded-full bg-surface-container-high border border-primary/25 shadow-[0_0_20px_rgba(245,158,11,0.2)] w-fit">
-                <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
-                <span class="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold">
-                  A Plataforma Definitiva para Fotógrafos Profissionais
-                </span>
-              </div>
+            <!-- Pílula Luminosa Superior -->
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-container-high border border-amber-400/30 shadow-[0_0_15px_rgba(245,158,11,0.2)] text-amber-300">
+              <span class="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#fbbf24] animate-pulse"></span>
+              <span class="font-label-mono-sm text-label-mono-sm tracking-wider uppercase font-bold text-amber-300">
+                Reconhecimento Facial IA • Fotos Extras no Pix • Cloudflare R2 • Anti-Print
+              </span>
+            </div>
 
-              <!-- Hero Headline -->
-              <h1 class="font-display-lg text-display-lg text-on-surface tracking-tight leading-[1.08]">
-                Entregue galerias deslumbrantes e <br/>
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 drop-shadow-[0_0_20px_rgba(245,158,11,0.3)]">
-                  multiplique suas vendas
-                </span> com IA.
-              </h1>
+            <!-- Headline de Choque -->
+            <h1 class="font-display-lg text-display-lg-mobile lg:text-display-lg text-on-surface tracking-tight leading-[1.08] font-black">
+              A Plataforma de Seleção e Venda que Transforma Ensaios em <span class="bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 bg-clip-text text-transparent font-black drop-shadow-[0_0_20px_rgba(245,158,11,0.35)] underline decoration-amber-400/50 underline-offset-8">Máquinas de Lucro</span>.
+            </h1>
 
-              <!-- Commercial Subheadline -->
-              <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
-                Acelere a aprovação dos seus clientes em até 4x com visualização ultra-rápida, prova de fotos sem perdas de nitidez e reconhecimento facial inteligente para ensaios, eventos e casamentos.
-              </p>
+            <!-- Subheadline Persuasiva -->
+            <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl leading-relaxed">
+              Chega de perder tempo e dinheiro com Google Drive e WeTransfer. Entregue uma experiência de luxo direto no smartphone do seu cliente, fature até <strong class="text-secondary font-semibold">70% a mais</strong> com venda automática de fotos extras no Pix e blinde seu trabalho contra prints não autorizados.
+            </p>
 
-              <!-- Double High-Conversion CTAs -->
-              <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-space-sm pt-2">
-                <a class="inline-flex items-center justify-center gap-space-xs px-6 py-3.5 rounded bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-stone-950 font-headline-sm text-label-md font-bold shadow-[0_0_25px_rgba(245,158,11,0.4)] hover:brightness-110 hover:shadow-[0_0_35px_rgba(251,191,36,0.6)] transition-all active:scale-[0.98]" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Gostaria%20de%20assinar%20o%20King%20Selection%20para%20fot%C3%B3grafos." target="_blank">
-                  <span>Contratar Plano Agora</span>
-                  <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
-                </a>
-                <a class="inline-flex items-center justify-center gap-space-xs px-6 py-3.5 rounded bg-surface-container-high border border-outline-variant text-on-surface hover:bg-surface-container-highest hover:text-primary hover:border-primary/40 font-label-md text-label-md transition-all" href="#painel-fotografo">
-                  <span class="material-symbols-outlined text-primary text-[18px]">lock_open</span>
-                  <span>Acessar Painel</span>
-                </a>
-              </div>
+            <!-- CTAs Principais -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-space-sm w-full pt-space-xs">
+              <a class="inline-flex justify-center items-center gap-2 px-7 py-4 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-headline-sm text-body-lg font-extrabold tracking-wide transition-all shadow-[0_0_35px_rgba(245,158,11,0.55)] hover:shadow-[0_0_45px_rgba(245,158,11,0.7)]" href="#planos-e-precos">
+                <span>Ver Planos & Contratar</span>
+                <span class="material-symbols-outlined text-[20px] font-bold">arrow_forward</span>
+              </a>
+              <button type="button" onclick="openLoginModal()" class="inline-flex justify-center items-center gap-2 px-6 py-4 rounded-xl bg-surface-container-high hover:bg-surface-bright text-on-surface font-headline-sm text-body-lg font-semibold transition-all border border-amber-400/20 hover:border-amber-400/40 cursor-pointer">
+                <span class="material-symbols-outlined text-amber-400 text-[20px]">lock_open</span>
+                <span>Entrar no Painel</span>
+              </button>
+              <a class="inline-flex justify-center items-center gap-2 px-6 py-4 rounded-xl bg-secondary-container hover:bg-secondary text-on-secondary font-headline-sm text-body-lg font-bold transition-all shadow-[0_0_24px_rgba(16,185,129,0.25)]" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Quero%20falar%20com%20um%20consultor%20da%20Conecta%20King." rel="noopener noreferrer" target="_blank">
+                <span class="material-symbols-outlined text-[20px]">chat</span>
+                <span>Consultor VIP</span>
+              </a>
+            </div>
 
-              <!-- Direct WhatsApp Consultation link -->
-              <div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
-                <span class="material-symbols-outlined text-secondary text-[18px]">support_agent</span>
-                <span>Dúvidas técnicas ou migração?</span>
-                <a class="text-secondary font-semibold hover:underline" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Gostaria%20de%20conversar%20com%20um%20especialista%20do%20King%20Selection." target="_blank">Falar no WhatsApp oficial (11) 98878-9417</a>
-              </div>
-
-              <!-- Badges & Seals Matrix -->
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4">
-                <div class="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant/40 flex flex-col gap-1.5">
-                  <span class="material-symbols-outlined text-primary text-[22px]">bolt</span>
-                  <span class="font-label-md text-label-md text-on-surface font-bold">0.2s Resposta</span>
-                  <span class="font-body-sm text-body-sm text-on-surface-variant">Sem compressão borrada</span>
+            <!-- Badges de Autoridade -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-space-md w-full">
+              <div class="p-3 rounded-xl bg-surface-container-low border border-amber-400/20 flex items-center gap-2 shadow-[0_0_12px_rgba(245,158,11,0.08)]">
+                <span class="material-symbols-outlined text-amber-400 text-[20px]">face</span>
+                <div class="flex flex-col">
+                  <span class="font-label-mono-sm text-label-mono-sm text-on-surface font-semibold">Face AI</span>
+                  <span class="font-body-sm text-[11px] text-amber-300/80 font-mono">&lt; 0.8s match</span>
                 </div>
-                <div class="p-3.5 rounded-lg bg-surface-container-low border border-emerald-500/25 flex flex-col gap-1.5">
-                  <span class="material-symbols-outlined text-secondary text-[22px]">face</span>
-                  <span class="font-label-md text-label-md text-on-surface font-bold">IA Facial</span>
-                  <span class="font-body-sm text-body-sm text-on-surface-variant">Selfie acha na hora</span>
+              </div>
+              <div class="p-3 rounded-xl bg-surface-container-low border border-amber-400/20 flex items-center gap-2 shadow-[0_0_12px_rgba(245,158,11,0.08)]">
+                <span class="material-symbols-outlined text-amber-400 text-[20px]">shield</span>
+                <div class="flex flex-col">
+                  <span class="font-label-mono-sm text-label-mono-sm text-on-surface font-semibold">Anti-Print</span>
+                  <span class="font-body-sm text-[11px] text-on-surface-variant">Grade Tiled R2</span>
                 </div>
-                <div class="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant/40 flex flex-col gap-1.5">
-                  <span class="material-symbols-outlined text-secondary text-[22px]">verified_user</span>
-                  <span class="font-label-md text-label-md text-on-surface font-bold">Anti-Print</span>
-                  <span class="font-body-sm text-body-sm text-on-surface-variant">Marca d'água dinâmica</span>
+              </div>
+              <div class="p-3 rounded-xl bg-surface-container-low border border-secondary/20 flex items-center gap-2">
+                <span class="material-symbols-outlined text-secondary text-[20px]">cloud_done</span>
+                <div class="flex flex-col">
+                  <span class="font-label-mono-sm text-label-mono-sm text-on-surface font-semibold">Cloudflare</span>
+                  <span class="font-body-sm text-[11px] text-on-surface-variant">Zero latência</span>
                 </div>
-                <div class="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant/40 flex flex-col gap-1.5">
-                  <span class="material-symbols-outlined text-primary text-[22px]">devices</span>
-                  <span class="font-label-md text-label-md text-on-surface font-bold">100% Mobile</span>
-                  <span class="font-body-sm text-body-sm text-on-surface-variant">Experiência app nativa</span>
+              </div>
+              <div class="p-3 rounded-xl bg-surface-container-low border border-secondary/20 flex items-center gap-2">
+                <span class="material-symbols-outlined text-secondary text-[20px]">payments</span>
+                <div class="flex flex-col">
+                  <span class="font-label-mono-sm text-label-mono-sm text-on-surface font-semibold">Pix Direto</span>
+                  <span class="font-body-sm text-[11px] text-on-surface-variant">100% seu lucro</span>
                 </div>
               </div>
             </div>
 
-            <!-- Right Column: Interactive Login Glass Card (Totalmente Funcional) -->
-            <div class="lg:col-span-5 w-full z-10" id="painel-fotografo">
-              <div class="relative rounded-2xl bg-surface-container border border-primary/20 backdrop-blur-xl p-8 lg:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.7)] shadow-black/80">
+          </div>
+
+          <!-- Coluna Mockup Interativo -->
+          <div class="lg:col-span-5 relative flex justify-center">
+            <!-- Glow sob a interface -->
+            <div class="absolute inset-0 bg-amber-500/25 blur-3xl rounded-3xl"></div>
+            
+            <div class="relative w-full max-w-sm sm:max-w-md bg-surface-container-low rounded-3xl p-4 shadow-2xl border border-amber-400/30 overflow-hidden">
+              <!-- Barra Superior Mockup Mobile -->
+              <div class="flex items-center justify-between pb-3 px-1 text-on-surface-variant">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-error"></span>
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]"></span>
+                  <span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+                  <span class="font-label-mono-sm text-label-mono-sm text-on-surface font-semibold ml-2">Casamento Isabella & Lucas</span>
+                </div>
+                <span class="font-label-mono-sm text-[10px] px-2 py-0.5 rounded bg-surface-container-high border border-amber-400/40 text-amber-300 font-bold shadow-[0_0_8px_rgba(245,158,11,0.25)]">SESSÃO ATIVA</span>
+              </div>
+
+              <!-- Container da Imagem com Marca d'água -->
+              <div class="relative w-full aspect-[4/5] rounded-2xl overflow-hidden bg-surface-container-highest shadow-inner group">
+                <img class="w-full h-full object-cover" alt="Noiva em ensaio de casamento" src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80"/>
                 
-                <div class="absolute -top-3.5 right-6 px-3 py-1 rounded-full bg-surface-container-high border border-primary/30 text-primary font-label-sm text-label-sm uppercase flex items-center gap-1.5 font-bold shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-                  <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-ping"></span>
-                  Acesso Seguro
+                <!-- Marca D'água Tiled Transparente Dinâmica -->
+                <div class="absolute inset-0 pointer-events-none grid grid-cols-3 grid-rows-3 p-4 opacity-35 select-none">
+                  <span class="font-label-mono-sm text-[11px] text-amber-200 font-bold rotate-[-25deg] flex items-center justify-center">KING SELECTION • PROVA</span>
+                  <span class="font-label-mono-sm text-[11px] text-amber-200 font-bold rotate-[-25deg] flex items-center justify-center">PROIBIDO PRINT</span>
+                  <span class="font-label-mono-sm text-[11px] text-amber-200 font-bold rotate-[-25deg] flex items-center justify-center">STUDIO VIP</span>
+                  <span class="font-label-mono-sm text-[11px] text-amber-200 font-bold rotate-[-25deg] flex items-center justify-center">STUDIO VIP</span>
+                  <span class="font-label-mono-sm text-[11px] text-amber-200 font-bold rotate-[-25deg] flex items-center justify-center">KING SELECTION • PROVA</span>
+                  <span class="font-label-mono-sm text-[11px] text-amber-200 font-bold rotate-[-25deg] flex items-center justify-center">PROIBIDO PRINT</span>
+                  <span class="font-label-mono-sm text-[11px] text-amber-200 font-bold rotate-[-25deg] flex items-center justify-center">PROIBIDO PRINT</span>
+                  <span class="font-label-mono-sm text-[11px] text-amber-200 font-bold rotate-[-25deg] flex items-center justify-center">STUDIO VIP</span>
+                  <span class="font-label-mono-sm text-[11px] text-amber-200 font-bold rotate-[-25deg] flex items-center justify-center">KING SELECTION • PROVA</span>
                 </div>
 
-                <!-- Login Header -->
-                <div class="flex flex-col items-center text-center pb-6">
-                  <div class="w-12 h-12 rounded-xl bg-amber-500/15 border border-primary/30 flex items-center justify-center mb-3 text-primary shadow-[0_0_15px_rgba(245,158,11,0.25)]">
-                    <span class="material-symbols-outlined text-[26px]">photo_camera</span>
+                <!-- Botão Coração Favorito Ativo -->
+                <div class="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-lowest/85 backdrop-blur-md shadow-lg border border-amber-400/30">
+                  <span class="material-symbols-outlined text-rose-500 text-[18px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+                  <span class="font-label-mono-sm text-label-mono-sm text-on-surface font-bold">Selecionada</span>
+                </div>
+
+                <!-- Identificador de Foto -->
+                <div class="absolute bottom-3 left-3 px-2.5 py-1 rounded-md bg-surface-container-lowest/80 backdrop-blur-sm">
+                  <span class="font-label-mono-sm text-label-mono-sm text-on-surface-variant font-mono">IMG_8492.CR3</span>
+                </div>
+              </div>
+
+              <!-- Caixa de Nota de Retoque -->
+              <div class="mt-3 p-3 rounded-xl bg-surface-container border border-amber-400/20 flex items-start gap-2.5">
+                <span class="material-symbols-outlined text-amber-400 text-[20px] mt-0.5">draw</span>
+                <div class="flex flex-col w-full">
+                  <div class="flex items-center justify-between">
+                    <span class="font-label-mono-sm text-label-mono-sm text-amber-400 font-bold">Nota de Edição do Cliente</span>
+                    <span class="font-label-mono-sm text-[10px] text-secondary">Salvo automaticamente</span>
                   </div>
-                  <h2 class="font-headline-xl text-headline-xl font-bold text-on-surface">Painel do Fotógrafo</h2>
-                  <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
-                    Acesse suas galerias, clientes e seleções em andamento
-                  </p>
-                </div>
-
-                <!-- Auth Form Conectado ao Backend -->
-                <form id="ks-login-form" class="space-y-4" onsubmit="handleKsLogin(event)">
-                  <div class="space-y-1.5">
-                    <label class="block font-label-md text-label-md text-on-surface-variant" for="ks-email">E-mail ou Usuário</label>
-                    <div class="relative">
-                      <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">mail</span>
-                      <input 
-                        id="ks-email" 
-                        name="email"
-                        class="w-full h-12 pl-11 pr-4 rounded-lg bg-surface-container-lowest border border-outline-variant text-on-surface placeholder:text-on-surface-variant/60 font-body-md text-body-md focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/40 transition-colors" 
-                        placeholder="seuemail@exemplo.com" 
-                        type="text" 
-                        required 
-                        autocomplete="username"
-                      />
-                    </div>
-                  </div>
-
-                  <div class="space-y-1.5">
-                    <div class="flex items-center justify-between">
-                      <label class="font-label-md text-label-md text-on-surface-variant" for="ks-password">Senha de Acesso</label>
-                      <a class="font-label-sm text-label-sm text-primary hover:underline font-bold" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Esqueci%20minha%20senha%20de%20acesso%20do%20King%20Selection." target="_blank">Esqueci</a>
-                    </div>
-                    <div class="relative">
-                      <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">key</span>
-                      <input 
-                        id="ks-password" 
-                        name="password"
-                        class="w-full h-12 pl-11 pr-12 rounded-lg bg-surface-container-lowest border border-outline-variant text-on-surface placeholder:text-on-surface-variant/60 font-body-md text-body-md focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/40 transition-colors" 
-                        placeholder="••••••••" 
-                        type="password" 
-                        required 
-                        autocomplete="current-password"
-                      />
-                      <!-- Olhinho de Visualização de Senha com SVG Nativo -->
-                      <button 
-                        type="button" 
-                        id="ks-toggle-pwd-btn" 
-                        onclick="togglePasswordVisibility()" 
-                        class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-primary hover:text-amber-300 rounded transition-transform active:scale-90 flex items-center justify-center cursor-pointer" 
-                        aria-label="Mostrar/Ocultar Senha" 
-                        title="Mostrar senha"
-                      >
-                        <svg id="ks-pwd-eye-open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                          <circle cx="12" cy="12" r="3"></circle>
-                        </svg>
-                        <svg id="ks-pwd-eye-closed" style="display:none;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                          <line x1="1" y1="1" x2="23" y2="23"></line>
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-
-                  <button 
-                    type="submit" 
-                    id="ks-btn-submit" 
-                    class="w-full h-12 rounded bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-stone-950 font-headline-sm text-label-md font-bold flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.35)] hover:brightness-110 hover:shadow-[0_0_28px_rgba(245,158,11,0.5)] transition-all active:scale-[0.98] mt-2 cursor-pointer"
-                  >
-                    <span>Acessar Meus Projetos</span>
-                    <span class="material-symbols-outlined text-[20px]">login</span>
-                  </button>
-                </form>
-
-                <!-- Links Auxiliares -->
-                <div class="pt-5 mt-5 bg-surface-container-high/60 border border-outline-variant/40 rounded-lg p-4 space-y-2 text-center font-body-sm text-body-sm">
-                  <p class="text-on-surface-variant">
-                    Ainda não é fotógrafo assinante? 
-                    <a class="text-primary font-bold hover:underline" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Gostaria%20de%20assinar%20o%20King%20Selection%20para%20fot%C3%B3grafos." target="_blank">Contratar Plano</a>
-                  </p>
-                  <p class="text-on-surface-variant">
-                    Problemas no acesso? 
-                    <a class="text-secondary font-semibold hover:underline flex items-center justify-center gap-1" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Preciso%20de%20ajuda%20para%20acessar%20meu%20painel%20do%20King%20Selection." target="_blank">
-                      <span class="material-symbols-outlined text-[16px]">chat</span> Falar com Suporte WhatsApp
-                    </a>
-                  </p>
-                </div>
-
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-        <!-- LIVE PHOTO EXPERIENCE PREVIEW -->
-        <section class="max-w-[1440px] mx-auto px-margin py-space-lg" id="como-funciona">
-          <div class="rounded-2xl bg-surface-container border border-primary/20 p-6 lg:p-8 shadow-xl">
-            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
-              <div>
-                <span class="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold">Experiência do Cliente Final</span>
-                <h3 class="font-headline-xl text-headline-xl text-on-surface font-bold mt-1">Como seus clientes navegam e selecionam com paixão</h3>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="px-3 py-1 rounded bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 font-label-sm text-label-sm flex items-center gap-1.5 font-bold">
-                  <span class="material-symbols-outlined text-[16px]">favorite</span> 48 Fotos Selecionadas
-                </span>
-                <span class="px-3 py-1 rounded bg-surface-container-high border border-outline-variant/40 text-on-surface-variant font-label-sm text-label-sm">
-                  Ensaio Gestante • Luiza & Marcos
-                </span>
-              </div>
-            </div>
-
-            <!-- Photo Grid Simulation -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div class="relative rounded-xl overflow-hidden group aspect-[4/5] bg-surface-container-high border border-outline-variant/40 hover:border-primary/40 transition-all">
-                <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Ensaio Gestante de Luxo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBiEBPO51fMkbe7hcS5Td3tjY1mhSx5o_Ph2LNIcOaVfZBhJjGSTj-6k861Fh2F-C9vrj4ijlSx8_s10mr62NQvDy_p9gi3x6Udsl-pfoRaEJlBO7SKAKUwYtX_m4pJi6B4ENobPId5D_foIWwzBki5kgwTAgZ3OakNTOkVVZ9bsJk0kdue17DzjWHvvJ5W6y1mpapXjpPT7Ie6NFGGDpNbSzbDHvLYXtraD6Un9i4P"/>
-                <div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/80 via-transparent to-transparent opacity-90"></div>
-                <div class="absolute top-3 right-3 w-8 h-8 rounded-full bg-surface-container-lowest/80 border border-primary/30 backdrop-blur-md flex items-center justify-center text-primary shadow-lg">
-                  <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
-                </div>
-                <div class="absolute bottom-3 left-3 text-on-surface font-label-sm text-label-sm font-semibold">
-                  #IMG_0412.JPG • 7.2 MB
+                  <p class="font-body-sm text-body-sm text-on-surface mt-0.5 italic">"Suavizar reflexo no vestido e atenuar a sombra no rosto."</p>
                 </div>
               </div>
 
-              <div class="relative rounded-xl overflow-hidden group aspect-[4/5] bg-surface-container-high border border-outline-variant/40 hover:border-primary/40 transition-all">
-                <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Casamento ao Pôr do Sol" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYwi6Ipeoti-R8315Zzao-ELA0oiIBkDjdxZ9u7RI1L28SxLS71Mo_6SmO4fyfp4651ooFxg6boyLZ-WELxaOc8ThUyTFZzvtRbQ43dtYinSUOyzwMbNqoSH5VmHBfGYekdyxq6nfEgNl3rd0LBSjhJQuzVP9nO7lM66WeEQsdID7isUseMW0CU2flkRXTDwCwF0Ypl9TbbHWELeS6nM9R5mCxG9oJbnbpqhLcvJT4"/>
-                <div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/80 via-transparent to-transparent opacity-90"></div>
-                <div class="absolute top-3 right-3 w-8 h-8 rounded-full bg-surface-container-lowest/80 border border-outline-variant backdrop-blur-md flex items-center justify-center text-on-surface-variant hover:text-primary shadow-lg transition-colors">
-                  <span class="material-symbols-outlined text-[18px]">favorite</span>
+              <!-- Contador de Fotos e Status de Excedente -->
+              <div class="mt-3 p-3.5 rounded-xl bg-surface-container-high border border-amber-400/30 flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-body-sm text-body-sm text-on-surface font-medium">Contador de Fotos</span>
+                  <span class="font-label-mono-sm text-label-mono-sm text-amber-400 font-black">28 de 20 inclusas</span>
                 </div>
-                <div class="absolute bottom-3 left-3 text-on-surface font-label-sm text-label-sm font-semibold">
-                  #IMG_0588.JPG • 6.9 MB
+                <!-- Progress Bar -->
+                <div class="w-full h-2 rounded-full bg-surface-container-lowest overflow-hidden flex">
+                  <div class="h-full bg-secondary" style="width: 71%;"></div>
+                  <div class="h-full bg-gradient-to-r from-amber-500 to-yellow-400 shadow-[0_0_10px_#f59e0b]" style="width: 29%;"></div>
                 </div>
-              </div>
-
-              <div class="relative rounded-xl overflow-hidden group aspect-[4/5] bg-surface-container-high border border-outline-variant/40 hover:border-primary/40 transition-all">
-                <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Retrato Editorial" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCm14j7ZR3v3mhGWV8nE9kuRnhXyROUACL7GXHai6OvG3Qym0yPJOQh622pBcJLBPE4T3S5AlyijgPyVqqDYMiw6akQqa53_4gZy-nffckD60u0iCA9idwkziY1eI-_rzYRiyrlLlAcH2MKETLplF7TXGknepoMxgrdhu05nlNuQisDzusNV751nwiG2ZT7e0GYHkydJyIMap2o_q_hy5_oVs1J4b1PAWtp6LdW32RE"/>
-                <div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/80 via-transparent to-transparent opacity-90"></div>
-                <div class="absolute top-3 right-3 w-8 h-8 rounded-full bg-surface-container-lowest/80 border border-primary/30 backdrop-blur-md flex items-center justify-center text-primary shadow-lg">
-                  <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
-                </div>
-                <div class="absolute bottom-3 left-3 flex items-center justify-between w-[calc(100%-1.5rem)] text-on-surface font-label-sm text-label-sm font-semibold">
-                  <span>#IMG_0691.JPG</span>
-                  <span class="px-2 py-0.5 rounded bg-primary text-stone-950 text-[10px] font-extrabold uppercase">Extra</span>
+                <div class="flex items-center justify-between text-on-surface-variant font-label-mono-sm text-[11px]">
+                  <span class="text-secondary flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> 20 Pacote Básico</span>
+                  <span class="text-amber-400 flex items-center gap-1 font-bold"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]"></span> +8 Fotos Extras (R$ 120,00)</span>
                 </div>
               </div>
 
-              <div class="relative rounded-xl overflow-hidden group aspect-[4/5] bg-surface-container-high border border-outline-variant/40 hover:border-primary/40 transition-all">
-                <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Festa e Celebração" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-4GU6eszXiaIPcJyYuUmE42sG9LXJ2RrMwUvinq3xXM13knZiNWdc0OXqwAgTjAREtcNioZnr7y_bFraMSkutkXX5YrevVeTfEoIA1B0VtXOuClkHjZjpELloPpyLk5iCubEt3Pl9T_MMjZUOxqcsmISrhURcXhiMZ_to6xDn27_17bVL8kLNtbHCueLAbeh2qjpnH0QMvG886qgCGQlQ8s4YYdkiYgn4yKOPHXti"/>
-                <div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/80 via-transparent to-transparent opacity-90"></div>
-                <div class="absolute top-3 right-3 w-8 h-8 rounded-full bg-surface-container-lowest/80 border border-primary/30 backdrop-blur-md flex items-center justify-center text-primary shadow-lg">
-                  <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+              <!-- Notificação Flutuante de Venda Pix -->
+              <div class="mt-3 p-3 rounded-xl bg-secondary-container/20 shadow-lg flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-secondary-container flex items-center justify-center text-on-secondary">
+                  <span class="material-symbols-outlined text-[20px]">paid</span>
                 </div>
-                <div class="absolute bottom-3 left-3 text-on-surface font-label-sm text-label-sm font-semibold">
-                  #IMG_0834.JPG • 7.4 MB
+                <div class="flex flex-col min-w-0">
+                  <span class="font-label-mono-sm text-label-mono-sm text-secondary font-bold truncate">Pix Recebido no Banco!</span>
+                  <span class="font-body-sm text-[12px] text-on-surface">Cliente comprou 8 fotos extras (R$ 120,00)</span>
                 </div>
               </div>
+
             </div>
           </div>
-        </section>
 
-        <!-- 4 CORE ADVANTAGES SECTION -->
-        <section class="max-w-[1440px] mx-auto px-margin py-space-xl" id="diferenciais">
-          <div class="text-center max-w-3xl mx-auto mb-10">
-            <span class="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold">Vantagens Comerciais Reais</span>
-            <h2 class="font-headline-xl text-headline-xl text-on-surface font-bold mt-2">Por que fotógrafos de sucesso escolhem o King Selection</h2>
-            <p class="font-body-md text-body-md text-on-surface-variant mt-2">
-              Elimine o retrabalho via Google Drive ou WeTransfer. Uma experiência luxuosa pensada para você fechar contratos maiores.
+        </div>
+      </section>
+
+      <!-- BARRA DE MÉTRICAS & RESULTADOS REAIS -->
+      <section class="w-full bg-surface-container-lowest py-space-lg px-margin shadow-inner border-y border-amber-500/10">
+        <div class="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-space-md">
+          <div class="flex flex-col gap-1 p-4 rounded-xl bg-surface-container-low border border-amber-400/20 shadow-[0_0_15px_rgba(245,158,11,0.06)]">
+            <div class="flex items-center gap-2">
+              <span class="font-display-lg text-headline-lg lg:text-display-lg text-amber-400 font-black leading-none drop-shadow-[0_0_12px_rgba(245,158,11,0.3)]">+70%</span>
+              <span class="material-symbols-outlined text-secondary text-[24px]">trending_up</span>
+            </div>
+            <span class="font-headline-sm text-body-md text-on-surface font-bold">Faturamento por Ensaio</span>
+            <span class="font-body-sm text-body-sm text-on-surface-variant">Média real gerada pela venda automática e irresistível de fotos extras no Pix.</span>
+          </div>
+
+          <div class="flex flex-col gap-1 p-4 rounded-xl bg-surface-container-low border border-surface-variant">
+            <div class="flex items-center gap-2">
+              <span class="font-display-lg text-headline-lg lg:text-display-lg text-secondary font-black leading-none">0.8s</span>
+              <span class="material-symbols-outlined text-amber-400 text-[24px]">bolt</span>
+            </div>
+            <span class="font-headline-sm text-body-md text-on-surface font-bold">Match Facial Instantâneo</span>
+            <span class="font-body-sm text-body-sm text-on-surface-variant">IA ArcFace localiza o convidado entre 4.000 fotos de casamento em 1 selfie.</span>
+          </div>
+
+          <div class="flex flex-col gap-1 p-4 rounded-xl bg-surface-container-low border border-surface-variant">
+            <div class="flex items-center gap-2">
+              <span class="font-display-lg text-headline-lg lg:text-display-lg text-on-surface font-black leading-none">0%</span>
+              <span class="material-symbols-outlined text-rose-400 text-[24px]">do_not_disturb_on</span>
+            </div>
+            <span class="font-headline-sm text-body-md text-on-surface font-bold">Prints Não Autorizados</span>
+            <span class="font-body-sm text-body-sm text-on-surface-variant">Grade tiling anti-recorte inviabiliza postagens de fotos não aprovadas ou impagas.</span>
+          </div>
+
+          <div class="flex flex-col gap-1 p-4 rounded-xl bg-surface-container-low border border-amber-400/20 shadow-[0_0_15px_rgba(245,158,11,0.06)]">
+            <div class="flex items-center gap-2">
+              <span class="font-display-lg text-headline-lg lg:text-display-lg text-amber-400 font-black leading-none drop-shadow-[0_0_12px_rgba(245,158,11,0.3)]">3x</span>
+              <span class="material-symbols-outlined text-secondary text-[24px]">speed</span>
+            </div>
+            <span class="font-headline-sm text-body-md text-on-surface font-bold">Mais Rápido no Upload</span>
+            <span class="font-body-sm text-body-sm text-on-surface-variant">Compressão multi-thread direto no navegador antes do envio para a nuvem R2.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEÇÃO "O FIM DO CAOS" (COMPARAÇÃO VISUAL DE ALTO CONTRASTE) -->
+      <section class="w-full px-margin py-space-xl lg:py-24 max-w-7xl mx-auto" id="comparativo">
+        <div class="flex flex-col items-center text-center gap-space-xs mb-space-xl">
+          <span class="font-label-mono-sm text-label-mono-sm text-amber-400 uppercase font-black tracking-widest">Evolução do Fluxo de Trabalho</span>
+          <h2 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg text-on-surface font-bold">
+            O Fim do Caos: Como Você Trabalha Hoje vs. <span class="bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 bg-clip-text text-transparent font-black drop-shadow-[0_0_20px_rgba(245,158,11,0.35)]">Com o King Selection</span>
+          </h2>
+          <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+            O método tradicional desgasta seu relacionamento com o cliente e deixa centenas de reais na mesa. Veja o abismo entre os dois mundos.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-space-lg items-stretch">
+          
+          <!-- O Jeito Amador e Lento -->
+          <div class="p-space-lg rounded-2xl bg-surface-container-low flex flex-col justify-between border border-surface-variant">
+            <div class="flex flex-col gap-space-md">
+              <div class="flex items-center justify-between pb-3 border-b border-surface-variant">
+                <div class="flex items-center gap-2 text-rose-400">
+                  <span class="material-symbols-outlined text-[24px]">cancel</span>
+                  <span class="font-headline-sm text-headline-sm font-bold">O Jeito Antigo e Amador</span>
+                </div>
+                <span class="font-label-mono-sm text-label-mono-sm text-on-surface-variant px-2.5 py-1 rounded bg-surface-container-high">Google Drive / WeTransfer</span>
+              </div>
+              <div class="flex flex-col gap-space-sm text-on-surface-variant font-body-md text-body-md">
+                <div class="flex items-start gap-3 p-3 rounded-xl bg-surface-container/50">
+                  <span class="material-symbols-outlined text-rose-400 text-[20px] flex-shrink-0 mt-0.5">close</span>
+                  <p><strong class="text-on-surface">Links feios e pastas zip:</strong> O cliente precisa baixar arquivos pesados ou não consegue abrir no celular.</p>
+                </div>
+                <div class="flex items-start gap-3 p-3 rounded-xl bg-surface-container/50">
+                  <span class="material-symbols-outlined text-rose-400 text-[20px] flex-shrink-0 mt-0.5">close</span>
+                  <p><strong class="text-on-surface">Semanas de atraso:</strong> Cliente enrola para responder digitando códigos infinitos no WhatsApp (ex: IMG_0921, IMG_0924).</p>
+                </div>
+                <div class="flex items-start gap-3 p-3 rounded-xl bg-surface-container/50">
+                  <span class="material-symbols-outlined text-rose-400 text-[20px] flex-shrink-0 mt-0.5">close</span>
+                  <p><strong class="text-on-surface">Pirataria por print:</strong> O cliente tira print da miniatura, publica no Instagram e nunca contrata as fotos extras.</p>
+                </div>
+                <div class="flex items-start gap-3 p-3 rounded-xl bg-surface-container/50">
+                  <span class="material-symbols-outlined text-rose-400 text-[20px] flex-shrink-0 mt-0.5">close</span>
+                  <p><strong class="text-on-surface">Mensagens confusas de retoque:</strong> "Na foto onde estou de lado arruma meu braço" sem você saber qual foto é.</p>
+                </div>
+                <div class="flex items-start gap-3 p-3 rounded-xl bg-surface-container/50">
+                  <span class="material-symbols-outlined text-rose-400 text-[20px] flex-shrink-0 mt-0.5">close</span>
+                  <p><strong class="text-on-surface">Zero receita adicional:</strong> Falta de checkout imediato faz você perder vendas quentes de impulsão.</p>
+                </div>
+              </div>
+            </div>
+            <div class="mt-6 pt-4 text-center border-t border-surface-variant">
+              <span class="font-label-mono-sm text-label-mono-sm text-rose-400 font-medium">Resultado: Horas perdidas, frustração e prejuízo financeiro.</span>
+            </div>
+          </div>
+
+          <!-- O Ecossistema King Selection -->
+          <div class="p-space-lg rounded-2xl bg-surface-container-high shadow-2xl flex flex-col justify-between relative overflow-hidden border border-amber-400/40">
+            <div class="absolute -top-16 -right-16 w-48 h-48 bg-amber-500/20 rounded-full blur-2xl"></div>
+            <div class="flex flex-col gap-space-md relative z-10">
+              <div class="flex items-center justify-between pb-3 border-b border-amber-400/20">
+                <div class="flex items-center gap-2 text-amber-400">
+                  <span class="material-symbols-outlined text-[24px] text-amber-400" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                  <span class="font-headline-sm text-headline-sm font-bold text-on-surface">Ecossistema King Selection</span>
+                </div>
+                <span class="font-label-mono-sm text-label-mono-sm text-on-secondary px-2.5 py-1 rounded bg-secondary-container font-semibold">ALTA CONVERSÃO</span>
+              </div>
+              <div class="flex flex-col gap-space-sm text-on-surface-variant font-body-md text-body-md">
+                <div class="flex items-start gap-3 p-3 rounded-xl bg-surface-container">
+                  <span class="material-symbols-outlined text-secondary text-[20px] flex-shrink-0 mt-0.5">check</span>
+                  <p><strong class="text-on-surface">App de luxo sem instalação:</strong> O cliente clica no link exclusivo pelo WhatsApp e navega suave com gestos fluidos.</p>
+                </div>
+                <div class="flex items-start gap-3 p-3 rounded-xl bg-surface-container">
+                  <span class="material-symbols-outlined text-secondary text-[20px] flex-shrink-0 mt-0.5">check</span>
+                  <p><strong class="text-on-surface">Seleção em 1 toque:</strong> O cliente toca no coração, o contador calcula automaticamente as excedentes.</p>
+                </div>
+                <div class="flex items-start gap-3 p-3 rounded-xl bg-surface-container">
+                  <span class="material-symbols-outlined text-secondary text-[20px] flex-shrink-0 mt-0.5">check</span>
+                  <p><strong class="text-on-surface">Anti-Print Implacável:</strong> Grade com a logo do estúdio impede o uso indevido da imagem antes do pagamento.</p>
+                </div>
+                <div class="flex items-start gap-3 p-3 rounded-xl bg-surface-container">
+                  <span class="material-symbols-outlined text-secondary text-[20px] flex-shrink-0 mt-0.5">check</span>
+                  <p><strong class="text-on-surface">Instruções por foto:</strong> Caixa dedicada de anotações de edição em cada arquivo selecionado.</p>
+                </div>
+                <div class="flex items-start gap-3 p-3 rounded-xl bg-surface-container">
+                  <span class="material-symbols-outlined text-secondary text-[20px] flex-shrink-0 mt-0.5">check</span>
+                  <p><strong class="text-on-surface">Venda no Pix e Exportação Lightroom:</strong> Checkout instantâneo e lista de arquivos copiada com 1 clique para colar no Lightroom.</p>
+                </div>
+              </div>
+            </div>
+            <div class="mt-6 pt-4 text-center border-t border-amber-400/20">
+              <span class="font-label-mono-sm text-label-mono-sm text-amber-400 font-extrabold drop-shadow-[0_0_10px_rgba(245,158,11,0.3)]">Resultado: Experiência VIP, mais dinheiro no bolso e aprovação em horas.</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- OS 8 PILARES DO KING SELECTION (CARDS DE LUXO) -->
+      <section class="w-full bg-surface-container-lowest px-margin py-space-xl lg:py-24 border-t border-amber-500/10" id="recursos">
+        <div class="max-w-7xl mx-auto flex flex-col gap-space-xl">
+          <div class="flex flex-col items-center text-center gap-space-xs">
+            <span class="font-label-mono-sm text-label-mono-sm text-amber-400 uppercase font-bold tracking-widest">Tecnologia Executiva para Estúdios</span>
+            <h2 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg text-on-surface font-bold">
+              Os 8 Pilares do King Selection
+            </h2>
+            <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+              Construído por fotógrafos e engenheiros de software para exterminar gargalos operacionais e multiplicar seu ticket médio.
             </p>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
-            <!-- Benefit 1 -->
-            <div class="p-6 rounded-2xl bg-surface-container border border-primary/20 hover:border-primary/40 transition-all flex flex-col justify-between shadow-lg">
-              <div>
-                <div class="w-12 h-12 rounded-xl bg-amber-500/15 border border-primary/30 text-primary flex items-center justify-center mb-5 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-                  <span class="material-symbols-outlined text-[26px]">speed</span>
-                </div>
-                <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold mb-2">Velocidade Relâmpago</h3>
-                <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
-                  Visualizador ultra otimizado sem travamentos, mesmo em galerias com mais de 2.000 fotos em alta definição com caching inteligente.
-                </p>
-              </div>
-              <div class="pt-5 mt-5 border-t border-surface-container-highest/60 font-label-sm text-label-sm text-primary flex items-center gap-1 font-bold">
-                Sem lentidão no celular <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-              </div>
-            </div>
-
-            <!-- Benefit 2 -->
-            <div class="p-6 rounded-2xl bg-surface-container border border-emerald-500/25 hover:border-emerald-500/40 transition-all flex flex-col justify-between shadow-lg">
-              <div>
-                <div class="w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-secondary flex items-center justify-center mb-5 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                  <span class="material-symbols-outlined text-[26px]">face</span>
-                </div>
-                <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold mb-2">Reconhecimento Facial IA</h3>
-                <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
-                  O cliente ou convidados de eventos tiram uma selfie e o sistema filtra instantaneamente apenas as fotos em que eles aparecem.
-                </p>
-              </div>
-              <div class="pt-5 mt-5 border-t border-surface-container-highest/60 font-label-sm text-label-sm text-secondary flex items-center gap-1 font-bold">
-                Perfeito para casamentos <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-              </div>
-            </div>
-
-            <!-- Benefit 3 -->
-            <div class="p-6 rounded-2xl bg-surface-container border border-primary/20 hover:border-primary/40 transition-all flex flex-col justify-between shadow-lg">
-              <div>
-                <div class="w-12 h-12 rounded-xl bg-secondary-container/30 border border-secondary/30 text-secondary flex items-center justify-center mb-5">
-                  <span class="material-symbols-outlined text-[26px]">touch_app</span>
-                </div>
-                <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold mb-2">Seleção de 1 Clique</h3>
-                <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
-                  Seus clientes marcam corações, adicionam notas de retoque por foto e finalizam a lista com um toque direto pelo WhatsApp.
-                </p>
-              </div>
-              <div class="pt-5 mt-5 border-t border-surface-container-highest/60 font-label-sm text-label-sm text-secondary flex items-center gap-1 font-bold">
-                Zero dúvidas de clientes <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-              </div>
-            </div>
-
-            <!-- Benefit 4 -->
-            <div class="p-6 rounded-2xl bg-surface-container border border-primary/20 hover:border-primary/40 transition-all flex flex-col justify-between shadow-lg">
-              <div>
-                <div class="w-12 h-12 rounded-xl bg-amber-500/15 border border-primary/30 text-primary flex items-center justify-center mb-5 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-                  <span class="material-symbols-outlined text-[26px]">payments</span>
-                </div>
-                <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold mb-2">Up-selling Automático</h3>
-                <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
-                  Monetize fotos extras além do pacote contratado. Defina o valor por foto excedente e receba antes do download final.
-                </p>
-              </div>
-              <div class="pt-5 mt-5 border-t border-surface-container-highest/60 font-label-sm text-label-sm text-primary flex items-center gap-1 font-bold">
-                Aumente seu ticket médio <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- INTERACTIVE PHOTO CAPACITY SIMULATOR & PRICING -->
-        <section class="max-w-[1440px] mx-auto px-margin py-space-xl" id="simulador">
-          <div class="rounded-3xl bg-surface-container border border-primary/20 p-8 lg:p-14 shadow-2xl relative overflow-hidden">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md">
             
-            <div class="text-center max-w-3xl mx-auto mb-10">
-              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-high border border-primary/25 text-primary font-label-sm text-label-sm uppercase mb-3 font-bold">
-                <span class="material-symbols-outlined text-[16px]">calculate</span>
-                Calculadora de Rendimento
+            <!-- Pilar 1 -->
+            <div class="p-space-lg rounded-2xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col gap-space-sm group border border-amber-400/15 hover:border-amber-400/40">
+              <div class="w-12 h-12 rounded-xl bg-surface-container-high border border-amber-400/30 flex items-center justify-center text-amber-400 group-hover:scale-110 shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-transform">
+                <span class="material-symbols-outlined text-[28px] text-amber-400">smartphone</span>
               </div>
-              <h2 class="font-headline-xl text-headline-xl text-on-surface font-bold">Simulador de Capacidade de Fotos</h2>
-              <p class="font-body-md text-body-md text-on-surface-variant mt-2">
-                Descubra exatamente quantas fotos e ensaios cabem em cada plano de acordo com o tamanho médio dos seus arquivos.
-              </p>
+              <span class="font-label-mono-sm text-[11px] text-amber-400 font-bold uppercase tracking-wider">Pilar 01</span>
+              <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Seleção Mobile-First sem Atrito</h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">Zero downloads ou senhas complexas. Carregamento instantâneo no iPhone e Android com corações e notas por foto.</p>
             </div>
 
-            <!-- Simulator Controls Box -->
-            <div class="max-w-4xl mx-auto rounded-2xl bg-surface-container-low border border-outline-variant/40 p-6 lg:p-8 mb-12">
-              <p class="text-center font-label-md text-label-md text-on-surface mb-5 font-bold">
-                Qual o peso médio dos seus arquivos exportados?
-              </p>
-
-              <!-- Preset Chips -->
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8" id="preset-buttons">
-                <button class="preset-btn py-3 px-4 rounded-xl bg-surface-container border border-outline-variant/40 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high font-label-md text-label-md transition-all flex flex-col items-center justify-center text-center cursor-pointer" id="btn-3" onclick="setPreset(3)" type="button">
-                  <span class="font-bold text-on-surface text-[14px]">3 MB</span>
-                  <span class="text-[11px] text-on-surface-variant">Web Rápida</span>
-                </button>
-                <button class="preset-btn py-3 px-4 rounded-xl bg-surface-container-high border border-primary text-primary shadow-[0_0_15px_rgba(245,158,11,0.25)] font-label-md text-label-md transition-all flex flex-col items-center justify-center text-center cursor-pointer" id="btn-7" onclick="setPreset(7)" type="button">
-                  <div class="flex items-center gap-1 font-bold text-[14px]">
-                    <span>7 MB</span>
-                    <span class="material-symbols-outlined text-[14px] text-primary">star</span>
-                  </div>
-                  <span class="text-[11px] text-primary/90 font-semibold">Recomendado</span>
-                </button>
-                <button class="preset-btn py-3 px-4 rounded-xl bg-surface-container border border-outline-variant/40 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high font-label-md text-label-md transition-all flex flex-col items-center justify-center text-center cursor-pointer" id="btn-10" onclick="setPreset(10)" type="button">
-                  <span class="font-bold text-on-surface text-[14px]">10 MB</span>
-                  <span class="text-[11px] text-on-surface-variant">Alta Definição</span>
-                </button>
-                <button class="preset-btn py-3 px-4 rounded-xl bg-surface-container border border-outline-variant/40 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high font-label-md text-label-md transition-all flex flex-col items-center justify-center text-center cursor-pointer" id="btn-15" onclick="setPreset(15)" type="button">
-                  <span class="font-bold text-on-surface text-[14px]">15 MB</span>
-                  <span class="text-[11px] text-on-surface-variant">Original / Full</span>
-                </button>
+            <!-- Pilar 2 -->
+            <div class="p-space-lg rounded-2xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col gap-space-sm group border border-surface-variant hover:border-secondary/40">
+              <div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-secondary group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-[28px]">payments</span>
               </div>
-
-              <!-- Range Slider & Pill -->
-              <div class="flex flex-col sm:flex-row items-center gap-6">
-                <div class="relative w-full flex-1">
-                  <input class="w-full h-2 rounded-lg bg-surface-container appearance-none cursor-pointer accent-primary" id="mb-slider" max="25" min="1" oninput="updateCalculations(this.value)" step="0.5" type="range" value="7"/>
-                  <div class="flex justify-between text-on-surface-variant font-body-sm text-[11px] mt-2 px-1">
-                    <span>1 MB</span>
-                    <span>7 MB (Padrão Pro)</span>
-                    <span>15 MB</span>
-                    <span>25 MB</span>
-                  </div>
-                </div>
-                <div class="w-32 py-2.5 px-4 rounded-xl bg-surface-container-lowest border border-primary/30 flex items-center justify-center shrink-0">
-                  <span class="font-headline-sm text-headline-sm text-primary font-bold" id="display-mb">7.0 MB</span>
-                </div>
-              </div>
+              <span class="font-label-mono-sm text-[11px] text-secondary font-bold uppercase tracking-wider">Pilar 02</span>
+              <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Máquina de Venda de Fotos Extras</h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">Defina seu pacote (ex: 25 fotos inclusas) e o preço por excedente (ex: R$ 15/foto). O cliente se encanta e paga na hora no Pix.</p>
             </div>
 
-            <!-- 3-TIER PRICING CARDS ROW -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter items-stretch pt-4" id="planos">
-              
-              <!-- Card 1: Starter (20 GB) -->
-              <div class="rounded-2xl bg-surface-container-low border border-outline-variant/40 p-8 flex flex-col justify-between transition-transform hover:-translate-y-1 shadow-lg">
-                <div>
-                  <div class="flex justify-between items-center mb-4">
-                    <span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">★ Plano Starter</span>
-                    <span class="px-2.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">Para Começar</span>
-                  </div>
-                  <div class="flex items-baseline gap-1 mb-2">
-                    <span class="font-display-lg text-display-lg font-extrabold text-on-surface">20 GB</span>
-                  </div>
-                  <div class="flex items-baseline gap-1 text-on-surface-variant font-body-md text-body-md mb-6">
-                    <span class="font-headline-md text-headline-md text-on-surface font-bold">R$ 39,90</span>
-                    <span>/ mês</span>
-                  </div>
-                  <!-- Computed Specs -->
-                  <div class="space-y-3.5 py-6 bg-surface-container/60 border border-outline-variant/30 rounded-xl px-5 mb-8">
-                    <div class="flex items-center justify-between text-body-sm">
-                      <span class="text-on-surface-variant flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px]">photo_library</span> Total de Fotos:
-                      </span>
-                      <span class="font-bold text-on-surface" id="starter-photos">~2.900 fotos</span>
-                    </div>
-                    <div class="flex items-center justify-between text-body-sm">
-                      <span class="text-on-surface-variant flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px]">groups</span> Ensaios Médios:
-                      </span>
-                      <span class="font-bold text-on-surface" id="starter-shoots">~10 ensaios (300 fotos)</span>
-                    </div>
-                    <div class="flex items-center justify-between text-body-sm">
-                      <span class="text-on-surface-variant flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px]">compress</span> Redutor Automático:
-                      </span>
-                      <span class="font-semibold text-secondary">Incluso</span>
-                    </div>
-                    <div class="flex items-center justify-between text-body-sm">
-                      <span class="text-on-surface-variant flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px]">cloud_done</span> Galerias Ativas:
-                      </span>
-                      <span class="font-semibold text-on-surface">Ilimitadas</span>
-                    </div>
-                  </div>
-                </div>
-                <a class="w-full h-12 rounded bg-surface-container-high border border-outline-variant/50 hover:bg-surface-container-highest hover:text-primary hover:border-primary/40 text-on-surface font-label-md text-label-md font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Starter%20de%2020%20GB%20do%20King%20Selection." target="_blank">
-                  <span>Escolher 20 GB</span>
-                  <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
-                </a>
+            <!-- Pilar 3 -->
+            <div class="p-space-lg rounded-2xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col gap-space-sm group border border-amber-400/15 hover:border-amber-400/40">
+              <div class="w-12 h-12 rounded-xl bg-surface-container-high border border-amber-400/30 flex items-center justify-center text-amber-400 group-hover:scale-110 shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-transform">
+                <span class="material-symbols-outlined text-[28px] text-amber-400">face</span>
               </div>
-
-              <!-- Card 2: Pro (30 GB) - HIGHLIGHTED "MAIS POPULAR" -->
-              <div class="relative rounded-2xl bg-surface-container border-2 border-primary p-8 flex flex-col justify-between shadow-[0_0_35px_rgba(245,158,11,0.25)] lg:-translate-y-4">
-                <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-amber-500 via-amber-300 to-amber-500 rounded-t-2xl"></div>
-                <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 font-label-sm text-label-sm font-extrabold uppercase tracking-wider shadow-[0_0_15px_rgba(245,158,11,0.4)] flex items-center gap-1.5">
-                  <span class="material-symbols-outlined text-[14px]">star</span>
-                  Mais Popular • Melhor Custo
-                </div>
-                <div>
-                  <div class="flex justify-between items-center mb-4 pt-1">
-                    <span class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Plano Pro</span>
-                    <span class="px-2.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-amber-300 font-label-sm text-label-sm font-bold">Ideal p/ Ensaios</span>
-                  </div>
-                  <div class="flex items-baseline gap-1 mb-2">
-                    <span class="font-display-lg text-display-lg font-extrabold text-primary">30 GB</span>
-                  </div>
-                  <div class="flex items-baseline gap-1 text-on-surface-variant font-body-md text-body-md mb-6">
-                    <span class="font-headline-md text-headline-md text-on-surface font-bold">R$ 59,90</span>
-                    <span>/ mês</span>
-                  </div>
-                  <!-- Computed Specs -->
-                  <div class="space-y-3.5 py-6 bg-surface-container-high/70 border border-primary/20 rounded-xl px-5 mb-8">
-                    <div class="flex items-center justify-between text-body-sm">
-                      <span class="text-on-surface-variant flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px]">photo_library</span> Total de Fotos:
-                      </span>
-                      <span class="font-bold text-primary text-[15px]" id="pro-photos">~4.350 fotos</span>
-                    </div>
-                    <div class="flex items-center justify-between text-body-sm">
-                      <span class="text-on-surface-variant flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px]">groups</span> Ensaios Médios:
-                      </span>
-                      <span class="font-bold text-on-surface" id="pro-shoots">~15 ensaios (300 fotos)</span>
-                    </div>
-                    <div class="flex items-center justify-between text-body-sm">
-                      <span class="text-on-surface-variant flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px]">face</span> Reconhecimento Facial:
-                      </span>
-                      <span class="font-bold text-secondary flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[16px]">check_circle</span> Ativado
-                      </span>
-                    </div>
-                    <div class="flex items-center justify-between text-body-sm">
-                      <span class="text-on-surface-variant flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px]">branding_watermark</span> Marca d'Água:
-                      </span>
-                      <span class="font-semibold text-secondary">Personalizada</span>
-                    </div>
-                  </div>
-                </div>
-                <a class="w-full h-12 rounded bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-stone-950 font-headline-sm text-label-md font-extrabold flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(245,158,11,0.5)] hover:brightness-110 hover:shadow-[0_0_35px_rgba(251,191,36,0.7)] transition-all active:scale-[0.98] cursor-pointer" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Pro%20de%2030%20GB%20do%20King%20Selection." target="_blank">
-                  <span>Escolher 30 GB</span>
-                  <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
-                </a>
-              </div>
-
-              <!-- Card 3: Studio King (60 GB) -->
-              <div class="rounded-2xl bg-surface-container-low border border-outline-variant/40 p-8 flex flex-col justify-between transition-transform hover:-translate-y-1 shadow-lg">
-                <div>
-                  <div class="flex justify-between items-center mb-4">
-                    <span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">Plano Studio King</span>
-                    <span class="px-2.5 py-0.5 rounded bg-amber-500/10 border border-primary/30 text-primary font-label-sm text-label-sm font-semibold">High Volume</span>
-                  </div>
-                  <div class="flex items-baseline gap-1 mb-2">
-                    <span class="font-display-lg text-display-lg font-extrabold text-on-surface">60 GB</span>
-                  </div>
-                  <div class="flex items-baseline gap-1 text-on-surface-variant font-body-md text-body-md mb-6">
-                    <span class="font-headline-md text-headline-md text-on-surface font-bold">R$ 99,90</span>
-                    <span>/ mês</span>
-                  </div>
-                  <!-- Computed Specs -->
-                  <div class="space-y-3.5 py-6 bg-surface-container/60 border border-outline-variant/30 rounded-xl px-5 mb-8">
-                    <div class="flex items-center justify-between text-body-sm">
-                      <span class="text-on-surface-variant flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px]">photo_library</span> Total de Fotos:
-                      </span>
-                      <span class="font-bold text-on-surface" id="king-photos">~8.700 fotos</span>
-                    </div>
-                    <div class="flex items-center justify-between text-body-sm">
-                      <span class="text-on-surface-variant flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px]">celebration</span> Eventos & Casamentos:
-                      </span>
-                      <span class="font-bold text-on-surface" id="king-shoots">~30 ensaios / 8 casamentos</span>
-                    </div>
-                    <div class="flex items-center justify-between text-body-sm">
-                      <span class="text-on-surface-variant flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px]">bolt</span> Prioridade Máxima:
-                      </span>
-                      <span class="font-bold text-primary">Ilimitada</span>
-                    </div>
-                    <div class="flex items-center justify-between text-body-sm">
-                      <span class="text-on-surface-variant flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px]">diamond</span> Suporte VIP:
-                      </span>
-                      <span class="font-semibold text-secondary">WhatsApp Direto</span>
-                    </div>
-                  </div>
-                </div>
-                <a class="w-full h-12 rounded bg-surface-container-high border border-outline-variant/50 hover:bg-surface-container-highest hover:text-primary hover:border-primary/40 text-on-surface font-label-md text-label-md font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Studio%20King%20de%2060%20GB%20do%20King%20Selection." target="_blank">
-                  <span>Escolher 60 GB</span>
-                  <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
-                </a>
-              </div>
-
+              <span class="font-label-mono-sm text-[11px] text-amber-400 font-bold uppercase tracking-wider">Pilar 03</span>
+              <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Reconhecimento Facial Inteligente</h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">Ideal para casamentos, formaturas e eventos corporativos. O convidado clica no rosto ou sobe uma selfie e vê só suas fotos.</p>
             </div>
+
+            <!-- Pilar 4 -->
+            <div class="p-space-lg rounded-2xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col gap-space-sm group border border-surface-variant">
+              <div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-rose-400 group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-[28px]">shield</span>
+              </div>
+              <span class="font-label-mono-sm text-[11px] text-rose-400 font-bold uppercase tracking-wider">Pilar 04</span>
+              <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Proteção Total Anti-Pirataria</h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">Grade repetida com logotipo do estúdio, opacidade milimétrica e bloqueio contra clique direito e print-screen nativo.</p>
+            </div>
+
+            <!-- Pilar 5 -->
+            <div class="p-space-lg rounded-2xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col gap-space-sm group border border-surface-variant hover:border-secondary/40">
+              <div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-secondary group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-[28px]">cloud_upload</span>
+              </div>
+              <span class="font-label-mono-sm text-[11px] text-secondary font-bold uppercase tracking-wider">Pilar 05</span>
+              <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Upload Turbo Otimizado</h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">Arraste pastas inteiras. O navegador pré-otimiza antes de enviar, reduzindo o tempo de upload em até 65% sem perder nitidez.</p>
+            </div>
+
+            <!-- Pilar 6 -->
+            <div class="p-space-lg rounded-2xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col gap-space-sm group border border-amber-400/15 hover:border-amber-400/40">
+              <div class="w-12 h-12 rounded-xl bg-surface-container-high border border-amber-400/30 flex items-center justify-center text-amber-400 group-hover:scale-110 shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-transform">
+                <span class="material-symbols-outlined text-[28px] text-amber-400">dns</span>
+              </div>
+              <span class="font-label-mono-sm text-[11px] text-amber-400 font-bold uppercase tracking-wider">Pilar 06</span>
+              <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Nuvem Edge Cloudflare R2</h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">CDN global distribuída em São Paulo e no mundo. Suas fotos abrem com zero lentidão, sem travamentos e com 99.9% de uptime.</p>
+            </div>
+
+            <!-- Pilar 7 -->
+            <div class="p-space-lg rounded-2xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col gap-space-sm group border border-surface-variant">
+              <div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-[28px]">view_kanban</span>
+              </div>
+              <span class="font-label-mono-sm text-[11px] text-on-surface-variant font-bold uppercase tracking-wider">Pilar 07</span>
+              <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Painel Kanban do Fotógrafo</h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">Controle total dos seus trabalhos em colunas: Em Preparação, Aguardando Cliente, Em Retoque e Entregue com Sucesso.</p>
+            </div>
+
+            <!-- Pilar 8 -->
+            <div class="p-space-lg rounded-2xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col gap-space-sm group border border-surface-variant hover:border-secondary/40">
+              <div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-secondary group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-[28px]">send</span>
+              </div>
+              <span class="font-label-mono-sm text-[11px] text-secondary font-bold uppercase tracking-wider">Pilar 08</span>
+              <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Disparo Oficial via WhatsApp</h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">Gere links amigáveis e textos automáticos em 1 clique para enviar direto ao WhatsApp do cliente com credenciais seguras.</p>
+            </div>
+
           </div>
-        </section>
+        </div>
+      </section>
 
-        <!-- FAQ & COMMERCIAL OBJECTION HANDLING -->
-        <section class="max-w-5xl mx-auto px-margin py-space-xl">
-          <div class="text-center mb-10">
-            <span class="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold">Transparência Total</span>
-            <h2 class="font-headline-xl text-headline-xl text-on-surface font-bold mt-2">Dúvidas Frequentes de Fotógrafos</h2>
-          </div>
+      <!-- SIMULADOR INTERATIVO DE CAPACIDADE DE FOTOS & ARMAZENAMENTO -->
+      <section class="w-full px-margin py-space-xl lg:py-24 max-w-7xl mx-auto" id="simulador">
+        <div class="flex flex-col items-center text-center gap-space-xs mb-space-xl">
+          <span class="font-label-mono-sm text-label-mono-sm text-amber-400 uppercase font-black tracking-widest">Calculadora Dinâmica</span>
+          <h2 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg text-on-surface font-bold">
+            Simulador de Capacidade & Enquadramento
+          </h2>
+          <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+            Veja quantas fotos e ensaios você consegue manter simultaneamente ativos em cada plano de acordo com o tamanho dos seus arquivos.
+          </p>
+        </div>
 
-          <div class="space-y-4">
-            <div class="p-6 rounded-xl bg-surface-container border border-outline-variant/40 hover:border-primary/30 transition-colors">
-              <h4 class="font-headline-sm text-headline-sm text-on-surface font-bold flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary text-[20px]">help_outline</span>
-                Tem taxa de adesão ou fidelidade obrigatória?
-              </h4>
-              <p class="font-body-md text-body-md text-on-surface-variant mt-2 pl-7">
-                Não. Os planos são mensais recorrentes sem taxas de setup ocultas. Você pode cancelar ou fazer upgrade a qualquer momento diretamente pelo painel ou via WhatsApp de atendimento.
-              </p>
+        <!-- Módulo do Simulador -->
+        <div class="p-space-lg lg:p-space-xl rounded-3xl bg-surface-container-low border border-amber-400/20 flex flex-col gap-space-lg shadow-xl">
+          
+          <!-- Seletor de Tamanho / Resolução -->
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md pb-space-md border-b border-surface-variant">
+            <div class="flex flex-col">
+              <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Escolha a Resolução de Subida</span>
+              <span class="font-body-sm text-body-sm text-on-surface-variant">Ajuste para ver o rendimento real do espaço em disco</span>
             </div>
-
-            <div class="p-6 rounded-xl bg-surface-container border border-outline-variant/40 hover:border-primary/30 transition-colors">
-              <h4 class="font-headline-sm text-headline-sm text-on-surface font-bold flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary text-[20px]">help_outline</span>
-                Como funciona o Reconhecimento Facial nos eventos?
-              </h4>
-              <p class="font-body-md text-body-md text-on-surface-variant mt-2 pl-7">
-                Nossa Inteligência Artificial processa cada galeria rapidamente. Ao abrir o link, seu cliente ou convidado faz o upload de uma selfie rápida e a plataforma mostra unicamente as fotos em que o rosto dele foi detectado.
-              </p>
-            </div>
-
-            <div class="p-6 rounded-xl bg-surface-container border border-outline-variant/40 hover:border-primary/30 transition-colors">
-              <h4 class="font-headline-sm text-headline-sm text-on-surface font-bold flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary text-[20px]">help_outline</span>
-                O que acontece quando eu encher o armazenamento do plano?
-              </h4>
-              <p class="font-body-md text-body-md text-on-surface-variant mt-2 pl-7">
-                Você pode arquivar projetos finalizados e entregues para liberar espaço imediato ou fazer upgrade para um plano superior (como 60 GB ou customizado para produtoras) pagando apenas a diferença proporcional.
-              </p>
-            </div>
-
-            <div class="p-6 rounded-xl bg-surface-container border border-outline-variant/40 hover:border-primary/30 transition-colors">
-              <h4 class="font-headline-sm text-headline-sm text-on-surface font-bold flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary text-[20px]">help_outline</span>
-                O cliente precisa baixar algum aplicativo no celular?
-              </h4>
-              <p class="font-body-md text-body-md text-on-surface-variant mt-2 pl-7">
-                Nenhum aplicativo! O King Selection funciona 100% via navegador com tecnologia PWA, abrindo instantaneamente em qualquer smartphone (iOS e Android), tablet ou computador.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <!-- FINAL CLOSING CTA BANNER -->
-        <section class="max-w-[1440px] mx-auto px-margin py-space-xl">
-          <div class="relative rounded-2xl bg-gradient-to-r from-surface-container-low via-surface-container to-surface-container-low border border-primary/25 p-space-lg lg:p-space-xl overflow-hidden shadow-2xl flex flex-col md:flex-row items-center justify-between gap-space-lg">
-            <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent pointer-events-none"></div>
             
-            <div class="flex flex-col gap-space-xs max-w-2xl z-10">
-              <div class="inline-flex items-center gap-space-xs px-3 py-1 rounded bg-surface-container border border-emerald-500/20 text-secondary font-label-sm text-label-sm w-fit mb-2">
-                <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
-                <span>Ativação Imediata • Garantia de Qualidade</span>
+            <!-- Botões de Qualidade -->
+            <div class="flex flex-wrap items-center gap-2" id="quality-selector">
+              <button class="quality-btn px-4 py-2 rounded-xl bg-surface-container text-on-surface-variant font-label-mono-sm text-label-mono-sm font-semibold hover:text-amber-400 transition-all border border-transparent cursor-pointer" data-size="3">
+                3 MB (Web Rápida)
+              </button>
+              <button class="quality-btn active px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 font-label-mono-sm text-label-mono-sm font-black shadow-[0_0_24px_rgba(245,158,11,0.5)] border border-amber-300 transition-all cursor-pointer" data-size="7">
+                7 MB (Recomendado King)
+              </button>
+              <button class="quality-btn px-4 py-2 rounded-xl bg-surface-container text-on-surface-variant font-label-mono-sm text-label-mono-sm font-semibold hover:text-amber-400 transition-all border border-transparent cursor-pointer" data-size="10">
+                10 MB (Alta Definição)
+              </button>
+              <button class="quality-btn px-4 py-2 rounded-xl bg-surface-container text-on-surface-variant font-label-mono-sm text-label-mono-sm font-semibold hover:text-amber-400 transition-all border border-transparent cursor-pointer" data-size="15">
+                15 MB (Full Raw/Original)
+              </button>
+            </div>
+          </div>
+
+          <!-- Grid de Resultados do Simulador -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md">
+            
+            <!-- Simulação 20 GB -->
+            <div class="p-space-md rounded-2xl bg-surface-container flex flex-col justify-between gap-space-md border border-surface-variant">
+              <div class="flex flex-col gap-2">
+                <span class="font-label-mono-sm text-label-mono-sm text-on-surface-variant uppercase font-bold">Plano Starter</span>
+                <span class="font-headline-lg text-headline-lg text-on-surface font-black">20 GB</span>
+                <div class="flex flex-col gap-1 mt-2">
+                  <span class="font-label-mono-lg text-label-mono-lg text-amber-400 font-black sim-photos drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]" data-gb="20">~2.920 Fotos</span>
+                  <span class="font-body-sm text-body-sm text-on-surface-variant sim-sessions" data-gb="20">Aprox. 10 a 14 Ensaios</span>
+                </div>
               </div>
-              <h2 class="font-headline-xl text-headline-xl text-on-surface font-extrabold tracking-tight">
-                Pronto para profissionalizar a entrega das suas fotos?
-              </h2>
-              <p class="font-body-md text-body-md text-on-surface-variant">
-                Comece hoje mesmo com suporte humanizado e migração assistida das suas galerias. Atendimento ágil pelo WhatsApp oficial da Conecta King.
-              </p>
-              <div class="flex items-center gap-6 mt-4 text-on-surface-variant font-body-sm text-body-sm">
-                <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-secondary text-[16px]">check</span> Ativação Imediata</span>
-                <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-secondary text-[16px]">check</span> Suporte em Português</span>
-                <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-secondary text-[16px]">check</span> Sem Fidelidade</span>
+              <div class="pt-3 border-t border-surface-variant flex items-center justify-between">
+                <span class="font-headline-sm text-headline-sm text-on-surface font-bold">R$ 39,90<span class="text-on-surface-variant font-body-sm text-[12px]">/mês</span></span>
+                <a class="text-amber-400 hover:text-amber-300 hover:underline font-label-mono-sm text-label-mono-sm font-bold flex items-center gap-1" href="#planos-e-precos">Ver Plano <span class="material-symbols-outlined text-[16px]">arrow_forward</span></a>
               </div>
             </div>
 
-            <div class="flex flex-col sm:flex-row items-center gap-space-sm z-10 shrink-0 w-full sm:w-auto">
-              <a class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-6 py-3.5 rounded bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-headline-sm text-label-md font-bold shadow-[0_0_20px_rgba(16,185,129,0.35)] transition-all active:scale-[0.98]" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Gostaria%20de%20falar%20com%20um%20especialista%20do%20King%20Selection%20agora." target="_blank">
-                <span class="material-symbols-outlined text-[20px]">chat</span>
-                <span>Falar no WhatsApp: (11) 98878-9417</span>
-              </a>
-              <a class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-6 py-3.5 rounded bg-surface-container-high border border-outline-variant/60 text-on-surface font-label-md text-label-md font-bold hover:bg-surface-container-highest hover:text-primary hover:border-primary/40 transition-all" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Pro%20de%2030%20GB%20do%20King%20Selection." target="_blank">
-                <span>Assinar Plano Pro (R$ 59,90)</span>
+            <!-- Simulação 30 GB -->
+            <div class="p-space-md rounded-2xl bg-surface-container-high shadow-2xl flex flex-col justify-between gap-space-md relative overflow-hidden border-2 border-amber-400/80 shadow-[0_0_30px_rgba(245,158,11,0.25)]">
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-label-mono-sm text-label-mono-sm text-amber-400 uppercase font-black">Plano Pro</span>
+                  <span class="font-label-mono-sm text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black shadow-[0_0_8px_rgba(245,158,11,0.4)]">Mais Popular</span>
+                </div>
+                <span class="font-headline-lg text-headline-lg text-on-surface font-black">30 GB</span>
+                <div class="flex flex-col gap-1 mt-2">
+                  <span class="font-label-mono-lg text-label-mono-lg text-amber-400 font-black sim-photos drop-shadow-[0_0_12px_rgba(245,158,11,0.4)]" data-gb="30">~4.380 Fotos</span>
+                  <span class="font-body-sm text-body-sm text-on-surface-variant sim-sessions" data-gb="30">Aprox. 15 a 22 Ensaios</span>
+                </div>
+              </div>
+              <div class="pt-3 border-t border-surface-variant flex items-center justify-between">
+                <span class="font-headline-sm text-headline-sm text-amber-400 font-black">R$ 59,90<span class="text-on-surface-variant font-body-sm text-[12px]">/mês</span></span>
+                <a class="text-amber-400 hover:text-amber-300 hover:underline font-label-mono-sm text-label-mono-sm font-black flex items-center gap-1" href="#planos-e-precos">Ver Plano <span class="material-symbols-outlined text-[16px]">arrow_forward</span></a>
+              </div>
+            </div>
+
+            <!-- Simulação 60 GB -->
+            <div class="p-space-md rounded-2xl bg-surface-container flex flex-col justify-between gap-space-md border border-surface-variant">
+              <div class="flex flex-col gap-2">
+                <span class="font-label-mono-sm text-label-mono-sm text-secondary uppercase font-bold">Studio King</span>
+                <span class="font-headline-lg text-headline-lg text-on-surface font-black">60 GB</span>
+                <div class="flex flex-col gap-1 mt-2">
+                  <span class="font-label-mono-lg text-label-mono-lg text-secondary font-bold sim-photos" data-gb="60">~8.760 Fotos</span>
+                  <span class="font-body-sm text-body-sm text-on-surface-variant sim-sessions" data-gb="60">Aprox. 30 Ensaios ou 8 Casamentos</span>
+                </div>
+              </div>
+              <div class="pt-3 border-t border-surface-variant flex items-center justify-between">
+                <span class="font-headline-sm text-headline-sm text-on-surface font-bold">R$ 99,90<span class="text-on-surface-variant font-body-sm text-[12px]">/mês</span></span>
+                <a class="text-secondary hover:underline font-label-mono-sm text-label-mono-sm font-bold flex items-center" href="#planos-e-precos">Ver Plano <span class="material-symbols-outlined text-[16px]">arrow_forward</span></a>
+              </div>
+            </div>
+
+            <!-- Simulação 100 GB -->
+            <div class="p-space-md rounded-2xl bg-surface-container flex flex-col justify-between gap-space-md border border-surface-variant">
+              <div class="flex flex-col gap-2">
+                <span class="font-label-mono-sm text-label-mono-sm text-on-surface-variant uppercase font-bold">Enterprise / Produtoras</span>
+                <span class="font-headline-lg text-headline-lg text-on-surface font-black">100 GB+</span>
+                <div class="flex flex-col gap-1 mt-2">
+                  <span class="font-label-mono-lg text-label-mono-lg text-on-surface font-bold sim-photos" data-gb="100">~14.600+ Fotos</span>
+                  <span class="font-body-sm text-body-sm text-on-surface-variant sim-sessions" data-gb="100">Volume Ilimitado de Produção</span>
+                </div>
+              </div>
+              <div class="pt-3 border-t border-surface-variant flex items-center justify-between">
+                <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Sob Demanda</span>
+                <a class="text-amber-400 hover:underline font-label-mono-sm text-label-mono-sm font-bold flex items-center" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Tenho%20interesse%20no%20Plano%20Enterprise%20acima%20de%20100GB." rel="noopener noreferrer" target="_blank">Falar no WhatsApp <span class="material-symbols-outlined text-[16px]">chat</span></a>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-surface-container-highest/60 border border-amber-400/20 flex items-center gap-3">
+            <span class="material-symbols-outlined text-amber-400 text-[22px]">info</span>
+            <span class="font-body-sm text-body-sm text-on-surface-variant">
+              Dica Pro Conecta King: No King Selection, as fotos de prova enviadas com ~7 MB entregam nitidez retina espetacular em qualquer tela e carregam 4x mais rápido para o seu cliente selecionar sem travar.
+            </span>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TABELA DE PLANOS & PREÇOS (TRANSPARÊNCIA TOTAL) -->
+      <section class="w-full bg-surface-container-lowest px-margin py-space-xl lg:py-24 border-t border-amber-500/10" id="planos-e-precos">
+        <div class="max-w-7xl mx-auto flex flex-col gap-space-xl">
+          <div class="flex flex-col items-center text-center gap-space-xs">
+            <span class="font-label-mono-sm text-label-mono-sm text-amber-400 uppercase font-black tracking-widest">Planos Transparentes Sem Surpresas</span>
+            <h2 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg text-on-surface font-bold">
+              Escolha o Plano Ideal para a Escala do seu Estúdio
+            </h2>
+            <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+              Sem taxas sobre as suas vendas de fotos extras. O lucro no Pix é 100% seu. Cancele quando quiser sem contratos amarrados.
+            </p>
+          </div>
+
+          <!-- Grid dos 3 Cards Principais -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-space-lg items-stretch">
+            
+            <!-- Plano Starter (20 GB) -->
+            <div class="p-space-lg rounded-3xl bg-surface-container-low flex flex-col justify-between gap-space-lg border border-surface-variant">
+              <div class="flex flex-col gap-space-md">
+                <div class="flex flex-col gap-1">
+                  <span class="font-label-mono-sm text-label-mono-sm text-on-surface-variant font-bold uppercase tracking-wider">Iniciante / Ensaios</span>
+                  <h3 class="font-headline-md text-headline-md text-on-surface font-black">Plano Starter (20 GB)</h3>
+                  <p class="font-body-sm text-body-sm text-on-surface-variant">Para fotógrafos que realizam até 10 ensaios mensais e querem seleção ágil.</p>
+                </div>
+                <div class="flex items-baseline gap-1">
+                  <span class="font-display-lg text-headline-lg text-on-surface font-black">R$ 39,90</span>
+                  <span class="font-body-md text-body-md text-on-surface-variant">/mês</span>
+                </div>
+                <div class="flex flex-col gap-2.5 pt-space-xs font-body-sm text-body-sm text-on-surface-variant">
+                  <div class="flex items-center gap-2.5 text-on-surface">
+                    <span class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                    <span>Até <strong>~2.900 fotos</strong> ativas em nuvem</span>
+                  </div>
+                  <div class="flex items-center gap-2.5 text-on-surface">
+                    <span class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                    <span>Galerias ilimitadas de clientes</span>
+                  </div>
+                  <div class="flex items-center gap-2.5 text-on-surface">
+                    <span class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                    <span>Marca d'água anti-print personalizável</span>
+                  </div>
+                  <div class="flex items-center gap-2.5 text-on-surface">
+                    <span class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                    <span>Anotações de retoque por imagem</span>
+                  </div>
+                  <div class="flex items-center gap-2.5 text-on-surface">
+                    <span class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                    <span>Venda automática de fotos extras no Pix</span>
+                  </div>
+                  <div class="flex items-center gap-2.5 text-on-surface-variant/60">
+                    <span class="material-symbols-outlined text-[18px]">close</span>
+                    <span>Reconhecimento Facial IA (Face AI)</span>
+                  </div>
+                </div>
+              </div>
+              <a class="w-full py-3.5 px-4 rounded-xl bg-surface-container-high hover:bg-surface-bright text-on-surface hover:text-amber-300 font-headline-sm text-body-md font-bold text-center transition-all flex items-center justify-center gap-2 border border-surface-variant hover:border-amber-400/40" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Quero%20contratar%20o%20Plano%20Starter%20(20%20GB)%20por%20R$%2039,90." rel="noopener noreferrer" target="_blank">
+                <span>Escolher 20 GB</span>
                 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
               </a>
             </div>
-          </div>
-        </section>
 
-      </div>
+            <!-- Plano Pro (30 GB) - MAIS POPULAR / DESTAQUE DOURADO -->
+            <div class="p-space-lg rounded-3xl bg-surface-container-high shadow-2xl flex flex-col justify-between gap-space-lg relative overflow-hidden border-2 border-amber-400 shadow-[0_0_40px_rgba(245,158,11,0.35)]">
+              <!-- Faixa Luminosa Mais Popular -->
+              <div class="absolute top-0 right-0 left-0 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 py-1.5 text-center font-label-mono-sm text-label-mono-sm font-black tracking-wider uppercase shadow-[0_2px_12px_rgba(245,158,11,0.4)]">
+                ⚡ O Mais Escolhido por Fotógrafos Profissionais
+              </div>
+              <div class="flex flex-col gap-space-md pt-5">
+                <div class="flex flex-col gap-1">
+                  <span class="font-label-mono-sm text-label-mono-sm text-amber-400 font-black uppercase tracking-wider">Acelerador de Receita</span>
+                  <h3 class="font-headline-md text-headline-md text-on-surface font-black">Plano Pro (30 GB)</h3>
+                  <p class="font-body-sm text-body-sm text-on-surface-variant">Reconhecimento Facial IA, Kanban e integração nativa com WhatsApp inclusos.</p>
+                </div>
+                <div class="flex items-baseline gap-1">
+                  <span class="font-display-lg text-headline-lg text-amber-400 font-black drop-shadow-[0_0_16px_rgba(245,158,11,0.4)]">R$ 59,90</span>
+                  <span class="font-body-md text-body-md text-on-surface-variant">/mês</span>
+                </div>
+                <div class="flex flex-col gap-2.5 pt-space-xs font-body-sm text-body-sm text-on-surface">
+                  <div class="flex items-center gap-2.5">
+                    <span class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                    <span>Até <strong>~4.350 fotos</strong> ativas simultaneamente</span>
+                  </div>
+                  <div class="flex items-center gap-2.5">
+                    <span class="material-symbols-outlined text-amber-400 text-[18px]">bolt</span>
+                    <span><strong class="text-amber-400">Reconhecimento Facial IA</strong> (Face AI ativo)</span>
+                  </div>
+                  <div class="flex items-center gap-2.5">
+                    <span class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                    <span>Painel Kanban completo de gestão de projetos</span>
+                  </div>
+                  <div class="flex items-center gap-2.5">
+                    <span class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                    <span>Integração de envio automático no WhatsApp</span>
+                  </div>
+                  <div class="flex items-center gap-2.5">
+                    <span class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                    <span>Marca d'água anti-print + Anotações de retoque</span>
+                  </div>
+                  <div class="flex items-center gap-2.5">
+                    <span class="material-symbols-outlined text-amber-400 text-[18px]">star</span>
+                    <span class="text-amber-300 font-semibold">Suporte Prioritário Conecta King</span>
+                  </div>
+                </div>
+              </div>
+              <a class="w-full py-4 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-headline-sm text-body-md font-extrabold text-center transition-all shadow-[0_0_30px_rgba(245,158,11,0.45)] hover:shadow-[0_0_40px_rgba(245,158,11,0.65)] flex items-center justify-center gap-2" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Pro%20(30%20GB)%20por%20R$%2059,90." rel="noopener noreferrer" target="_blank">
+                <span>Contratar Plano Pro 30 GB</span>
+                <span class="material-symbols-outlined text-[18px] font-bold">arrow_forward</span>
+              </a>
+            </div>
+
+            <!-- Plano Studio King (60 GB) -->
+            <div class="p-space-lg rounded-3xl bg-surface-container-low flex flex-col justify-between gap-space-lg border border-surface-variant">
+              <div class="flex flex-col gap-space-md">
+                <div class="flex flex-col gap-1">
+                  <span class="font-label-mono-sm text-label-mono-sm text-secondary font-bold uppercase tracking-wider">Alto Volume & Equipes</span>
+                  <h3 class="font-headline-md text-headline-md text-on-surface font-black">Studio King (60 GB)</h3>
+                  <p class="font-body-sm text-body-sm text-on-surface-variant">Para estúdios com múltiplos fotógrafos, casamentos semanais e formaturas.</p>
+                </div>
+                <div class="flex items-baseline gap-1">
+                  <span class="font-display-lg text-headline-lg text-on-surface font-black">R$ 99,90</span>
+                  <span class="font-body-md text-body-md text-on-surface-variant">/mês</span>
+                </div>
+                <div class="flex flex-col gap-2.5 pt-space-xs font-body-sm text-body-sm text-on-surface">
+                  <div class="flex items-center gap-2.5">
+                    <span class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                    <span>Até <strong>~8.700 fotos</strong> ou grandes casamentos</span>
+                  </div>
+                  <div class="flex items-center gap-2.5">
+                    <span class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                    <span>Tudo do Plano Pro incluído sem limites</span>
+                  </div>
+                  <div class="flex items-center gap-2.5">
+                    <span class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                    <span>Acesso para múltiplos assistentes e editores</span>
+                  </div>
+                  <div class="flex items-center gap-2.5">
+                    <span class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                    <span>Prioridade máxima de tráfego na CDN Cloudflare</span>
+                  </div>
+                  <div class="flex items-center gap-2.5">
+                    <span class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                    <span>Atendimento VIP personalizado</span>
+                  </div>
+                </div>
+              </div>
+              <a class="w-full py-3.5 px-4 rounded-xl bg-surface-container-high hover:bg-surface-bright text-on-surface font-headline-sm text-body-md font-bold text-center transition-all flex items-center justify-center gap-2 border border-surface-variant" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Studio%20King%20(60%20GB)%20por%20R$%2099,90." rel="noopener noreferrer" target="_blank">
+                <span>Assinar Studio King 60 GB</span>
+                <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+              </a>
+            </div>
+
+          </div>
+
+          <!-- Card Enterprise Sob Demanda -->
+          <div class="p-space-lg rounded-2xl bg-surface-container border border-amber-400/20 flex flex-col md:flex-row items-center justify-between gap-space-md">
+            <div class="flex items-center gap-space-md">
+              <div class="w-12 h-12 rounded-xl bg-surface-container-high border border-amber-400/30 flex items-center justify-center text-amber-400 flex-shrink-0 shadow-[0_0_16px_rgba(245,158,11,0.2)]">
+                <span class="material-symbols-outlined text-[28px] text-amber-400">business</span>
+              </div>
+              <div class="flex flex-col">
+                <h4 class="font-headline-sm text-headline-sm text-on-surface font-bold">Precisa de 100 GB, 500 GB ou 1 TB para Produtora de Formaturas?</h4>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">Estruturas corporativas com SLAs dedicados, onboarding assistido e armazenamento massivo sob medida.</p>
+              </div>
+            </div>
+            <a class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-surface-container-high hover:bg-surface-bright text-amber-400 border border-amber-400/30 hover:border-amber-400/60 font-headline-sm text-body-sm font-bold flex-shrink-0 transition-all shadow-[0_0_15px_rgba(245,158,11,0.15)]" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Preciso%20de%20uma%20proposta%20Enterprise%20(100GB%2B)%20para%20minha%20produtora." rel="noopener noreferrer" target="_blank">
+              <span class="material-symbols-outlined text-[18px]">chat</span>
+              <span>Consultar Enterprise</span>
+            </a>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- FAQ DE RESPOSTA RÁPIDA (QUEBRA DE OBJEÇÕES) -->
+      <section class="w-full px-margin py-space-xl lg:py-24 max-w-4xl mx-auto" id="faq">
+        <div class="flex flex-col items-center text-center gap-space-xs mb-space-xl">
+          <span class="font-label-mono-sm text-label-mono-sm text-amber-400 uppercase font-black tracking-widest">Tire suas Dúvidas</span>
+          <h2 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg text-on-surface font-bold">
+            Perguntas Frequentes de Fotógrafos
+          </h2>
+          <p class="font-body-md text-body-md text-on-surface-variant">
+            Transparência absoluta sobre fluxo de pagamento, compressão de imagens e compatibilidade.
+          </p>
+        </div>
+
+        <!-- Accordion Interativo -->
+        <div class="flex flex-col gap-space-sm" id="faq-accordion">
+          
+          <!-- FAQ 1 -->
+          <div class="faq-item rounded-2xl bg-surface-container-low transition-all border border-transparent hover:border-amber-400/20">
+            <button type="button" class="faq-toggle w-full p-space-md text-left flex items-center justify-between gap-4 cursor-pointer">
+              <span class="font-headline-sm text-body-lg text-on-surface font-bold">Como o cliente final paga as fotos extras?</span>
+              <span class="material-symbols-outlined text-amber-400 text-[20px] transition-transform faq-icon">expand_more</span>
+            </button>
+            <div class="faq-content hidden px-space-md pb-space-md text-on-surface-variant font-body-md text-body-md">
+              <p>Direto na sua chave Pix ou link de pagamento configurado! O King Selection calcula a quantidade de fotos extras selecionadas e apresenta a chave Pix ou gera o pedido formatado para o seu WhatsApp. <strong class="text-secondary font-semibold">100% do valor vai para a sua conta, sem intermediação nem taxas sobre o seu faturamento.</strong></p>
+            </div>
+          </div>
+
+          <!-- FAQ 2 -->
+          <div class="faq-item rounded-2xl bg-surface-container-low transition-all border border-transparent hover:border-amber-400/20">
+            <button type="button" class="faq-toggle w-full p-space-md text-left flex items-center justify-between gap-4 cursor-pointer">
+              <span class="font-headline-sm text-body-lg text-on-surface font-bold">As fotos perdem qualidade para a entrega final de impressão?</span>
+              <span class="material-symbols-outlined text-amber-400 text-[20px] transition-transform faq-icon">expand_more</span>
+            </button>
+            <div class="faq-content hidden px-space-md pb-space-md text-on-surface-variant font-body-md text-body-md">
+              <p>Não. Apenas as fotos da galeria de prova são otimizadas para que o cliente abra no 4G/5G com velocidade estonteante. Após o cliente finalizar e pagar pelas extras, você utiliza a lista de nomes de arquivos para exportar os arquivos em resolução original máxima diretamente do seu Lightroom ou disco local.</p>
+            </div>
+          </div>
+
+          <!-- FAQ 3 -->
+          <div class="faq-item rounded-2xl bg-surface-container-low transition-all border border-transparent hover:border-amber-400/20">
+            <button type="button" class="faq-toggle w-full p-space-md text-left flex items-center justify-between gap-4 cursor-pointer">
+              <span class="font-headline-sm text-body-lg text-on-surface font-bold">O cliente precisa criar conta ou instalar algum aplicativo?</span>
+              <span class="material-symbols-outlined text-amber-400 text-[20px] transition-transform faq-icon">expand_more</span>
+            </button>
+            <div class="faq-content hidden px-space-md pb-space-md text-on-surface-variant font-body-md text-body-md">
+              <p>Zero aplicativo! O cliente recebe um link exclusivo protegido por senha ou PIN gerado automaticamente e abre diretamente no navegador de qualquer celular (Safari, Chrome) ou computador. A seleção é tão intuitiva quanto navegar no feed de uma rede social.</p>
+            </div>
+          </div>
+
+          <!-- FAQ 4 -->
+          <div class="faq-item rounded-2xl bg-surface-container-low transition-all border border-transparent hover:border-amber-400/20">
+            <button type="button" class="faq-toggle w-full p-space-md text-left flex items-center justify-between gap-4 cursor-pointer">
+              <span class="font-headline-sm text-body-lg text-on-surface font-bold">Como exporto a lista de fotos selecionadas para o Lightroom?</span>
+              <span class="material-symbols-outlined text-amber-400 text-[20px] transition-transform faq-icon">expand_more</span>
+            </button>
+            <div class="faq-content hidden px-space-md pb-space-md text-on-surface-variant font-body-md text-body-md">
+              <p>Com um único clique no botão <strong>"Copiar Nomes para Lightroom"</strong> dentro do seu painel. O King Selection copia a sequência exata de nomes de arquivo (ex: IMG_1020, IMG_1045). Basta abrir a Biblioteca do Lightroom, colar na barra de busca por texto com a opção "Contém" e filtrar todas em menos de 3 segundos.</p>
+            </div>
+          </div>
+
+          <!-- FAQ 5 -->
+          <div class="faq-item rounded-2xl bg-surface-container-low transition-all border border-transparent hover:border-amber-400/20">
+            <button type="button" class="faq-toggle w-full p-space-md text-left flex items-center justify-between gap-4 cursor-pointer">
+              <span class="font-headline-sm text-body-lg text-on-surface font-bold">Tem taxa de cancelamento ou contrato de fidelidade preso?</span>
+              <span class="material-symbols-outlined text-amber-400 text-[20px] transition-transform faq-icon">expand_more</span>
+            </button>
+            <div class="faq-content hidden px-space-md pb-space-md text-on-surface-variant font-body-md text-body-md">
+              <p>Não há fidelidade nem pegadinhas. As assinaturas funcionam mês a mês. Se desejar pausar ou cancelar, basta fazer a solicitação diretamente no painel ou pelo suporte no WhatsApp sem multa alguma.</p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- SEÇÃO DE FECHAMENTO (CTA FINAL DE ALTO CONVENCIMENTO) -->
+      <section class="w-full px-margin pb-space-xl lg:pb-28">
+        <div class="max-w-5xl mx-auto rounded-3xl bg-surface-container-high p-space-lg lg:p-space-xl shadow-2xl flex flex-col items-center text-center gap-space-md relative overflow-hidden border border-amber-400/30">
+          <!-- Efeito de Luz Âmbar Suave de Fundo -->
+          <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-64 bg-amber-500/25 blur-3xl pointer-events-none"></div>
+          
+          <div class="w-14 h-14 rounded-2xl bg-surface-container-highest border border-amber-400/40 flex items-center justify-center text-amber-400 shadow-[0_0_24px_rgba(245,158,11,0.35)] relative z-10">
+            <span class="material-symbols-outlined text-[32px] text-amber-400">monetization_on</span>
+          </div>
+          
+          <div class="flex flex-col gap-2 max-w-2xl relative z-10">
+            <h2 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg text-on-surface font-black">
+              Pare de Deixar Dinheiro na Mesa em Cada Ensaio Fotográfico
+            </h2>
+            <p class="font-body-lg text-body-lg text-on-surface-variant">
+              Modernize a apresentação do seu estúdio hoje mesmo, encante seus clientes com velocidade ultra-rápida e comece a lucrar no Pix com venda automática de fotos extras.
+            </p>
+          </div>
+
+          <!-- Botão Verde WhatsApp de Alta Conversão -->
+          <div class="flex flex-col sm:flex-row items-center gap-space-sm pt-space-xs relative z-10 w-full sm:w-auto">
+            <a class="w-full sm:w-auto inline-flex justify-center items-center gap-3 px-8 py-4 rounded-xl bg-secondary-container hover:bg-secondary text-on-secondary font-headline-sm text-body-lg font-bold transition-all shadow-[0_0_32px_rgba(16,185,129,0.35)] hover:shadow-[0_0_48px_rgba(16,185,129,0.55)]" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Quero%20conhecer%20o%20King%20Selection%20para%20meu%20est%C3%BAdio." rel="noopener noreferrer" target="_blank">
+              <span class="material-symbols-outlined text-[24px]">chat</span>
+              <span>Falar no WhatsApp Oficial: (11) 98878-9417</span>
+            </a>
+            <button type="button" onclick="openLoginModal()" class="w-full sm:w-auto inline-flex justify-center items-center gap-2 px-6 py-4 rounded-xl bg-surface-container text-on-surface hover:text-amber-300 hover:bg-surface-bright font-headline-sm text-body-md font-semibold transition-all border border-amber-400/20 hover:border-amber-400/40 cursor-pointer">
+              <span class="material-symbols-outlined text-amber-400 text-[20px]">lock_open</span>
+              <span>Acessar Meu Painel</span>
+            </button>
+          </div>
+
+          <!-- Selos de Confiança -->
+          <div class="flex flex-wrap items-center justify-center gap-space-md pt-space-sm text-on-surface-variant font-label-mono-sm text-label-mono-sm relative z-10">
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-secondary text-[16px]">lock</span>
+              <span>Criptografia SHA-256</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-amber-400 text-[16px]">cloud</span>
+              <span>Cloudflare R2 Global Edge</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-secondary text-[16px]">verified</span>
+              <span>Garantia Conecta King Tecnologia</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </div>
   </main>
 
-  <!-- LUXURY FOOTER -->
-  <footer class="w-full bg-surface-container-lowest border-t border-primary/10">
-    <div class="max-w-[1440px] mx-auto px-margin py-space-xl">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mb-space-xl">
+  <!-- MODAL EXCLUSIVO DE LOGIN (ÁREA DO FOTÓGRAFO) -->
+  <div id="ks-login-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+    <div class="relative w-full max-w-md bg-surface-container-high rounded-3xl p-6 sm:p-8 border border-amber-400/40 shadow-[0_0_50px_rgba(0,0,0,0.8)] transform scale-95 transition-all duration-300" id="ks-login-box">
+      
+      <!-- Botão Fechar -->
+      <button type="button" onclick="closeLoginModal()" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-surface-container hover:bg-surface-bright text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-colors cursor-pointer" title="Fechar">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+
+      <!-- Cabeçalho do Modal -->
+      <div class="flex flex-col items-center text-center gap-2 mb-6">
+        <div class="w-14 h-14 rounded-2xl bg-surface-container-lowest border border-amber-400/40 flex items-center justify-center text-amber-400 shadow-[0_0_24px_rgba(245,158,11,0.35)]">
+          <span class="material-symbols-outlined text-[28px] text-amber-400">lock</span>
+        </div>
+        <h3 class="font-headline-md text-headline-md font-black text-on-surface tracking-tight mt-1">Área do Fotógrafo</h3>
+        <p class="font-body-sm text-body-sm text-on-surface-variant max-w-xs">
+          Acesse suas galerias, clientes e seleções em andamento no King Selection.
+        </p>
+      </div>
+
+      <!-- Formulário de Login -->
+      <form onsubmit="handleKsLogin(event)" class="space-y-4">
+        
+        <!-- Input E-mail / Usuário -->
+        <div class="space-y-1.5 text-left">
+          <label class="font-label-mono-sm text-label-mono-sm text-on-surface-variant uppercase font-bold" for="ks-email">E-mail ou Usuário</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">mail</span>
+            <input 
+              id="ks-email" 
+              type="text" 
+              required 
+              autocomplete="username" 
+              placeholder="Ex: seuemail@estudio.com ou telefone" 
+              class="w-full h-12 pl-11 pr-4 rounded-xl bg-surface-container-lowest border border-amber-400/20 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-on-surface font-body-md placeholder:text-stone-500 text-sm transition-all outline-none"
+            />
+          </div>
+        </div>
+
+        <!-- Input Senha com Olhinho -->
+        <div class="space-y-1.5 text-left">
+          <div class="flex items-center justify-between">
+            <label class="font-label-mono-sm text-label-mono-sm text-on-surface-variant uppercase font-bold" for="ks-password">Senha de Acesso</label>
+            <a class="font-label-mono-sm text-label-mono-sm text-amber-400 hover:underline font-bold" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Esqueci%20minha%20senha%20de%20acesso%20do%20King%20Selection." target="_blank" rel="noopener noreferrer">Esqueci</a>
+          </div>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">key</span>
+            <input 
+              id="ks-password" 
+              type="password" 
+              required 
+              autocomplete="current-password" 
+              placeholder="••••••••" 
+              class="w-full h-12 pl-11 pr-11 rounded-xl bg-surface-container-lowest border border-amber-400/20 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-on-surface font-body-md placeholder:text-stone-500 text-sm transition-all outline-none"
+            />
+            <button 
+              type="button" 
+              id="ks-toggle-pwd-btn" 
+              onclick="togglePasswordVisibility()" 
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-amber-400 transition-colors p-1 cursor-pointer flex items-center justify-center" 
+              title="Mostrar senha" 
+              aria-label="Mostrar ou ocultar senha"
+            >
+              <span id="ks-pwd-eye-open" class="material-symbols-outlined text-[20px]" style="display: block;">visibility</span>
+              <span id="ks-pwd-eye-closed" class="material-symbols-outlined text-[20px]" style="display: none;">visibility_off</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Botão Entrar -->
+        <div class="pt-2">
+          <button 
+            type="submit" 
+            id="ks-btn-submit" 
+            class="w-full h-12 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-headline-sm text-body-md font-extrabold flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(245,158,11,0.45)] hover:shadow-[0_0_35px_rgba(245,158,11,0.65)] transition-all active:scale-[0.98] cursor-pointer"
+          >
+            <span>Acessar Meus Projetos</span>
+            <span class="material-symbols-outlined text-[20px] font-bold">login</span>
+          </button>
+        </div>
+
+        <!-- Links Auxiliares -->
+        <div class="pt-3 text-center border-t border-surface-variant text-xs space-y-2">
+          <p class="text-on-surface-variant">
+            Ainda não é fotógrafo assinante? 
+            <a href="#planos-e-precos" onclick="closeLoginModal()" class="text-amber-400 font-bold hover:underline">Contratar Plano</a>
+          </p>
+          <p>
+            <a class="text-secondary font-semibold hover:underline inline-flex items-center gap-1" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Preciso%20de%20ajuda%20para%20acessar%20meu%20painel%20do%20King%20Selection." target="_blank" rel="noopener noreferrer">
+              <span class="material-symbols-outlined text-[16px]">chat</span>
+              <span>Problemas no acesso? Suporte WhatsApp</span>
+            </a>
+          </p>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- FOOTER EXECUTIVO -->
+  <footer class="w-full bg-surface-container-lowest py-space-xl border-t border-amber-500/10">
+    <div class="w-full px-margin flex flex-col gap-space-xl max-w-7xl mx-auto">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-lg items-start">
         
         <div class="flex flex-col gap-space-sm">
           <div class="flex items-center gap-space-sm">
-            <img alt="King Selection Logo" class="h-7 w-auto object-contain filter drop-shadow-[0_0_8px_rgba(245,158,11,0.25)]" src="https://i.ibb.co/60sW9k75/logo.png"/>
-            <span class="font-headline-sm text-headline-sm font-bold text-on-surface">King Selection</span>
+            <div class="w-8 h-8 rounded-lg bg-surface-container-high border border-amber-400/30 flex items-center justify-center text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.3)]">
+              <span class="material-symbols-outlined text-[20px] text-amber-400">crown</span>
+            </div>
+            <span class="font-headline-sm text-headline-sm text-on-surface font-bold">King Selection</span>
           </div>
-          <p class="font-body-sm text-body-sm text-on-surface-variant mt-2">Plataforma de alta performance para seleção e entrega inteligente de fotos com Reconhecimento Facial.</p>
-          <div class="inline-flex items-center gap-space-xs px-space-sm py-1 rounded bg-surface-container border border-emerald-500/20 text-secondary font-label-sm text-label-sm w-fit">
-            <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
-            <span>Reconhecimento Facial IA • 100% Online</span>
-          </div>
+          <p class="font-body-sm text-body-sm text-on-surface-variant max-w-sm">
+            Plataforma executiva de alta velocidade para seleção e aprovação de acervos fotográficos premium, equipada com infraestrutura de entrega em tempo real.
+          </p>
         </div>
 
         <div class="flex flex-col gap-space-sm">
-          <span class="font-label-md text-label-md text-on-surface font-bold uppercase tracking-wider">Navegação Rápida</span>
-          <nav class="flex flex-col gap-space-xs">
-            <a class="transition-colors text-primary font-bold" href="#">Início do Sistema</a>
-            <a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#como-funciona">Como Funciona</a>
-            <a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#simulador">Calculadora de Capacidade</a>
-            <a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#planos">Planos & Preços 2026</a>
-          </nav>
-        </div>
-
-        <div class="flex flex-col gap-space-sm">
-          <span class="font-label-md text-label-md text-on-surface font-bold uppercase tracking-wider">Segurança e Tecnologia</span>
-          <div class="flex flex-col gap-space-xs text-on-surface-variant font-body-sm text-body-sm">
-            <div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-secondary text-[16px]">verified_user</span><span>Proteção Anti-Print e Marca d'Água</span></div>
-            <div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-secondary text-[16px]">gavel</span><span>Em conformidade com a LGPD</span></div>
-            <div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-secondary text-[16px]">cloud_done</span><span>Backup em Nuvem Redundante</span></div>
-            <div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-secondary text-[16px]">devices</span><span>Acesso Instantâneo PWA Mobile</span></div>
+          <span class="font-label-mono-lg text-label-mono-lg text-amber-400 uppercase font-black tracking-wider">Infraestrutura & Segurança</span>
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center gap-2 text-on-surface-variant font-label-mono-sm text-label-mono-sm">
+              <span class="material-symbols-outlined text-secondary text-[16px]">cloud_done</span>
+              <span>Armazenamento Cloudflare R2 Edge</span>
+            </div>
+            <div class="flex items-center gap-2 text-on-surface-variant font-label-mono-sm text-label-mono-sm">
+              <span class="material-symbols-outlined text-secondary text-[16px]">enhanced_encryption</span>
+              <span>Criptografia SHA-256 e TLS 1.3</span>
+            </div>
+            <div class="flex items-center gap-2 text-on-surface-variant font-label-mono-sm text-label-mono-sm">
+              <span class="material-symbols-outlined text-secondary text-[16px]">verified_user</span>
+              <span>Privacidade & Proteção de Dados</span>
+            </div>
           </div>
         </div>
 
         <div class="flex flex-col gap-space-sm">
-          <span class="font-label-md text-label-md text-on-surface font-bold uppercase tracking-wider">Atendimento Oficial</span>
-          <p class="font-body-sm text-body-sm text-on-surface-variant">Central executiva para fotógrafos, estúdios e produtoras de eventos.</p>
-          <a class="inline-flex items-center justify-center gap-space-xs px-space-md py-space-sm rounded bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high hover:text-emerald-400 hover:border-emerald-500/30 transition-colors font-label-md text-label-md w-fit" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Gostaria%20de%20falar%20com%20o%20suporte%20do%20King%20Selection." target="_blank">
-            <span class="material-symbols-outlined text-[16px]">support_agent</span>
-            <span>Canal WhatsApp Dedicado</span>
-          </a>
+          <span class="font-label-mono-lg text-label-mono-lg text-amber-400 uppercase font-black tracking-wider">Navegação Rápida</span>
+          <div class="flex flex-col gap-2 font-body-sm text-body-sm">
+            <a class="text-on-surface-variant hover:text-amber-400 transition-colors" href="#recursos">Recursos de Performance</a>
+            <a class="text-on-surface-variant hover:text-amber-400 transition-colors" href="#comparativo">Comparativo</a>
+            <a class="text-on-surface-variant hover:text-amber-400 transition-colors" href="#simulador">Simulador de Fotos</a>
+            <a class="text-on-surface-variant hover:text-amber-400 transition-colors" href="#planos-e-precos">Tabela de Planos</a>
+            <a class="text-on-surface-variant hover:text-amber-400 transition-colors" href="#faq">Perguntas Frequentes</a>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-space-sm">
+          <span class="font-label-mono-lg text-label-mono-lg text-amber-400 uppercase font-black tracking-wider">Atendimento Oficial</span>
+          <div class="p-4 rounded-xl bg-surface-container-low border border-amber-400/15 flex flex-col gap-2">
+            <span class="font-body-sm text-body-sm text-on-surface-variant">Suporte VIP e Onboarding:</span>
+            <a class="font-label-mono-lg text-label-mono-lg text-secondary font-bold flex items-center gap-2 hover:underline" href="https://wa.me/5511988789417" rel="noopener noreferrer" target="_blank">
+              <span class="material-symbols-outlined text-[16px]">call</span>
+              <span>(11) 98878-9417</span>
+            </a>
+            <span class="font-label-mono-sm text-label-mono-sm text-on-surface-variant">Atendimento para fotógrafos e estúdios</span>
+          </div>
         </div>
 
       </div>
 
-      <div class="pt-space-lg bg-surface-container-lowest border-t border-surface-container-highest/60 flex flex-col md:flex-row items-center justify-between gap-space-sm text-on-surface-variant font-body-sm text-body-sm">
-        <p>© 2026 Conecta King Tecnologia. Todos os direitos reservados.</p>
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-lg border-t border-surface-variant">
+        <span class="font-label-mono-sm text-label-mono-sm text-on-surface-variant">
+          © 2026 Conecta King Tecnologia. Todos os direitos reservados.
+        </span>
         <div class="flex items-center gap-space-md">
-          <span class="font-label-sm text-label-sm text-on-surface-variant">Sistemas de Seleção Fotográfica King Selection</span>
-          <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
-          <span class="font-label-sm text-label-sm text-secondary font-semibold">Status Operacional: 100% Online</span>
+          <span class="font-label-mono-sm text-label-mono-sm text-on-surface-variant flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+            Sistemas Operacionais Normalizados
+          </span>
         </div>
       </div>
     </div>
   </footer>
 
-  <!-- INTERACTIVE LOGIC: SIMULATOR & AUTHENTICATION -->
+  <!-- JAVASCRIPT VANILLA -->
   <script>
-    // ── SIMULADOR DE CAPACIDADE ──
-    function updateCalculations(fileSizeMB) {
-      const mb = parseFloat(fileSizeMB);
-      document.getElementById('display-mb').innerText = mb.toFixed(1) + ' MB';
-      
-      const slider = document.getElementById('mb-slider');
-      if (slider && slider.value != mb) {
-        slider.value = mb;
+    // ── MODAL DE LOGIN ──
+    function openLoginModal() {
+      const modal = document.getElementById('ks-login-modal');
+      const box = document.getElementById('ks-login-box');
+      if (!modal || !box) return;
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      modal.classList.add('opacity-100', 'pointer-events-auto');
+      box.classList.remove('scale-95');
+      box.classList.add('scale-100');
+      setTimeout(() => {
+        const input = document.getElementById('ks-email');
+        if (input) input.focus();
+      }, 100);
+    }
+
+    function closeLoginModal() {
+      const modal = document.getElementById('ks-login-modal');
+      const box = document.getElementById('ks-login-box');
+      if (!modal || !box) return;
+      modal.classList.remove('opacity-100', 'pointer-events-auto');
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      box.classList.remove('scale-100');
+      box.classList.add('scale-95');
+    }
+
+    // Fecha modal clicando fora
+    document.addEventListener('click', (e) => {
+      const modal = document.getElementById('ks-login-modal');
+      if (modal && e.target === modal) {
+        closeLoginModal();
       }
+    });
 
-      // 1 GB = 1024 MB
-      const starterMB = 20 * 1024;
-      const proMB = 30 * 1024;
-      const kingMB = 60 * 1024;
+    // Fecha modal no ESC
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLoginModal();
+    });
 
-      const starterPhotos = Math.floor(starterMB / mb);
-      const proPhotos = Math.floor(proMB / mb);
-      const kingPhotos = Math.floor(kingMB / mb);
-
-      const starterShoots = Math.round(starterPhotos / 300);
-      const proShoots = Math.round(proPhotos / 300);
-      const kingShoots = Math.round(kingPhotos / 300);
-      const kingWeddings = Math.max(1, Math.round(kingPhotos / 1000));
-
-      const fmt = (num) => new Intl.NumberFormat('pt-BR').format(num);
-
-      const sPhotosEl = document.getElementById('starter-photos');
-      if (sPhotosEl) sPhotosEl.innerText = '~' + fmt(starterPhotos) + ' fotos';
-      const sShootsEl = document.getElementById('starter-shoots');
-      if (sShootsEl) sShootsEl.innerText = '~' + starterShoots + ' ensaios (300 fotos)';
-
-      const pPhotosEl = document.getElementById('pro-photos');
-      if (pPhotosEl) pPhotosEl.innerText = '~' + fmt(proPhotos) + ' fotos';
-      const pShootsEl = document.getElementById('pro-shoots');
-      if (pShootsEl) pShootsEl.innerText = '~' + proShoots + ' ensaios (300 fotos)';
-
-      const kPhotosEl = document.getElementById('king-photos');
-      if (kPhotosEl) kPhotosEl.innerText = '~' + fmt(kingPhotos) + ' fotos';
-      const kShootsEl = document.getElementById('king-shoots');
-      if (kShootsEl) kShootsEl.innerText = '~' + kingShoots + ' ensaios / ' + kingWeddings + ' casamentos';
-    }
-
-    function setPreset(mb) {
-      const buttons = [3, 7, 10, 15];
-      buttons.forEach(val => {
-        const btn = document.getElementById('btn-' + val);
-        if (btn) {
-          if (val === mb) {
-            btn.className = 'preset-btn py-3 px-4 rounded-xl bg-surface-container-high border border-primary text-primary shadow-[0_0_15px_rgba(245,158,11,0.25)] font-label-md text-label-md transition-all flex flex-col items-center justify-center text-center cursor-pointer';
-          } else {
-            btn.className = 'preset-btn py-3 px-4 rounded-xl bg-surface-container border border-outline-variant/40 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high font-label-md text-label-md transition-all flex flex-col items-center justify-center text-center cursor-pointer';
-          }
-        }
-      });
-
-      updateCalculations(mb);
-    }
-
-    // ── VISIBILIDADE DE SENHA ──
+    // ── VISIBILIDADE DE SENHA COM OLHINHO ──
     function togglePasswordVisibility() {
       const pwd = document.getElementById('ks-password');
       const openEye = document.getElementById('ks-pwd-eye-open');
@@ -965,11 +1257,14 @@
         localStorage.clear();
         sessionStorage.clear();
       }
+      if (urlParams.get('login') === '1' || window.location.hash === '#login') {
+        setTimeout(openLoginModal, 300);
+      }
     } catch (_) {}
 
     // ── AUTENTICAÇÃO REAL (KING SELECTION & ADM) ──
     async function handleKsLogin(e) {
-      e.preventDefault();
+      if (e && e.preventDefault) e.preventDefault();
       const btn = document.getElementById('ks-btn-submit');
       const emailInput = document.getElementById('ks-email');
       const passInput = document.getElementById('ks-password');
@@ -1078,7 +1373,74 @@
       }
     }
 
-    // Inicialização da calculadora com preset 7 MB
+    // ── FAQ ACCORDION ──
+    const faqButtons = document.querySelectorAll('.faq-toggle');
+    faqButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const item = button.closest('.faq-item');
+        const content = item.querySelector('.faq-content');
+        const icon = item.querySelector('.faq-icon');
+        const isHidden = content.classList.contains('hidden');
+
+        document.querySelectorAll('.faq-content').forEach(c => c.classList.add('hidden'));
+        document.querySelectorAll('.faq-icon').forEach(i => i.classList.remove('rotate-180'));
+
+        if (isHidden) {
+          content.classList.remove('hidden');
+          icon.classList.add('rotate-180');
+        }
+      });
+    });
+
+    // ── SIMULADOR DE CAPACIDADE ──
+    const qualityBtns = document.querySelectorAll('.quality-btn');
+    const photoHolders = document.querySelectorAll('.sim-photos');
+    const sessionHolders = document.querySelectorAll('.sim-sessions');
+
+    const updateCalculations = (mbPerPhoto) => {
+      photoHolders.forEach(holder => {
+        const gb = parseInt(holder.getAttribute('data-gb'), 10);
+        const totalMb = gb * 1024;
+        const totalPhotos = Math.floor(totalMb / mbPerPhoto);
+        holder.textContent = `~${totalPhotos.toLocaleString('pt-BR')} Fotos`;
+      });
+
+      sessionHolders.forEach(holder => {
+        const gb = parseInt(holder.getAttribute('data-gb'), 10);
+        const totalMb = gb * 1024;
+        const totalPhotos = Math.floor(totalMb / mbPerPhoto);
+        
+        if (gb === 20) {
+          const sessions = Math.floor(totalPhotos / 250);
+          holder.textContent = `Aprox. ${sessions} a ${sessions + 4} Ensaios`;
+        } else if (gb === 30) {
+          const sessions = Math.floor(totalPhotos / 250);
+          holder.textContent = `Aprox. ${sessions} a ${sessions + 6} Ensaios`;
+        } else if (gb === 60) {
+          const weddings = Math.floor(totalPhotos / 1000);
+          holder.textContent = `Aprox. ${Math.floor(totalPhotos / 250)} Ensaios ou ${weddings} Casamentos`;
+        } else {
+          holder.textContent = 'Volume Ilimitado de Produção';
+        }
+      });
+    };
+
+    qualityBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        qualityBtns.forEach(b => {
+          b.classList.remove('bg-gradient-to-r', 'from-amber-500', 'via-amber-400', 'to-yellow-500', 'text-slate-950', 'shadow-[0_0_24px_rgba(245,158,11,0.5)]', 'border-amber-300', 'font-black', 'active');
+          b.classList.add('bg-surface-container', 'text-on-surface-variant', 'border-transparent', 'font-semibold');
+        });
+
+        btn.classList.remove('bg-surface-container', 'text-on-surface-variant', 'border-transparent', 'font-semibold');
+        btn.classList.add('bg-gradient-to-r', 'from-amber-500', 'via-amber-400', 'to-yellow-500', 'text-slate-950', 'shadow-[0_0_24px_rgba(245,158,11,0.5)]', 'border-amber-300', 'font-black', 'active');
+
+        const mbSize = parseFloat(btn.getAttribute('data-size'));
+        updateCalculations(mbSize);
+      });
+    });
+
+    // Inicializa simulação com 7 MB
     document.addEventListener('DOMContentLoaded', () => {
       updateCalculations(7);
     });
