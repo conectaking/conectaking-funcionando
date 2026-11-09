@@ -651,8 +651,8 @@
                                 Salvar
                             </button>
                         </div>
-                        <a href="/kingSelection" target="_blank" class="btn" style="background:linear-gradient(135deg, #f59e0b 0%, #d97706 100%);color:#000;font-weight:800;font-size:13px;padding:8px 16px;border-radius:10px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(245,158,11,0.3)">
-                            <i class="fas fa-images"></i> Abrir Meu Estúdio de Fotos <i class="fas fa-external-link-alt" style="font-size:11px"></i>
+                        <a href="https://kingselection.conectaking.com.br/admin" target="_blank" class="btn" style="background:linear-gradient(135deg, #f59e0b 0%, #d97706 100%);color:#000;font-weight:800;font-size:13px;padding:8px 16px;border-radius:10px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(245,158,11,0.3)">
+                            <i class="fas fa-crown"></i> Painel Master King Selection <i class="fas fa-external-link-alt" style="font-size:11px"></i>
                         </a>
                     </div>
                 </div>

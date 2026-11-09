@@ -30,9 +30,25 @@ $cardSlug = '[A-Za-z0-9._-]+';
 // King Selection (Subdomínio oficial kingselection.conectaking.com.br)
 Route::domain('kingselection.conectaking.com.br')->group(function () use ($cardSlug) {
     Route::get('/', function (\Illuminate\Http\Request $request) {
+        $tokenCookie = $request->cookie('token');
+        if ($tokenCookie) {
+            try {
+                $payload = app(\App\Services\Auth\JwtService::class)->decode($tokenCookie);
+                $isAdmin = !empty($payload['isAdmin']) || in_array($payload['accountType'] ?? '', ['admin', 'adm_principal'], true);
+                return redirect($isAdmin ? '/admin' : '/kingSelection');
+            } catch (\Throwable $e) {}
+        }
         return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionLogin');
     });
     Route::get('/login', function (\Illuminate\Http\Request $request) {
+        $tokenCookie = $request->cookie('token');
+        if ($tokenCookie) {
+            try {
+                $payload = app(\App\Services\Auth\JwtService::class)->decode($tokenCookie);
+                $isAdmin = !empty($payload['isAdmin']) || in_array($payload['accountType'] ?? '', ['admin', 'adm_principal'], true);
+                return redirect($isAdmin ? '/admin' : '/kingSelection');
+            } catch (\Throwable $e) {}
+        }
         return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionLogin');
     });
     // Painel Master ADM do King Selection (exclusivo para gerenciar fotógrafos, gigas, faturas e seu estúdio)
@@ -43,6 +59,20 @@ Route::domain('kingselection.conectaking.com.br')->group(function () use ($cardS
     Route::get('/conta', fn () => redirect('/kingSelection'));
 
     $ksPhotographer = function (\Illuminate\Http\Request $request) {
+        $tokenCookie = $request->cookie('token');
+        $isAdmin = false;
+        if ($tokenCookie) {
+            try {
+                $payload = app(\App\Services\Auth\JwtService::class)->decode($tokenCookie);
+                $isAdmin = !empty($payload['isAdmin']) || in_array($payload['accountType'] ?? '', ['admin', 'adm_principal'], true);
+            } catch (\Throwable $e) {}
+        }
+
+        // Se for Administrador e não especificou ?studio=1 ou ?galleryId, manda direto pro Painel Master ADM!
+        if ($isAdmin && !$request->filled('studio') && !$request->filled('galleryId') && !$request->filled('photographer_id')) {
+            return redirect('/admin');
+        }
+
         $page = $request->filled('galleryId') ? 'kingSelectionProject' : 'kingSelectionEdit';
         return app(\App\Http\Controllers\LegacyPageController::class)->show($request, $page);
     };
@@ -968,6 +998,19 @@ Route::post('/api/auth/sync-session-cookie', [\App\Http\Controllers\Auth\AuthCon
 // /kingSelection/{slug} (acima) = galeria do cliente.
 $ksPhotographerPage = function () {
     $request = request();
+    $tokenCookie = $request->cookie('token');
+    $isAdmin = false;
+    if ($tokenCookie) {
+        try {
+            $payload = app(\App\Services\Auth\JwtService::class)->decode($tokenCookie);
+            $isAdmin = !empty($payload['isAdmin']) || in_array($payload['accountType'] ?? '', ['admin', 'adm_principal'], true);
+        } catch (\Throwable $e) {}
+    }
+
+    if ($isAdmin && !$request->filled('studio') && !$request->filled('galleryId') && !$request->filled('photographer_id')) {
+        return redirect('https://kingselection.conectaking.com.br/admin');
+    }
+
     $page = $request->filled('galleryId') ? 'kingSelectionProject' : 'kingSelectionEdit';
 
     return app(\App\Http\Controllers\LegacyPageController::class)->show($request, $page);

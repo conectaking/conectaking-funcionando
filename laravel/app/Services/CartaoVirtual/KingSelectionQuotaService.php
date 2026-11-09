@@ -254,10 +254,15 @@ class KingSelectionQuotaService
                 $adminStats['used_gb'] = $usedGb;
                 $adminStats['limit_gb'] = $limitGb;
                 $adminStats['used_pct'] = $usedPct;
+                $adminStats['storage_used_gb'] = $usedGb;
+                $adminStats['storage_limit_gb'] = $limitGb;
+                $adminStats['storage_used_pct'] = $usedPct;
                 $adminStats['total_photos'] = (int) $ph->total_photos;
                 $adminStats['total_galleries'] = (int) $ph->total_galleries;
                 $adminStats['cost_usd'] = $phCostUsd;
                 $adminStats['cost_brl'] = $phCostBrl;
+                $adminStats['r2_cost_brl'] = $phCostBrl;
+                $adminStats['r2_cost_usd'] = $phCostUsd;
             }
 
             $formattedList[] = [
@@ -274,10 +279,15 @@ class KingSelectionQuotaService
                 'limit_bytes' => $limitBytes,
                 'limit_gb' => $limitGb,
                 'used_pct' => $usedPct,
+                'storage_used_gb' => $usedGb,
+                'storage_limit_gb' => $limitGb,
+                'storage_used_pct' => $usedPct,
                 'total_photos' => (int) $ph->total_photos,
                 'total_galleries' => (int) $ph->total_galleries,
                 'cost_usd' => $phCostUsd,
                 'cost_brl' => $phCostBrl,
+                'r2_cost_brl' => $phCostBrl,
+                'r2_cost_usd' => $phCostUsd,
                 'profit_brl' => $phProfitBrl,
                 'created_at' => $ph->created_at,
             ];
