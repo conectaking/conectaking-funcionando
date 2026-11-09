@@ -35,8 +35,10 @@ Route::domain('kingselection.conectaking.com.br')->group(function () use ($cardS
     Route::get('/login', function (\Illuminate\Http\Request $request) {
         return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionLogin');
     });
-    // No subdomínio King Selection, rotas como /admin ou /dashboard sempre mantêm o usuário no ecossistema King Selection
-    Route::get('/admin', fn () => redirect('/kingSelection'));
+    // Painel Master ADM do King Selection (exclusivo para gerenciar fotógrafos, gigas, faturas e seu estúdio)
+    Route::get('/admin', function (\Illuminate\Http\Request $request) {
+        return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionAdmin');
+    });
     Route::get('/dashboard', fn () => redirect('/kingSelection'));
     Route::get('/conta', fn () => redirect('/kingSelection'));
 

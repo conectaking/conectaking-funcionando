@@ -979,12 +979,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (masterModal) masterModal.style.display = 'none';
   };
 
-  document.getElementById('ks-btn-admin-master')?.addEventListener('click', openMasterModal);
-  document.getElementById('ks-drop-master-btn')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    openMasterModal();
-  });
-  document.getElementById('ks-admin-open-modal-btn')?.addEventListener('click', openMasterModal);
   document.getElementById('ks-master-close-btn')?.addEventListener('click', closeMasterModal);
   masterModal?.addEventListener('click', (e) => {
     if (e.target === masterModal) closeMasterModal();

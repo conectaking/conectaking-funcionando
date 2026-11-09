@@ -438,10 +438,10 @@
 
       <!-- Lado Direito: Voltar + Nova Galeria + Avatar do Usuário (depois de galeria) -->
       <div style="display: flex; align-items: center; gap: 10px;">
-        <!-- Botão Gestão Master R2 (Visível apenas para o Administrador) -->
-        <button class="ks-btn" id="ks-btn-admin-master" style="display: none; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #000; font-weight: 900; border: 1px solid rgba(251, 191, 36, 0.8); box-shadow: 0 0 15px rgba(245, 158, 11, 0.25); border-radius: 12px; padding: 9px 15px; cursor: pointer;" title="Gestão Master King Selection (Cloudflare R2 & Fotógrafos)">
-          <i class="fas fa-crown"></i> Gestão Master R2
-        </button>
+        <!-- Botão Painel Master ADM (Visível apenas para o Administrador) -->
+        <a href="/admin" class="ks-btn" id="ks-btn-admin-master" style="display: none; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #000; font-weight: 900; border: 1px solid rgba(251, 191, 36, 0.8); box-shadow: 0 0 15px rgba(245, 158, 11, 0.25); border-radius: 12px; padding: 9px 15px; cursor: pointer; text-decoration: none;" title="Painel Master ADM (Fotógrafos, Armazenamento & Fatura R2)">
+          <i class="fas fa-crown"></i> Painel Master ADM
+        </a>
 
         <button class="ks-btn primary" id="ks-new-btn" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #000; font-weight: 900; border: 1px solid rgba(251, 191, 36, 0.6); box-shadow: 0 0 15px rgba(245, 158, 11, 0.25); border-radius: 12px; padding: 9px 16px; cursor: pointer;" title="Criar Nova Galeria">
           <i class="fas fa-plus"></i> Nova Galeria
@@ -473,9 +473,9 @@
               </div>
             </div>
 
-            <a href="#" id="ks-drop-master-btn" style="display: none; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; color: #fbbf24; font-size: 12px; font-weight: 700; text-decoration: none; transition: all 0.15s;" onmouseover="this.style.background='rgba(245,158,11,0.15)';" onmouseout="this.style.background='transparent';">
+            <a href="/admin" id="ks-drop-master-btn" style="display: none; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; color: #fbbf24; font-size: 12px; font-weight: 700; text-decoration: none; transition: all 0.15s;" onmouseover="this.style.background='rgba(245,158,11,0.15)';" onmouseout="this.style.background='transparent';">
               <i class="fas fa-crown" style="width: 16px; text-align: center;"></i>
-              <span>Gestão Master R2</span>
+              <span>Painel Master ADM</span>
             </a>
 
             <div style="height: 1px; background: rgba(255, 255, 255, 0.08); margin: 6px 0;"></div>
@@ -542,9 +542,9 @@
                 <button type="button" id="ks-admin-save-plan-btn" style="width: 100%; padding: 6px; border-radius: 8px; background: #0f172a; color: #fbbf24; font-weight: 800; font-size: 11px; border: 1px solid rgba(251, 191, 36, 0.3); cursor: pointer;">
                   Ativar no Meu Estúdio
                 </button>
-                <button type="button" id="ks-admin-open-modal-btn" style="width: 100%; padding: 7px; border-radius: 8px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 900; font-size: 11px; border: none; cursor: pointer; margin-top: 4px;">
-                  <i class="fas fa-chart-line"></i> Gestão Master R2 & Fotógrafos
-                </button>
+                <a href="/admin" id="ks-admin-open-modal-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7px; border-radius: 8px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 900; font-size: 11px; text-decoration: none; cursor: pointer; margin-top: 4px;">
+                  <i class="fas fa-crown"></i> Painel Master ADM
+                </a>
               </div>
             </div>
           </div>
