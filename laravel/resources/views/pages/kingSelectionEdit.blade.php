@@ -1,3 +1,13 @@
+@php
+    $tokenCookie = request()->cookie('token');
+    $isAdminUser = false;
+    if ($tokenCookie) {
+        try {
+            $payload = app(\App\Services\Auth\JwtService::class)->decode($tokenCookie);
+            $isAdminUser = !empty($payload['isAdmin']) || in_array($payload['accountType'] ?? '', ['admin', 'adm_principal'], true);
+        } catch (\Throwable $e) {}
+    }
+@endphp
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -438,9 +448,9 @@
 
       <!-- Lado Direito: Voltar + Nova Galeria + Avatar do Usuário (depois de galeria) -->
       <div style="display: flex; align-items: center; gap: 10px;">
-        <!-- Botão Painel Master ADM (Visível apenas para o Administrador) -->
-        <a href="/admin" class="ks-btn" id="ks-btn-admin-master" style="display: none; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #000; font-weight: 900; border: 1px solid rgba(251, 191, 36, 0.8); box-shadow: 0 0 15px rgba(245, 158, 11, 0.25); border-radius: 12px; padding: 9px 15px; cursor: pointer; text-decoration: none;" title="Painel Master ADM (Fotógrafos, Armazenamento & Fatura R2)">
-          <i class="fas fa-crown"></i> Painel Master ADM
+        <!-- Botão Painel Master ADM (Visível para o Administrador) -->
+        <a href="/admin" class="ks-btn" id="ks-btn-admin-master" style="{{ $isAdminUser ? 'display: inline-flex;' : 'display: none;' }} align-items: center; gap: 8px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #000; font-weight: 900; border: 1px solid rgba(251, 191, 36, 0.8); box-shadow: 0 0 15px rgba(245, 158, 11, 0.25); border-radius: 12px; padding: 9px 15px; cursor: pointer; text-decoration: none;" title="Voltar ao Painel Master ADM">
+          <i class="fas fa-crown"></i> <span>Voltar ao Painel ADM</span>
         </a>
 
         <button class="ks-btn primary" id="ks-new-btn" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #000; font-weight: 900; border: 1px solid rgba(251, 191, 36, 0.6); box-shadow: 0 0 15px rgba(245, 158, 11, 0.25); border-radius: 12px; padding: 9px 16px; cursor: pointer;" title="Criar Nova Galeria">
@@ -473,9 +483,9 @@
               </div>
             </div>
 
-            <a href="/admin" id="ks-drop-master-btn" style="display: none; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; color: #fbbf24; font-size: 12px; font-weight: 700; text-decoration: none; transition: all 0.15s;" onmouseover="this.style.background='rgba(245,158,11,0.15)';" onmouseout="this.style.background='transparent';">
+            <a href="/admin" id="ks-drop-master-btn" style="{{ $isAdminUser ? 'display: flex;' : 'display: none;' }} align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; color: #fbbf24; font-size: 12px; font-weight: 700; text-decoration: none; transition: all 0.15s;" onmouseover="this.style.background='rgba(245,158,11,0.15)';" onmouseout="this.style.background='transparent';">
               <i class="fas fa-crown" style="width: 16px; text-align: center;"></i>
-              <span>Painel Master ADM</span>
+              <span>Voltar ao Painel ADM</span>
             </a>
 
             <div style="height: 1px; background: rgba(255, 255, 255, 0.08); margin: 6px 0;"></div>
@@ -499,6 +509,11 @@
       <aside id="ks-sidebar" class="w-72 shrink-0 transition-all duration-300 ease-in-out">
         <div class="ks-card ks-card--side-nav p-3">
           <div class="ks-side flex flex-col gap-1 max-h-none overflow-y-visible">
+            @if($isAdminUser)
+            <a href="/admin" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.35) 100%); color: #fbbf24; font-weight: 800; border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; gap: 8px; text-decoration: none; margin-bottom: 8px;">
+              <i class="fas fa-crown" style="color: #fbbf24;"></i> <span>Voltar ao Painel ADM</span>
+            </a>
+            @endif
             <a href="/kingSelection" class="active" id="ks-tab-all"><i class="fas fa-folder-open"></i> Todas as Galerias</a>
             <a href="#" data-filter="preparacao"><i class="fas fa-clock"></i> Em Preparação</a>
             <a href="#" data-filter="andamento"><i class="fas fa-user-check"></i> Cliente Selecionando</a>
@@ -523,7 +538,7 @@
             </div>
 
             <!-- Controles Master do Administrador (Visível para o ADM) -->
-            <div id="ks-admin-controls" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cbd5e1;">
+            <div id="ks-admin-controls" style="{{ $isAdminUser ? 'display: block;' : 'display: none;' }} margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cbd5e1;">
               <div style="font-weight: 800; color: #d97706; display: flex; align-items: center; gap: 5px; margin-bottom: 4px;">
                 <i class="fas fa-crown"></i> <span>Meu Estúdio (Conta ADM)</span>
               </div>

@@ -757,10 +757,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       .replace(/'/g, '&#039;');
   }
 
-  document.getElementById('ks-back-btn').addEventListener('click', () => {
+  document.getElementById('ks-back-btn')?.addEventListener('click', () => {
     window.location.href = ksAppPage('dashboard');
   });
-  document.getElementById('ks-new-btn').addEventListener('click', async () => {
+  document.getElementById('ks-new-btn')?.addEventListener('click', async () => {
     openNewModal();
   });
   fabNew?.addEventListener('click', () => openNewModal());
@@ -768,12 +768,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     searchTerm = searchInput.value || '';
     renderKanban();
   });
-  drawerClose.addEventListener('click', closeDrawer);
+  drawerClose?.addEventListener('click', closeDrawer);
   drawerOverlay?.addEventListener('click', closeDrawer);
-  saveStatusBtn.addEventListener('click', async () => {
+  saveStatusBtn?.addEventListener('click', async () => {
     try { await saveStatus(); } catch (e) { alert(e.message || 'Erro'); }
   });
-  photoFile.addEventListener('change', async () => {
+  photoFile?.addEventListener('change', async () => {
     const f = photoFile.files && photoFile.files[0];
     if (!f) return;
     try { await uploadPhoto(f); } catch (e) { alert(e.message || 'Erro'); }
