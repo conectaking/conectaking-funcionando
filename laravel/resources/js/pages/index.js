@@ -94,6 +94,9 @@ import '@mod/js/planRenderer.js';
         
         // Carregar planos - mesma lógica do dashboard
         async function loadPlans() {
+            if (document.getElementById('exclusive-packages-container') || document.querySelector('[data-static-packages="true"]')) {
+                return; // Novos pacotes exclusivos estáticos Conecta King já renderizados
+            }
             try {
                 
                 // Criar timeout manual para compatibilidade

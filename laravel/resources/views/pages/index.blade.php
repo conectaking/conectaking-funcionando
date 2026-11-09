@@ -312,19 +312,241 @@
     </section>
 
     <!-- Planos -->
-    <section id="planos" class="section pricing ck-ix-74b1d6">
-        <div class="container ck-container-1200">
-            <div class="section-header ck-ix-50f774">
-                <h2 class="ck-ix-61e975">
-                    Escolha Seu Plano
-                </h2>
-                <p>Planos anuais e mensais disponíveis. Resultados imediatos e duradouros.</p>
-            </div>
-            <div class="pricing-grid" id="plans-container">
-                <p class="ck-ix-c9b8e7">Carregando planos...</p>
+    <section id="planos" class="section pricing ck-ix-74b1d6" style="padding: 70px 0; background: linear-gradient(180deg, #0b0b0b 0%, #151515 50%, #0b0b0b 100%);">
+        <div class="container ck-container-1200" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+            <div class="section-header ck-ix-50f774" style="text-align: center; margin-bottom: 45px;">
+                <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 9999px; background: rgba(255, 199, 0, 0.12); border: 1px solid rgba(255, 199, 0, 0.35); color: #FFC700; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px;">
+                    <i class="fas fa-crown"></i> Conecta King • O Poder da Conexão
                 </div>
+                <h2 style="font-size: clamp(26px, 4vw, 38px); font-weight: 900; color: #FFFFFF; text-transform: uppercase; letter-spacing: -0.01em; margin-bottom: 12px; text-shadow: 0 0 30px rgba(255, 199, 0, 0.25);">
+                    Veja Nossos <span style="background: linear-gradient(90deg, #FFC700, #FFE082, #FFC700); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Pacotes Exclusivos!</span>
+                </h2>
+                <p style="color: rgba(245, 245, 245, 0.75); font-size: clamp(14px, 1.8vw, 16px); max-width: 650px; margin: 0 auto;">
+                    Tecnologia NFC de aproximação, tags e pulseiras de silicone premium aliadas à plataforma digital mais completa do mercado.
+                </p>
             </div>
-        </section>
+
+            <!-- Grid dos 3 Pacotes -->
+            <div id="exclusive-packages-container" data-static-packages="true" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px; max-width: 1100px; margin: 0 auto; align-items: stretch;">
+                
+                <!-- Pacote 1: START -->
+                <div class="pricing-card" style="background: linear-gradient(180deg, #181818 0%, #101010 100%); border: 2px solid rgba(255, 255, 255, 0.12); border-radius: 22px; padding: 32px 24px; display: flex; flex-direction: column; justify-content: space-between; position: relative; transition: all 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                    <div>
+                        <!-- Header do Card -->
+                        <div style="background: #000000; border: 1px solid rgba(255, 199, 0, 0.3); border-radius: 12px; padding: 10px 16px; text-align: center; margin-bottom: 18px;">
+                            <h3 style="font-size: 20px; font-weight: 900; color: #FFC700; margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">1. START</h3>
+                        </div>
+
+                        <!-- Itens do Pacote -->
+                        <div style="text-align: center; margin-bottom: 22px;">
+                            <div style="font-size: 17px; font-weight: 800; color: #FFFFFF; margin-bottom: 10px;">
+                                Plataforma + 1 Tag NFC
+                            </div>
+                            <div style="display: flex; justify-content: center; align-items: center; gap: 12px; font-size: 26px; color: #FFC700; opacity: 0.95;">
+                                <i class="fas fa-mobile-alt" title="Plataforma Conecta King"></i>
+                                <span style="font-size: 18px; color: rgba(255,255,255,0.4);">+</span>
+                                <i class="fas fa-wifi" title="Tag NFC de Aproximação"></i>
+                            </div>
+                        </div>
+
+                        <!-- Bloco de Preço -->
+                        <div style="background: linear-gradient(135deg, rgba(255, 199, 0, 0.15), rgba(255, 199, 0, 0.05)); border: 1px solid rgba(255, 199, 0, 0.4); border-radius: 14px; padding: 18px 14px; text-align: center; margin-bottom: 24px;">
+                            <div style="font-size: 13px; text-transform: uppercase; color: rgba(245, 245, 245, 0.7); font-weight: 600; margin-bottom: 4px;">Em até 12x no cartão</div>
+                            <div style="font-size: 32px; font-weight: 900; color: #FFC700; line-height: 1.1;">
+                                12x de R$ 35<span style="font-size: 20px;">,00</span>
+                            </div>
+                            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 199, 0, 0.2); font-size: 14px; font-weight: 800; color: #FFFFFF;">
+                                À VISTA (PIX): <span style="color: #4EDE72;">R$ 350,00</span>
+                            </div>
+                        </div>
+
+                        <!-- Lista de Benefícios -->
+                        <ul style="list-style: none; padding: 0; margin: 0 0 24px 0; font-size: 14px; color: rgba(245, 245, 245, 0.85); line-height: 1.8;">
+                            <li style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                <i class="fas fa-check-circle" style="color: #4EDE72; font-size: 15px;"></i>
+                                <span><strong>1 Tag NFC</strong> chaveiro de alta durabilidade</span>
+                            </li>
+                            <li style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                <i class="fas fa-check-circle" style="color: #4EDE72; font-size: 15px;"></i>
+                                <span>Acesso completo à <strong>Plataforma Conecta King</strong></span>
+                            </li>
+                            <li style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                <i class="fas fa-check-circle" style="color: #4EDE72; font-size: 15px;"></i>
+                                <span><strong>Salvar Contato</strong> na agenda do cliente em 1 toque</span>
+                            </li>
+                            <li style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                <i class="fas fa-check-circle" style="color: #4EDE72; font-size: 15px;"></i>
+                                <span>QR Code Dinâmico no verso</span>
+                            </li>
+                            <li style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-check-circle" style="color: #4EDE72; font-size: 15px;"></i>
+                                <span>Atualização de dados em tempo real</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Botão de Compra -->
+                    <a href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Gostaria%20de%20adquirir%20o%20Pacote%201%20-%20START%20(Plataforma%20%2B%201%20Tag%20NFC)%20por%2012x%20de%20R$%2035,00%20ou%20R$%20350,00%20%C3%A0%20vista." target="_blank" rel="noopener noreferrer" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px 20px; border-radius: 12px; background: #FFC700; color: #000000; font-weight: 800; font-size: 15px; text-transform: uppercase; letter-spacing: 0.04em; text-decoration: none; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(255, 199, 0, 0.35);">
+                        <span>Adquira Já o Seu</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <!-- Pacote 2: EXECUTIVE (DESTAQUE / MAIS VENDIDO) -->
+                <div class="pricing-card" style="background: linear-gradient(180deg, #221c08 0%, #151103 100%); border: 2px solid #FFC700; border-radius: 22px; padding: 32px 24px; display: flex; flex-direction: column; justify-content: space-between; position: relative; transition: all 0.3s ease; box-shadow: 0 0 40px rgba(255, 199, 0, 0.25); transform: scale(1.03);">
+                    
+                    <!-- Selo Mais Vendido -->
+                    <div style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: linear-gradient(90deg, #FFC700, #FFE082, #FFC700); color: #000000; font-weight: 900; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; padding: 5px 18px; border-radius: 9999px; box-shadow: 0 4px 15px rgba(255, 199, 0, 0.5); display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+                        <span>⭐ MAIS VENDIDO</span>
+                    </div>
+
+                    <div>
+                        <!-- Header do Card -->
+                        <div style="background: #000000; border: 1px solid #FFC700; border-radius: 12px; padding: 10px 16px; text-align: center; margin-bottom: 18px; margin-top: 4px;">
+                            <h3 style="font-size: 20px; font-weight: 900; color: #FFC700; margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">2. EXECUTIVE</h3>
+                        </div>
+
+                        <!-- Itens do Pacote -->
+                        <div style="text-align: center; margin-bottom: 22px;">
+                            <div style="font-size: 17px; font-weight: 800; color: #FFFFFF; margin-bottom: 10px;">
+                                Plataforma + 1 Tag NFC + 1 Pulseira Silicone
+                            </div>
+                            <div style="display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 24px; color: #FFC700;">
+                                <i class="fas fa-mobile-alt" title="Plataforma Conecta King"></i>
+                                <span style="font-size: 16px; color: rgba(255,255,255,0.4);">+</span>
+                                <i class="fas fa-wifi" title="Tag NFC"></i>
+                                <span style="font-size: 16px; color: rgba(255,255,255,0.4);">+</span>
+                                <i class="fas fa-ring" title="Pulseira Silicone NFC"></i>
+                            </div>
+                        </div>
+
+                        <!-- Bloco de Preço -->
+                        <div style="background: linear-gradient(135deg, rgba(255, 199, 0, 0.25), rgba(255, 199, 0, 0.08)); border: 1.5px solid #FFC700; border-radius: 14px; padding: 18px 14px; text-align: center; margin-bottom: 24px; box-shadow: 0 0 20px rgba(255, 199, 0, 0.15);">
+                            <div style="font-size: 13px; text-transform: uppercase; color: #FFE082; font-weight: 700; margin-bottom: 4px;">Em até 12x no cartão</div>
+                            <div style="font-size: 34px; font-weight: 900; color: #FFC700; line-height: 1.1;">
+                                12x de R$ 42<span style="font-size: 20px;">,00</span>
+                            </div>
+                            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 199, 0, 0.3); font-size: 14px; font-weight: 800; color: #FFFFFF;">
+                                À VISTA (PIX): <span style="color: #4EDE72;">R$ 429,90</span>
+                            </div>
+                        </div>
+
+                        <!-- Lista de Benefícios -->
+                        <ul style="list-style: none; padding: 0; margin: 0 0 24px 0; font-size: 14px; color: rgba(245, 245, 245, 0.85); line-height: 1.8;">
+                            <li style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                <i class="fas fa-check-circle" style="color: #4EDE72; font-size: 15px;"></i>
+                                <span><strong>1 Tag NFC</strong> chaveiro premium</span>
+                            </li>
+                            <li style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                <i class="fas fa-check-circle" style="color: #4EDE72; font-size: 15px;"></i>
+                                <span><strong>1 Pulseira Silicone NFC</strong> elegante e à prova d'água</span>
+                            </li>
+                            <li style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                <i class="fas fa-check-circle" style="color: #4EDE72; font-size: 15px;"></i>
+                                <span>Plataforma completa + <strong>Logomarca editável</strong></span>
+                            </li>
+                            <li style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                <i class="fas fa-check-circle" style="color: #4EDE72; font-size: 15px;"></i>
+                                <span>Portfólio, Carrossel & Catálogo de Produtos</span>
+                            </li>
+                            <li style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-check-circle" style="color: #4EDE72; font-size: 15px;"></i>
+                                <span><strong>Salvar Contato</strong> na agenda em 1 toque</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Botão de Compra Dourado Forte -->
+                    <a href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Gostaria%20de%20adquirir%20o%20Pacote%202%20-%20EXECUTIVE%20(Plataforma%20%2B%201%20Tag%20NFC%20%2B%201%20Pulseira%20Silicone)%20por%2012x%20de%20R$%2042,00%20ou%20R$%20429,90%20%C3%A0%20vista." target="_blank" rel="noopener noreferrer" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 15px 20px; border-radius: 12px; background: linear-gradient(90deg, #FFC700, #FFE082, #FFC700); color: #000000; font-weight: 900; font-size: 15px; text-transform: uppercase; letter-spacing: 0.04em; text-decoration: none; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(255, 199, 0, 0.5);">
+                        <span>Adquira Já o Seu</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <!-- Pacote 3: DUO / SOCIEDADE -->
+                <div class="pricing-card" style="background: linear-gradient(180deg, #181818 0%, #101010 100%); border: 2px solid rgba(255, 255, 255, 0.12); border-radius: 22px; padding: 32px 24px; display: flex; flex-direction: column; justify-content: space-between; position: relative; transition: all 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                    <div>
+                        <!-- Header do Card -->
+                        <div style="background: #000000; border: 1px solid rgba(255, 199, 0, 0.3); border-radius: 12px; padding: 10px 16px; text-align: center; margin-bottom: 18px;">
+                            <h3 style="font-size: 20px; font-weight: 900; color: #FFC700; margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">3. DUO / SOCIEDADE</h3>
+                        </div>
+
+                        <!-- Itens do Pacote -->
+                        <div style="text-align: center; margin-bottom: 22px;">
+                            <div style="font-size: 17px; font-weight: 800; color: #FFFFFF; margin-bottom: 10px;">
+                                Plataforma + 2 Tags NFC + 2 Pulseiras Silicone
+                            </div>
+                            <div style="display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 24px; color: #FFC700; opacity: 0.95;">
+                                <i class="fas fa-mobile-alt" title="Plataforma Conecta King"></i>
+                                <span style="font-size: 16px; color: rgba(255,255,255,0.4);">+</span>
+                                <i class="fas fa-tags" title="2 Tags NFC"></i>
+                                <span style="font-size: 16px; color: rgba(255,255,255,0.4);">+</span>
+                                <i class="fas fa-ring" title="2 Pulseiras Silicone"></i>
+                            </div>
+                        </div>
+
+                        <!-- Bloco de Preço -->
+                        <div style="background: linear-gradient(135deg, rgba(255, 199, 0, 0.15), rgba(255, 199, 0, 0.05)); border: 1px solid rgba(255, 199, 0, 0.4); border-radius: 14px; padding: 18px 14px; text-align: center; margin-bottom: 24px;">
+                            <div style="font-size: 13px; text-transform: uppercase; color: rgba(245, 245, 245, 0.7); font-weight: 600; margin-bottom: 4px;">Em até 12x no cartão</div>
+                            <div style="font-size: 32px; font-weight: 900; color: #FFC700; line-height: 1.1;">
+                                12x de R$ 49<span style="font-size: 20px;">,90</span>
+                            </div>
+                            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 199, 0, 0.2); font-size: 14px; font-weight: 800; color: #FFFFFF;">
+                                À VISTA (PIX): <span style="color: #4EDE72;">R$ 499,00</span>
+                            </div>
+                        </div>
+
+                        <!-- Lista de Benefícios -->
+                        <ul style="list-style: none; padding: 0; margin: 0 0 24px 0; font-size: 14px; color: rgba(245, 245, 245, 0.85); line-height: 1.8;">
+                            <li style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                <i class="fas fa-check-circle" style="color: #4EDE72; font-size: 15px;"></i>
+                                <span><strong>2 Tags NFC</strong> chaveiros de aproximação</span>
+                            </li>
+                            <li style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                <i class="fas fa-check-circle" style="color: #4EDE72; font-size: 15px;"></i>
+                                <span><strong>2 Pulseiras Silicone NFC</strong> completas</span>
+                            </li>
+                            <li style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                <i class="fas fa-check-circle" style="color: #4EDE72; font-size: 15px;"></i>
+                                <span>Ideal para <strong>sócios, parceiros ou duplas</strong></span>
+                            </li>
+                            <li style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                <i class="fas fa-check-circle" style="color: #4EDE72; font-size: 15px;"></i>
+                                <span>Acesso completo à plataforma Conecta King</span>
+                            </li>
+                            <li style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-check-circle" style="color: #4EDE72; font-size: 15px;"></i>
+                                <span>Suporte VIP e atendimento personalizado</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Botão de Compra -->
+                    <a href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Gostaria%20de%20adquirir%20o%20Pacote%203%20-%20DUO%20%2F%20SOCIEDADE%20(Plataforma%20%2B%202%20Tags%20NFC%20%2B%202%20Pulseiras%20Silicone)%20por%2012x%20de%20R$%2049,90%20ou%20R$%20499,00%20%C3%A0%20vista." target="_blank" rel="noopener noreferrer" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px 20px; border-radius: 12px; background: #FFC700; color: #000000; font-weight: 800; font-size: 15px; text-transform: uppercase; letter-spacing: 0.04em; text-decoration: none; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(255, 199, 0, 0.35);">
+                        <span>Adquira Já o Seu</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+
+            </div>
+
+            <!-- Banner Inferior de Contato / WhatsApp Oficial -->
+            <div style="margin-top: 45px; text-align: center; background: rgba(255, 199, 0, 0.06); border: 1px solid rgba(255, 199, 0, 0.25); border-radius: 18px; padding: 22px 20px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 18px;">
+                <span style="font-size: 15px; font-weight: 700; color: #FFFFFF;">
+                    Dúvidas ou pedidos especiais? Fale com nosso consultor oficial:
+                </span>
+                <a href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Gostaria%20de%20tirar%20d%C3%BAvidas%20sobre%20os%20pacotes%20exclusivos%20do%20Conecta%20King." target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 8px; background: #25D366; color: #000000; font-weight: 800; font-size: 14px; padding: 10px 20px; border-radius: 9999px; text-decoration: none; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.35);">
+                    <i class="fab fa-whatsapp" style="font-size: 18px;"></i>
+                    <span>+55 (11) 98878-9417</span>
+                </a>
+                <a href="https://www.instagram.com/conectaking" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 8px; color: #FFC700; font-weight: 700; font-size: 14px; text-decoration: none;">
+                    <i class="fab fa-instagram" style="font-size: 18px;"></i>
+                    <span>@conectaking</span>
+                </a>
+            </div>
+
+        </div>
+    </section>
 
     <!-- FAQ -->
     <section id="faq" class="section ck-ix-63f1f0">
@@ -436,7 +658,7 @@
                         <li class="ck-mb-12 {{ $hasTokenCookie ? 'ck-hidden' : '' }}" id="footer-login-item"><a class="ck-link-muted" href="/login" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Login</a></li>
                         <li class="ck-ix-62d461 {{ $hasTokenCookie ? '' : 'ck-hidden' }}" id="footer-access-panel-item"><a class="ck-link-muted" href="/dashboard" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Acessar Painel</a></li>
                         <li class="ck-mb-12 {{ $hasTokenCookie ? 'ck-hidden' : '' }}" id="footer-register-item"><a class="ck-link-muted" href="/registro" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Criar Acesso</a></li>
-                        <li class="ck-mb-12"><a class="ck-link-muted" href="#planos" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Falar com Vendedor</a></li>
+                        <li class="ck-mb-12"><a class="ck-link-muted" href="https://wa.me/5511988789417?text=Ol%C3%A1!%20Gostaria%20de%20falar%20com%20um%20vendedor%20da%20Conecta%20King." target="_blank" rel="noopener noreferrer" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Falar com Vendedor</a></li>
                         <li class="ck-mb-12"><a class="ck-link-muted" href="https://www.instagram.com/conectaking" target="_blank" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Instagram</a></li>
                     </ul>
                     </div>
