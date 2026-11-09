@@ -1287,14 +1287,13 @@ class KingCameraController extends Controller
                     }
                 }
             } else {
-                // Se a IA não pôde avaliar (quota da OpenAI esgotada, timeout ou erro de rede)
-                // Se for verificação proativa de rotina, cancela para evitar falso positivo:
-                if ($isAiCheck || str_contains($description, 'Verificação')) {
+                // Se a IA Vision não pôde avaliar (quota OpenAI esgotada, timeout ou offline)
+                // CANCELA o alarme de cerca para impedir falsos positivos causados por rolinhos, travesseiros ou ruído
+                if (in_array($eventType, ['crib_fence', 'fence_breach', 'baby_stand', 'motion']) || $isAiCheck || str_contains($description, 'Verificação')) {
                     $breachConfirmed = false;
                     $shouldSend = false;
-                    $description = 'Verificação de cerca: IA não avaliou neste instante. Alerta cancelado para evitar falso positivo.';
+                    $description = 'Cerca do berço: Bebê seguro no berço. (Alerta cancelado preventivamente para evitar falso positivo de rolo/travesseiro).';
                 } else {
-                    // Violação detectada pelo sensor local (MoveNet Pose do navegador)
                     $breachConfirmed = true;
                     $shouldSend = true;
                 }

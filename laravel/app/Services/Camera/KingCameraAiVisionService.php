@@ -92,10 +92,16 @@ class KingCameraAiVisionService
 
         try {
             if ($this->getOpenAiKey() !== '') {
-                try {
-                    return $this->analyzeWithOpenAi($jpegBinary, $candidateEvent, $roi, $needsAnnotation);
-                } catch (\Throwable $oe) {
-                    Log::warning('kc.ai_vision.openai_fallback', ['msg' => $oe->getMessage()]);
+                $isQuotaExhausted = \Illuminate\Support\Facades\Cache::has('kc_openai_quota_exhausted');
+                if (!$isQuotaExhausted) {
+                    try {
+                        return $this->analyzeWithOpenAi($jpegBinary, $candidateEvent, $roi, $needsAnnotation);
+                    } catch (\Throwable $oe) {
+                        if (str_contains($oe->getMessage(), 'credit_balance_exhausted') || str_contains($oe->getMessage(), 'insufficient_quota')) {
+                            \Illuminate\Support\Facades\Cache::put('kc_openai_quota_exhausted', true, 120);
+                        }
+                        Log::warning('kc.ai_vision.openai_fallback', ['msg' => $oe->getMessage()]);
+                    }
                 }
             }
             if ($this->getGeminiKey() !== '') {

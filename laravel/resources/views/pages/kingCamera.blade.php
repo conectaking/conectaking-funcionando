@@ -10339,47 +10339,97 @@
                                 isBabyInCrib = true;
                             }
 
+                            // ── ÂNCORA ANATÔMICA DO CORPO DO BEBÊ (FILTRO TOTAL DE ROLOS, ALMOFADAS E TRAVESSEIROS) ──
+                            let torsoX = null, torsoY = null, torsoPtsCount = 0;
+                            ['left_hip', 'right_hip', 'left_shoulder', 'right_shoulder'].forEach(k => {
+                                if (kpMap[k] && kpMap[k].score >= 0.22) {
+                                    torsoX = (torsoX === null ? 0 : torsoX) + (kpMap[k].x / vw) * 100;
+                                    torsoY = (torsoY === null ? 0 : torsoY) + (kpMap[k].y / vh) * 100;
+                                    torsoPtsCount++;
+                                }
+                            });
+                            if (torsoPtsCount > 0) {
+                                torsoX /= torsoPtsCount;
+                                torsoY /= torsoPtsCount;
+                            }
+
+                            // Envergadura anatômica aproximada do corpinho do neném (% da imagem)
+                            let torsoSpan = 14.0;
+                            const sh = kpMap['left_shoulder'] || kpMap['right_shoulder'];
+                            const hp = kpMap['left_hip'] || kpMap['right_hip'];
+                            if (sh && hp && sh.score >= 0.22 && hp.score >= 0.22) {
+                                const shx = (sh.x / vw) * 100, shy = (sh.y / vh) * 100;
+                                const hpx = (hp.x / vw) * 100, hpy = (hp.y / vh) * 100;
+                                torsoSpan = Math.max(8.0, Math.min(26.0, Math.hypot(shx - hpx, shy - hpy)));
+                            }
+                            const maxLimbReachFromTorso = torsoSpan * 1.65; // Um bebê jamais tem perna maior que 1.6x o tronco
+
+                            // Tolerância ampliada para 4.5% para respeitar o rolinho protetor e toques na borda acolchoada
                             const isPtInsideStrict = (px, py) => {
                                 if (r.type === 'circle' && r.circle) {
-                                    return isPointInCircle(px, py, r.circle, 1.8);
+                                    return isPointInCircle(px, py, r.circle, 4.5);
                                 }
                                 if (Array.isArray(r.points) && r.points.length >= 3) {
-                                    return isPointInsidePolygonWithTolerance(px, py, r.points, 1.8);
+                                    return isPointInsidePolygonWithTolerance(px, py, r.points, 4.5);
                                 }
-                                return isPointInCribFence(px, py, r, 1.8);
+                                return isPointInCribFence(px, py, r, 4.5);
                             };
 
                             const allLimbCheck = [
-                                { keys: ['left_ankle', 'right_ankle'], label: 'Pé ou perna do bebê' },
-                                { keys: ['left_knee', 'right_knee'], label: 'Perna/Joelho do bebê' },
-                                { keys: ['left_wrist', 'right_wrist'], label: 'Mão ou braço do bebê' },
-                                { keys: ['left_elbow', 'right_elbow'], label: 'Braço/Cotovelo do bebê' },
-                                { keys: ['nose', 'left_ear', 'right_ear', 'left_eye', 'right_eye'], label: 'Cabeça do bebê' },
-                                { keys: ['left_shoulder', 'right_shoulder'], label: 'Ombro do bebê' },
-                                { keys: ['left_hip', 'right_hip'], label: 'Corpo/Quadril do bebê' }
+                                { keys: ['left_ankle', 'right_ankle'], label: 'Pé ou perna do bebê', minScore: 0.50, isExtremity: true },
+                                { keys: ['left_knee', 'right_knee'], label: 'Perna/Joelho do bebê', minScore: 0.45, isExtremity: false },
+                                { keys: ['left_wrist', 'right_wrist'], label: 'Mão ou braço do bebê', minScore: 0.50, isExtremity: true },
+                                { keys: ['left_elbow', 'right_elbow'], label: 'Braço/Cotovelo do bebê', minScore: 0.45, isExtremity: false },
+                                { keys: ['nose', 'left_ear', 'right_ear', 'left_eye', 'right_eye'], label: 'Cabeça do bebê', minScore: 0.42, isExtremity: false },
+                                { keys: ['left_shoulder', 'right_shoulder'], label: 'Ombro do bebê', minScore: 0.38, isExtremity: false },
+                                { keys: ['left_hip', 'right_hip'], label: 'Corpo/Quadril do bebê', minScore: 0.38, isExtremity: false }
                             ];
 
-                            // Validação anatômica: impede que almofadas, rolinhos ou dobras de lençol sejam confundidos com membros
-                            const isLimbAnatomicallyValid = (keyName) => {
+                            // Validação anatômica rigorosa: impede que rolinhos, travesseiros ou dobras de lençol sejam confundidos com membros
+                            const isLimbAnatomicallyValid = (keyName, pt) => {
+                                const px = (pt.x / vw) * 100;
+                                const py = (pt.y / vh) * 100;
+
+                                // Se tivermos o centro do tronco estimado, o membro DEVE estar a uma distância fisicamente possível do corpo do bebê
+                                if (torsoX !== null && torsoY !== null) {
+                                    const distToTorso = Math.hypot(px - torsoX, py - torsoY);
+                                    if (distToTorso > maxLimbReachFromTorso) {
+                                        // Ponto está muito longe do corpinho do neném: é 100% objeto/rolinho/travesseiro inanimado
+                                        return false;
+                                    }
+                                }
+
                                 if (keyName === 'left_ankle') {
-                                    const p = kpMap['left_knee'] || kpMap['left_hip'];
-                                    return p && p.score >= 0.22;
+                                    const k = kpMap['left_knee'], h = kpMap['left_hip'];
+                                    const parent = (k && k.score >= 0.32) ? k : ((h && h.score >= 0.32) ? h : null);
+                                    if (!parent) return false;
+                                    const parentDist = Math.hypot(px - (parent.x / vw) * 100, py - (parent.y / vh) * 100);
+                                    return parentDist <= (torsoSpan * 1.35);
                                 }
                                 if (keyName === 'right_ankle') {
-                                    const p = kpMap['right_knee'] || kpMap['right_hip'];
-                                    return p && p.score >= 0.22;
+                                    const k = kpMap['right_knee'], h = kpMap['right_hip'];
+                                    const parent = (k && k.score >= 0.32) ? k : ((h && h.score >= 0.32) ? h : null);
+                                    if (!parent) return false;
+                                    const parentDist = Math.hypot(px - (parent.x / vw) * 100, py - (parent.y / vh) * 100);
+                                    return parentDist <= (torsoSpan * 1.35);
                                 }
                                 if (keyName === 'left_wrist') {
-                                    const p = kpMap['left_elbow'] || kpMap['left_shoulder'];
-                                    return p && p.score >= 0.22;
+                                    const e = kpMap['left_elbow'], s = kpMap['left_shoulder'];
+                                    const parent = (e && e.score >= 0.32) ? e : ((s && s.score >= 0.32) ? s : null);
+                                    if (!parent) return false;
+                                    const parentDist = Math.hypot(px - (parent.x / vw) * 100, py - (parent.y / vh) * 100);
+                                    return parentDist <= (torsoSpan * 1.25);
                                 }
                                 if (keyName === 'right_wrist') {
-                                    const p = kpMap['right_elbow'] || kpMap['right_shoulder'];
-                                    return p && p.score >= 0.22;
+                                    const e = kpMap['right_elbow'], s = kpMap['right_shoulder'];
+                                    const parent = (e && e.score >= 0.32) ? e : ((s && s.score >= 0.32) ? s : null);
+                                    if (!parent) return false;
+                                    const parentDist = Math.hypot(px - (parent.x / vw) * 100, py - (parent.y / vh) * 100);
+                                    return parentDist <= (torsoSpan * 1.25);
                                 }
                                 if (['nose', 'left_ear', 'right_ear', 'left_eye', 'right_eye'].includes(keyName)) {
                                     const p = kpMap['left_shoulder'] || kpMap['right_shoulder'];
-                                    return p && p.score >= 0.22;
+                                    return p && p.score >= 0.28;
                                 }
                                 return true;
                             };
@@ -10387,8 +10437,9 @@
                             for (const limbGroup of allLimbCheck) {
                                 for (const keyName of limbGroup.keys) {
                                     const pt = kpMap[keyName];
-                                    // Confiança elevada para 0.38 + validação de cadeia anatômica para filtrar rolos e travesseiros
-                                    if (pt && pt.score >= 0.38 && isLimbAnatomicallyValid(keyName)) {
+                                    const reqScore = limbGroup.minScore || 0.45;
+                                    // Confiança elevada + validação anatômica cinemática para rejeitar rolos e travesseiros
+                                    if (pt && pt.score >= reqScore && isLimbAnatomicallyValid(keyName, pt)) {
                                         const px = (pt.x / vw) * 100;
                                         const py = (pt.y / vh) * 100;
 
@@ -10434,7 +10485,7 @@
                         s.calmCycles = 0;
                         s.hasSeenInCrib = true;
 
-                        if (s.breachStreak >= 2) {
+                        if (s.breachStreak >= 3) {
                             const msg = limbBreached
                                 ? (breachMsg || '🚨 Parte do corpo do bebê passou para fora do cerco do berço!')
                                 : '🚨 ALERTA: Bebê saiu do cerco seguro do berço!';
@@ -11876,8 +11927,11 @@
                 if (enabled && s && s.enabled) {
                     s.fenceState = 'INSIDE';
                     s.isLimbBreached = false;
+                    s.breachStreak = 0;
                     s.alertCount = 0;
                     s.lastAlertTime = 0;
+                    const alertEl = document.getElementById(`fence-alert-${camId}`);
+                    if (alertEl) alertEl.style.display = 'none';
                     drawCribBox(camId);
                     if (s._roiEditTimer) clearTimeout(s._roiEditTimer);
                     s._roiEditTimer = setTimeout(() => {
