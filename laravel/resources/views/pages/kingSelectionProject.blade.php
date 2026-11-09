@@ -378,8 +378,8 @@
       </div>
       <!-- Lado Direito: Storage Meter Widget e Avatar do Usuário -->
       <div class="flex items-center gap-3 text-sm">
-        <!-- Storage Meter Badge do Fotógrafo -->
-        <div id="ks-storage-pill" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 border border-amber-500/35 text-xs shadow-xs" title="Consumo de Armazenamento do seu Plano">
+        <!-- Storage Meter Badge do Fotógrafo (Clicável para simulação e assinatura) -->
+        <div id="ks-storage-pill" onclick="window.openStorageSimulatorModal?.()" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 border border-amber-500/35 text-xs shadow-xs hover:border-amber-400 hover:scale-[1.02] cursor-pointer transition" title="Consumo do Plano &amp; Simulador de Fotos (Clique para abrir)">
           <i class="fas fa-database text-amber-400 text-xs"></i>
           <div class="flex flex-col text-[11px] leading-tight">
             <span class="font-bold text-amber-100 flex items-center gap-1.5" id="ks-storage-label">
@@ -2607,6 +2607,8 @@
       }
     })();
   </script>
+
+  @include('partials.kingSelectionStorageModal')
 
 </body>
 

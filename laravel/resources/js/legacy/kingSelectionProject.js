@@ -2704,7 +2704,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!pGrid) return null;
     let wrap = document.getElementById('ks-folders-admin');
     // Atualiza toolbar antiga (sem botões novos) sem precisar limpar cache manual
-    if (wrap && wrap.getAttribute('data-ks-toolbar-v') !== '5') {
+    if (wrap && wrap.getAttribute('data-ks-toolbar-v') !== '6') {
       try { wrap.remove(); } catch (_) { /* ignore */ }
       wrap = null;
     }
@@ -2712,7 +2712,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const host = pGrid.parentElement || pGrid;
     wrap = document.createElement('div');
     wrap.id = 'ks-folders-admin';
-    wrap.setAttribute('data-ks-toolbar-v', '5');
+    wrap.setAttribute('data-ks-toolbar-v', '6');
     wrap.style.marginBottom = '12px';
     wrap.style.border = '1px solid #e2e8f0';
     wrap.style.borderRadius = '16px';
@@ -2720,46 +2720,102 @@ document.addEventListener('DOMContentLoaded', async () => {
     wrap.style.background = '#ffffff';
     wrap.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05)';
     wrap.innerHTML = `
-      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
+        
+        <!-- Ações Principais e Mini-Menu Inteligente -->
         <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-          <button type="button" class="ks-btn" id="ks-folder-create-btn"><i class="fas fa-folder-plus"></i> Nova pasta</button>
-          <button type="button" class="ks-btn" id="ks-only-photos-btn"><i class="fas fa-images"></i> Fotos soltas</button>
-          <button type="button" class="ks-btn" id="ks-upload-to-folder-btn"><i class="fas fa-folder-open"></i> Enviar para pasta</button>
-          <button type="button" class="ks-btn" id="ks-folder-auto-face-btn"><i class="fas fa-user-group"></i> Separar por pasta (rosto)</button>
-          <button type="button" class="ks-btn" id="ks-folder-auto-reprocess-btn"><i class="fas fa-rotate-right"></i> Reprocessar e separar</button>
-          <button type="button" class="ks-btn" id="ks-folder-select-all-btn"><i class="far fa-check-square"></i> Selecionar todas as pastas</button>
-          <button type="button" class="ks-btn" id="ks-folder-select-none-btn"><i class="far fa-square"></i> Limpar pastas</button>
-          <button type="button" class="ks-btn" id="ks-folder-delete-selected-btn" style="color:#ef4444;border-color:rgba(239,68,68,.35)">
-            <i class="fas fa-trash"></i> Excluir pastas selecionadas
+          <button type="button" class="ks-btn ks-btn-primary" id="ks-folder-create-btn" style="background:linear-gradient(135deg, #f59e0b, #d97706);color:#000;font-weight:800;border:none;box-shadow:0 2px 8px rgba(245,158,11,0.25);">
+            <i class="fas fa-folder-plus"></i> Nova pasta
           </button>
-          <span style="width:1px;height:22px;background:#e2e8f0;margin:0 4px"></span>
-          <button type="button" class="ks-btn" id="ks-photo-select-all-btn"><i class="fas fa-check-double"></i> Selecionar todas as fotos</button>
-          <button type="button" class="ks-btn" id="ks-photo-clear-sel-btn"><i class="fas fa-xmark"></i> Limpar fotos</button>
-          <button type="button" class="ks-btn" id="ks-photo-delete-selected-btn" style="color:#ef4444;border-color:rgba(239,68,68,.35)">
-            <i class="fas fa-trash"></i> Excluir fotos selecionadas
+          
+          <button type="button" class="ks-btn" id="ks-only-photos-btn" title="Ver apenas fotos soltas (sem pasta)">
+            <i class="fas fa-images"></i> Fotos soltas
           </button>
-          <button type="button" class="ks-btn" id="ks-photo-delete-loose-btn" style="color:#ef4444;border-color:rgba(239,68,68,.35)">
-            <i class="fas fa-unlink"></i> Excluir fotos soltas
+          
+          <button type="button" class="ks-btn" id="ks-upload-to-folder-btn" title="Definir pasta padrão para upload">
+            <i class="fas fa-folder-open"></i> Enviar p/ pasta
           </button>
+
+          <!-- Mini-Menu Inteligente: Ações & IA -->
+          <div class="relative" id="ks-actions-menu-container" style="position:relative;display:inline-block;">
+            <button type="button" class="ks-btn" id="ks-actions-menu-btn" style="background:#f8fafc;border:1px solid #cbd5e1;font-weight:700;color:#1e293b;display:flex;align-items:center;gap:6px;" title="Ações em massa, organização inteligente e IA">
+              <i class="fas fa-bars-staggered" style="color:#f59e0b;"></i>
+              <span>Ações &amp; IA</span>
+              <i class="fas fa-chevron-down" style="font-size:10px;color:#64748b;"></i>
+            </button>
+
+            <!-- Menu Dropdown Suspenso -->
+            <div id="ks-actions-dropdown" style="display:none;position:absolute;left:0;top:calc(100% + 6px);width:260px;background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,0.14);padding:6px;z-index:9999;">
+              
+              <!-- Grupo 1: Reconhecimento Facial / IA -->
+              <div style="font-size:10px;font-weight:800;text-transform:uppercase;color:#b45309;padding:6px 10px 4px;display:flex;align-items:center;gap:5px;">
+                <i class="fas fa-wand-magic-sparkles text-amber-500"></i> Inteligência Artificial
+              </div>
+              <button type="button" class="ks-dropdown-item" id="ks-folder-auto-face-btn" style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:none;background:transparent;text-align:left;font-size:12px;font-weight:600;color:#1e293b;cursor:pointer;">
+                <i class="fas fa-user-group" style="width:16px;color:#0284c7;"></i> Separar por pasta (Rosto)
+              </button>
+              <button type="button" class="ks-dropdown-item" id="ks-folder-auto-reprocess-btn" style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:none;background:transparent;text-align:left;font-size:12px;font-weight:600;color:#1e293b;cursor:pointer;">
+                <i class="fas fa-rotate-right" style="width:16px;color:#10b981;"></i> Reprocessar e separar
+              </button>
+
+              <div style="height:1px;background:#f1f5f9;margin:4px 0;"></div>
+
+              <!-- Grupo 2: Seleção em Massa -->
+              <div style="font-size:10px;font-weight:800;text-transform:uppercase;color:#64748b;padding:6px 10px 4px;">
+                Seleção em Massa
+              </div>
+              <button type="button" class="ks-dropdown-item" id="ks-photo-select-all-btn" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;border:none;background:transparent;text-align:left;font-size:12px;color:#334155;cursor:pointer;">
+                <i class="fas fa-check-double" style="width:16px;color:#64748b;"></i> Selecionar todas as fotos
+              </button>
+              <button type="button" class="ks-dropdown-item" id="ks-photo-clear-sel-btn" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;border:none;background:transparent;text-align:left;font-size:12px;color:#334155;cursor:pointer;">
+                <i class="fas fa-xmark" style="width:16px;color:#64748b;"></i> Limpar seleção de fotos
+              </button>
+              <button type="button" class="ks-dropdown-item" id="ks-folder-select-all-btn" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;border:none;background:transparent;text-align:left;font-size:12px;color:#334155;cursor:pointer;">
+                <i class="far fa-check-square" style="width:16px;color:#64748b;"></i> Selecionar todas as pastas
+              </button>
+              <button type="button" class="ks-dropdown-item" id="ks-folder-select-none-btn" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;border:none;background:transparent;text-align:left;font-size:12px;color:#334155;cursor:pointer;">
+                <i class="far fa-square" style="width:16px;color:#64748b;"></i> Limpar seleção de pastas
+              </button>
+
+              <div style="height:1px;background:#f1f5f9;margin:4px 0;"></div>
+
+              <!-- Grupo 3: Ações de Exclusão -->
+              <div style="font-size:10px;font-weight:800;text-transform:uppercase;color:#ef4444;padding:6px 10px 4px;">
+                Exclusão em Lote
+              </div>
+              <button type="button" class="ks-dropdown-item" id="ks-photo-delete-selected-btn" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;border:none;background:transparent;text-align:left;font-size:12px;color:#ef4444;font-weight:600;cursor:pointer;">
+                <i class="fas fa-trash" style="width:16px;"></i> Excluir fotos selecionadas
+              </button>
+              <button type="button" class="ks-dropdown-item" id="ks-folder-delete-selected-btn" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;border:none;background:transparent;text-align:left;font-size:12px;color:#ef4444;font-weight:600;cursor:pointer;">
+                <i class="fas fa-folder-minus" style="width:16px;"></i> Excluir pastas selecionadas
+              </button>
+              <button type="button" class="ks-dropdown-item" id="ks-photo-delete-loose-btn" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;border:none;background:transparent;text-align:left;font-size:12px;color:#ef4444;font-weight:600;cursor:pointer;">
+                <i class="fas fa-unlink" style="width:16px;"></i> Excluir todas fotos soltas
+              </button>
+            </div>
+          </div>
         </div>
+
+        <!-- Lado Direito: Destino do Envio e Ordenação Compacta -->
         <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-          <select class="ks-input" id="ks-folder-upload-mode" style="min-width:200px" title="Destino do próximo envio de fotos">
+          <select class="ks-input" id="ks-folder-upload-mode" style="min-width:160px;font-weight:600;" title="Destino do próximo envio de fotos">
             <option value="all">Envio: fotos soltas</option>
             <option value="folder">Envio: pasta específica</option>
           </select>
-          <select class="ks-input" id="ks-folder-upload-target" style="min-width:170px" title="Pasta de destino do envio"></select>
-          <button type="button" class="ks-btn" id="ks-folder-apply-name-order-btn"><i class="fas fa-sort-alpha-down"></i> Aplicar ordem A-Z (salvar)</button>
-          <select class="ks-input" id="ks-folder-sort" style="min-width:190px">
-            <option value="manual">Pastas: ordem manual</option>
-            <option value="name">Pastas: nome (A-Z / 1-2-3)</option>
-            <option value="count">Pastas: mais fotos primeiro</option>
-          </select>
-          <select class="ks-input" id="ks-photo-sort" style="min-width:190px">
-            <option value="order">Fotos: sequência original</option>
-            <option value="name">Fotos: nome (A-Z / 1-2-3)</option>
+          <select class="ks-input" id="ks-folder-upload-target" style="min-width:140px;font-weight:600;" title="Pasta de destino do envio"></select>
+          
+          <select class="ks-input" id="ks-photo-sort" style="min-width:150px;" title="Ordenar fotos">
+            <option value="order">Fotos: sequência</option>
+            <option value="name">Fotos: nome (A-Z)</option>
             <option value="id">Fotos: número (ID)</option>
           </select>
-          <select class="ks-input" id="ks-folder-filter" style="min-width:170px"></select>
+          <select class="ks-input" id="ks-folder-sort" style="min-width:145px;" title="Ordenar pastas">
+            <option value="manual">Pastas: manual</option>
+            <option value="name">Pastas: nome (A-Z)</option>
+            <option value="count">Pastas: mais fotos</option>
+          </select>
+          <button type="button" class="ks-btn" id="ks-folder-apply-name-order-btn" title="Aplicar ordem A-Z e salvar"><i class="fas fa-sort-alpha-down"></i> Salvar A-Z</button>
+          <select class="ks-input" id="ks-folder-filter" style="display:none;min-width:170px"></select>
         </div>
       </div>
       <div id="ks-folder-auto-status" class="ks-muted" style="font-size:12px;margin-top:8px;line-height:1.4;"></div>
@@ -2773,7 +2829,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     `;
     host.insertBefore(wrap, pGrid);
 
+    // Efeito hover dinâmico nos itens do dropdown
+    wrap.querySelectorAll('.ks-dropdown-item').forEach(item => {
+      item.addEventListener('mouseenter', () => item.style.background = '#f8fafc');
+      item.addEventListener('mouseleave', () => item.style.background = 'transparent');
+    });
+
+    // Fechar dropdown de ações ao clicar fora
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#ks-actions-menu-container')) {
+        const drop = document.getElementById('ks-actions-dropdown');
+        if (drop) drop.style.display = 'none';
+      }
+    });
+
     wrap.addEventListener('click', async (ev) => {
+      const actionsMenuBtn = ev.target.closest('#ks-actions-menu-btn');
+      if (actionsMenuBtn) {
+        ev.stopPropagation();
+        const drop = document.getElementById('ks-actions-dropdown');
+        if (drop) {
+          drop.style.display = drop.style.display === 'none' ? 'block' : 'none';
+        }
+        return;
+      }
+
+      // Se clicou em um item do dropdown, fecha após acionar
+      if (ev.target.closest('.ks-dropdown-item')) {
+        const drop = document.getElementById('ks-actions-dropdown');
+        if (drop) drop.style.display = 'none';
+      }
       const createBtn = ev.target.closest('#ks-folder-create-btn');
       if (createBtn) {
         const name = (window.prompt('Nome da nova pasta:', '') || '').trim();

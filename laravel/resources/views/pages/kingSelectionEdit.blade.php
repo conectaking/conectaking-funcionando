@@ -478,8 +478,22 @@
         </a>
       </div>
 
-      <!-- Lado Direito: Voltar + Nova Galeria + Avatar do Usuário (depois de galeria) -->
+      <!-- Lado Direito: Storage Pill + Voltar ADM + Nova Galeria + Avatar do Usuário -->
       <div style="display: flex; align-items: center; gap: 10px;">
+        <!-- Storage Meter Badge do Fotógrafo (Clicável para simulação e assinatura) -->
+        <div id="ks-storage-pill" onclick="window.openStorageSimulatorModal?.()" style="display: flex; align-items: center; gap: 8px; padding: 5px 13px; border-radius: 9999px; background: rgba(0, 0, 0, 0.75); border: 1px solid rgba(245, 158, 11, 0.35); cursor: pointer; transition: all 0.2s;" class="hover:border-amber-400 cursor-pointer" title="Consumo do Plano &amp; Simulador de Fotos (Clique para abrir)">
+          <i class="fas fa-database" style="color: #fbbf24; font-size: 11px;"></i>
+          <div style="display: flex; flex-direction: column; font-size: 11px; line-height: 1.15;">
+            <span style="font-weight: 800; color: #fef08a; display: flex; align-items: center; gap: 5px;">
+              <span id="ks-storage-used">0.0 GB</span> / <span id="ks-storage-limit">60 GB</span>
+              <span id="ks-storage-plan-tag" style="font-size: 9px; padding: 1px 5px; border-radius: 4px; background: rgba(245, 158, 11, 0.25); color: #fde68a; font-weight: 900;">60 GB</span>
+            </span>
+            <div style="width: 95px; height: 5px; background: #1e293b; border-radius: 9999px; overflow: hidden; margin-top: 2px; border: 1px solid rgba(255,255,255,0.08);">
+              <div id="ks-storage-progress" style="height: 100%; width: 0%; background: linear-gradient(90deg, #f59e0b, #fbbf24); border-radius: 9999px; transition: width 0.3s;"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- Botão Painel Master ADM (Visível para o Administrador) -->
         <a href="/admin" class="ks-btn" id="ks-btn-admin-master" style="{{ $isAdminUser ? 'display: inline-flex;' : 'display: none;' }} align-items: center; gap: 8px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #000; font-weight: 900; border: 1px solid rgba(251, 191, 36, 0.8); box-shadow: 0 0 15px rgba(245, 158, 11, 0.25); border-radius: 12px; padding: 9px 15px; cursor: pointer; text-decoration: none;" title="Voltar ao Painel Master ADM">
           <i class="fas fa-crown"></i> <span>Voltar ao Painel ADM</span>
@@ -555,8 +569,8 @@
             <a href="https://wa.me/5581997323674?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20o%20KingSelection" target="_blank" rel="noopener noreferrer"><i class="fab fa-whatsapp"></i> Suporte WhatsApp</a>
           </div>
 
-          <!-- Widget de Armazenamento do Fotógrafo & Controles Master ADM -->
-          <div id="ks-quota-widget" style="margin-top: 14px; padding: 12px; border-radius: 14px; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 12px;">
+          <!-- Widget de Armazenamento do Fotógrafo (Clicável para simulação e assinatura) -->
+          <div id="ks-quota-widget" onclick="window.openStorageSimulatorModal?.()" style="margin-top: 14px; padding: 12px; border-radius: 14px; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 12px; cursor: pointer; transition: all 0.2s;" title="Clique para ver detalhes da assinatura e simular fotos">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
               <span style="font-weight: 800; color: #0f172a;" id="ks-quota-plan-name">Plano Studio King</span>
               <span style="font-weight: 700; color: #b45309;" id="ks-quota-badge">60 GB</span>
@@ -568,31 +582,9 @@
               <span id="ks-quota-used-text">0 GB usados</span>
               <span id="ks-quota-max-text">60 GB</span>
             </div>
-
-            <!-- Controles Master do Administrador (Visível para o ADM) -->
-            <div id="ks-admin-controls" style="{{ $isAdminUser ? 'display: block;' : 'display: none;' }} margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cbd5e1;">
-              <div style="font-weight: 800; color: #d97706; display: flex; align-items: center; gap: 5px; margin-bottom: 4px;">
-                <i class="fas fa-crown"></i> <span>Meu Estúdio (Conta ADM)</span>
-              </div>
-              <div style="font-size: 11px; color: #475569; margin-bottom: 8px;">
-                Cortesia Plataforma: <strong style="color: #16a34a;">R$ 0,00</strong><br>
-                Seu consumo R2: <strong id="ks-admin-self-cost">R$ 0,00</strong>
-              </div>
-              <div style="display: flex; flex-direction: column; gap: 6px;">
-                <select id="ks-admin-select-plan" style="width: 100%; padding: 6px 8px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 11px; background: #fff; font-weight: 600;">
-                  <option value="unlimited">Ilimitado (Cortesia ADM)</option>
-                  <option value="plan_20gb">Essencial 20 GB (Cortesia ADM)</option>
-                  <option value="plan_30gb">Pro 30 GB (Cortesia ADM)</option>
-                  <option value="plan_60gb">Studio King 60 GB (Cortesia ADM)</option>
-                  <option value="plan_100gb">King Master 100 GB (Cortesia ADM)</option>
-                </select>
-                <button type="button" id="ks-admin-save-plan-btn" style="width: 100%; padding: 6px; border-radius: 8px; background: #0f172a; color: #fbbf24; font-weight: 800; font-size: 11px; border: 1px solid rgba(251, 191, 36, 0.3); cursor: pointer;">
-                  Ativar no Meu Estúdio
-                </button>
-                <a href="/admin" id="ks-admin-open-modal-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7px; border-radius: 8px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 900; font-size: 11px; text-decoration: none; cursor: pointer; margin-top: 4px;">
-                  <i class="fas fa-crown"></i> Painel Master ADM
-                </a>
-              </div>
+            <div style="margin-top: 8px; font-size: 11px; color: #d97706; font-weight: 700; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #e2e8f0; padding-top: 6px;">
+              <span><i class="fas fa-calculator text-amber-500"></i> Simular capacidade</span>
+              <span style="color: #64748b; font-size: 10px;">Ver plano &rarr;</span>
             </div>
           </div>
         </div>
@@ -1007,6 +999,9 @@
 
     </div>
   </div>
+
+  @include('partials.kingSelectionStorageModal')
+
 </body>
 </html>
 
