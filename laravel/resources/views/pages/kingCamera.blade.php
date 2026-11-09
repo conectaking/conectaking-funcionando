@@ -10341,12 +10341,12 @@
 
                             const isPtInsideStrict = (px, py) => {
                                 if (r.type === 'circle' && r.circle) {
-                                    return isPointInCircle(px, py, r.circle, 0.5);
+                                    return isPointInCircle(px, py, r.circle, 1.8);
                                 }
                                 if (Array.isArray(r.points) && r.points.length >= 3) {
-                                    return isPointInsidePolygonWithTolerance(px, py, r.points, 0.5);
+                                    return isPointInsidePolygonWithTolerance(px, py, r.points, 1.8);
                                 }
-                                return isPointInCribFence(px, py, r, 0.5);
+                                return isPointInCribFence(px, py, r, 1.8);
                             };
 
                             const allLimbCheck = [
@@ -10359,11 +10359,36 @@
                                 { keys: ['left_hip', 'right_hip'], label: 'Corpo/Quadril do bebê' }
                             ];
 
+                            // Validação anatômica: impede que almofadas, rolinhos ou dobras de lençol sejam confundidos com membros
+                            const isLimbAnatomicallyValid = (keyName) => {
+                                if (keyName === 'left_ankle') {
+                                    const p = kpMap['left_knee'] || kpMap['left_hip'];
+                                    return p && p.score >= 0.22;
+                                }
+                                if (keyName === 'right_ankle') {
+                                    const p = kpMap['right_knee'] || kpMap['right_hip'];
+                                    return p && p.score >= 0.22;
+                                }
+                                if (keyName === 'left_wrist') {
+                                    const p = kpMap['left_elbow'] || kpMap['left_shoulder'];
+                                    return p && p.score >= 0.22;
+                                }
+                                if (keyName === 'right_wrist') {
+                                    const p = kpMap['right_elbow'] || kpMap['right_shoulder'];
+                                    return p && p.score >= 0.22;
+                                }
+                                if (['nose', 'left_ear', 'right_ear', 'left_eye', 'right_eye'].includes(keyName)) {
+                                    const p = kpMap['left_shoulder'] || kpMap['right_shoulder'];
+                                    return p && p.score >= 0.22;
+                                }
+                                return true;
+                            };
+
                             for (const limbGroup of allLimbCheck) {
                                 for (const keyName of limbGroup.keys) {
                                     const pt = kpMap[keyName];
-                                    // Sensibilidade calibrada para 0.20 para garantir detecção precisa em visão noturna infravermelha
-                                    if (pt && pt.score >= 0.20) {
+                                    // Confiança elevada para 0.38 + validação de cadeia anatômica para filtrar rolos e travesseiros
+                                    if (pt && pt.score >= 0.38 && isLimbAnatomicallyValid(keyName)) {
                                         const px = (pt.x / vw) * 100;
                                         const py = (pt.y / vh) * 100;
 
