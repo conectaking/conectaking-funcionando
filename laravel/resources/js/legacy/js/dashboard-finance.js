@@ -970,13 +970,13 @@ window.initFinancePane = async function () {
             
             <!-- Abas unificadas: Resumo, Fluxo, Trabalhos, Quem Eu Devo, Cartões, Metas, Serasa -->
             <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px;" class="finance-tabs-container">
-                <button type="button" class="finance-unified-tab active" data-finance-tab="resumo" onclick="window.switchUnifiedFinanceTab('resumo')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-indigo); color: white; font-weight: 700; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-chart-pie" style="pointer-events: none;"></i> <span style="pointer-events: none;">Resumo</span></button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="fluxo" onclick="window.switchUnifiedFinanceTab('fluxo')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-exchange-alt" style="pointer-events: none;"></i> <span style="pointer-events: none;">Fluxo</span></button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="trabalhos" onclick="window.switchUnifiedFinanceTab('trabalhos')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-briefcase" style="pointer-events: none;"></i> <span style="pointer-events: none;">A Receber (Trabalhos)</span></button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="terceiros" onclick="window.switchUnifiedFinanceTab('terceiros')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-hand-holding-usd" style="pointer-events: none;"></i> <span style="pointer-events: none;">Quem Eu Devo</span></button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="cartoes" onclick="window.switchUnifiedFinanceTab('cartoes')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-credit-card" style="pointer-events: none;"></i> <span style="pointer-events: none;">Cartões</span></button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="meta" onclick="window.switchUnifiedFinanceTab('meta')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-bullseye" style="pointer-events: none;"></i> <span style="pointer-events: none;">Metas</span></button>
-                <button type="button" class="finance-unified-tab" data-finance-tab="serasa" onclick="window.switchUnifiedFinanceTab('serasa')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-university" style="pointer-events: none;"></i> <span style="pointer-events: none;">Serasa / Dívidas</span></button>
+                <button type="button" class="finance-unified-tab active" data-finance-tab="resumo" data-finance-action="resumo" onclick="window.switchUnifiedFinanceTab('resumo')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-indigo); color: white; font-weight: 700; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-chart-pie" style="pointer-events: none;"></i> <span style="pointer-events: none;">Resumo</span></button>
+                <button type="button" class="finance-unified-tab" data-finance-tab="fluxo" data-finance-action="fluxo" onclick="window.switchUnifiedFinanceTab('fluxo')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-exchange-alt" style="pointer-events: none;"></i> <span style="pointer-events: none;">Fluxo</span></button>
+                <button type="button" class="finance-unified-tab" data-finance-tab="trabalhos" data-finance-action="trabalhos" onclick="window.switchUnifiedFinanceTab('trabalhos')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-briefcase" style="pointer-events: none;"></i> <span style="pointer-events: none;">A Receber (Trabalhos)</span></button>
+                <button type="button" class="finance-unified-tab" data-finance-tab="terceiros" data-finance-action="terceiros" onclick="window.switchUnifiedFinanceTab('terceiros')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-hand-holding-usd" style="pointer-events: none;"></i> <span style="pointer-events: none;">Quem Eu Devo</span></button>
+                <button type="button" class="finance-unified-tab" data-finance-tab="cartoes" data-finance-action="cartoes" onclick="window.switchUnifiedFinanceTab('cartoes')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-credit-card" style="pointer-events: none;"></i> <span style="pointer-events: none;">Cartões</span></button>
+                <button type="button" class="finance-unified-tab" data-finance-tab="meta" data-finance-action="meta" onclick="window.switchUnifiedFinanceTab('meta')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-bullseye" style="pointer-events: none;"></i> <span style="pointer-events: none;">Metas</span></button>
+                <button type="button" class="finance-unified-tab" data-finance-tab="serasa" data-finance-action="serasa" onclick="window.switchUnifiedFinanceTab('serasa')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--finance-border); background: var(--finance-tab-inactive-bg); color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; -webkit-tap-highlight-color: transparent;"><i class="fas fa-university" style="pointer-events: none;"></i> <span style="pointer-events: none;">Serasa / Dívidas</span></button>
             </div>
             <div id="finance-resumo-content">
             ${(function() {
@@ -1011,7 +1011,7 @@ window.initFinancePane = async function () {
                             <p style="color: var(--finance-text-secondary); font-size: 0.78rem; margin: 2px 0 0 0;">Total previsto a quitar: <span style="color: #fca5a5; font-weight: 700;">R$ ${formatCurrency(totalPendencias)}</span></p>
                         </div>
                     </div>
-                    <button type="button" onclick="window.switchUnifiedFinanceTab && window.switchUnifiedFinanceTab('terceiros')" style="padding: 8px 16px; background: rgba(239, 68, 68, 0.25); border: 1px solid rgba(239, 68, 68, 0.5); border-radius: 10px; color: #fca5a5; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.4)'" onmouseout="this.style.background='rgba(239,68,68,0.25)'">
+                    <button type="button" data-finance-action="terceiros" onclick="window.switchUnifiedFinanceTab && window.switchUnifiedFinanceTab('terceiros')" style="padding: 8px 16px; background: rgba(239, 68, 68, 0.25); border: 1px solid rgba(239, 68, 68, 0.5); border-radius: 10px; color: #fca5a5; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.4)'" onmouseout="this.style.background='rgba(239,68,68,0.25)'">
                         Ver em Quem Eu Devo &rarr;
                     </button>
                 </div>`;
@@ -1019,7 +1019,7 @@ window.initFinancePane = async function () {
             <!-- Main Balance Card with Chart -->
             <div class="finance-card-premium" style="border-radius: 24px; padding: 32px; margin-bottom: 32px; position: relative; overflow: hidden;">
                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 32px; position: relative; z-index: 10;">
-                    <div>
+                    <div data-finance-action="patrimonio-modal" style="cursor: pointer;" title="Clique para ver detalhes do patrimônio">
                         <p style="color: var(--finance-text-secondary); font-size: 0.875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Patrimônio (dinheiro em caixa)</p>
                         <p style="color: var(--finance-text-secondary); font-size: 0.7rem; margin-bottom: 8px;">Dinheiro disponível, todos os meses (n\u00e3o gasto)</p>
                         <h3 id="finance-patrimonio-total" style="font-size: 2.5rem; font-weight: 700; color: var(--finance-text-primary); margin-bottom: 8px;">R$ ${formatCurrency(patrimonioInicial)}</h3>
@@ -1031,7 +1031,7 @@ window.initFinancePane = async function () {
                             </span>
                             <span style="color: var(--finance-text-secondary); font-size: 0.875rem;">em relação ao mês passado</span>
                             ` : ''}
-                            <button onclick="showGeneralBalanceModal()" style="margin-left: auto; padding: 6px 12px; background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 8px; color: var(--finance-indigo); font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(59, 130, 246, 0.3)'" onmouseout="this.style.background='rgba(59, 130, 246, 0.2)'">
+                            <button type="button" data-finance-action="patrimonio-modal" onclick="showGeneralBalanceModal()" style="margin-left: auto; padding: 6px 12px; background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 8px; color: var(--finance-indigo); font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(59, 130, 246, 0.3)'" onmouseout="this.style.background='rgba(59, 130, 246, 0.2)'">
                                 <i class="fas fa-info-circle" style="margin-right: 4px;"></i> Ver Detalhes Completos
                             </button>
                         </div>
@@ -1065,7 +1065,7 @@ window.initFinancePane = async function () {
             <!-- Stats Cards Grid -->
             <div class="finance-stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 24px;">
                 <!-- Total Balance Card (clique abre popup com resumo do saldo) -->
-                <div onclick="openFinanceDetailModal('balance')" class="finance-card-premium neon-border-blue" style="border-radius: 24px; padding: 24px; transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+                <div data-finance-action="patrimonio-modal" onclick="openFinanceDetailModal('balance')" class="finance-card-premium neon-border-blue" style="border-radius: 24px; padding: 24px; transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
                         <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(59, 130, 246, 0.1); display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-wallet" style="color: var(--finance-neon-blue); font-size: 1.25rem;"></i>
@@ -1079,7 +1079,7 @@ window.initFinancePane = async function () {
                 </div>
                 
                 <!-- Monthly Income Card (clique abre popup com todas as receitas) -->
-                <div onclick="openFinanceDetailModal('income')" class="finance-card-premium neon-border-green" style="border-radius: 24px; padding: 24px; transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+                <div data-finance-action="filter-paid-income" onclick="openFinanceDetailModal('income')" class="finance-card-premium neon-border-green" style="border-radius: 24px; padding: 24px; transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
                         <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(34, 197, 94, 0.1); display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-arrow-trend-up" style="color: var(--finance-neon-green); font-size: 1.25rem;"></i>
@@ -1093,7 +1093,7 @@ window.initFinancePane = async function () {
                 </div>
                 
                 <!-- Monthly Expenses Card (clique abre lista inline, igual O que foi pago) -->
-                <div onclick="filterByPaidExpense()" class="finance-card-premium neon-border-red" style="border-radius: 24px; padding: 24px; transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+                <div data-finance-action="filter-paid-expense" onclick="filterByPaidExpense()" class="finance-card-premium neon-border-red" style="border-radius: 24px; padding: 24px; transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
                         <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(239, 68, 68, 0.1); display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-arrow-trend-down" style="color: var(--finance-neon-red); font-size: 1.25rem;"></i>
@@ -1125,7 +1125,7 @@ window.initFinancePane = async function () {
                         <span style="color: var(--finance-text-primary); font-size: 1.05rem; font-weight: 600;">Balanço</span>
                         <span id="finance-balance-result" style="color: ${(totalRecebido - despesas) >= 0 ? '#22c55e' : '#ef4444'}; font-size: 1.5rem; font-weight: 700;">R$ ${formatCurrency(Math.abs(totalRecebido - despesas))}</span>
                     </div>
-                    <button type="button" onclick="showGeneralBalanceModal()" style="width: 100%; margin-top: 20px; padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.15); color: var(--finance-indigo); font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s; letter-spacing: 0.02em;" onmouseover="this.style.background='rgba(59, 130, 246, 0.25)'" onmouseout="this.style.background='rgba(59, 130, 246, 0.15)'">
+                    <button type="button" data-finance-action="patrimonio-modal" onclick="showGeneralBalanceModal()" style="width: 100%; margin-top: 20px; padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.15); color: var(--finance-indigo); font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s; letter-spacing: 0.02em;" onmouseover="this.style.background='rgba(59, 130, 246, 0.25)'" onmouseout="this.style.background='rgba(59, 130, 246, 0.15)'">
                         <i class="fas fa-chart-pie" style="margin-right: 8px;"></i> Ver mais
                     </button>
                 </div>
@@ -1134,7 +1134,7 @@ window.initFinancePane = async function () {
             <!-- Additional Summary Cards Grid -->
             <div class="finance-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px;">
                 <!-- Falta receber -->
-                <div onclick="filterByPendingIncome()" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(34, 197, 94, 0.3); transition: all 0.2s; overflow: hidden;" onmouseover="this.style.borderColor='rgba(34, 197, 94, 0.5)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(34, 197, 94, 0.3)'; this.style.transform='translateY(0)'">
+                <div data-finance-action="filter-pending-income" onclick="filterByPendingIncome()" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(34, 197, 94, 0.3); transition: all 0.2s; overflow: hidden;" onmouseover="this.style.borderColor='rgba(34, 197, 94, 0.5)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(34, 197, 94, 0.3)'; this.style.transform='translateY(0)'">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
                         <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(34, 197, 94, 0.1); display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-clock" style="color: var(--finance-neon-green); font-size: 1rem;"></i>
@@ -1145,13 +1145,13 @@ window.initFinancePane = async function () {
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; flex-wrap: wrap; min-width: 0;">
                         <h3 id="finance-pending-income" style="color: var(--finance-neon-green); font-size: 1.5rem; font-weight: 700; margin: 0; min-width: 0; flex: 1 1 auto;">R$ ${formatCurrency(faltaReceberGeral)}</h3>
                         <div style="display: flex; gap: 6px; flex-shrink: 0;">
-                            <button type="button" onclick="event.stopPropagation(); filterByPendingIncome();" style="padding: 8px 12px; background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34, 197, 94, 0.5); border-radius: 10px; color: #86efac; font-size: 0.75rem; font-weight: 700; cursor: pointer; white-space: nowrap;"><i class="fas fa-hand-holding-usd" style="margin-right: 4px;"></i>Abater / Receber</button>
+                            <button type="button" data-finance-action="filter-pending-income" onclick="event.stopPropagation(); filterByPendingIncome();" style="padding: 8px 12px; background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34, 197, 94, 0.5); border-radius: 10px; color: #86efac; font-size: 0.75rem; font-weight: 700; cursor: pointer; white-space: nowrap;"><i class="fas fa-hand-holding-usd" style="margin-right: 4px;"></i>Abater / Receber</button>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Falta pagar (este mês) = fluxo pendente + Quem eu devo este mês -->
-                <div onclick="filterByPendingExpense()" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(239, 68, 68, 0.3); transition: all 0.2s; overflow: hidden;" onmouseover="this.style.borderColor='rgba(239, 68, 68, 0.5)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(239, 68, 68, 0.3)'; this.style.transform='translateY(0)'">
+                <div data-finance-action="filter-pending-expense" onclick="filterByPendingExpense()" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(239, 68, 68, 0.3); transition: all 0.2s; overflow: hidden;" onmouseover="this.style.borderColor='rgba(239, 68, 68, 0.5)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(239, 68, 68, 0.3)'; this.style.transform='translateY(0)'">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
                         <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(239, 68, 68, 0.1); display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-exclamation-triangle" style="color: var(--finance-neon-red); font-size: 1rem;"></i>
@@ -1162,13 +1162,13 @@ window.initFinancePane = async function () {
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; flex-wrap: wrap; min-width: 0;">
                         <h3 id="finance-pending-expense" style="color: var(--finance-neon-red); font-size: 1.5rem; font-weight: 700; margin: 0; min-width: 0; flex: 1 1 auto;">R$ ${formatCurrency(faltaPagarEsteMes)}</h3>
                         <div style="display: flex; gap: 6px; flex-shrink: 0;">
-                            <button type="button" onclick="event.stopPropagation(); filterByPendingExpense();" style="padding: 8px 12px; background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34, 197, 94, 0.5); border-radius: 10px; color: #86efac; font-size: 0.75rem; font-weight: 700; cursor: pointer; white-space: nowrap;"><i class="fas fa-check" style="margin-right: 4px;"></i>Pagar</button>
+                            <button type="button" data-finance-action="filter-pending-expense" onclick="event.stopPropagation(); filterByPendingExpense();" style="padding: 8px 12px; background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34, 197, 94, 0.5); border-radius: 10px; color: #86efac; font-size: 0.75rem; font-weight: 700; cursor: pointer; white-space: nowrap;"><i class="fas fa-check" style="margin-right: 4px;"></i>Pagar</button>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Falta pagar (meses anteriores) -->
-                <div onclick="filterByPendingExpensePrevious()" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(245, 158, 11, 0.4); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(245, 158, 11, 0.6)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(245, 158, 11, 0.4)'; this.style.transform='translateY(0)'">
+                <div data-finance-action="filter-pending-expense-prev" onclick="filterByPendingExpensePrevious()" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(245, 158, 11, 0.4); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(245, 158, 11, 0.6)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(245, 158, 11, 0.4)'; this.style.transform='translateY(0)'">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
                         <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-calendar-minus" style="color: #f59e0b; font-size: 1rem;"></i>
@@ -1180,7 +1180,7 @@ window.initFinancePane = async function () {
                 </div>
                 
                 <!-- Saldo disponível -->
-                <div onclick="filterByBalance()" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(59, 130, 246, 0.3); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(59, 130, 246, 0.5)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(59, 130, 246, 0.3)'; this.style.transform='translateY(0)'">
+                <div data-finance-action="filter-balance" onclick="filterByBalance()" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(59, 130, 246, 0.3); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(59, 130, 246, 0.5)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(59, 130, 246, 0.3)'; this.style.transform='translateY(0)'">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
                         <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(59, 130, 246, 0.1); display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-wallet" style="color: var(--finance-neon-blue); font-size: 1rem;"></i>
@@ -1191,7 +1191,7 @@ window.initFinancePane = async function () {
                 </div>
                 
                 <!-- Total recebido -->
-                <div onclick="filterByPaidIncome()" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(34, 197, 94, 0.3); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(34, 197, 94, 0.5)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(34, 197, 94, 0.3)'; this.style.transform='translateY(0)'">
+                <div data-finance-action="filter-paid-income" onclick="filterByPaidIncome()" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(34, 197, 94, 0.3); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(34, 197, 94, 0.5)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(34, 197, 94, 0.3)'; this.style.transform='translateY(0)'">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
                         <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(34, 197, 94, 0.1); display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-check-circle" style="color: var(--finance-neon-green); font-size: 1rem;"></i>
@@ -1202,7 +1202,7 @@ window.initFinancePane = async function () {
                 </div>
                 
                 <!-- O que foi pago (abre lista inline com opção Restaurar, igual a Falta a pagar) -->
-                <div onclick="filterByPaidExpense()" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(239, 68, 68, 0.3); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(239, 68, 68, 0.5)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(239, 68, 68, 0.3)'; this.style.transform='translateY(0)'">
+                <div data-finance-action="filter-paid-expense" onclick="filterByPaidExpense()" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(239, 68, 68, 0.3); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(239, 68, 68, 0.5)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(239, 68, 68, 0.3)'; this.style.transform='translateY(0)'">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
                         <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(239, 68, 68, 0.1); display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-money-bill-wave" style="color: var(--finance-neon-red); font-size: 1rem;"></i>
@@ -1214,7 +1214,7 @@ window.initFinancePane = async function () {
                 </div>
                 
                 <!-- Dívidas pendentes (só Serasa) -->
-                <div onclick="switchUnifiedFinanceTab('serasa')" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(212, 175, 55, 0.4); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(212, 175, 55, 0.6)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(212, 175, 55, 0.4)'; this.style.transform='translateY(0)'">
+                <div data-finance-action="serasa" onclick="switchUnifiedFinanceTab('serasa')" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(212, 175, 55, 0.4); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(212, 175, 55, 0.6)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(212, 175, 55, 0.4)'; this.style.transform='translateY(0)'">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
                         <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(212, 175, 55, 0.15); display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-file-invoice-dollar" style="color: #D4AF37; font-size: 1rem;"></i>
@@ -1226,7 +1226,7 @@ window.initFinancePane = async function () {
                 </div>
                 
                 <!-- Score Serasa (KING) -->
-                <div onclick="switchUnifiedFinanceTab('serasa')" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(220, 38, 38, 0.3); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(220, 38, 38, 0.5)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(220, 38, 38, 0.3)'; this.style.transform='translateY(0)'">
+                <div data-finance-action="serasa" onclick="switchUnifiedFinanceTab('serasa')" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(220, 38, 38, 0.3); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(220, 38, 38, 0.5)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(220, 38, 38, 0.3)'; this.style.transform='translateY(0)'">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
                         <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(220, 38, 38, 0.1); display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-chart-line" style="color: #dc2626; font-size: 1rem;"></i>
@@ -1237,7 +1237,7 @@ window.initFinancePane = async function () {
                 </div>
                 
                 <!-- Quem eu devo (terceiros) -->
-                <div onclick="switchUnifiedFinanceTab('terceiros')" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(139, 92, 246, 0.4); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(139, 92, 246, 0.6)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(139, 92, 246, 0.4)'; this.style.transform='translateY(0)'">
+                <div data-finance-action="terceiros" onclick="switchUnifiedFinanceTab('terceiros')" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(139, 92, 246, 0.4); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(139, 92, 246, 0.6)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(139, 92, 246, 0.4)'; this.style.transform='translateY(0)'">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
                         <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(139, 92, 246, 0.15); display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-users" style="color: #8b5cf6; font-size: 1rem;"></i>
@@ -1256,12 +1256,12 @@ window.initFinancePane = async function () {
                 <div>
             
                     <!-- Transactions Header -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 8px;">
+                    <div id="finance-transactions-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 8px;">
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <h4 id="finance-transactions-title" style="font-size: 1.125rem; font-weight: 700; color: var(--finance-text-primary); margin: 0;">Transações Recentes</h4>
                             <span id="finance-transactions-filter-badge" style="display: none; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;"></span>
                         </div>
-                        <button onclick="showAllTransactions()" style="color: var(--finance-indigo); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; background: none; border: none; cursor: pointer;">Ver Todas</button>
+                        <button type="button" data-finance-action="show-all-transactions" onclick="showAllTransactions()" style="color: var(--finance-indigo); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; background: none; border: none; cursor: pointer;">Ver Todas</button>
                     </div>
                     
                     <!-- Transactions List -->
@@ -1351,6 +1351,12 @@ window.initFinancePane = async function () {
                 }
             }
             if (typeof window.applyFinanceTheme === 'function') window.applyFinanceTheme();
+            if (tabId !== 'resumo') {
+                const pane = document.getElementById('finance-pane') || document.querySelector('.finance-tabs-container');
+                if (pane) {
+                    try { pane.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { }
+                }
+            }
         };
         document.querySelectorAll('.finance-unified-tab').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -1358,6 +1364,68 @@ window.initFinancePane = async function () {
                 window.switchUnifiedFinanceTab(btn.getAttribute('data-finance-tab'));
             });
         });
+
+        // Helper de despacho de ações financeiras (suporta mobile e desktop)
+        function handleFinanceAction(actionEl, e) {
+            if (!actionEl) return false;
+            const action = actionEl.getAttribute('data-finance-action');
+            if (!action) return false;
+            if (e) e.preventDefault();
+            switch (action) {
+                case 'terceiros':
+                case 'serasa':
+                case 'fluxo':
+                case 'trabalhos':
+                case 'cartoes':
+                case 'meta':
+                case 'resumo':
+                    if (typeof window.switchUnifiedFinanceTab === 'function') {
+                        window.switchUnifiedFinanceTab(action);
+                    }
+                    return true;
+                case 'patrimonio-modal':
+                    if (typeof window.showGeneralBalanceModal === 'function') {
+                        window.showGeneralBalanceModal();
+                    }
+                    return true;
+                case 'filter-pending-income':
+                    if (typeof window.filterByPendingIncome === 'function') {
+                        window.filterByPendingIncome();
+                    }
+                    return true;
+                case 'filter-pending-expense':
+                    if (typeof window.filterByPendingExpense === 'function') {
+                        window.filterByPendingExpense();
+                    }
+                    return true;
+                case 'filter-pending-expense-prev':
+                    if (typeof window.filterByPendingExpensePrevious === 'function') {
+                        window.filterByPendingExpensePrevious();
+                    }
+                    return true;
+                case 'filter-paid-income':
+                    if (typeof window.filterByPaidIncome === 'function') {
+                        window.filterByPaidIncome();
+                    }
+                    return true;
+                case 'filter-paid-expense':
+                    if (typeof window.filterByPaidExpense === 'function') {
+                        window.filterByPaidExpense();
+                    }
+                    return true;
+                case 'filter-balance':
+                    if (typeof window.filterByBalance === 'function') {
+                        window.filterByBalance();
+                    }
+                    return true;
+                case 'show-all-transactions':
+                    if (typeof window.showAllTransactions === 'function') {
+                        window.showAllTransactions();
+                    }
+                    return true;
+            }
+            return false;
+        }
 
         // Delegação de toque para 120Hz/240Hz (Poco X6 Pro / Android)
         if (!window._financeTouchDelegated) {
@@ -1377,6 +1445,11 @@ window.initFinancePane = async function () {
                 const elapsed = Date.now() - _startTime;
 
                 if (elapsed < 450 && dx < 14 && dy < 14) {
+                    const actionDataEl = e.target && e.target.closest ? e.target.closest('[data-finance-action]') : null;
+                    if (actionDataEl) {
+                        _lastTouchTabTime = Date.now();
+                        if (handleFinanceAction(actionDataEl, e)) return;
+                    }
                     const tabBtn = e.target && e.target.closest ? e.target.closest('.finance-unified-tab') : null;
                     if (tabBtn) {
                         const tabId = tabBtn.getAttribute('data-finance-tab');
@@ -1399,6 +1472,10 @@ window.initFinancePane = async function () {
 
             document.addEventListener('click', function (e) {
                 if (Date.now() - _lastTouchTabTime < 350) return;
+                const actionDataEl = e.target && e.target.closest ? e.target.closest('[data-finance-action]') : null;
+                if (actionDataEl) {
+                    if (handleFinanceAction(actionDataEl, e)) return;
+                }
                 const tabBtn = e.target && e.target.closest ? e.target.closest('.finance-unified-tab') : null;
                 if (tabBtn) {
                     const tabId = tabBtn.getAttribute('data-finance-tab');
@@ -3860,18 +3937,67 @@ function renderFinanceTransactions(transactions, filterTab = 'all') {
 
     if (filteredTransactions.length === 0) {
         var emptyMsg = 'Nenhuma transação encontrada.';
-        if (window.currentFinanceFilter === 'paid-expense') emptyMsg = 'Nenhuma despesa paga neste mês.';
-        else if (window.currentFinanceFilter === 'pending-expense') emptyMsg = 'Nenhuma despesa pendente neste mês.';
-        else if (window.currentFinanceFilter === 'pending-income') emptyMsg = 'Nenhuma receita pendente neste mês.';
+        var extraActionHtml = '';
+        if (window.currentFinanceFilter === 'paid-expense') {
+            emptyMsg = 'Nenhuma despesa paga encontrada neste mês.';
+        } else if (window.currentFinanceFilter === 'pending-expense') {
+            emptyMsg = 'Nenhuma despesa pendente no fluxo deste mês.';
+            var kingDbPend = window._kingFinanceDb || {};
+            var temTerceiros = (kingDbPend.terceiros || []).some(function(p) {
+                return (p.contas || []).some(function(c) {
+                    var pago = (c.pagamentos || []).reduce(function(a, x) { return a + (Number(x.valor) || 0); }, 0);
+                    return ((Number(c.valor) || 0) - pago) > 0;
+                });
+            });
+            if (temTerceiros) {
+                extraActionHtml = `
+                    <div style="margin: 16px auto; padding: 14px 18px; border-radius: 14px; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); max-width: 480px; text-align: center;">
+                        <p style="color: #c4b5fd; font-size: 0.85rem; font-weight: 600; margin: 0 0 10px 0;">
+                            <i class="fas fa-users" style="margin-right: 6px;"></i> Suas contas a pagar cadastradas estão na aba <strong>Quem Eu Devo</strong>.
+                        </p>
+                        <button type="button" data-finance-action="terceiros" onclick="window.switchUnifiedFinanceTab('terceiros')" style="padding: 8px 16px; background: #8b5cf6; border: none; border-radius: 10px; color: white; font-weight: 700; font-size: 0.8rem; cursor: pointer; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);">
+                            Ver em Quem Eu Devo &rarr;
+                        </button>
+                    </div>
+                `;
+            }
+        } else if (window.currentFinanceFilter === 'pending-income') {
+            emptyMsg = 'Nenhuma receita pendente no fluxo deste mês.';
+            var kingDbTrab = window._kingFinanceDb || {};
+            var temTrabalhos = (kingDbTrab.trabalhos || []).some(function(t) {
+                var pago = (t.pagamentos || []).reduce(function(a, x) { return a + (Number(x.valor) || 0); }, 0);
+                return ((Number(t.valor) || 0) - pago) > 0;
+            });
+            if (temTrabalhos) {
+                extraActionHtml = `
+                    <div style="margin: 16px auto; padding: 14px 18px; border-radius: 14px; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.4); max-width: 480px; text-align: center;">
+                        <p style="color: #86efac; font-size: 0.85rem; font-weight: 600; margin: 0 0 10px 0;">
+                            <i class="fas fa-briefcase" style="margin-right: 6px;"></i> Você possui trabalhos a receber na aba <strong>A Receber (Trabalhos)</strong>.
+                        </p>
+                        <button type="button" data-finance-action="trabalhos" onclick="window.switchUnifiedFinanceTab('trabalhos')" style="padding: 8px 16px; background: #22c55e; border: none; border-radius: 10px; color: white; font-weight: 700; font-size: 0.8rem; cursor: pointer; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);">
+                            Ver Trabalhos a Receber &rarr;
+                        </button>
+                    </div>
+                `;
+            }
+        } else if (window.currentFinanceFilter === 'paid-income') {
+            emptyMsg = 'Nenhuma receita recebida neste mês.';
+        }
         transactionsList.innerHTML = `
-            <div style="text-align: center; padding: 60px 20px;">
-                <div style="width: 64px; height: 64px; border-radius: 16px; background: var(--finance-card-dark); border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
-                    <i class="fas fa-receipt" style="font-size: 1.5rem; color: var(--finance-text-secondary);"></i>
+            <div style="text-align: center; padding: 40px 20px;">
+                <div style="width: 56px; height: 56px; border-radius: 16px; background: var(--finance-card-dark); border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                    <i class="fas fa-receipt" style="font-size: 1.3rem; color: var(--finance-text-secondary);"></i>
                 </div>
-                <p style="color: var(--finance-text-secondary); margin-bottom: 24px; font-size: 0.875rem;">${emptyMsg}</p>
-                <button onclick="openAddTransactionModal('${filterTab === 'expense' ? 'expense' : 'income'}')" style="display: flex; align-items: center; gap: 8px; padding: 12px 20px; background: var(--finance-indigo); border: none; border-radius: 12px; color: white; font-weight: 700; font-size: 0.875rem; cursor: pointer; margin: 0 auto; box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);">
-                    <i class="fas fa-plus"></i> Adicionar Primeira Transação
-                </button>
+                <p style="color: var(--finance-text-secondary); margin-bottom: 12px; font-size: 0.875rem;">${emptyMsg}</p>
+                ${extraActionHtml}
+                <div style="display: flex; gap: 8px; justify-content: center; margin-top: 16px; flex-wrap: wrap;">
+                    <button type="button" data-finance-action="show-all-transactions" onclick="showAllTransactions()" style="padding: 10px 18px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--finance-text-primary); font-weight: 600; font-size: 0.8rem; cursor: pointer;">
+                        Ver Todas as Transações
+                    </button>
+                    <button type="button" onclick="openAddTransactionModal('${filterTab === 'expense' ? 'expense' : 'income'}')" style="display: flex; align-items: center; gap: 6px; padding: 10px 18px; background: var(--finance-indigo); border: none; border-radius: 10px; color: white; font-weight: 700; font-size: 0.8rem; cursor: pointer; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);">
+                        <i class="fas fa-plus"></i> Novo Lançamento
+                    </button>
+                </div>
             </div>
         `;
         return;
@@ -5601,6 +5727,16 @@ window.closeFinanceChartsModal = function () {
 };
 
 // Funções de filtro para os cards clicáveis
+function scrollToFinanceTransactions() {
+    try {
+        const target = document.getElementById('finance-transactions-header') ||
+                       document.getElementById('finance-transactions-list');
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    } catch (e) { }
+}
+
 window.setFinanceTransactionsTitle = function (title, badgeText, badgeColor, badgeBg) {
     const titleEl = document.getElementById('finance-transactions-title');
     const badgeEl = document.getElementById('finance-transactions-filter-badge');
@@ -5647,6 +5783,7 @@ window.showAllTransactions = function () {
         // Recarregar transações se não houver
         window.loadFinanceTransactions();
     }
+    scrollToFinanceTransactions();
 };
 
 window.filterByPendingIncome = function () {
@@ -5676,6 +5813,7 @@ window.filterByPendingIncome = function () {
     }
 
     renderFinanceTransactions(filtered, 'income');
+    scrollToFinanceTransactions();
 };
 
 window.filterByPendingExpensePrevious = function () {
@@ -5701,6 +5839,7 @@ window.filterByPendingExpensePrevious = function () {
         expenseBtn.style.borderBottomColor = '#ef4444';
     }
     renderFinanceTransactions(filtered, 'expense');
+    scrollToFinanceTransactions();
 };
 
 function financeTransactionsCurrentMonthOnly(transactions) {
@@ -5758,6 +5897,7 @@ window.filterByPendingExpense = function () {
     }
 
     renderFinanceTransactions(filtered, 'expense');
+    scrollToFinanceTransactions();
 };
 
 window.filterByBalance = function () {
@@ -5782,6 +5922,7 @@ window.filterByBalance = function () {
     }
 
     renderFinanceTransactions(transactions, 'all');
+    scrollToFinanceTransactions();
 };
 
 window.filterByMonthlyIncomeFromCard = function () {
@@ -5817,6 +5958,7 @@ window.filterByPaidIncome = function () {
     }
 
     renderFinanceTransactions(onlyPaidIncome, 'income');
+    scrollToFinanceTransactions();
 };
 
 window.filterByPaidExpense = function () {
@@ -5847,6 +5989,7 @@ window.filterByPaidExpense = function () {
     }
 
     renderFinanceTransactions(filtered, 'expense');
+    scrollToFinanceTransactions();
 };
 
 // FUNÇÃO REMOVIDA: updateFinanceCardsFromTransactions
