@@ -118,14 +118,10 @@ class SecurityHeaders
 
     private function usesInlineHandlers(string $path): bool
     {
-        return str_starts_with($path, 'kingCamera')
-            || str_starts_with($path, 'king-camera')
-            || str_starts_with($path, 'monitor/')
-            || str_starts_with($path, 'charlene')
-            || str_starts_with($path, 'kingSelection')
-            || str_starts_with($path, 'login')
-            || $path === ''
-            || $path === '/';
+        // Todas as páginas web SPA/Blade do Conecta King possuem interatividade e handlers inline.
+        // Omitir o nonce no script-src garante que 'unsafe-inline' seja respeitado pelo navegador,
+        // evitando o bloqueio de eventos inline (onclick/onsubmit) no dashboard e finanças.
+        return ! str_starts_with($path, 'api/');
     }
 
     private function allowsCamera(string $path): bool

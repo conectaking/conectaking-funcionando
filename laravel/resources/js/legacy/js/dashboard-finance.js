@@ -1313,6 +1313,14 @@ window.initFinancePane = async function () {
         if (tabMatch && validTabs.includes(tabMatch[1])) savedTab = tabMatch[1];
         if (!savedTab) savedTab = localStorage.getItem('finance_active_tab');
         window._financeActiveTab = (savedTab && validTabs.includes(savedTab)) ? savedTab : 'resumo';
+
+        // Garante stub seguro para nunca estourar TypeError se chamado antes da definição completa
+        if (typeof window.renderUnifiedKingTab !== 'function') {
+            window.renderUnifiedKingTab = function (tabId) {
+                // stub inicial seguro
+            };
+        }
+
         window.switchUnifiedFinanceTab = function (tabId) {
             window._financeActiveTab = tabId;
             try { localStorage.setItem('finance_active_tab', tabId); } catch (e) { }
@@ -1334,7 +1342,13 @@ window.initFinancePane = async function () {
             if (resumoEl) resumoEl.style.display = tabId === 'resumo' ? 'block' : 'none';
             if (kingEl) {
                 kingEl.style.display = tabId === 'resumo' ? 'none' : 'block';
-                if (tabId !== 'resumo') window.renderUnifiedKingTab(tabId);
+                if (tabId !== 'resumo' && typeof window.renderUnifiedKingTab === 'function') {
+                    try {
+                        window.renderUnifiedKingTab(tabId);
+                    } catch (tabErr) {
+                        console.warn('Erro ao renderizar aba financeira:', tabId, tabErr);
+                    }
+                }
             }
             if (typeof window.applyFinanceTheme === 'function') window.applyFinanceTheme();
         };
@@ -1344,11 +1358,6 @@ window.initFinancePane = async function () {
                 window.switchUnifiedFinanceTab(btn.getAttribute('data-finance-tab'));
             });
         });
-
-        // Se havia uma aba ativa diferente de resumo, ativa ela de imediato
-        if (window._financeActiveTab && window._financeActiveTab !== 'resumo') {
-            window.switchUnifiedFinanceTab(window._financeActiveTab);
-        }
 
         // Delegação de toque para 120Hz/240Hz (Poco X6 Pro / Android)
         if (!window._financeTouchDelegated) {
