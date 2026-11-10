@@ -76,14 +76,17 @@
   <header class="fixed top-0 left-0 right-0 z-50 bg-[#0f131b]/85 backdrop-blur-xl shadow-[0_1px_12px_rgba(0,0,0,0.4)] border-b border-white/5">
     <div class="h-20 max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between gap-6">
       
-      <!-- Brand Logo -->
+      <!-- Brand Logo Oficial Conecta King -->
       <a class="flex items-center gap-3 group transition-transform active:scale-95 text-decoration-none" href="/">
-        <div class="w-10 h-10 rounded-xl bg-[#262a32] flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.2)]">
-          <span class="material-symbols-outlined text-[#ffc174] text-[24px]">crown</span>
-        </div>
+        <img 
+          src="/logo.png" 
+          onerror="this.onerror=null;this.src='https://i.ibb.co/60sW9k75/logo.png';" 
+          alt="Conecta King" 
+          class="h-10 w-auto object-contain filter drop-shadow-[0_0_12px_rgba(245,158,11,0.4)] transition-transform group-hover:scale-105"
+        />
         <div class="flex flex-col">
-          <span class="font-bold text-lg tracking-tight text-white">Conecta<span class="text-[#ffc174] font-extrabold drop-shadow-[0_0_12px_rgba(245,158,11,0.4)]">KING</span></span>
-          <span class="font-mono text-[10px] tracking-widest uppercase text-[#d8c3ad]">NFC Prestige Ecosystem</span>
+          <span class="font-bold text-xl tracking-tight text-white leading-none">Conecta <span class="text-[#fbbf24] font-extrabold drop-shadow-[0_0_14px_rgba(251,191,36,0.65)]">King</span></span>
+          <span class="font-mono text-[10px] tracking-widest uppercase text-amber-400/80 leading-none mt-1">O Poder da Conexão</span>
         </div>
       </a>
 
@@ -252,9 +255,9 @@
                   <div class="absolute -top-4 -right-4 w-16 h-16 rounded-full border border-emerald-400/60 animate-ping opacity-75 pointer-events-none"></div>
                   
                   <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center gap-1.5 text-[#ffc174]">
-                      <span class="material-symbols-outlined text-[22px]">crown</span>
-                      <span class="text-sm font-bold text-white">Conecta<span class="text-[#ffc174]">KING</span></span>
+                    <div class="flex items-center gap-2">
+                      <img src="/logo.png" onerror="this.onerror=null;this.src='https://i.ibb.co/60sW9k75/logo.png';" alt="Conecta King" class="h-6 w-auto object-contain filter drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]">
+                      <span class="text-sm font-bold text-white tracking-tight">Conecta <span class="text-[#fbbf24] font-extrabold">King</span></span>
                     </div>
                     <div class="relative w-8 h-8 rounded-lg bg-[#1c2027] flex items-center justify-center shadow-[0_0_15px_rgba(78,222,163,0.3)]">
                       <span class="material-symbols-outlined text-emerald-400 text-[20px] animate-pulse">contactless</span>
@@ -714,9 +717,12 @@
   </main>
 
   <!-- FOOTER -->
-  <footer class="w-full bg-[#0a0e15] py-8 border-t border-white/5 text-center text-xs text-[#d8c3ad]">
+  <footer class="w-full bg-[#0a0e15] py-8 border-t border-white/5 text-xs text-[#d8c3ad]">
     <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <p>&copy; 2026 ConectaKing Tecnologia. Todos os direitos reservados.</p>
+      <div class="flex items-center gap-3">
+        <img src="/logo.png" onerror="this.onerror=null;this.src='https://i.ibb.co/60sW9k75/logo.png';" alt="Conecta King" class="h-7 w-auto object-contain">
+        <p>&copy; 2026 ConectaKing Tecnologia. Todos os direitos reservados.</p>
+      </div>
       <div class="flex items-center gap-6">
         <a href="/termos" class="hover:text-white transition-colors">Termos de Serviço</a>
         <a href="/privacidade" class="hover:text-white transition-colors">Privacidade</a>
