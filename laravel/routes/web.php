@@ -29,9 +29,14 @@ $cardSlug = '[A-Za-z0-9._-]+';
 
 // King Selection (Subdomínio oficial kingselection.conectaking.com.br)
 Route::domain('kingselection.conectaking.com.br')->group(function () use ($cardSlug) {
-    $clearAllCookies = function (\Symfony\Component\HttpFoundation\Response $response) {
-        foreach (['.conectaking.com.br', 'kingselection.conectaking.com.br', null] as $dom) {
-            foreach (['token', 'refresh_token', 'ck_csrf', 'conectaking-session', 'XSRF-TOKEN', 'laravel_session'] as $c) {
+    $clearAllCookies = function (\Symfony\Component\HttpFoundation\Response $response, ?\Illuminate\Http\Request $request = null) {
+        $domains = array_unique(array_filter(['.conectaking.com.br', 'kingselection.conectaking.com.br', $request ? $request->getHost() : null, null]));
+        $cookieNames = ['token', 'refresh_token', 'ck_csrf', 'conectaking-session', 'XSRF-TOKEN', 'laravel_session', 'ks_client_token', 'ks_client_session'];
+        foreach ($domains as $dom) {
+            foreach ($cookieNames as $c) {
+                $response->headers->setCookie(
+                    \Symfony\Component\HttpFoundation\Cookie::create($c, '', 1, '/', $dom, true, ($c !== 'ck_csrf'), false, \Symfony\Component\HttpFoundation\Cookie::SAMESITE_LAX)
+                );
                 $response->headers->clearCookie($c, '/', $dom);
             }
         }
@@ -39,41 +44,27 @@ Route::domain('kingselection.conectaking.com.br')->group(function () use ($cardS
     };
 
     Route::match(['GET', 'POST'], '/logout', function (\Illuminate\Http\Request $request) use ($clearAllCookies) {
-        if ($request->isMethod('POST') || $request->expectsJson()) {
+        if ($request->isMethod('POST') && $request->expectsJson()) {
             $resp = response()->json(['success' => true, 'redirect' => '/login?logout=1']);
         } else {
             $resp = redirect('/login?logout=1');
         }
-        return $clearAllCookies($resp);
+        return $clearAllCookies($resp, $request);
     });
 
     Route::get('/', function (\Illuminate\Http\Request $request) use ($clearAllCookies) {
         if ($request->has('logout')) {
             $resp = response(app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionLogin'));
-            return $clearAllCookies($resp);
+            return $clearAllCookies($resp, $request);
         }
-        $tokenCookie = $request->cookie('token');
-        if ($tokenCookie) {
-            try {
-                $payload = app(\App\Services\Auth\JwtService::class)->decode($tokenCookie);
-                $isAdmin = !empty($payload['isAdmin']) || in_array($payload['accountType'] ?? '', ['admin', 'adm_principal'], true);
-                return redirect($isAdmin ? '/admin' : '/kingSelection');
-            } catch (\Throwable $e) {}
-        }
+        // Exibe a landing page normalmente sem redirecionar à força para não prender o usuário
         return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionLogin');
     });
+
     Route::get('/login', function (\Illuminate\Http\Request $request) use ($clearAllCookies) {
-        if ($request->has('logout')) {
+        if ($request->has('logout') || $request->has('session_expired')) {
             $resp = response(app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionLogin'));
-            return $clearAllCookies($resp);
-        }
-        $tokenCookie = $request->cookie('token');
-        if ($tokenCookie) {
-            try {
-                $payload = app(\App\Services\Auth\JwtService::class)->decode($tokenCookie);
-                $isAdmin = !empty($payload['isAdmin']) || in_array($payload['accountType'] ?? '', ['admin', 'adm_principal'], true);
-                return redirect($isAdmin ? '/admin' : '/kingSelection');
-            } catch (\Throwable $e) {}
+            return $clearAllCookies($resp, $request);
         }
         return app(\App\Http\Controllers\LegacyPageController::class)->show($request, 'kingSelectionLogin');
     });

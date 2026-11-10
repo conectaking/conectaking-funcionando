@@ -629,7 +629,7 @@
             <label for="ks-login-senha">Senha</label>
             <div class="ks-password-wrap">
               <input id="ks-login-senha" class="ks-input" type="password" autocomplete="current-password" placeholder="Digite sua senha" />
-              <button type="button" class="ks-pass-toggle" id="ks-pass-toggle" title="Mostrar/ocultar senha" aria-label="Mostrar/ocultar senha">
+              <button type="button" class="ks-pass-toggle" id="ks-pass-toggle" onclick="toggleClientPassword()" title="Mostrar/ocultar senha" aria-label="Mostrar/ocultar senha">
                 <i class="fas fa-eye" id="ks-pass-toggle-icon"></i>
               </button>
             </div>
@@ -1270,6 +1270,16 @@
         setupClientDrawer();
       }
     })();
+    window.toggleClientPassword = function() {
+      const input = document.getElementById('ks-login-senha');
+      const icon = document.getElementById('ks-pass-toggle-icon');
+      if (!input) return;
+      const isPass = input.type === 'password';
+      input.type = isPass ? 'text' : 'password';
+      if (icon) {
+        icon.className = isPass ? 'fas fa-eye-slash' : 'fas fa-eye';
+      }
+    };
   </script>
 </body>
 </html>

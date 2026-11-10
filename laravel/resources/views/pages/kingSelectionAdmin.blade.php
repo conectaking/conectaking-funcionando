@@ -861,20 +861,15 @@
       document.getElementById('btn-logout').addEventListener('click', async () => {
         if (!confirm('Deseja realmente sair da sua conta?')) return;
         try {
-          await fetch('/logout', { method: 'POST', credentials: 'include', headers: { 'Accept': 'application/json' } });
-        } catch (_) {}
-        try {
-          await fetch('/api/auth/logout', { method: 'POST', credentials: 'include', headers: { 'Accept': 'application/json' } });
-        } catch (_) {}
-        try {
           localStorage.clear();
           sessionStorage.clear();
         } catch (_) {}
-        ['token', 'refresh_token', 'ck_csrf', 'conectaking-session'].forEach(c => {
-          document.cookie = `${c}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.conectaking.com.br`;
+        ['token', 'refresh_token', 'ck_csrf', 'conectaking-session', 'XSRF-TOKEN', 'laravel_session', 'ks_client_token'].forEach(c => {
+          document.cookie = `${c}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.conectaking.com.br; secure; samesite=lax`;
+          document.cookie = `${c}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=lax`;
           document.cookie = `${c}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
         });
-        window.location.replace('/login?logout=1');
+        window.location.href = '/logout';
       });
 
       let masterData = null;
