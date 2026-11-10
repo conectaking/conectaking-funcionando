@@ -146,21 +146,17 @@
   <header class="fixed top-0 left-0 right-0 z-50 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.4)] border-b border-amber-500/10">
     <div class="h-20 w-full px-margin flex items-center justify-between gap-space-md">
       
-      <!-- Brand Logo -->
-      <a href="/" class="flex items-center gap-space-lg flex-shrink-0 text-decoration-none">
-        <div class="flex items-center gap-space-sm">
-          <div class="w-10 h-10 rounded-lg bg-surface-container-high border border-amber-400/30 flex items-center justify-center text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.35)]">
-            <span class="material-symbols-outlined text-[24px] text-amber-400">crown</span>
-          </div>
-          <div class="flex flex-col">
-            <span class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold leading-none">King Selection</span>
-            <div class="flex items-center gap-1 mt-1">
-              <span class="font-label-mono-sm text-label-mono-sm text-on-surface-variant uppercase tracking-wider">Powered by</span>
-              <span class="font-label-mono-sm text-label-mono-sm text-amber-400 font-bold flex items-center gap-0.5">
-                <span class="material-symbols-outlined text-[13px] text-amber-400">military_tech</span>Conecta King
-              </span>
-            </div>
-          </div>
+      <!-- Brand Logo Oficial Conecta King -->
+      <a href="/" class="flex items-center gap-3 group transition-transform active:scale-95 text-decoration-none">
+        <img 
+          src="/logo.png" 
+          onerror="this.onerror=null;this.src='https://i.ibb.co/60sW9k75/logo.png';" 
+          alt="Conecta King" 
+          class="h-10 w-auto object-contain filter drop-shadow-[0_0_12px_rgba(245,158,11,0.4)] transition-transform group-hover:scale-105"
+        />
+        <div class="flex flex-col">
+          <span class="font-bold text-xl tracking-tight text-white leading-none"><span class="text-[#fbbf24] font-extrabold drop-shadow-[0_0_14px_rgba(251,191,36,0.65)]">King</span> Selection</span>
+          <span class="font-mono text-[10px] tracking-widest uppercase text-amber-400/80 leading-none mt-1">Conecta King • O Poder da Conexão</span>
         </div>
       </a>
 
@@ -1030,12 +1026,15 @@
 
       <!-- Cabeçalho do Modal -->
       <div class="flex flex-col items-center text-center gap-2 mb-6">
-        <div class="w-14 h-14 rounded-2xl bg-surface-container-lowest border border-amber-400/40 flex items-center justify-center text-amber-400 shadow-[0_0_24px_rgba(245,158,11,0.35)]">
-          <span class="material-symbols-outlined text-[28px] text-amber-400">lock</span>
-        </div>
-        <h3 class="font-headline-md text-headline-md font-black text-on-surface tracking-tight mt-1">Área do Fotógrafo</h3>
+        <img 
+          src="/logo.png" 
+          onerror="this.onerror=null;this.src='https://i.ibb.co/60sW9k75/logo.png';" 
+          alt="Conecta King" 
+          class="h-12 w-auto object-contain filter drop-shadow-[0_0_15px_rgba(245,158,11,0.5)] mb-1"
+        />
+        <h3 class="font-headline-md text-headline-md font-black text-on-surface tracking-tight">Área do Fotógrafo</h3>
         <p class="font-body-sm text-body-sm text-on-surface-variant max-w-xs">
-          Acesse suas galerias, clientes e seleções em andamento no King Selection.
+          Acesse suas galerias, clientes e seleções em andamento no <span class="text-white font-bold"><span class="text-[#fbbf24]">King</span> Selection</span>.
         </p>
       </div>
 
@@ -1129,11 +1128,14 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-lg items-start">
         
         <div class="flex flex-col gap-space-sm">
-          <div class="flex items-center gap-space-sm">
-            <div class="w-8 h-8 rounded-lg bg-surface-container-high border border-amber-400/30 flex items-center justify-center text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.3)]">
-              <span class="material-symbols-outlined text-[20px] text-amber-400">crown</span>
-            </div>
-            <span class="font-headline-sm text-headline-sm text-on-surface font-bold">King Selection</span>
+          <div class="flex items-center gap-3">
+            <img 
+              src="/logo.png" 
+              onerror="this.onerror=null;this.src='https://i.ibb.co/60sW9k75/logo.png';" 
+              alt="Conecta King" 
+              class="h-9 w-auto object-contain filter drop-shadow-[0_0_10px_rgba(245,158,11,0.4)]"
+            />
+            <span class="font-headline-sm text-headline-sm text-on-surface font-bold leading-none"><span class="text-[#fbbf24] font-extrabold">King</span> Selection</span>
           </div>
           <p class="font-body-sm text-body-sm text-on-surface-variant max-w-sm">
             Plataforma executiva de alta velocidade para seleção e aprovação de acervos fotográficos premium, equipada com infraestrutura de entrega em tempo real.

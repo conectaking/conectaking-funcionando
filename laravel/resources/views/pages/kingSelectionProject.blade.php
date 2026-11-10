@@ -370,10 +370,8 @@
         </button>
 
         <a href="/kingSelection" class="flex items-center gap-2.5 text-white no-underline group">
-          <div class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center p-1 shadow-xs group-hover:border-amber-400/50 transition">
-            <img src="https://i.ibb.co/60sW9k75/logo.png" alt="Conecta King" class="w-full h-full object-contain" />
-          </div>
-          <span class="font-black text-lg tracking-tight bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-transparent drop-shadow-xs">KingSelection</span>
+          <img src="/logo.png" onerror="this.onerror=null;this.src='https://i.ibb.co/60sW9k75/logo.png';" alt="Conecta King" class="h-8 w-auto object-contain filter drop-shadow-[0_0_10px_rgba(245,158,11,0.4)] transition-transform group-hover:scale-105" />
+          <span class="font-bold text-lg tracking-tight text-white leading-none"><span class="text-[#fbbf24] font-extrabold drop-shadow-[0_0_12px_rgba(251,191,36,0.6)]">King</span>Selection</span>
         </a>
       </div>
       <!-- Lado Direito: Storage Meter Widget e Avatar do Usuário -->

@@ -537,10 +537,10 @@
   <header class="admin-topbar">
     <a href="/admin" class="brand-wrap">
       <div class="brand-logo-container">
-        <img src="https://i.ibb.co/60sW9k75/logo.png" alt="Conecta King" />
+        <img src="/logo.png" onerror="this.onerror=null;this.src='https://i.ibb.co/60sW9k75/logo.png';" alt="Conecta King" />
       </div>
       <div class="brand-text">
-        <h1>KingSelection</h1>
+        <h1><span style="color: #fbbf24; font-weight: 800;">King</span>Selection</h1>
         <span class="badge-adm"><i class="fas fa-crown"></i> Painel Master do Administrador</span>
       </div>
     </a>
