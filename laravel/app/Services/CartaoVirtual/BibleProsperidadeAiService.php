@@ -7,17 +7,18 @@ use Illuminate\Support\Facades\Log;
 
 class BibleProsperidadeAiService
 {
-    private const CHAT_URL = 'https://api.openai.com/v1/chat/completions';
+    private const CHAT_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 
     private function apiKey(): string
     {
-        return trim((string) (env('OPENAI_API_KEY') ?: env('BIBLE_OPENAI_API_KEY') ?: ''));
+        return trim((string) (env('GEMINI_API_KEY') ?: env('GOOGLE_AI_KEY') ?: env('OPENAI_API_KEY') ?: env('BIBLE_OPENAI_API_KEY') ?: ''));
     }
 
     private function model(): string
     {
-        return trim((string) (env('BIBLE_PROSPERIDADE_AI_MODEL') ?: env('BIBLE_DEV365_AI_MODEL') ?: 'gpt-4o-mini'))
-            ?: 'gpt-4o-mini';
+        $m = trim((string) (env('BIBLE_PROSPERIDADE_AI_MODEL') ?: env('GEMINI_MODEL') ?: env('BIBLE_DEV365_AI_MODEL') ?: ''));
+
+        return ($m !== '' && !str_starts_with($m, 'gpt-')) ? $m : 'gemini-3.5-flash';
     }
 
     /**

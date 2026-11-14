@@ -19,32 +19,25 @@ use Illuminate\Support\Facades\Log;
  */
 class KingCameraAiVisionService
 {
-    private const OPENAI_CHAT_URL = 'https://api.openai.com/v1/chat/completions';
-
-    public function getOpenAiKey(): string
-    {
-        return trim((string) (env('OPENAI_API_KEY') ?: env('BIBLE_OPENAI_API_KEY') ?: ''));
-    }
-
     public function getGeminiKey(): string
     {
-        return trim((string) (env('GEMINI_API_KEY') ?: env('GOOGLE_AI_KEY') ?: ''));
+        return trim((string) (env('GEMINI_API_KEY') ?: env('GOOGLE_AI_KEY') ?: env('OPENAI_API_KEY') ?: ''));
     }
 
     public function isAvailable(): bool
     {
-        // Sempre disponível graças ao motor híbrido (OpenAI / Gemini + Visão Computacional Biométrica GD nativa)
+        // Sempre disponível graças ao motor híbrido (Google Gemini Vision + Visão Computacional Biométrica GD nativa)
         return true;
     }
 
-    public function getOpenAiModel(): string
+    public function getGeminiModel(): string
     {
-        $m = trim((string) (env('KING_CAMERA_AI_MODEL') ?: ''));
-        return $m !== '' ? $m : 'gpt-4o';
+        $m = trim((string) (env('KING_CAMERA_AI_MODEL') ?: env('GEMINI_MODEL') ?: ''));
+        return ($m !== '' && !str_starts_with($m, 'gpt-')) ? $m : 'gemini-3.5-flash';
     }
 
     /**
-     * Analisa com IA Vision (ou Motor Biométrico Determinístico local) o snapshot da câmera.
+     * Analisa com IA Vision (Google Gemini ou Motor Biométrico Determinístico local) o snapshot da câmera.
      * Recebe o $roi (crib_roi_json) e $clientHints (telemetria da IA local do navegador + frame limpo).
      */
     public function analyzeBabySafetySnapshot(
@@ -63,27 +56,7 @@ class KingCameraAiVisionService
             $cleanBinary = $clientHints['clean_jpeg_binary'];
         }
 
-        // 1. Tenta OpenAI Vision se houver chave e saldo ativo
-        if ($this->getOpenAiKey() !== '' && strlen($jpegBinary) >= 300) {
-            $isQuotaExhausted = \Illuminate\Support\Facades\Cache::has('kc_openai_quota_exhausted');
-            if (!$isQuotaExhausted) {
-                try {
-                    return $this->analyzeWithOpenAi($jpegBinary, $candidateEvent, $roi, $needsAnnotation, $cleanBinary, $clientHints);
-                } catch (\Throwable $oe) {
-                    if (
-                        str_contains($oe->getMessage(), 'credit_balance_exhausted') ||
-                        str_contains($oe->getMessage(), 'insufficient_quota') ||
-                        str_contains($oe->getMessage(), 'HTTP 429')
-                    ) {
-                        // Cacheia por 30 minutos para não atrasar alertas reais quando a conta OpenAI estiver sem créditos
-                        \Illuminate\Support\Facades\Cache::put('kc_openai_quota_exhausted', true, 1800);
-                    }
-                    Log::warning('kc.ai_vision.openai_fallback', ['msg' => $oe->getMessage()]);
-                }
-            }
-        }
-
-        // 2. Tenta Google Gemini Vision se houver chave configurada
+        // 1. Tenta Google Gemini Vision se houver chave configurada
         if ($this->getGeminiKey() !== '' && strlen($jpegBinary) >= 300) {
             try {
                 return $this->analyzeWithGemini($jpegBinary, $candidateEvent, $roi, $needsAnnotation, $cleanBinary, $clientHints);
@@ -92,8 +65,8 @@ class KingCameraAiVisionService
             }
         }
 
-        // 3. Motor Biométrico e Geométrico Determinístico Local (GD Pixel + Gradiente Anatômico + Polígono Exato)
-        // Garante precisão 24/7 mesmo sem créditos na OpenAI, diferenciando bebê (cabelo escuro/pele/relevo) de travesseiros/espumas brancas.
+        // 2. Motor Biométrico e Geométrico Determinístico Local (GD Pixel + Gradiente Anatômico + Polígono Exato)
+        // Garante precisão 24/7 diferenciando bebê (cabelo escuro/pele/relevo) de travesseiros/espumas brancas.
         return $this->analyzeWithBiometricComputerVision($cleanBinary, $candidateEvent, $roi, $clientHints);
     }
 
@@ -660,54 +633,6 @@ Responda ESTRITAMENTE em JSON:
 PROMPT;
     }
 
-    private function analyzeWithOpenAi(
-        string $jpegBinary,
-        string $candidateEvent,
-        mixed $roi = null,
-        bool $needsAnnotation = true,
-        ?string $cleanBinary = null,
-        array $clientHints = []
-    ): array {
-        if ($needsAnnotation && !empty($roi)) {
-            $jpegBinary = $this->annotateJpegWithCribRoi($jpegBinary, $roi);
-        }
-
-        $base64 = base64_encode($jpegBinary);
-        $dataUrl = "data:image/jpeg;base64,{$base64}";
-        $prompt = $this->getSpecialistPrompt($candidateEvent);
-
-        $res = Http::timeout(12.0)
-            ->withToken($this->getOpenAiKey())
-            ->post(self::OPENAI_CHAT_URL, [
-                'model' => $this->getOpenAiModel(),
-                'messages' => [
-                    [
-                        'role' => 'user',
-                        'content' => [
-                            ['type' => 'text', 'text' => $prompt],
-                            ['type' => 'image_url', 'image_url' => ['url' => $dataUrl, 'detail' => 'high']],
-                        ],
-                    ],
-                ],
-                'temperature' => 0.0,
-                'max_tokens' => 350,
-                'response_format' => ['type' => 'json_object'],
-            ]);
-
-        if (!$res->successful()) {
-            throw new \RuntimeException("OpenAI Vision HTTP " . $res->status() . ": " . $res->body());
-        }
-
-        $content = data_get($res->json(), 'choices.0.message.content');
-        $json = json_decode((string) $content, true);
-
-        if (!is_array($json)) {
-            throw new \RuntimeException("Resposta OpenAI não é JSON válido: " . $content);
-        }
-
-        return $this->formatNormalizedResult($json, 'openai', $roi);
-    }
-
     private function analyzeWithGemini(
         string $jpegBinary,
         string $candidateEvent,
@@ -724,41 +649,55 @@ PROMPT;
         $base64 = base64_encode($jpegBinary);
         $prompt = $this->getSpecialistPrompt($candidateEvent);
 
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$apiKey}";
+        $models = array_values(array_unique([
+            $this->getGeminiModel(),
+            'gemini-3.5-flash',
+            'gemini-3.5-flash-lite',
+            'gemini-3.6-flash',
+        ]));
 
-        $res = Http::timeout(9.0)
-            ->post($url, [
-                'contents' => [
-                    [
-                        'parts' => [
-                            ['text' => $prompt],
-                            [
-                                'inline_data' => [
-                                    'mime_type' => 'image/jpeg',
-                                    'data' => $base64
+        $lastError = 'Falha ao consultar Gemini Vision';
+        foreach ($models as $model) {
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+
+            $res = Http::timeout(9.0)
+                ->post($url, [
+                    'contents' => [
+                        [
+                            'parts' => [
+                                ['text' => $prompt],
+                                [
+                                    'inline_data' => [
+                                        'mime_type' => 'image/jpeg',
+                                        'data' => $base64
+                                    ]
                                 ]
                             ]
                         ]
+                    ],
+                    'generationConfig' => [
+                        'temperature' => 0.0,
+                        'response_mime_type' => 'application/json'
                     ]
-                ],
-                'generationConfig' => [
-                    'temperature' => 0.0,
-                    'response_mime_type' => 'application/json'
-                ]
-            ]);
+                ]);
 
-        if (!$res->successful()) {
-            throw new \RuntimeException("Gemini HTTP " . $res->status() . ": " . $res->body());
+            if (!$res->successful()) {
+                $lastError = "Gemini ({$model}) HTTP " . $res->status() . ": " . $res->body();
+                continue;
+            }
+
+            $rawText = data_get($res->json(), 'candidates.0.content.parts.0.text', '');
+            $json = json_decode((string) $rawText, true);
+
+            if (!is_array($json)) {
+                $lastError = "Gemini ({$model}) não retornou JSON: " . $rawText;
+                continue;
+            }
+
+            return $this->formatNormalizedResult($json, 'gemini', $roi);
         }
 
-        $rawText = data_get($res->json(), 'candidates.0.content.parts.0.text', '');
-        $json = json_decode((string) $rawText, true);
-
-        if (!is_array($json)) {
-            throw new \RuntimeException("Gemini Vision não retornou JSON: " . $rawText);
-        }
-
-        return $this->formatNormalizedResult($json, 'gemini', $roi);
+        throw new \RuntimeException($lastError);
     }
 
     /**

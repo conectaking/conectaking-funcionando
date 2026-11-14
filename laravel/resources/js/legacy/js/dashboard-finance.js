@@ -4438,12 +4438,18 @@ window.selectFinanceMonth = function (monthIndex) {
             if (isNaN(totalRecebidoMes) || totalRecebidoMes === null) {
                 totalRecebidoMes = receitasFluxoMes + recebidoTrabalhosEsteMesSel;
             }
-            var despesas = Number(data.totalExpensePaid !== undefined ? data.totalExpensePaid : data.totalPago);
-            if (isNaN(despesas) || despesas === null) {
-                despesas = (Number(data.expenseFromTransactions || 0)) + totalTerceirosEsteMes;
-            }
+            var pagoTerceirosMesSel = typeof window._kingFinanceTerceirosPagoEsteMes === 'function' && window._kingFinanceDb && Array.isArray(window._kingFinanceDb.terceiros) ? window._kingFinanceTerceirosPagoEsteMes(window._kingFinanceDb.terceiros, window.currentFinanceYear, monthIndex + 1) : 0;
+            var despesas = (data.totalExpensePaid !== undefined && data.totalExpensePaid !== null)
+                ? Number(data.totalExpensePaid)
+                : ((data.totalPago !== undefined && data.totalPago !== null)
+                    ? Number(data.totalPago)
+                    : ((Number(data.expenseFromTransactions || 0)) + pagoTerceirosMesSel));
             var balance = totalRecebidoMes - despesas;
-            var faltaReceberGeralMes = (Number(data.pendingIncome) || 0) + trabMes.totalFalta;
+            var pendingIncomeRawSel = Number(data.incomePending !== undefined ? data.incomePending : (data.pendingIncome || 0));
+            var pendingIncomeFluxoSel = (data.pendenciasReceber !== undefined && Math.abs(Number(data.pendingIncome) - Number(data.pendenciasReceber)) < 0.01 && trabMes.totalFalta > 0)
+                ? Math.max(0, Number(data.pendingIncome) - trabMes.totalFalta)
+                : pendingIncomeRawSel;
+            var faltaReceberGeralMes = pendingIncomeFluxoSel + trabMes.totalFalta;
             var patrimonioMes = Number(data.accountBalance !== undefined ? data.accountBalance : balance);
 
             const netWorthEl = document.getElementById('finance-patrimonio-total') || document.querySelector('.finance-card-premium h3');
@@ -4460,7 +4466,11 @@ window.selectFinanceMonth = function (monthIndex) {
             const pendingIncomeEl = document.getElementById('finance-pending-income');
             if (pendingIncomeEl) pendingIncomeEl.textContent = `R$ ${formatCurrency(faltaReceberGeralMes)}`;
 
-            var faltaPagarEsteMes = (Number(data.pendingExpense) || 0) + totalTerceirosEsteMes;
+            var pendingExpenseRawSel = Number(data.expensePending !== undefined ? data.expensePending : (data.pendingExpense || 0));
+            var pendingExpenseFluxoSel = (data.pendenciasPagar !== undefined && Math.abs(Number(data.pendingExpense) - Number(data.pendenciasPagar)) < 0.01 && totalTerceirosEsteMes > 0)
+                ? Math.max(0, Number(data.pendingExpense) - totalTerceirosEsteMes)
+                : pendingExpenseRawSel;
+            var faltaPagarEsteMes = pendingExpenseFluxoSel + totalTerceirosEsteMes;
             const pendingExpenseEl = document.getElementById('finance-pending-expense');
             if (pendingExpenseEl) pendingExpenseEl.textContent = `R$ ${formatCurrency(faltaPagarEsteMes)}`;
             var totalTerceirosMesesAntSel = typeof window._kingFinanceTerceirosMesesAnteriores === 'function' ? window._kingFinanceTerceirosMesesAnteriores(window._kingFinanceDb || {}, window.currentFinanceYear, monthIndex + 1) : 0;
@@ -4474,20 +4484,13 @@ window.selectFinanceMonth = function (monthIndex) {
             if (paidIncomeEl) paidIncomeEl.textContent = `R$ ${formatCurrency(totalRecebidoMes)}`;
 
             const paidExpenseEl = document.getElementById('finance-paid-expense');
-            var valorOQueFoiPagoBtn = Number(data.totalExpensePaid || data.totalPago) || 0;
-            if (typeof financeTransactionsCurrentMonthOnly === 'function' && Array.isArray(window.allFinanceTransactions)) {
-                var doMesPagoBtn = financeTransactionsCurrentMonthOnly(window.allFinanceTransactions);
-                valorOQueFoiPagoBtn = doMesPagoBtn.filter(function (t) { return (t.type || '').toUpperCase() === 'EXPENSE' && (t.status || '').toUpperCase() === 'PAID'; }).reduce(function (s, t) { return s + (parseFloat(t.amount) || 0); }, 0);
-            }
-            var terceirosPagoBtn = typeof window._kingFinanceTerceirosPagoEsteMes === 'function' && window._kingFinanceDb && Array.isArray(window._kingFinanceDb.terceiros) ? window._kingFinanceTerceirosPagoEsteMes(window._kingFinanceDb.terceiros, window.currentFinanceYear, monthIndex + 1) : 0;
-            valorOQueFoiPagoBtn = (Number(valorOQueFoiPagoBtn) || 0) + (Number(terceirosPagoBtn) || 0);
-            if (paidExpenseEl) paidExpenseEl.textContent = `R$ ${formatCurrency(valorOQueFoiPagoBtn)}`;
+            if (paidExpenseEl) paidExpenseEl.textContent = `R$ ${formatCurrency(despesas)}`;
             const balanceReceitasEl = document.getElementById('finance-balance-receitas');
             const balanceDespesasEl = document.getElementById('finance-balance-despesas');
             const balanceResultEl = document.getElementById('finance-balance-result');
             if (balanceReceitasEl) balanceReceitasEl.textContent = `R$ ${formatCurrency(totalRecebidoMes)}`;
             if (balanceDespesasEl) balanceDespesasEl.textContent = `R$ ${formatCurrency(despesas)}`;
-            if (balanceResultEl) { balanceResultEl.textContent = `R$ ${formatCurrency(Math.abs(balance))}`; balanceResultEl.style.color = balance >= 0 ? '#22c55e' : '#ef4444'; }
+            if (balanceResultEl) { balanceResultEl.textContent = `${balance < 0 ? '-' : ''}R$ ${formatCurrency(Math.abs(balance))}`; balanceResultEl.style.color = balance >= 0 ? '#22c55e' : '#ef4444'; }
         })
         .catch(err => console.error('Erro ao atualizar dashboard:', err));
 
@@ -4953,9 +4956,15 @@ window.financeBuildPrintContent = function (tipo) {
     var despesasPagasMes = doMes.filter(function (t) { return (t.type || '').toUpperCase() === 'EXPENSE' && (t.status || '').toUpperCase() === 'PAID'; }).reduce(function (s, t) { return s + (parseFloat(t.amount) || 0); }, 0);
     var faltaReceberMes = doMes.filter(function (t) { return (t.type || '').toUpperCase() === 'INCOME' && (t.status || '').toUpperCase() === 'PENDING'; }).reduce(function (s, t) { return s + (parseFloat(t.amount) || 0); }, 0);
     var faltaPagarMes = doMes.filter(function (t) { return (t.type || '').toUpperCase() === 'EXPENSE' && (t.status || '').toUpperCase() === 'PENDING'; }).reduce(function (s, t) { return s + (parseFloat(t.amount) || 0); }, 0);
-    var terceirosMes = (typeof window._kingFinanceTerceirosEsteMes === 'function' && window._kingFinanceDb && Array.isArray(window._kingFinanceDb.terceiros)) ? window._kingFinanceTerceirosEsteMes(window._kingFinanceDb.terceiros, currentYear, currentMonth + 1) : 0;
-    var faltaPagarMesComTerceiros = faltaPagarMes + terceirosMes;
+    var kStatsPrint = window._kingFinanceStats || {};
+    var faltaReceberMesDisplay = kStatsPrint.faltaReceberGeral !== undefined ? Number(kStatsPrint.faltaReceberGeral) : faltaReceberMes;
+    var receitasPagasMesDisplay = kStatsPrint.totalRecebido !== undefined ? Number(kStatsPrint.totalRecebido) : receitasPagasMes;
+    var receitasMes = receitasPagasMesDisplay + faltaReceberMesDisplay;
+    var despesasPagasMesDisplay = kStatsPrint.despesasPagas !== undefined ? Number(kStatsPrint.despesasPagas) : despesasPagasMes;
+    var faltaPagarMesComTerceiros = kStatsPrint.faltaPagarEsteMes !== undefined ? Number(kStatsPrint.faltaPagarEsteMes) : faltaPagarMes;
+    var despesasMes = despesasPagasMesDisplay + faltaPagarMesComTerceiros;
     var saldoMes = receitasMes - despesasMes;
+    var saldoCaixaMes = receitasPagasMesDisplay - despesasPagasMesDisplay;
     var totalIncome = (feed.filter(function (t) { return (t.type || '').toUpperCase() === 'INCOME' && (t.status || '').toUpperCase() === 'PAID'; }).reduce(function (s, t) { return s + (parseFloat(t.amount) || 0); }, 0));
     var totalExpense = (feed.filter(function (t) { return (t.type || '').toUpperCase() === 'EXPENSE' && (t.status || '').toUpperCase() === 'PAID'; }).reduce(function (s, t) { return s + (parseFloat(t.amount) || 0); }, 0));
     var db = window._kingFinanceDb || { terceiros: [], dividas: [], trabalhos: [], bens: [] };
@@ -4963,13 +4972,13 @@ window.financeBuildPrintContent = function (tipo) {
     var titulo = tipo === 'geral' ? 'Balanço Geral' : tipo === 'despesas' ? 'Despesas' : tipo === 'receitas' ? 'Receitas' : tipo === 'completo' ? 'Balanço Completo' : tipo === 'falta-pagar' ? 'O que falta pagar' : tipo === 'quem-eu-devo' ? 'Quem eu devo' : tipo === 'serasa' ? 'Dívidas Serasa' : tipo === 'fluxo' ? 'Fluxo' : tipo === 'trabalhos' ? 'Trabalhos' : tipo === 'bens' ? 'Bens' : tipo === 'cartoes' ? 'Cartões' : 'Tudo';
     var body = '';
     if (tipo === 'geral' || tipo === 'completo' || tipo === 'tudo') {
-        body += '<h3>Balanço do mês (' + mesNome + ')</h3><table style="width:100%;border-collapse:collapse;margin-bottom:24px;"><tr><td style="padding:8px;border-bottom:1px solid #ddd;">Receitas totais</td><td style="text-align:right;padding:8px;color:#22c55e;">+R$ ' + fmt(receitasMes) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">Despesas totais</td><td style="text-align:right;padding:8px;color:#ef4444;">-R$ ' + fmt(despesasMes) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">O que entrou</td><td style="text-align:right;padding:8px;color:#22c55e;">+R$ ' + fmt(receitasPagasMes) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">O que saiu</td><td style="text-align:right;padding:8px;color:#ef4444;">-R$ ' + fmt(despesasPagasMes) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">Falta receber</td><td style="text-align:right;padding:8px;">R$ ' + fmt(faltaReceberMes) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">Falta pagar</td><td style="text-align:right;padding:8px;">R$ ' + fmt(faltaPagarMesComTerceiros) + '</td></tr><tr style="font-weight:700;"><td style="padding:12px;">Balanço</td><td style="text-align:right;padding:12px;">R$ ' + fmt(saldoMes) + '</td></tr></table>';
+        body += '<h3>Balanço do mês (' + mesNome + ')</h3><table style="width:100%;border-collapse:collapse;margin-bottom:24px;"><tr><td style="padding:8px;border-bottom:1px solid #ddd;">Receitas totais (recebido + a receber)</td><td style="text-align:right;padding:8px;color:#22c55e;">+R$ ' + fmt(receitasMes) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">Despesas totais (pago + a pagar)</td><td style="text-align:right;padding:8px;color:#ef4444;">-R$ ' + fmt(despesasMes) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">O que entrou (recebido)</td><td style="text-align:right;padding:8px;color:#22c55e;">+R$ ' + fmt(receitasPagasMesDisplay) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">O que saiu (pago)</td><td style="text-align:right;padding:8px;color:#ef4444;">-R$ ' + fmt(despesasPagasMesDisplay) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">Falta receber</td><td style="text-align:right;padding:8px;">R$ ' + fmt(faltaReceberMesDisplay) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">Falta pagar</td><td style="text-align:right;padding:8px;">R$ ' + fmt(faltaPagarMesComTerceiros) + '</td></tr><tr style="font-weight:700;"><td style="padding:12px;">Balanço Realizado (Caixa)</td><td style="text-align:right;padding:12px;">' + (saldoCaixaMes < 0 ? '-' : '+') + 'R$ ' + fmt(Math.abs(saldoCaixaMes)) + '</td></tr><tr style="font-weight:700;"><td style="padding:12px;">Balanço Previsto (Mês)</td><td style="text-align:right;padding:12px;">' + (saldoMes < 0 ? '-' : '+') + 'R$ ' + fmt(Math.abs(saldoMes)) + '</td></tr></table>';
     }
     if ((tipo === 'completo' || tipo === 'geral' || tipo === 'tudo') && totalIncome !== undefined) {
         body += '<h3>Resumo geral</h3><p>Total recebido: R$ ' + fmt(totalIncome) + '</p><p>Total pago: R$ ' + fmt(totalExpense) + '</p><p>Saldo: R$ ' + fmt(totalIncome - totalExpense) + '</p>';
     }
-    if (tipo === 'despesas' || tipo === 'tudo') body += '<h3>Despesas do mês</h3><p>Total: R$ ' + fmt(despesasMes) + '</p><p>Pagas: R$ ' + fmt(despesasPagasMes) + '</p><p>Falta pagar: R$ ' + fmt(faltaPagarMesComTerceiros) + '</p>';
-    if (tipo === 'receitas' || tipo === 'tudo') body += '<h3>Receitas do mês</h3><p>Total: R$ ' + fmt(receitasMes) + '</p><p>Recebidas: R$ ' + fmt(receitasPagasMes) + '</p><p>Falta receber: R$ ' + fmt(faltaReceberMes) + '</p>';
+    if (tipo === 'despesas' || tipo === 'tudo') body += '<h3>Despesas do mês</h3><p>Total: R$ ' + fmt(despesasMes) + '</p><p>Pagas: R$ ' + fmt(despesasPagasMesDisplay) + '</p><p>Falta pagar: R$ ' + fmt(faltaPagarMesComTerceiros) + '</p>';
+    if (tipo === 'receitas' || tipo === 'tudo') body += '<h3>Receitas do mês</h3><p>Total: R$ ' + fmt(receitasMes) + '</p><p>Recebidas: R$ ' + fmt(receitasPagasMesDisplay) + '</p><p>Falta receber: R$ ' + fmt(faltaReceberMesDisplay) + '</p>';
     if (tipo === 'falta-pagar' || tipo === 'tudo') body += '<h3>O que falta pagar</h3><p>Total a pagar (mês + terceiros): R$ ' + fmt(faltaPagarMesComTerceiros) + '</p>';
     if (tipo === 'quem-eu-devo' || tipo === 'tudo') {
         var terceiros = db.terceiros || [];
@@ -5114,16 +5123,10 @@ window.showGeneralBalanceModal = async function () {
         const mesRef = currentYear + '-' + String(currentMonth + 1).padStart(2, '0');
         const feed = window.allFinanceTransactions || [];
         const doMes = feed.filter(t => (t.transaction_date || t.date || '').toString().trim().slice(0, 7) === mesRef);
-        const receitasMes = doMes.filter(t => (t.type || '').toUpperCase() === 'INCOME').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
-        const despesasMes = doMes.filter(t => (t.type || '').toUpperCase() === 'EXPENSE').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
-        const receitasPagasMes = doMes.filter(t => (t.type || '').toUpperCase() === 'INCOME' && (t.status || '').toUpperCase() === 'PAID').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
-        const despesasPagasMes = doMes.filter(t => (t.type || '').toUpperCase() === 'EXPENSE' && (t.status || '').toUpperCase() === 'PAID').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
-        const faltaReceberMes = doMes.filter(t => (t.type || '').toUpperCase() === 'INCOME' && (t.status || '').toUpperCase() === 'PENDING').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
-        const faltaPagarMes = doMes.filter(t => (t.type || '').toUpperCase() === 'EXPENSE' && (t.status || '').toUpperCase() === 'PENDING').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
-        const terceirosMes = (typeof window._kingFinanceTerceirosEsteMes === 'function' && window._kingFinanceDb && Array.isArray(window._kingFinanceDb.terceiros)) ? window._kingFinanceTerceirosEsteMes(window._kingFinanceDb.terceiros, currentYear, currentMonth + 1) : 0;
-        const despesasMesComTerceiros = despesasMes;
-        const faltaPagarMesComTerceiros = faltaPagarMes + terceirosMes;
-        const saldoMes = receitasMes - despesasMes;
+        const receitasPagasMesRaw = doMes.filter(t => (t.type || '').toUpperCase() === 'INCOME' && (t.status || '').toUpperCase() === 'PAID').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
+        const despesasPagasMesRaw = doMes.filter(t => (t.type || '').toUpperCase() === 'EXPENSE' && (t.status || '').toUpperCase() === 'PAID').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
+        const faltaReceberMesRaw = doMes.filter(t => (t.type || '').toUpperCase() === 'INCOME' && (t.status || '').toUpperCase() === 'PENDING').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
+        const faltaPagarMesRaw = doMes.filter(t => (t.type || '').toUpperCase() === 'EXPENSE' && (t.status || '').toUpperCase() === 'PENDING').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
 
         const kStats = window._kingFinanceStats || {};
         const kingDbModal = window._kingFinanceDb || {};
@@ -5136,11 +5139,20 @@ window.showGeneralBalanceModal = async function () {
             return acc + Math.max(0, (Number(t.valor) || 0) - pago);
         }, 0);
 
-        const cardTotalRecebido = (kStats.totalRecebido !== undefined) ? kStats.totalRecebido : (receitasPagasMes || (totalIncome + trabRecebidoMes));
-        const cardTotalPago = (kStats.despesasPagas !== undefined) ? kStats.despesasPagas : (despesasPagasMes || totalExpense);
-        const cardSaldoDisponivel = (kStats.patrimonio !== undefined) ? kStats.patrimonio : (cardTotalRecebido - cardTotalPago);
-        const cardPendingReceber = (kStats.faltaReceberGeral !== undefined) ? kStats.faltaReceberGeral : ((kStats.totalFaltaReceberTrabalhos !== undefined) ? kStats.totalFaltaReceberTrabalhos : (faltaReceberMes || trabPendentes));
-        const cardPendingPagar = (kStats.faltaPagarEsteMes !== undefined) ? kStats.faltaPagarEsteMes : faltaPagarMesComTerceiros;
+        const cardTotalRecebido = (kStats.totalRecebido !== undefined) ? Number(kStats.totalRecebido) : (receitasPagasMesRaw || (totalIncome + trabRecebidoMes));
+        const cardTotalPago = (kStats.despesasPagas !== undefined) ? Number(kStats.despesasPagas) : (despesasPagasMesRaw || totalExpense);
+        const cardSaldoDisponivel = (kStats.patrimonio !== undefined) ? Number(kStats.patrimonio) : ((data.accountBalance !== undefined) ? Number(data.accountBalance) : (cardTotalRecebido - cardTotalPago));
+        const cardPendingReceber = (kStats.faltaReceberGeral !== undefined) ? Number(kStats.faltaReceberGeral) : ((kStats.totalFaltaReceberTrabalhos !== undefined) ? Number(kStats.totalFaltaReceberTrabalhos) : Math.max(faltaReceberMesRaw, trabPendentes));
+        const cardPendingPagar = (kStats.faltaPagarEsteMes !== undefined) ? Number(kStats.faltaPagarEsteMes) : faltaPagarMesRaw;
+
+        const receitasPagasMes = cardTotalRecebido;
+        const despesasPagasMes = cardTotalPago;
+        const faltaReceberMes = cardPendingReceber;
+        const faltaPagarMesComTerceiros = cardPendingPagar;
+        const receitasMes = receitasPagasMes + faltaReceberMes;
+        const despesasMesComTerceiros = despesasPagasMes + faltaPagarMesComTerceiros;
+        const saldoCaixaMes = receitasPagasMes - despesasPagasMes;
+        const saldoMes = receitasMes - despesasMesComTerceiros;
         
         const cardTotalTx = doMes.length > 0 ? doMes.length : totalTransactions;
         const cardIncomeTx = doMes.length > 0 ? doMes.filter(t => (t.type || '').toUpperCase() === 'INCOME').length : incomeTransactions;
@@ -5152,7 +5164,7 @@ window.showGeneralBalanceModal = async function () {
             const titulo = tipo === 'geral' ? 'Balanço Geral' : tipo === 'despesas' ? 'Despesas' : tipo === 'receitas' ? 'Receitas' : 'Balanço Completo (PDF)';
             let body = '';
             if (tipo === 'geral' || tipo === 'completo') {
-                body += '<h3>Balanço do mês atual (' + mesNome + ')</h3><table style="width:100%;border-collapse:collapse;margin-bottom:24px;"><tr><td style="padding:8px;border-bottom:1px solid #ddd;">Receitas totais</td><td style="text-align:right;padding:8px;color:#22c55e;">+R$ ' + fmt(receitasMes) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">Despesas totais</td><td style="text-align:right;padding:8px;color:#ef4444;">-R$ ' + fmt(despesasMesComTerceiros) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">O que entrou (receitas pagas)</td><td style="text-align:right;padding:8px;color:#22c55e;">+R$ ' + fmt(receitasPagasMes) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">O que saiu (despesas pagas)</td><td style="text-align:right;padding:8px;color:#ef4444;">-R$ ' + fmt(despesasPagasMes) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">Falta receber</td><td style="text-align:right;padding:8px;">R$ ' + fmt(faltaReceberMes) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">Falta pagar</td><td style="text-align:right;padding:8px;">R$ ' + fmt(faltaPagarMesComTerceiros) + '</td></tr><tr style="font-weight:700;"><td style="padding:12px;">Balanço</td><td style="text-align:right;padding:12px;">R$ ' + fmt(saldoMes) + '</td></tr></table>';
+                body += '<h3>Balanço do mês atual (' + mesNome + ')</h3><table style="width:100%;border-collapse:collapse;margin-bottom:24px;"><tr><td style="padding:8px;border-bottom:1px solid #ddd;">Receitas totais (recebido + a receber)</td><td style="text-align:right;padding:8px;color:#22c55e;">+R$ ' + fmt(receitasMes) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">Despesas totais (pago + a pagar)</td><td style="text-align:right;padding:8px;color:#ef4444;">-R$ ' + fmt(despesasMesComTerceiros) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">O que entrou (receitas pagas)</td><td style="text-align:right;padding:8px;color:#22c55e;">+R$ ' + fmt(receitasPagasMes) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">O que saiu (despesas pagas)</td><td style="text-align:right;padding:8px;color:#ef4444;">-R$ ' + fmt(despesasPagasMes) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">Falta receber</td><td style="text-align:right;padding:8px;">R$ ' + fmt(faltaReceberMes) + '</td></tr><tr><td style="padding:8px;border-bottom:1px solid #ddd;">Falta pagar</td><td style="text-align:right;padding:8px;">R$ ' + fmt(faltaPagarMesComTerceiros) + '</td></tr><tr style="font-weight:700;"><td style="padding:12px;">Balanço em Caixa (Entrou - Saiu)</td><td style="text-align:right;padding:12px;">' + (saldoCaixaMes < 0 ? '-' : '+') + 'R$ ' + fmt(Math.abs(saldoCaixaMes)) + '</td></tr><tr style="font-weight:700;"><td style="padding:12px;">Balanço Previsto (Receitas - Despesas)</td><td style="text-align:right;padding:12px;">' + (saldoMes < 0 ? '-' : '+') + 'R$ ' + fmt(Math.abs(saldoMes)) + '</td></tr></table>';
             }
             if (tipo === 'completo' || tipo === 'geral') {
                 body += '<h3>Resumo geral (todos os períodos)</h3><p>Total recebido: R$ ' + fmt(totalIncome) + '</p><p>Total pago: R$ ' + fmt(totalExpense) + '</p><p>Saldo: R$ ' + fmt(totalIncome - totalExpense) + '</p>';
@@ -5188,17 +5200,23 @@ window.showGeneralBalanceModal = async function () {
         const blocoMesAtual = `
                 <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%); border-radius: 16px; padding: 24px; margin-bottom: 24px; border: 2px solid rgba(59, 130, 246, 0.3);">
                     <h3 style="color: #93c5fd; font-size: 1.25rem; margin: 0 0 16px 0;"><i class="fas fa-calendar-alt" style="margin-right: 8px;"></i>Balanço do mês atual (${mesNome})</h3>
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
-                        <div style="display: flex; justify-content: space-between;"><span style="color: rgba(255,255,255,0.8);">Receitas totais</span><strong style="color: #22c55e;">+R$ ${fmt(receitasMes)}</strong></div>
-                        <div style="display: flex; justify-content: space-between;"><span style="color: rgba(255,255,255,0.8);">Despesas totais</span><strong style="color: #ef4444;">-R$ ${fmt(despesasMesComTerceiros)}</strong></div>
-                        <div style="display: flex; justify-content: space-between;"><span style="color: rgba(255,255,255,0.8);">O que entrou (receitas pagas)</span><strong style="color: #22c55e;">+R$ ${fmt(receitasPagasMes)}</strong></div>
-                        <div style="display: flex; justify-content: space-between;"><span style="color: rgba(255,255,255,0.8);">O que saiu (despesas pagas)</span><strong style="color: #ef4444;">-R$ ${fmt(despesasPagasMes)}</strong></div>
-                        <div style="display: flex; justify-content: space-between;"><span style="color: rgba(255,255,255,0.8);">Falta receber</span><strong style="color: #f59e0b;">R$ ${fmt(faltaReceberMes)}</strong></div>
-                        <div style="display: flex; justify-content: space-between;"><span style="color: rgba(255,255,255,0.8);">Falta pagar</span><strong style="color: #f59e0b;">R$ ${fmt(faltaPagarMesComTerceiros)}</strong></div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
+                        <div style="display: flex; justify-content: space-between; gap: 8px;"><span style="color: rgba(255,255,255,0.8);">Receitas totais (previsto)</span><strong style="color: #22c55e;">+R$ ${fmt(receitasMes)}</strong></div>
+                        <div style="display: flex; justify-content: space-between; gap: 8px;"><span style="color: rgba(255,255,255,0.8);">Despesas totais (previsto)</span><strong style="color: #ef4444;">-R$ ${fmt(despesasMesComTerceiros)}</strong></div>
+                        <div style="display: flex; justify-content: space-between; gap: 8px;"><span style="color: rgba(255,255,255,0.8);">O que entrou (receitas pagas)</span><strong style="color: #22c55e;">+R$ ${fmt(receitasPagasMes)}</strong></div>
+                        <div style="display: flex; justify-content: space-between; gap: 8px;"><span style="color: rgba(255,255,255,0.8);">O que saiu (despesas pagas)</span><strong style="color: #ef4444;">-R$ ${fmt(despesasPagasMes)}</strong></div>
+                        <div style="display: flex; justify-content: space-between; gap: 8px;"><span style="color: rgba(255,255,255,0.8);">Falta receber</span><strong style="color: #f59e0b;">R$ ${fmt(faltaReceberMes)}</strong></div>
+                        <div style="display: flex; justify-content: space-between; gap: 8px;"><span style="color: rgba(255,255,255,0.8);">Falta pagar</span><strong style="color: #f59e0b;">R$ ${fmt(faltaPagarMesComTerceiros)}</strong></div>
                     </div>
-                    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
-                        <span style="color: #f1f5f9; font-weight: 700;">Balanço do mês</span>
-                        <strong style="font-size: 1.5rem; color: ${saldoMes >= 0 ? '#22c55e' : '#ef4444'};">R$ ${fmt(Math.abs(saldoMes))}</strong>
+                    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                        <div>
+                            <span style="color: #94a3b8; font-size: 0.85rem; display: block;">Balanço Realizado (Entrou - Saiu)</span>
+                            <strong style="font-size: 1.25rem; color: ${saldoCaixaMes >= 0 ? '#22c55e' : '#ef4444'};">${saldoCaixaMes < 0 ? '-' : '+'}R$ ${fmt(Math.abs(saldoCaixaMes))}</strong>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="color: #f1f5f9; font-weight: 700; display: block;">Balanço Previsto do Mês (Receitas - Despesas)</span>
+                            <strong style="font-size: 1.5rem; color: ${saldoMes >= 0 ? '#22c55e' : '#ef4444'};">${saldoMes < 0 ? '-' : '+'}R$ ${fmt(Math.abs(saldoMes))}</strong>
+                        </div>
                     </div>
                 </div>`;
 
@@ -5491,5 +5509,2879 @@ window.openFinanceFilters = function () {
                 <div>
                     <label style="display: block; color: var(--text-primary, #FFFFFF); margin-bottom: 10px; font-weight: 600;">Status</label>
                     <select id="filter-status" style="width: 100%; padding: 12px; border-radius: 12px; border: 2px solid var(--border-glass, #2C2C2F); background: var(--preto-fundo, #0D0D0F); color: var(--text-primary, #FFFFFF);">
-                        <optio
-... [truncated for diff preview]
+                        <option value="">Todos</option>
+                        <option value="PAID">Pago/Recebido</option>
+                        <option value="PENDING">Pendente</option>
+                    </select>
+                </div>
+                
+                <!-- Filtro por Período -->
+                <div>
+                    <label style="display: block; color: var(--text-primary, #FFFFFF); margin-bottom: 10px; font-weight: 600;">Período</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <input type="date" id="filter-date-from" style="padding: 12px; border-radius: 12px; border: 2px solid var(--border-glass, #2C2C2F); background: var(--preto-fundo, #0D0D0F); color: var(--text-primary, #FFFFFF);">
+                        <input type="date" id="filter-date-to" style="padding: 12px; border-radius: 12px; border: 2px solid var(--border-glass, #2C2C2F); background: var(--preto-fundo, #0D0D0F); color: var(--text-primary, #FFFFFF);">
+                    </div>
+                </div>
+                
+                <!-- Filtro por Valor -->
+                <div>
+                    <label style="display: block; color: var(--text-primary, #FFFFFF); margin-bottom: 10px; font-weight: 600;">Valor</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <input type="number" id="filter-amount-min" placeholder="Mínimo" step="0.01" style="padding: 12px; border-radius: 12px; border: 2px solid var(--border-glass, #2C2C2F); background: var(--preto-fundo, #0D0D0F); color: var(--text-primary, #FFFFFF);">
+                        <input type="number" id="filter-amount-max" placeholder="Máximo" step="0.01" style="padding: 12px; border-radius: 12px; border: 2px solid var(--border-glass, #2C2C2F); background: var(--preto-fundo, #0D0D0F); color: var(--text-primary, #FFFFFF);">
+                    </div>
+                </div>
+                
+                <!-- Busca por Descrição -->
+                <div>
+                    <label style="display: block; color: var(--text-primary, #FFFFFF); margin-bottom: 10px; font-weight: 600;">Buscar</label>
+                    <input type="text" id="filter-search" placeholder="Digite para buscar..." style="width: 100%; padding: 12px; border-radius: 12px; border: 2px solid var(--border-glass, #2C2C2F); background: var(--preto-fundo, #0D0D0F); color: var(--text-primary, #FFFFFF);">
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 12px; margin-top: 30px;">
+                <button onclick="closeFinanceFiltersModal()" style="flex: 1; padding: 14px; border-radius: 12px; border: 2px solid var(--border-glass, #2C2C2F); background: transparent; color: var(--text-primary, #FFFFFF); cursor: pointer; font-weight: 600;">
+                    Limpar
+                </button>
+                <button onclick="applyFinanceFilters()" style="flex: 2; padding: 14px; border-radius: 12px; border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer; font-weight: 700;">
+                    Aplicar Filtros
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Fechar ao clicar fora
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeFinanceFiltersModal();
+        }
+    });
+};
+
+window.closeFinanceFiltersModal = function () {
+    const modal = document.getElementById('finance-filters-modal');
+    if (modal) {
+        modal.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => modal.remove(), 300);
+    }
+};
+
+window.applyFinanceFilters = function () {
+    const type = document.getElementById('filter-type')?.value || '';
+    const status = document.getElementById('filter-status')?.value || '';
+    const dateFrom = document.getElementById('filter-date-from')?.value || '';
+    const dateTo = document.getElementById('filter-date-to')?.value || '';
+    const amountMin = parseFloat(document.getElementById('filter-amount-min')?.value) || 0;
+    const amountMax = parseFloat(document.getElementById('filter-amount-max')?.value) || Infinity;
+    const search = document.getElementById('filter-search')?.value.toLowerCase() || '';
+
+    let filtered = window.allFinanceTransactions || [];
+
+    // Aplicar filtros
+    if (type) {
+        filtered = filtered.filter(t => (t.type || '').toUpperCase() === type);
+    }
+    if (status) {
+        filtered = filtered.filter(t => (t.status || '').toUpperCase() === status);
+    }
+    if (dateFrom) {
+        filtered = filtered.filter(t => {
+            const date = new Date(t.transaction_date || t.date || t.created_at);
+            return date >= new Date(dateFrom);
+        });
+    }
+    if (dateTo) {
+        filtered = filtered.filter(t => {
+            const date = new Date(t.transaction_date || t.date || t.created_at);
+            const dateToObj = new Date(dateTo);
+            dateToObj.setHours(23, 59, 59, 999);
+            return date <= dateToObj;
+        });
+    }
+    if (amountMin > 0) {
+        filtered = filtered.filter(t => parseFloat(t.amount || 0) >= amountMin);
+    }
+    if (amountMax < Infinity) {
+        filtered = filtered.filter(t => parseFloat(t.amount || 0) <= amountMax);
+    }
+    if (search) {
+        filtered = filtered.filter(t => {
+            const desc = (t.description || '').toLowerCase();
+            const cat = (t.category_name || '').toLowerCase();
+            return desc.includes(search) || cat.includes(search);
+        });
+    }
+
+    // Renderizar transações filtradas
+    renderFinanceTransactions(filtered, window.currentFinanceTab || 'all');
+
+    // Fechar modal
+    closeFinanceFiltersModal();
+};
+
+window.exportFinanceReport = function () {
+    const transactions = window.allFinanceTransactions || [];
+    const currentMonth = window.currentFinanceMonth !== undefined ? window.currentFinanceMonth : new Date().getMonth();
+    const currentYear = window.currentFinanceYear !== undefined ? window.currentFinanceYear : new Date().getFullYear();
+    const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+    // Filtrar transações do mês atual
+    const monthTransactions = transactions.filter(t => {
+        const date = new Date(t.transaction_date || t.date || t.created_at);
+        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    });
+
+    // Criar CSV
+    const headers = ['Data', 'Tipo', 'Descrição', 'Categoria', 'Valor', 'Status', 'Observações'];
+    const rows = monthTransactions.map(t => {
+        const date = new Date(t.transaction_date || t.date || t.created_at);
+        return [
+            date.toLocaleDateString('pt-BR'),
+            (t.type || '').toUpperCase() === 'INCOME' ? 'Receita' : 'Despesa',
+            t.description || '',
+            t.category_name || '',
+            `R$ ${formatCurrency(t.amount || 0)}`,
+            (t.status || '').toUpperCase() === 'PAID' ? 'Pago' : 'Pendente',
+            t.notes || ''
+        ];
+    });
+
+    // Calcular totais
+    const income = monthTransactions
+        .filter(t => (t.type || '').toUpperCase() === 'INCOME')
+        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+    const expenses = monthTransactions
+        .filter(t => (t.type || '').toUpperCase() === 'EXPENSE')
+        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+
+    rows.push([]);
+    rows.push(['TOTAL RECEITAS', '', '', '', `R$ ${formatCurrency(income)}`, '', '']);
+    rows.push(['TOTAL DESPESAS', '', '', '', `R$ ${formatCurrency(expenses)}`, '', '']);
+    rows.push(['BALAN?O', '', '', '', `R$ ${formatCurrency(income - expenses)}`, '', '']);
+
+    // Converter para CSV
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    // Download
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `relatorio-financeiro-${monthNames[currentMonth]}-${currentYear}.csv`;
+    link.click();
+};
+
+window.showFinanceCharts = function () {
+    const transactions = window.allFinanceTransactions || [];
+    const currentMonth = window.currentFinanceMonth !== undefined ? window.currentFinanceMonth : new Date().getMonth();
+    const currentYear = window.currentFinanceYear !== undefined ? window.currentFinanceYear : new Date().getFullYear();
+
+    // Filtrar transações do mês atual
+    const monthTransactions = transactions.filter(t => {
+        const date = new Date(t.transaction_date || t.date || t.created_at);
+        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    });
+
+    // Agrupar por categoria
+    const categoryData = {};
+    monthTransactions.forEach(t => {
+        const cat = t.category_name || 'Sem categoria';
+        if (!categoryData[cat]) {
+            categoryData[cat] = { income: 0, expense: 0 };
+        }
+        const amount = parseFloat(t.amount || 0);
+        if ((t.type || '').toUpperCase() === 'INCOME') {
+            categoryData[cat].income += amount;
+        } else {
+            categoryData[cat].expense += amount;
+        }
+    });
+
+    // Criar modal com gráficos
+    const modal = document.createElement('div');
+    modal.id = 'finance-charts-modal';
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10001; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); overflow-y: auto;';
+    modal.innerHTML = `
+        <div style="background: var(--bg-card, #1C1C21); border-radius: 20px; padding: 30px; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.6);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h2 style="color: var(--text-primary, #FFFFFF); font-size: 1.5rem; font-weight: 700; margin: 0;">
+                    <i class="fas fa-chart-line"></i> Análise Financeira
+                </h2>
+                <button onclick="closeFinanceChartsModal()" style="background: transparent; border: none; color: var(--text-primary, #FFFFFF); font-size: 1.5rem; cursor: pointer; padding: 8px;">&times;</button>
+            </div>
+            
+            <div style="display: grid; gap: 20px;">
+                <!-- Gráfico de Despesas por Categoria -->
+                <div>
+                    <h3 style="color: var(--text-primary, #FFFFFF); margin-bottom: 15px;">Despesas por Categoria</h3>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        ${Object.entries(categoryData)
+            .filter(([cat, data]) => data.expense > 0)
+            .sort((a, b) => b[1].expense - a[1].expense)
+            .map(([cat, data]) => {
+                const maxExpense = Math.max(...Object.values(categoryData).map(d => d.expense));
+                const percentage = maxExpense > 0 ? (data.expense / maxExpense) * 100 : 0;
+                return `
+                                    <div>
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                            <span style="color: var(--text-primary, #FFFFFF); font-size: 0.9rem;">${cat}</span>
+                                            <span style="color: #ef4444; font-weight: 600;">R$ ${formatCurrency(data.expense)}</span>
+                                        </div>
+                                        <div style="width: 100%; height: 8px; background: var(--preto-fundo, #0D0D0F); border-radius: 4px; overflow: hidden;">
+                                            <div style="width: ${percentage}%; height: 100%; background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); transition: width 0.5s;"></div>
+                                        </div>
+                                    </div>
+                                `;
+            }).join('')}
+                    </div>
+                </div>
+                
+                <!-- Gráfico de Receitas por Categoria -->
+                <div>
+                    <h3 style="color: var(--text-primary, #FFFFFF); margin-bottom: 15px;">Receitas por Categoria</h3>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        ${Object.entries(categoryData)
+            .filter(([cat, data]) => data.income > 0)
+            .sort((a, b) => b[1].income - a[1].income)
+            .map(([cat, data]) => {
+                const maxIncome = Math.max(...Object.values(categoryData).map(d => d.income));
+                const percentage = maxIncome > 0 ? (data.income / maxIncome) * 100 : 0;
+                return `
+                                    <div>
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                            <span style="color: var(--text-primary, #FFFFFF); font-size: 0.9rem;">${cat}</span>
+                                            <span style="color: #22c55e; font-weight: 600;">R$ ${formatCurrency(data.income)}</span>
+                                        </div>
+                                        <div style="width: 100%; height: 8px; background: var(--preto-fundo, #0D0D0F); border-radius: 4px; overflow: hidden;">
+                                            <div style="width: ${percentage}%; height: 100%; background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%); transition: width 0.5s;"></div>
+                                        </div>
+                                    </div>
+                                `;
+            }).join('')}
+                    </div>
+                </div>
+            </div>
+            
+            <button onclick="closeFinanceChartsModal()" style="width: 100%; padding: 14px; border-radius: 12px; border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer; font-weight: 700; margin-top: 25px;">
+                Fechar
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Fechar ao clicar fora
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeFinanceChartsModal();
+        }
+    });
+};
+
+window.closeFinanceChartsModal = function () {
+    const modal = document.getElementById('finance-charts-modal');
+    if (modal) {
+        modal.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => modal.remove(), 300);
+    }
+};
+
+// Funções de filtro para os cards clicáveis
+function scrollToFinanceTransactions() {
+    try {
+        const target = document.getElementById('finance-transactions-header') ||
+                       document.getElementById('finance-transactions-list');
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    } catch (e) { }
+}
+
+window.setFinanceTransactionsTitle = function (title, badgeText, badgeColor, badgeBg) {
+    const titleEl = document.getElementById('finance-transactions-title');
+    const badgeEl = document.getElementById('finance-transactions-filter-badge');
+    if (titleEl) {
+        titleEl.textContent = title || 'Transações Recentes';
+    }
+    if (badgeEl) {
+        if (badgeText) {
+            badgeEl.textContent = badgeText;
+            badgeEl.style.display = 'inline-block';
+            badgeEl.style.color = badgeColor || '#fff';
+            badgeEl.style.background = badgeBg || 'rgba(255,255,255,0.1)';
+            badgeEl.style.border = '1px solid ' + (badgeColor ? badgeColor + '55' : 'rgba(255,255,255,0.2)');
+        } else {
+            badgeEl.style.display = 'none';
+        }
+    }
+};
+
+window.showAllTransactions = function () {
+    // Limpar filtros e mostrar TODAS as transações
+    window.currentFinanceTab = 'all';
+    window.currentFinanceFilter = null;
+    window.setFinanceTransactionsTitle('Transações Recentes', null);
+
+    // Atualizar aba ativa
+    document.querySelectorAll('.finance-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.color = 'var(--finance-text-secondary)';
+        btn.style.borderBottomColor = 'transparent';
+    });
+
+    const allBtn = document.querySelector('[data-tab="all"]');
+    if (allBtn) {
+        allBtn.classList.add('active');
+        allBtn.style.color = 'var(--finance-text-primary)';
+        allBtn.style.borderBottomColor = '#667eea';
+    }
+
+    // Renderizar todas as transações sem filtros
+    if (window.allFinanceTransactions && window.allFinanceTransactions.length > 0) {
+        renderFinanceTransactions(window.allFinanceTransactions, 'all');
+    } else {
+        // Recarregar transações se não houver
+        window.loadFinanceTransactions();
+    }
+    scrollToFinanceTransactions();
+};
+
+window.filterByPendingIncome = function () {
+    // Filtrar apenas receitas pendentes
+    window.currentFinanceFilter = 'pending-income';
+    window.currentFinanceTab = 'income';
+    window.setFinanceTransactionsTitle('Falta Receber', 'Pendente', '#4ade80', 'rgba(34, 197, 94, 0.15)');
+
+    const transactions = window.allFinanceTransactions || [];
+    const filtered = transactions.filter(t =>
+        (t.type || '').toUpperCase() === 'INCOME' &&
+        (t.status || '').toUpperCase() === 'PENDING'
+    );
+
+    // Atualizar aba ativa
+    document.querySelectorAll('.finance-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.color = 'var(--text-secondary, #888888)';
+        btn.style.borderBottomColor = 'transparent';
+    });
+
+    const incomeBtn = document.querySelector('[data-tab="income"]');
+    if (incomeBtn) {
+        incomeBtn.classList.add('active');
+        incomeBtn.style.color = 'var(--finance-text-primary)';
+        incomeBtn.style.borderBottomColor = '#22c55e';
+    }
+
+    renderFinanceTransactions(filtered, 'income');
+    scrollToFinanceTransactions();
+};
+
+window.filterByPendingExpensePrevious = function () {
+    window.currentFinanceTab = 'expense';
+    window.currentFinanceFilter = 'pending-expense-previous';
+    window.setFinanceTransactionsTitle('Falta Pagar (Meses Anteriores)', 'Anterior / Atrasado', '#fbbf24', 'rgba(245, 158, 11, 0.15)');
+
+    const transactions = window.allFinanceTransactions || [];
+    const antesDoMes = financeTransactionsBeforeCurrentMonth(transactions);
+    const filtered = antesDoMes.filter(t =>
+        (t.type || '').toUpperCase() === 'EXPENSE' &&
+        (t.status || '').toUpperCase() === 'PENDING'
+    );
+    document.querySelectorAll('.finance-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.color = 'var(--finance-text-secondary)';
+        btn.style.borderBottomColor = 'transparent';
+    });
+    const expenseBtn = document.querySelector('[data-tab="expense"]');
+    if (expenseBtn) {
+        expenseBtn.classList.add('active');
+        expenseBtn.style.color = 'var(--finance-text-primary)';
+        expenseBtn.style.borderBottomColor = '#ef4444';
+    }
+    renderFinanceTransactions(filtered, 'expense');
+    scrollToFinanceTransactions();
+};
+
+function financeTransactionsCurrentMonthOnly(transactions) {
+    var currentYear = window.currentFinanceYear !== undefined ? window.currentFinanceYear : new Date().getFullYear();
+    var currentMonth = window.currentFinanceMonth !== undefined ? window.currentFinanceMonth : new Date().getMonth();
+    var mesRef = currentYear + '-' + String(currentMonth + 1).padStart(2, '0');
+    function extrairAnoMes(d) {
+        var s = (d || '').toString().trim();
+        if (/^\d{4}-\d{2}/.test(s)) return s.slice(0, 7);
+        var p = s.split(/[\/\-]/);
+        if (p.length >= 3) { var y = p[2].length === 4 ? p[2] : p[0]; var m = p[1] && p[1].length <= 2 ? p[1] : p[0]; return y + '-' + String(m).padStart(2, '0'); }
+        return '';
+    }
+    return (transactions || []).filter(function (t) { return extrairAnoMes(t.transaction_date || t.date) === mesRef; });
+}
+function financeTransactionsBeforeCurrentMonth(transactions) {
+    var currentYear = window.currentFinanceYear !== undefined ? window.currentFinanceYear : new Date().getFullYear();
+    var currentMonth = window.currentFinanceMonth !== undefined ? window.currentFinanceMonth : new Date().getMonth();
+    var mesRef = currentYear + '-' + String(currentMonth + 1).padStart(2, '0');
+    function extrairAnoMes(d) {
+        var s = (d || '').toString().trim();
+        if (/^\d{4}-\d{2}/.test(s)) return s.slice(0, 7);
+        var p = s.split(/[\/\-]/);
+        if (p.length >= 3) { var y = p[2].length === 4 ? p[2] : p[0]; var m = p[1] && p[1].length <= 2 ? p[1] : p[0]; return y + '-' + String(m).padStart(2, '0'); }
+        return '';
+    }
+    return (transactions || []).filter(function (t) { var dt = extrairAnoMes(t.transaction_date || t.date); return dt && dt < mesRef; });
+}
+
+window.filterByPendingExpense = function () {
+    // Filtrar apenas despesas pendentes DESTE mês
+    window.currentFinanceTab = 'expense';
+    window.currentFinanceFilter = 'pending-expense';
+    window.setFinanceTransactionsTitle('Falta Pagar (Este Mês)', 'Pendente', '#f87171', 'rgba(239, 68, 68, 0.15)');
+
+    const transactions = window.allFinanceTransactions || [];
+    const doMes = financeTransactionsCurrentMonthOnly(transactions);
+    const filtered = doMes.filter(t =>
+        (t.type || '').toUpperCase() === 'EXPENSE' &&
+        (t.status || '').toUpperCase() === 'PENDING'
+    );
+
+    // Atualizar aba ativa
+    document.querySelectorAll('.finance-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.color = 'var(--finance-text-secondary)';
+        btn.style.borderBottomColor = 'transparent';
+    });
+
+    const expenseBtn = document.querySelector('[data-tab="expense"]');
+    if (expenseBtn) {
+        expenseBtn.classList.add('active');
+        expenseBtn.style.color = 'var(--finance-text-primary)';
+        expenseBtn.style.borderBottomColor = '#ef4444';
+    }
+
+    renderFinanceTransactions(filtered, 'expense');
+    scrollToFinanceTransactions();
+};
+
+window.filterByBalance = function () {
+    // Mostrar todas as transações (saldo disponível)
+    window.currentFinanceTab = 'all';
+    window.currentFinanceFilter = null;
+    window.setFinanceTransactionsTitle('Saldo Disponível (Todas as Transações)', 'Geral', '#60a5fa', 'rgba(59, 130, 246, 0.15)');
+
+    const transactions = window.allFinanceTransactions || [];
+
+    // Atualizar aba ativa
+    document.querySelectorAll('.finance-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.color = 'var(--finance-text-secondary)';
+        btn.style.borderBottomColor = 'transparent';
+    });
+    const allBtn = document.querySelector('[data-tab="all"]');
+    if (allBtn) {
+        allBtn.classList.add('active');
+        allBtn.style.color = 'var(--finance-text-primary)';
+        allBtn.style.borderBottomColor = '#667eea';
+    }
+
+    renderFinanceTransactions(transactions, 'all');
+    scrollToFinanceTransactions();
+};
+
+window.filterByMonthlyIncomeFromCard = function () {
+    window.filterByPaidIncome();
+};
+window.filterByMonthlyExpenseFromCard = function () {
+    window.filterByPaidExpense();
+};
+window.filterByTotalBalanceFromCard = function () {
+    window.filterByBalance();
+};
+
+window.filterByPaidIncome = function () {
+    // Total recebido: mostrar só receitas PAGAS DESTE mês
+    window.currentFinanceTab = 'income';
+    window.currentFinanceFilter = 'paid-income';
+    window.setFinanceTransactionsTitle('Total Recebido (Este Mês)', 'Recebido', '#4ade80', 'rgba(34, 197, 94, 0.15)');
+
+    const transactions = window.allFinanceTransactions || [];
+    const doMes = financeTransactionsCurrentMonthOnly(transactions);
+    const onlyPaidIncome = doMes.filter(t => (t.type || '').toUpperCase() === 'INCOME' && (t.status || '').toUpperCase() === 'PAID');
+
+    document.querySelectorAll('.finance-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.color = 'var(--finance-text-secondary)';
+        btn.style.borderBottomColor = 'transparent';
+    });
+    const incomeBtn = document.querySelector('[data-tab="income"]');
+    if (incomeBtn) {
+        incomeBtn.classList.add('active');
+        incomeBtn.style.color = 'var(--finance-text-primary)';
+        incomeBtn.style.borderBottomColor = '#22c55e';
+    }
+
+    renderFinanceTransactions(onlyPaidIncome, 'income');
+    scrollToFinanceTransactions();
+};
+
+window.filterByPaidExpense = function () {
+    // O que foi pago: só despesas PAGAS DESTE mês
+    window.currentFinanceTab = 'expense';
+    window.currentFinanceFilter = 'paid-expense';
+    window.setFinanceTransactionsTitle('O Que Foi Pago (Este Mês)', 'Pago', '#4ade80', 'rgba(34, 197, 94, 0.15)');
+
+    const transactions = window.allFinanceTransactions || [];
+    const doMes = financeTransactionsCurrentMonthOnly(transactions);
+    const filtered = doMes.filter(t =>
+        (t.type || '').toUpperCase() === 'EXPENSE' &&
+        (t.status || '').toUpperCase() === 'PAID'
+    );
+
+    // Atualizar aba ativa
+    document.querySelectorAll('.finance-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.color = 'var(--finance-text-secondary)';
+        btn.style.borderBottomColor = 'transparent';
+    });
+
+    const expenseBtn = document.querySelector('[data-tab="expense"]');
+    if (expenseBtn) {
+        expenseBtn.classList.add('active');
+        expenseBtn.style.color = 'var(--finance-text-primary)';
+        expenseBtn.style.borderBottomColor = '#ef4444';
+    }
+
+    renderFinanceTransactions(filtered, 'expense');
+    scrollToFinanceTransactions();
+};
+
+// FUNÇÃO REMOVIDA: updateFinanceCardsFromTransactions
+// Os cards de resumo devem permanecer FIXOS e não serem alterados pelos filtros
+// Os filtros apenas mostram/ocultam transações abaixo, sem alterar os cards
+
+// FUNÇÃO REMOVIDA: updateFinanceTotals
+// Os cards de resumo devem permanecer FIXOS e não serem alterados pelos filtros
+// Os filtros apenas mostram/ocultam transações abaixo, sem alterar os cards
+
+window.showNewEntryModal = function () {
+    // Criar modal para escolher entre Receita ou Despesa
+    const modal = document.createElement('div');
+    modal.id = 'new-entry-type-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        animation: fadeIn 0.3s ease-out;
+    `;
+
+    modal.innerHTML = `
+        <div style="background: var(--finance-card-dark); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 40px; max-width: 500px; width: 100%; text-align: center;">
+            <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--finance-text-primary); margin-bottom: 32px;">Nova Entrada</h3>
+            <p style="color: var(--finance-text-secondary); margin-bottom: 32px; font-size: 0.95rem;">Escolha o tipo de transação:</p>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <button onclick="document.getElementById('new-entry-type-modal').remove(); window.openAddTransactionModal('income')" style="display: flex; align-items: center; justify-content: center; gap: 12px; padding: 20px; background: rgba(34, 197, 94, 0.1); border: 2px solid rgba(34, 197, 94, 0.3); border-radius: 16px; color: var(--finance-neon-green); font-weight: 700; font-size: 1.1rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(34, 197, 94, 0.2)'; this.style.borderColor='rgba(34, 197, 94, 0.5)'" onmouseout="this.style.background='rgba(34, 197, 94, 0.1)'; this.style.borderColor='rgba(34, 197, 94, 0.3)'">
+                    <i class="fas fa-arrow-trend-up" style="font-size: 1.5rem;"></i>
+                    <span>Nova Receita</span>
+                </button>
+                <button onclick="document.getElementById('new-entry-type-modal').remove(); window.openAddTransactionModal('expense')" style="display: flex; align-items: center; justify-content: center; gap: 12px; padding: 20px; background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.3); border-radius: 16px; color: var(--finance-neon-red); font-weight: 700; font-size: 1.1rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.2)'; this.style.borderColor='rgba(239, 68, 68, 0.5)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.1)'; this.style.borderColor='rgba(239, 68, 68, 0.3)'">
+                    <i class="fas fa-arrow-trend-down" style="font-size: 1.5rem;"></i>
+                    <span>Nova Despesa</span>
+                </button>
+            </div>
+            <button onclick="document.getElementById('new-entry-type-modal').remove()" style="margin-top: 24px; padding: 12px 24px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: var(--finance-text-secondary); font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                Cancelar
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Fechar ao clicar fora
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+
+    // Fechar com ESC
+    const escHandler = (e) => {
+        if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', escHandler);
+        }
+    };
+    document.addEventListener('keydown', escHandler);
+};
+
+window.openAddTransactionModal = async function (type, transactionData = null) {
+    // Remover modal existente se houver
+    const existingModal = document.getElementById('finance-transaction-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // Buscar categorias, contas e (para despesa) cartões de crédito
+    let categories = [];
+    let accounts = [];
+    let cards = [];
+
+    try {
+        const promises = [
+            fetch(`${env.API_URL}/api/finance/categories`, { headers: env.HEADERS_AUTH }),
+            fetch(`${env.API_URL}/api/finance/accounts`, { headers: env.HEADERS_AUTH })
+        ];
+        if (type === 'expense') promises.push(fetch(`${env.API_URL}/api/finance/cards`, { headers: env.HEADERS_AUTH }));
+        const results = await Promise.all(promises);
+
+        if (results[0].ok) {
+            const catData = await results[0].json();
+            const allCats = Array.isArray(catData.data) ? catData.data : (catData.data?.data || []);
+            const expectedType = type === 'income' ? 'INCOME' : 'EXPENSE';
+            categories = allCats.filter(c => (c.type || '').toUpperCase() === expectedType);
+        }
+        if (results[1].ok) {
+            const accData = await results[1].json();
+            accounts = Array.isArray(accData.data) ? accData.data : (accData.data?.data || []);
+        }
+        if (type === 'expense' && results[2] && results[2].ok) {
+            const cardData = await results[2].json();
+            cards = Array.isArray(cardData.data) ? cardData.data : (cardData.data?.data || []);
+        }
+    } catch (error) {
+        console.error('Erro ao carregar categorias/contas/cartões:', error);
+    }
+
+    // Criar novo modal
+    const modal = document.createElement('div');
+    modal.id = 'finance-transaction-modal';
+    modal.className = 'modal-overlay';
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 10, 12, 0.95); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); overflow-y: auto;';
+    document.body.appendChild(modal);
+
+    const isIncome = type === 'income';
+    const isEdit = !!transactionData;
+    const modalTitle = isEdit ? (isIncome ? 'Editar Receita' : 'Editar Despesa') : (isIncome ? 'Nova Receita' : 'Nova Despesa');
+    const modalColor = isIncome ? '#22c55e' : '#ef4444';
+    const modalGradient = isIncome
+        ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
+        : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+
+    // Data padrão
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const todayStr = today.toISOString().split('T')[0];
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    modal.innerHTML = `
+        <div style="background: #16161a; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 24px; padding: 0; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.8); animation: slideUp 0.3s ease-out; margin: auto;">
+            <!-- Header com gradiente -->
+            <div style="background: ${modalGradient}; padding: 25px 30px; border-radius: 24px 24px 0 0; position: sticky; top: 0; z-index: 10;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="color: white; margin: 0; font-size: 1.6rem; font-weight: 700; display: flex; align-items: center; gap: 12px;">
+                        <i class="fas ${isIncome ? 'fa-arrow-up' : 'fa-arrow-down'}" style="font-size: 1.4rem;"></i>
+                        ${modalTitle}
+                    </h2>
+                    <button id="close-modal-btn" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 8px 12px; border-radius: 8px; line-height: 1; transition: all 0.2s;" 
+                            onmouseover="this.style.background='rgba(255,255,255,0.3)'" 
+                            onmouseout="this.style.background='rgba(255,255,255,0.2)'">&times;</button>
+                </div>
+            </div>
+            
+            <!-- Form -->
+            <div style="padding: 30px; background: #16161a;">
+                <form id="finance-transaction-form">
+                    <!-- Mensagem de erro -->
+                    <div id="transaction-error-message" style="display: none; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 20px; color: #ef4444; font-size: 0.9rem;">
+                        <i class="fas fa-exclamation-circle"></i> <span id="error-text"></span>
+                    </div>
+                    
+                    <!-- Valor Grande com Moeda -->
+                    <div style="margin-bottom: 28px;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                            <label style="color: #f1f5f9; font-weight: 600; font-size: 0.95rem; flex: 1;">Valor</label>
+                            <select id="transaction-currency" style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); background: #16161a; color: #f1f5f9; font-size: 0.9rem; cursor: pointer; transition: all 0.2s;" 
+                                    onmouseover="this.style.borderColor='rgba(255,255,255,0.1)'" 
+                                    onmouseout="this.style.borderColor='rgba(255,255,255,0.05)'">
+                                <option value="BRL">BRL</option>
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                            </select>
+                        </div>
+                        <div style="position: relative;">
+                            <span style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: #64748b; font-weight: 700; font-size: 1.8rem; z-index: 1;">R$</span>
+                            <input type="number" id="transaction-amount" step="0.01" min="0.01" required
+                                   style="width: 100%; padding: 20px 20px 20px 70px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); background: #16161a; color: #f1f5f9; font-size: 2rem; font-weight: 700; transition: all 0.2s;"
+                                   placeholder="0,00"
+                                   onfocus="this.style.borderColor='${modalColor}'; this.style.boxShadow='0 0 0 3px rgba(${isIncome ? '34, 197, 94' : '239, 68, 68'}, 0.1)'"
+                                   onblur="this.style.borderColor='rgba(255,255,255,0.05)'; this.style.boxShadow='none'">
+                        </div>
+                    </div>
+                    
+                    <!-- Toggle Recebido/Pago -->
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: block; color: #f1f5f9; margin-bottom: 12px; font-weight: 600; font-size: 0.95rem;">
+                            Status
+                        </label>
+                        <div style="display: flex; gap: 12px; background: #16161a; padding: 6px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                            <button type="button" id="status-paid-btn" 
+                                    style="flex: 1; padding: 12px; border-radius: 8px; border: none; background: ${isEdit && transactionData?.status === 'PAID' ? modalGradient : 'transparent'}; color: ${isEdit && transactionData?.status === 'PAID' ? 'white' : '#64748b'}; cursor: pointer; font-weight: 600; font-size: 0.95rem; transition: all 0.2s;"
+                                    onclick="setTransactionStatus('PAID', '${modalGradient}')">
+                                <i class="fas fa-check-circle"></i> ${isIncome ? 'Recebido' : 'Pago'}
+                            </button>
+                            <button type="button" id="status-pending-btn"
+                                    style="flex: 1; padding: 12px; border-radius: 8px; border: none; background: ${isEdit && transactionData?.status === 'PENDING' ? modalGradient : 'transparent'}; color: ${isEdit && transactionData?.status === 'PENDING' ? 'white' : '#64748b'}; cursor: pointer; font-weight: 600; font-size: 0.95rem; transition: all 0.2s;"
+                                    onclick="setTransactionStatus('PENDING', '${modalGradient}')">
+                                <i class="fas fa-clock"></i> Pendente
+                            </button>
+                        </div>
+                        <input type="hidden" id="transaction-status" value="${isEdit && transactionData?.status ? transactionData.status : 'PAID'}">
+                    </div>
+                    
+                    <!-- Botões Rápidos de Data -->
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: block; color: #f1f5f9; margin-bottom: 12px; font-weight: 600; font-size: 0.95rem;">
+                            Data
+                        </label>
+                        <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                            <button type="button" class="date-quick-btn" data-date="${todayStr}"
+                                    style="padding: 10px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); background: ${todayStr === (isEdit && transactionData?.transaction_date ? new Date(transactionData.transaction_date).toISOString().split('T')[0] : todayStr) ? modalGradient : '#16161a'}; color: ${todayStr === (isEdit && transactionData?.transaction_date ? new Date(transactionData.transaction_date).toISOString().split('T')[0] : todayStr) ? 'white' : '#f1f5f9'}; cursor: pointer; font-weight: 500; font-size: 0.9rem; transition: all 0.2s;"
+                                    onclick="setQuickDate('${todayStr}')">
+                                Hoje
+                            </button>
+                            <button type="button" class="date-quick-btn" data-date="${yesterdayStr}"
+                                    style="padding: 10px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); background: #16161a; color: #f1f5f9; cursor: pointer; font-weight: 500; font-size: 0.9rem; transition: all 0.2s;"
+                                    onclick="setQuickDate('${yesterdayStr}')"
+                                    onmouseover="this.style.borderColor='rgba(255,255,255,0.1)'"
+                                    onmouseout="this.style.borderColor='rgba(255,255,255,0.05)'">
+                                Ontem
+                            </button>
+                            <button type="button" id="other-date-btn"
+                                    style="padding: 10px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); background: #16161a; color: #f1f5f9; cursor: pointer; font-weight: 500; font-size: 0.9rem; transition: all 0.2s;"
+                                    onclick="toggleDatePicker()"
+                                    onmouseover="this.style.borderColor='rgba(255,255,255,0.1)'"
+                                    onmouseout="this.style.borderColor='rgba(255,255,255,0.05)'">
+                                Outros...
+                            </button>
+                        </div>
+                        <input type="date" id="transaction-date" required
+                               style="width: 100%; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); background: #16161a; color: #f1f5f9; font-size: 0.95rem; transition: all 0.2s; display: none;"
+                               onfocus="this.style.borderColor='${modalColor}'; this.style.boxShadow='0 0 0 3px rgba(${isIncome ? '34, 197, 94' : '239, 68, 68'}, 0.1)'"
+                               onblur="this.style.borderColor='rgba(255,255,255,0.05)'; this.style.boxShadow='none'">
+                    </div>
+                    
+                    <!-- Descrição -->
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: block; color: #f1f5f9; margin-bottom: 10px; font-weight: 600; font-size: 0.95rem;">
+                            Descrição
+                        </label>
+                        <input type="text" id="transaction-description" required
+                               style="width: 100%; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); background: #16161a; color: #f1f5f9; font-size: 1rem; transition: all 0.2s;"
+                               placeholder="Ex: Salário, Aluguel, Compras..."
+                               onfocus="this.style.borderColor='${modalColor}'; this.style.boxShadow='0 0 0 3px rgba(${isIncome ? '34, 197, 94' : '239, 68, 68'}, 0.1)'"
+                               onblur="this.style.borderColor='rgba(255,255,255,0.05)'; this.style.boxShadow='none'">
+                    </div>
+                    
+                    <!-- Categoria (Pills) -->
+                    <div style="margin-bottom: 24px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <label style="display: block; color: #f1f5f9; font-weight: 600; font-size: 0.95rem;">
+                                Categoria
+                            </label>
+                            <button type="button" onclick="openCreateCategoryModal('${type}')" style="padding: 6px 12px; border-radius: 8px; border: 1px solid ${modalColor}; background: transparent; color: ${modalColor}; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s;" 
+                                    onmouseover="this.style.background='${modalColor}'; this.style.color='white';"
+                                    onmouseout="this.style.background='transparent'; this.style.color='${modalColor}';">
+                                <i class="fas fa-plus"></i> Nova Categoria
+                            </button>
+                        </div>
+                        <div id="category-pills" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            ${categories.length > 0 ? categories.map(cat => `
+                                <button type="button" class="category-pill" data-category-id="${cat.id}" data-color="${cat.color || '#6366f1'}"
+                                        style="padding: 10px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); background: #16161a; color: #f1f5f9; cursor: pointer; font-weight: 500; font-size: 0.9rem; transition: all 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 6px;"
+                                        onclick="window.selectCategory && window.selectCategory(${cat.id}, '${cat.color || '#6366f1'}', this)">
+                                    <i class="fas ${cat.icon || 'fa-tag'}" style="font-size: 0.9rem; color: ${cat.color || '#6366f1'};"></i> ${cat.name}
+                                </button>
+                            `).join('') : '<p style="color: #64748b; font-size: 0.85rem; width: 100%;">Nenhuma categoria disponível. Clique em "Nova Categoria" para criar.</p>'}
+                        </div>
+                        <input type="hidden" id="transaction-category-id" value="">
+                    </div>
+                    
+                    <!-- Carteira/Conta (Pills) -->
+                    ${accounts.length > 0 ? `
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: block; color: #f1f5f9; margin-bottom: 12px; font-weight: 600; font-size: 0.95rem;">
+                            Carteira
+                        </label>
+                        <div id="account-pills" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            ${accounts.map(acc => `
+                                <button type="button" class="account-pill" data-account-id="${acc.id}"
+                                        style="padding: 10px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); background: #16161a; color: #f1f5f9; cursor: pointer; font-weight: 500; font-size: 0.9rem; transition: all 0.2s; white-space: nowrap;"
+                                        onclick="window.selectAccount && window.selectAccount(${acc.id}, '${acc.color || '#6366f1'}', this)">
+                                    ${acc.icon ? `<i class="${acc.icon}"></i> ` : ''}${acc.name}
+                                </button>
+                            `).join('')}
+                        </div>
+                        <input type="hidden" id="transaction-account-id" value="">
+                    </div>
+                    ` : ''}
+                    
+                    ${!isIncome ? `
+                    <!-- Cartão de crédito (só para despesa: vincular à fatura do mês) -->
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: block; color: #f1f5f9; margin-bottom: 12px; font-weight: 600; font-size: 0.95rem;">
+                            <i class="fas fa-credit-card" style="margin-right: 8px; color: #94a3b8;"></i>Pago no cartão de crédito
+                        </label>
+                        <p style="color: #64748b; font-size: 0.8rem; margin: -6px 0 10px 0;">Opcional. Vincule à fatura de um cartão para acompanhar o gasto do mês.</p>
+                        <select id="transaction-card-id" style="width: 100%; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); background: #16161a; color: #f1f5f9; font-size: 0.95rem; cursor: pointer;">
+                            <option value="">Nenhum (dinheiro/PIX/conta)</option>
+                            ${(cards || []).map(c => `<option value="${c.id}" ${isEdit && transactionData?.card_id === c.id ? 'selected' : ''}>${(c.name || 'Cartão').replace(/</g, ' ')}</option>`).join('')}
+                        </select>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- Observação -->
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: block; color: #f1f5f9; margin-bottom: 10px; font-weight: 600; font-size: 0.95rem;">
+                            Observação (opcional)
+                        </label>
+                        <textarea id="transaction-notes" rows="3"
+                                  style="width: 100%; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); background: #16161a; color: #f1f5f9; font-size: 0.95rem; resize: vertical; transition: all 0.2s; font-family: inherit;"
+                                  placeholder="Adicione uma observação sobre esta transação..."
+                                  onfocus="this.style.borderColor='${modalColor}'; this.style.boxShadow='0 0 0 3px rgba(${isIncome ? '34, 197, 94' : '239, 68, 68'}, 0.1)'"
+                                  onblur="this.style.borderColor='rgba(255,255,255,0.05)'; this.style.boxShadow='none'"></textarea>
+                    </div>
+                    
+                    <!-- Toggles Adicionais -->
+                    <div style="margin-bottom: 24px; display: flex; flex-direction: column; gap: 16px;">
+                        <!-- Receita/Despesa Fixa -->
+                        <div id="recurring-container" style="display: flex; justify-content: space-between; align-items: center; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); background: #16161a;">
+                            <div>
+                                <div style="color: #f1f5f9; font-weight: 600; font-size: 0.95rem; margin-bottom: 4px;">
+                                    ${isIncome ? 'Receita' : 'Despesa'} Fixa
+                                </div>
+                                <div style="color: #64748b; font-size: 0.85rem;">
+                                    Repetir automaticamente todo mês
+                                </div>
+                            </div>
+                            <label style="position: relative; display: inline-block; width: 50px; height: 28px;">
+                                <input type="checkbox" id="transaction-is-recurring" ${isEdit && transactionData?.is_recurring ? 'checked' : ''} style="opacity: 0; width: 0; height: 0;" onchange="updateRecurringToggle(this)">
+                                <span class="toggle-slider" id="recurring-toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: ${isEdit && transactionData?.is_recurring ? '#22c55e' : '#ef4444'}; transition: 0.3s; border-radius: 28px;"></span>
+                            </label>
+                        </div>
+                        
+                        <!-- Campo de Repetição (aparece quando fixa está ativada) -->
+                        <div id="recurring-times-container" style="display: ${isEdit && transactionData?.is_recurring ? 'block' : 'none'}; margin-top: -8px;">
+                            <label style="display: block; color: #f1f5f9; margin-bottom: 10px; font-weight: 600; font-size: 0.95rem;">
+                                Repetir quantas vezes?
+                            </label>
+                            <div style="display: flex; gap: 12px; align-items: center;">
+                                <input type="number" id="transaction-recurring-times" min="1" max="120" value="${isEdit && transactionData?.recurring_times ? transactionData.recurring_times : '12'}"
+                                       style="flex: 1; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); background: #16161a; color: #f1f5f9; font-size: 1rem; transition: all 0.2s;"
+                                       placeholder="12"
+                                       onfocus="this.style.borderColor='${modalColor}'; this.style.boxShadow='0 0 0 3px rgba(${isIncome ? '34, 197, 94' : '239, 68, 68'}, 0.1)'"
+                                       onblur="this.style.borderColor='rgba(255,255,255,0.05)'; this.style.boxShadow='none'">
+                                <span style="color: #64748b; font-size: 0.9rem; white-space: nowrap;">vezes</span>
+                            </div>
+                            <p style="color: #64748b; font-size: 0.85rem; margin-top: 8px; margin-bottom: 0;">
+                                A transação será repetida mensalmente pelo número de vezes informado.
+                            </p>
+                        </div>
+                        
+                        <!-- Anexar Arquivo -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); background: #16161a; cursor: pointer; transition: all 0.2s;"
+                             onclick="document.getElementById('transaction-attachment').click()"
+                             onmouseover="this.style.borderColor='rgba(255,255,255,0.1)'"
+                             onmouseout="this.style.borderColor='rgba(255,255,255,0.05)'">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <i class="fas fa-paperclip" style="color: #64748b; font-size: 1.2rem;"></i>
+                                <div>
+                                    <div style="color: #f1f5f9; font-weight: 600; font-size: 0.95rem;">
+                                        Anexar Arquivo
+                                    </div>
+                                    <div id="attachment-name" style="color: #64748b; font-size: 0.85rem;">
+                                        Nenhum arquivo selecionado
+                                    </div>
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right" style="color: #64748b;"></i>
+                            <input type="file" id="transaction-attachment" accept="image/*,application/pdf" style="display: none;" onchange="handleAttachmentChange(this)">
+                        </div>
+                    </div>
+                    
+                    <!-- Botões -->
+                    <div style="display: flex; gap: 12px; margin-top: 32px;">
+                        <button type="button" id="cancel-btn"
+                                style="flex: 1; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); background: transparent; color: #f1f5f9; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.2s;"
+                                onmouseover="this.style.background='rgba(255,255,255,0.05)'"
+                                onmouseout="this.style.background='transparent'">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="save-btn"
+                                style="flex: 2; padding: 14px; border-radius: 12px; border: none; background: ${modalGradient}; color: white; cursor: pointer; font-weight: 700; font-size: 1rem; box-shadow: 0 4px 15px rgba(${isIncome ? '34, 197, 94' : '239, 68, 68'}, 0.3); transition: all 0.2s;"
+                                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(${isIncome ? '34, 197, 94' : '239, 68, 68'}, 0.4)'"
+                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(${isIncome ? '34, 197, 94' : '239, 68, 68'}, 0.3)'">
+                            <i class="fas fa-check"></i> ${isEdit ? 'Atualizar' : 'Salvar'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <style>
+            @keyframes slideUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            @keyframes fadeOut {
+                from {
+                    opacity: 1;
+                }
+                to {
+                    opacity: 0;
+                }
+            }
+            @keyframes slideDown {
+                from {
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            .toggle-slider:before {
+                position: absolute;
+                content: "";
+                height: 22px;
+                width: 22px;
+                left: 3px;
+                bottom: 3px;
+                background-color: white;
+                transition: 0.3s;
+                border-radius: 50%;
+            }
+            #transaction-is-recurring:checked + .toggle-slider {
+                background-color: ${modalColor};
+            }
+            #transaction-is-recurring:checked + .toggle-slider:before {
+                transform: translateX(22px);
+            }
+            .category-pill.selected, .account-pill.selected {
+                background: ${modalGradient} !important;
+                border-color: ${modalColor} !important;
+                color: white !important;
+            }
+            .date-quick-btn.active {
+                background: ${modalGradient} !important;
+                border-color: ${modalColor} !important;
+                color: white !important;
+            }
+        </style>
+    `;
+
+    modal.style.display = 'flex';
+
+    // Definir selectCategory e selectAccount ANTES de preencher dados (evita "selectCategory is not defined" ao editar)
+    window.selectCategory = function (categoryId, color, element) {
+        const pills = document.querySelectorAll('.category-pill');
+        const categoryInput = document.getElementById('transaction-category-id');
+        pills.forEach(pill => {
+            pill.classList.remove('selected');
+            pill.style.background = 'var(--preto-fundo, #0D0D0F)';
+            pill.style.borderColor = 'var(--border-glass, #2C2C2F)';
+            pill.style.color = 'var(--text-primary, #FFFFFF)';
+        });
+        if (element) {
+            element.classList.add('selected');
+            element.style.background = modalGradient;
+            element.style.borderColor = modalColor;
+            element.style.color = 'white';
+        }
+        if (categoryInput) categoryInput.value = categoryId || '';
+    };
+    window.selectAccount = function (accountId, color, element) {
+        const pills = document.querySelectorAll('.account-pill');
+        const accountInput = document.getElementById('transaction-account-id');
+        pills.forEach(pill => {
+            pill.classList.remove('selected');
+            pill.style.background = 'var(--preto-fundo, #0D0D0F)';
+            pill.style.borderColor = 'var(--border-glass, #2C2C2F)';
+            pill.style.color = 'var(--text-primary, #FFFFFF)';
+        });
+        if (element) {
+            element.classList.add('selected');
+            element.style.background = modalGradient;
+            element.style.borderColor = modalColor;
+            element.style.color = 'white';
+        }
+        if (accountInput) accountInput.value = accountId || '';
+    };
+
+    // Definir valores padrão ou de edição
+    if (isEdit && transactionData) {
+        const amountInput = modal.querySelector('#transaction-amount');
+        const descriptionInput = modal.querySelector('#transaction-description');
+        const dateInput = modal.querySelector('#transaction-date');
+        const statusInput = modal.querySelector('#transaction-status');
+        const notesInput = modal.querySelector('#transaction-notes');
+
+        if (amountInput && transactionData.amount) amountInput.value = parseFloat(transactionData.amount);
+        if (descriptionInput && transactionData.description) descriptionInput.value = transactionData.description;
+        if (dateInput && transactionData.transaction_date) {
+            const date = new Date(transactionData.transaction_date);
+            dateInput.value = date.toISOString().split('T')[0];
+            // Ativar botão rápido se for hoje ou ontem
+            const quickBtns = modal.querySelectorAll('.date-quick-btn');
+            quickBtns.forEach(btn => {
+                if (btn.dataset.date === dateInput.value) {
+                    btn.classList.add('active');
+                    btn.style.background = modalGradient;
+                    btn.style.borderColor = modalColor;
+                    btn.style.color = 'white';
+                }
+            });
+        }
+        if (statusInput) statusInput.value = transactionData.status || 'PAID';
+        if (notesInput && transactionData.notes) notesInput.value = transactionData.notes;
+        if (transactionData.category_id) {
+            const catBtn = modal.querySelector(`[data-category-id="${transactionData.category_id}"]`);
+            if (catBtn) window.selectCategory(transactionData.category_id, catBtn.dataset.color || '#6366f1', catBtn);
+        }
+        if (transactionData.account_id) {
+            const accBtn = modal.querySelector(`[data-account-id="${transactionData.account_id}"]`);
+            if (accBtn) window.selectAccount(transactionData.account_id, accBtn.dataset.color || '#6366f1', accBtn);
+        }
+    } else {
+        // Data padrão como hoje
+        const dateInput = modal.querySelector('#transaction-date');
+        if (dateInput) {
+            dateInput.value = todayStr;
+        }
+        // Ativar botão "Hoje"
+        const todayBtn = modal.querySelector(`[data-date="${todayStr}"]`);
+        if (todayBtn) {
+            todayBtn.classList.add('active');
+            todayBtn.style.background = modalGradient;
+            todayBtn.style.borderColor = modalColor;
+            todayBtn.style.color = 'white';
+        }
+    }
+
+    // Funções auxiliares globais para o modal
+    window.setTransactionStatus = function (status, gradient) {
+        const statusInput = document.getElementById('transaction-status');
+        const paidBtn = document.getElementById('status-paid-btn');
+        const pendingBtn = document.getElementById('status-pending-btn');
+
+        if (statusInput) statusInput.value = status;
+
+        if (status === 'PAID') {
+            paidBtn.style.background = gradient;
+            paidBtn.style.color = 'white';
+            pendingBtn.style.background = 'transparent';
+            pendingBtn.style.color = 'var(--text-secondary, #888888)';
+        } else {
+            pendingBtn.style.background = gradient;
+            pendingBtn.style.color = 'white';
+            paidBtn.style.background = 'transparent';
+            paidBtn.style.color = 'var(--text-secondary, #888888)';
+        }
+    };
+
+    window.setQuickDate = function (dateStr) {
+        const dateInput = document.getElementById('transaction-date');
+        const quickBtns = document.querySelectorAll('.date-quick-btn');
+        const otherBtn = document.getElementById('other-date-btn');
+
+        if (dateInput) {
+            dateInput.value = dateStr;
+            dateInput.style.display = 'none';
+        }
+
+        quickBtns.forEach(btn => {
+            btn.classList.remove('active');
+            btn.style.background = 'var(--preto-fundo, #0D0D0F)';
+            btn.style.borderColor = 'var(--border-glass, #2C2C2F)';
+            btn.style.color = 'var(--text-primary, #FFFFFF)';
+
+            if (btn.dataset.date === dateStr) {
+                btn.classList.add('active');
+                btn.style.background = modalGradient;
+                btn.style.borderColor = modalColor;
+                btn.style.color = 'white';
+            }
+        });
+
+        if (otherBtn) {
+            otherBtn.style.background = 'var(--preto-fundo, #0D0D0F)';
+            otherBtn.style.borderColor = 'var(--border-glass, #2C2C2F)';
+            otherBtn.style.color = 'var(--text-primary, #FFFFFF)';
+        }
+    };
+
+    window.toggleDatePicker = function () {
+        const dateInput = document.getElementById('transaction-date');
+        const quickBtns = document.querySelectorAll('.date-quick-btn');
+        const otherBtn = document.getElementById('other-date-btn');
+
+        if (dateInput) {
+            dateInput.style.display = dateInput.style.display === 'none' ? 'block' : 'none';
+            if (dateInput.style.display === 'block') {
+                dateInput.focus();
+            }
+        }
+
+        quickBtns.forEach(btn => {
+            btn.classList.remove('active');
+            btn.style.background = 'var(--preto-fundo, #0D0D0F)';
+            btn.style.borderColor = 'var(--border-glass, #2C2C2F)';
+            btn.style.color = 'var(--text-primary, #FFFFFF)';
+        });
+
+        if (otherBtn) {
+            otherBtn.style.background = modalGradient;
+            otherBtn.style.borderColor = modalColor;
+            otherBtn.style.color = 'white';
+        }
+    };
+
+    // selectCategory e selectAccount já definidos no início do modal (antes de preencher edição)
+
+    window.handleAttachmentChange = function (input) {
+        const fileName = input.files[0]?.name || 'Nenhum arquivo selecionado';
+        const nameDisplay = document.getElementById('attachment-name');
+        if (nameDisplay) {
+            nameDisplay.textContent = fileName;
+            nameDisplay.style.color = 'var(--text-primary, #FFFFFF)';
+        }
+    };
+
+    // Função global para atualizar toggle de recorrente
+    window.updateRecurringToggle = function (checkbox) {
+        const slider = document.getElementById('recurring-toggle-slider');
+        const container = document.getElementById('recurring-container');
+        const timesContainer = document.getElementById('recurring-times-container');
+
+        if (!slider || !container) {
+            console.warn('[FINANCE] Elementos do toggle não encontrados');
+            return;
+        }
+
+        if (checkbox.checked) {
+            // Verde quando ativado
+            slider.style.backgroundColor = '#22c55e';
+            container.style.borderColor = '#22c55e';
+            container.classList.add('active');
+            if (timesContainer) {
+                timesContainer.style.display = 'block';
+            }
+        } else {
+            // Vermelho quando desativado
+            slider.style.backgroundColor = '#ef4444';
+            container.style.borderColor = 'var(--border-glass, #2C2C2F)';
+            container.classList.remove('active');
+            if (timesContainer) {
+                timesContainer.style.display = 'none';
+            }
+        }
+    };
+
+    // Inicializar toggle ao carregar modal
+    setTimeout(() => {
+        const recurringCheckbox = document.getElementById('transaction-is-recurring');
+        if (recurringCheckbox) {
+            window.updateRecurringToggle(recurringCheckbox);
+        }
+    }, 100);
+
+    // Event listeners
+    const closeBtn = modal.querySelector('#close-modal-btn');
+    const cancelBtn = modal.querySelector('#cancel-btn');
+    const form = modal.querySelector('#finance-transaction-form');
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            closeFinanceTransactionModal();
+        });
+    }
+
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            closeFinanceTransactionModal();
+        });
+    }
+
+    // PREVENIR SUBMIT PADRÃO E CHAMAR FUNÇÃO DE SALVAR
+    if (form) {
+
+        // Adicionar listener para submit - CHAMAR A FUNÇÃO DE SALVAR AQUI
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+
+            // CHAMAR A FUNÇÃO DE SALVAR
+            try {
+                await saveFinanceTransaction(e, type);
+            } catch (error) {
+                console.error('[FINANCE] Erro ao chamar saveFinanceTransaction:', error);
+            }
+
+            return false;
+        }, true); // Use capture phase
+
+        // Também prevenir no onsubmit inline e chamar função
+        form.onsubmit = async function (e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+            }
+
+            // CHAMAR A FUNÇÃO DE SALVAR
+            try {
+                await saveFinanceTransaction(e, type);
+            } catch (error) {
+                console.error('[FINANCE] Erro ao chamar saveFinanceTransaction:', error);
+            }
+
+            return false;
+        };
+    }
+
+    // Fechar ao clicar fora do modal
+    modal.addEventListener('click', function (e) {
+        if (e.target === modal) {
+            e.preventDefault();
+            closeFinanceTransactionModal();
+        }
+    });
+
+    // Fechar com ESC
+    const escHandler = function (e) {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            closeFinanceTransactionModal();
+            document.removeEventListener('keydown', escHandler);
+        }
+    };
+    document.addEventListener('keydown', escHandler);
+
+    // Focar no campo de valor após animação
+    setTimeout(() => {
+        const amountInput = modal.querySelector('#transaction-amount');
+        if (amountInput) {
+            amountInput.focus();
+        }
+    }, 300);
+};
+
+window.closeFinanceTransactionModal = function () {
+    const modal = document.getElementById('finance-transaction-modal');
+    if (modal) {
+        modal.style.animation = 'fadeOut 0.2s ease-out';
+        setTimeout(() => {
+            modal.remove();
+        }, 200);
+    }
+};
+
+async function saveFinanceTransaction(event, type) {
+
+    // PREVENT DEFAULT IMEDIATAMENTE - ANTES DE QUALQUER COISA
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+    }
+
+
+    // Retornar false para garantir que não há submit padrão
+    try {
+
+        // Esconder mensagem de erro anterior
+        const errorMsg = document.getElementById('transaction-error-message');
+        if (errorMsg) {
+            errorMsg.style.display = 'none';
+        }
+
+        const amountInput = document.getElementById('transaction-amount');
+        const descriptionInput = document.getElementById('transaction-description');
+        const dateInput = document.getElementById('transaction-date');
+        const statusInput = document.getElementById('transaction-status');
+
+
+        if (!amountInput || !descriptionInput || !dateInput || !statusInput) {
+            throw new Error('Elementos do formulário não encontrados. Por favor, recarregue a página.');
+        }
+
+        const amount = parseFloat(amountInput.value);
+        const description = descriptionInput.value.trim();
+        const transactionDate = dateInput.value;
+        const status = statusInput.value;
+
+
+        // Validação
+        let hasError = false;
+
+        if (!amount || amount <= 0 || isNaN(amount)) {
+            console.warn('[FINANCE] Erro de validação: Valor inválido', amount);
+            showTransactionError('Por favor, informe um valor válido maior que zero.');
+            amountInput.style.borderColor = '#ef4444';
+            amountInput.focus();
+            hasError = true;
+        } else {
+            amountInput.style.borderColor = 'var(--border-glass, #2C2C2F)';
+        }
+
+        if (!description || description.length < 2) {
+            console.warn('[FINANCE] Erro de validação: Descrição inválida', description);
+            showTransactionError('Por favor, informe uma descrição com pelo menos 2 caracteres.');
+            descriptionInput.style.borderColor = '#ef4444';
+            if (!hasError) {
+                descriptionInput.focus();
+                hasError = true;
+            }
+        } else {
+            descriptionInput.style.borderColor = 'var(--border-glass, #2C2C2F)';
+        }
+
+        if (!transactionDate) {
+            console.warn('[FINANCE] Erro de validação: Data inválida', transactionDate);
+            showTransactionError('Por favor, selecione uma data.');
+            dateInput.style.borderColor = '#ef4444';
+            if (!hasError) {
+                dateInput.focus();
+                hasError = true;
+            }
+        } else {
+            dateInput.style.borderColor = 'var(--border-glass, #2C2C2F)';
+        }
+
+        if (hasError) {
+            console.warn('[FINANCE] Validação falhou, abortando envio');
+            return;
+        }
+
+
+        // Mostrar loading
+        const submitBtn = document.getElementById('save-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+
+        if (!submitBtn) {
+            throw new Error('Botão de salvar não encontrado');
+        }
+
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        if (cancelBtn) cancelBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+        submitBtn.style.opacity = '0.7';
+        submitBtn.style.cursor = 'not-allowed';
+
+        // Garantir que o tipo está correto - verificar se type é 'income' ou 'INCOME'
+        const typeUpper = (type || '').toUpperCase();
+        const transactionType = typeUpper === 'INCOME' ? 'INCOME' : 'EXPENSE';
+
+
+        // Coletar dados adicionais
+        const categoryId = document.getElementById('transaction-category-id')?.value || null;
+        const accountId = document.getElementById('transaction-account-id')?.value || null;
+        const cardIdEl = document.getElementById('transaction-card-id');
+        const cardId = cardIdEl && cardIdEl.value ? parseInt(cardIdEl.value, 10) : null;
+        const notes = document.getElementById('transaction-notes')?.value?.trim() || null;
+        const isRecurring = document.getElementById('transaction-is-recurring')?.checked || false;
+        const recurringTimes = isRecurring ? (parseInt(document.getElementById('transaction-recurring-times')?.value, 10) || 12) : null;
+
+        const profileId = window.currentFinanceProfileId || localStorage.getItem('finance_current_profile_id') || null;
+
+        const requestBody = {
+            type: transactionType,
+            amount: amount,
+            description: description,
+            transaction_date: transactionDate,
+            status: status,
+            category_id: categoryId ? parseInt(categoryId) : null,
+            account_id: accountId ? parseInt(accountId) : null,
+            card_id: transactionType === 'EXPENSE' ? cardId : null,
+            notes: notes,
+            is_recurring: isRecurring,
+            recurring_times: recurringTimes,
+            profile_id: profileId ? parseInt(profileId) : null
+        };
+
+
+
+        let response;
+        try {
+            response = await fetch(`${env.API_URL}/api/finance/transactions`, {
+                method: 'POST',
+                headers: {
+                    ...env.HEADERS_AUTH,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+        } catch (fetchError) {
+            console.error('[FINANCE] Erro na requisição fetch:', fetchError);
+            throw new Error(`Erro de conexão: ${fetchError.message}`);
+        }
+
+        let responseData = null;
+        try {
+            const responseText = await response.text();
+
+            if (responseText) {
+                responseData = JSON.parse(responseText);
+            }
+        } catch (parseError) {
+            console.error('[FINANCE] Erro ao parsear JSON:', parseError);
+            throw new Error('Resposta inválida do servidor');
+        }
+
+        if (!response.ok) {
+            const errorMessage = responseData?.message || responseData?.error || responseData?.data?.message || `Erro ${response.status}: ${response.statusText}`;
+            console.error('[FINANCE] Erro na resposta:', {
+                status: response.status,
+                statusText: response.statusText,
+                errorMessage,
+                responseData
+            });
+            throw new Error(errorMessage);
+        }
+
+
+        // Fechar modal imediatamente para o usuário sair da tela de formulário
+        closeFinanceTransactionModal();
+
+        // Recarregar transações e dashboard em seguida (sem depender do modal)
+        try {
+            if (typeof window.loadFinanceTransactions === 'function') {
+                await window.loadFinanceTransactions();
+            }
+            const financeContent = document.getElementById('finance-content');
+            if (financeContent) {
+                try {
+                    const y = window.currentFinanceYear ?? new Date().getFullYear();
+                    const m = window.currentFinanceMonth ?? new Date().getMonth();
+                    const monthStart = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+                    const lastDay = new Date(y, m + 1, 0).getDate();
+                    const monthEnd = `${y}-${String(m + 1).padStart(2, '0')}-${lastDay}`;
+                    const profileId = window.currentFinanceProfileId || localStorage.getItem('finance_current_profile_id') || '';
+                    const dashboardResponse = await fetch(`${env.API_URL}/api/finance/dashboard?dateFrom=${monthStart}&dateTo=${monthEnd}${profileId ? `&profile_id=${profileId}` : ''}`, {
+                        headers: env.HEADERS_AUTH
+                    });
+                    if (dashboardResponse.ok) {
+                        const dashboardData = await dashboardResponse.json();
+                        const data = dashboardData.data || dashboardData;
+                        const totalRecebidoApos = Number(data.totalRecebido !== undefined ? data.totalRecebido : data.totalIncomePaid) || ((Number(data.incomeFromTransactions || 0)) + (typeof window._kingFinanceRecebidoTrabalhosNoMes === 'function' ? window._kingFinanceRecebidoTrabalhosNoMes(window._kingFinanceDb || {}, y, m + 1) : 0));
+                        const despesasApos = Number(data.totalExpensePaid !== undefined ? data.totalExpensePaid : data.totalPago) || (Number(data.totalExpense) || 0);
+                        const balance = totalRecebidoApos - despesasApos;
+                        const patrimonioApos = Number(data.accountBalance !== undefined ? data.accountBalance : balance);
+                        const patrimonioEl = document.getElementById('finance-patrimonio-total');
+                        if (patrimonioEl) patrimonioEl.textContent = `R$ ${formatCurrency(patrimonioApos)}`;
+                        const accountBalanceMainEl = document.getElementById('finance-account-balance-main');
+                        if (accountBalanceMainEl) accountBalanceMainEl.textContent = `R$ ${formatCurrency(patrimonioApos)}`;
+                        const incomeCardEl = document.getElementById('finance-income-card');
+                        if (incomeCardEl) incomeCardEl.textContent = `+R$ ${formatCurrency(totalRecebidoApos)}`;
+                        const expenseCardEl = document.getElementById('finance-expense-card');
+                        if (expenseCardEl) expenseCardEl.textContent = `-R$ ${formatCurrency(despesasApos)}`;
+                        const balanceReceitasEl = document.getElementById('finance-balance-receitas');
+                        const balanceDespesasEl = document.getElementById('finance-balance-despesas');
+                        const balanceResultEl = document.getElementById('finance-balance-result');
+                        if (balanceReceitasEl) balanceReceitasEl.textContent = `R$ ${formatCurrency(totalRecebidoApos)}`;
+                        if (balanceDespesasEl) balanceDespesasEl.textContent = `R$ ${formatCurrency(despesasApos)}`;
+                        if (balanceResultEl) { balanceResultEl.textContent = `R$ ${formatCurrency(Math.abs(balance))}`; balanceResultEl.style.color = balance >= 0 ? '#22c55e' : '#ef4444'; }
+                    }
+                } catch (dashboardError) {
+                    console.warn('[FINANCE] Erro ao atualizar cards:', dashboardError);
+                }
+            }
+        } catch (reloadError) {
+            console.error('[FINANCE] Erro ao recarregar dados:', reloadError);
+        }
+
+        return false; // Retornar false para prevenir submit padrão
+
+    } catch (error) {
+        console.error('[FINANCE] ERRO CAPTURADO:', error);
+        console.error('[FINANCE] Stack trace:', error.stack);
+        console.error('[FINANCE] Error name:', error.name);
+        console.error('[FINANCE] Error message:', error.message);
+
+        // Mostrar erro
+        const errorMessage = error.message || 'Erro ao salvar transação. Verifique sua conexão e tente novamente.';
+        console.error('[FINANCE] Exibindo mensagem de erro:', errorMessage);
+        showTransactionError(errorMessage);
+
+        // Restaurar botão
+        const submitBtn = document.getElementById('save-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check"></i> Salvar';
+            submitBtn.style.opacity = '1';
+            submitBtn.style.cursor = 'pointer';
+        }
+        if (cancelBtn) {
+            cancelBtn.disabled = false;
+        }
+
+        return false; // Retornar false para prevenir submit padrão mesmo em caso de erro
+    }
+}
+
+function showTransactionError(message) {
+    const errorMsg = document.getElementById('transaction-error-message');
+    const errorText = document.getElementById('error-text');
+    if (errorMsg && errorText) {
+        errorText.textContent = message;
+        errorMsg.style.display = 'block';
+        errorMsg.style.animation = 'slideDown 0.3s ease-out';
+
+        // Scroll para o erro
+        errorMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+window.editFinanceTransaction = async function (id) {
+
+    if (!id) {
+        alert('ID da transação não fornecido.');
+        return;
+    }
+
+    try {
+        // Buscar dados da transação
+        const response = await fetch(`${env.API_URL}/api/finance/transactions/${id}`, {
+            headers: env.HEADERS_AUTH
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Erro ao carregar transação' }));
+            throw new Error(errorData.message || 'Erro ao carregar transação');
+        }
+
+        const responseData = await response.json();
+        const transaction = responseData.data || responseData;
+
+
+        // Determinar tipo (INCOME ou EXPENSE)
+        const transactionType = (transaction.type || '').toUpperCase();
+        const isIncome = transactionType === 'INCOME';
+        const modalType = isIncome ? 'income' : 'expense';
+
+        // Abrir modal de edição (reutilizar o mesmo modal, mas preenchendo com dados)
+        await openAddTransactionModal(modalType, transaction);
+
+        // Alterar função do formulário para atualizar ao invés de criar
+        setTimeout(() => {
+            const form = document.getElementById('finance-transaction-form');
+            if (form) {
+                // Remover listeners antigos
+                const newForm = form.cloneNode(true);
+                form.parentNode.replaceChild(newForm, form);
+
+                // Adicionar novo listener que atualiza
+                newForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+
+                    await updateFinanceTransaction(e, id, modalType);
+                    return false;
+                }, true);
+            }
+
+        }, 500);
+
+    } catch (error) {
+        console.error('[FINANCE] Erro ao carregar transação para edição:', error);
+        alert('Erro ao carregar transação: ' + error.message);
+    }
+};
+
+async function updateFinanceTransaction(event, id, type) {
+
+    // PREVENT DEFAULT IMEDIATAMENTE
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+    }
+
+    try {
+        // Esconder mensagem de erro anterior
+        const errorMsg = document.getElementById('transaction-error-message');
+        if (errorMsg) {
+            errorMsg.style.display = 'none';
+        }
+
+        const amountInput = document.getElementById('transaction-amount');
+        const descriptionInput = document.getElementById('transaction-description');
+        const dateInput = document.getElementById('transaction-date');
+        const statusInput = document.getElementById('transaction-status');
+
+        if (!amountInput || !descriptionInput || !dateInput || !statusInput) {
+            throw new Error('Elementos do formulário não encontrados.');
+        }
+
+        const amount = parseFloat(amountInput.value);
+        const description = descriptionInput.value.trim();
+        const transactionDate = dateInput.value;
+        const status = statusInput.value;
+
+        // Validação
+        if (!amount || amount <= 0 || isNaN(amount)) {
+            showTransactionError('Por favor, informe um valor válido maior que zero.');
+            amountInput.style.borderColor = '#ef4444';
+            amountInput.focus();
+            return false;
+        }
+
+        if (!description || description.length < 2) {
+            showTransactionError('Por favor, informe uma descrição com pelo menos 2 caracteres.');
+            descriptionInput.style.borderColor = '#ef4444';
+            descriptionInput.focus();
+            return false;
+        }
+
+        // Mostrar loading
+        const submitBtn = document.getElementById('save-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Atualizando...';
+            submitBtn.style.opacity = '0.7';
+        }
+        if (cancelBtn) cancelBtn.disabled = true;
+
+        const transactionType = (type && type.toUpperCase() === 'INCOME') ? 'INCOME' : 'EXPENSE';
+        // Coletar dados adicionais
+        const categoryId = document.getElementById('transaction-category-id')?.value || null;
+        const accountId = document.getElementById('transaction-account-id')?.value || null;
+        const cardIdEl = document.getElementById('transaction-card-id');
+        const cardId = cardIdEl && cardIdEl.value ? parseInt(cardIdEl.value, 10) : null;
+        const notes = document.getElementById('transaction-notes')?.value?.trim() || null;
+        const isRecurring = document.getElementById('transaction-is-recurring')?.checked || false;
+        const recurringTimes = isRecurring ? (parseInt(document.getElementById('transaction-recurring-times')?.value) || 12) : null;
+
+        const requestBody = {
+            type: transactionType,
+            amount: amount,
+            description: description,
+            transaction_date: transactionDate,
+            status: status,
+            category_id: categoryId ? parseInt(categoryId) : null,
+            account_id: accountId ? parseInt(accountId) : null,
+            card_id: transactionType === 'EXPENSE' ? cardId : null,
+            notes: notes,
+            is_recurring: isRecurring,
+            recurring_times: recurringTimes
+        };
+
+
+        const response = await fetch(`${env.API_URL}/api/finance/transactions/${id}`, {
+            method: 'PUT',
+            headers: {
+                ...env.HEADERS_AUTH,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        let responseData = null;
+        let responseText = '';
+
+        try {
+            responseText = await response.text();
+
+            if (responseText) {
+                try {
+                    responseData = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('[FINANCE] Erro ao parsear JSON:', parseError);
+                    responseData = { message: responseText };
+                }
+            }
+        } catch (textError) {
+            console.error('[FINANCE] Erro ao ler resposta:', textError);
+        }
+
+        if (!response.ok) {
+            let errorMessage = `Erro ${response.status}: ${response.statusText}`;
+
+            if (responseData) {
+                if (typeof responseData === 'string') {
+                    errorMessage = responseData;
+                } else if (responseData.message) {
+                    errorMessage = responseData.message;
+                } else if (responseData.error) {
+                    if (typeof responseData.error === 'string') {
+                        errorMessage = responseData.error;
+                    } else if (responseData.error.message) {
+                        errorMessage = responseData.error.message;
+                    } else {
+                        errorMessage = JSON.stringify(responseData.error);
+                    }
+                } else if (responseData.data && responseData.data.message) {
+                    errorMessage = responseData.data.message;
+                }
+            } else if (responseText) {
+                errorMessage = responseText;
+            }
+
+            console.error('[FINANCE] Erro na resposta (update):', {
+                status: response.status,
+                statusText: response.statusText,
+                responseData,
+                responseText,
+                errorMessage
+            });
+
+            throw new Error(errorMessage);
+        }
+
+
+        // Fechar modal imediatamente para o usuário sair da tela de edição
+        closeFinanceTransactionModal();
+
+        try {
+            if (typeof window.loadFinanceTransactions === 'function') {
+                await window.loadFinanceTransactions();
+            }
+            const financeContent = document.getElementById('finance-content');
+            if (financeContent) {
+                try {
+                    const y = window.currentFinanceYear ?? new Date().getFullYear();
+                    const m = window.currentFinanceMonth ?? new Date().getMonth();
+                    const monthStart = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+                    const lastDay = new Date(y, m + 1, 0).getDate();
+                    const monthEnd = `${y}-${String(m + 1).padStart(2, '0')}-${lastDay}`;
+                    const profileId = window.currentFinanceProfileId || localStorage.getItem('finance_current_profile_id') || '';
+                    const dashboardResponse = await fetch(`${env.API_URL}/api/finance/dashboard?dateFrom=${monthStart}&dateTo=${monthEnd}${profileId ? `&profile_id=${profileId}` : ''}`, {
+                        headers: env.HEADERS_AUTH
+                    });
+                    if (dashboardResponse.ok) {
+                        const dashboardData = await dashboardResponse.json();
+                        const data = dashboardData.data || dashboardData;
+                        const totalRecebidoAposUpd = Number(data.totalRecebido !== undefined ? data.totalRecebido : data.totalIncomePaid) || ((Number(data.incomeFromTransactions || 0)) + (typeof window._kingFinanceRecebidoTrabalhosNoMes === 'function' ? window._kingFinanceRecebidoTrabalhosNoMes(window._kingFinanceDb || {}, y, m + 1) : 0));
+                        const despesasAposUpd = Number(data.totalExpensePaid !== undefined ? data.totalExpensePaid : data.totalPago) || (Number(data.totalExpense) || 0);
+                        const balanceUpd = totalRecebidoAposUpd - despesasAposUpd;
+                        const patrimonioUpd = Number(data.accountBalance !== undefined ? data.accountBalance : balanceUpd);
+                        const patrimonioEl = document.getElementById('finance-patrimonio-total');
+                        if (patrimonioEl) patrimonioEl.textContent = `R$ ${formatCurrency(patrimonioUpd)}`;
+                        const accountBalanceMainEl = document.getElementById('finance-account-balance-main');
+                        if (accountBalanceMainEl) accountBalanceMainEl.textContent = `R$ ${formatCurrency(patrimonioUpd)}`;
+                        const incomeCardEl = document.getElementById('finance-income-card');
+                        if (incomeCardEl) incomeCardEl.textContent = `+R$ ${formatCurrency(totalRecebidoAposUpd)}`;
+                        const expenseCardEl = document.getElementById('finance-expense-card');
+                        if (expenseCardEl) expenseCardEl.textContent = `-R$ ${formatCurrency(despesasAposUpd)}`;
+                        const balanceReceitasEl = document.getElementById('finance-balance-receitas');
+                        const balanceDespesasEl = document.getElementById('finance-balance-despesas');
+                        const balanceResultEl = document.getElementById('finance-balance-result');
+                        if (balanceReceitasEl) balanceReceitasEl.textContent = `R$ ${formatCurrency(totalRecebidoAposUpd)}`;
+                        if (balanceDespesasEl) balanceDespesasEl.textContent = `R$ ${formatCurrency(despesasAposUpd)}`;
+                        if (balanceResultEl) { balanceResultEl.textContent = `R$ ${formatCurrency(Math.abs(balanceUpd))}`; balanceResultEl.style.color = balanceUpd >= 0 ? '#22c55e' : '#ef4444'; }
+                    }
+                } catch (dashboardError) {
+                    console.warn('[FINANCE] Erro ao atualizar cards:', dashboardError);
+                }
+            }
+        } catch (reloadError) {
+            console.error('[FINANCE] Erro ao recarregar dados:', reloadError);
+        }
+
+        return false;
+
+    } catch (error) {
+        console.error('[FINANCE] Erro ao atualizar transação:', error);
+        showTransactionError(error.message || 'Erro ao atualizar transação. Verifique sua conexão e tente novamente.');
+
+        const submitBtn = document.getElementById('save-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check"></i> Salvar';
+            submitBtn.style.opacity = '1';
+        }
+        if (cancelBtn) cancelBtn.disabled = false;
+
+        return false;
+    }
+}
+
+
+// ============================================
+// FUNÇÕES DE GERENCIAMENTO DE PERFIS FINANCEIROS
+// ============================================
+
+window.showFinanceProfilesModal = async function () {
+    try {
+        // Buscar perfis disponíveis
+        const response = await fetch(`${env.API_URL}/api/finance/profiles`, {
+            headers: env.HEADERS_AUTH
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorData;
+            try {
+                errorData = JSON.parse(errorText);
+            } catch (e) {
+                errorData = { message: 'Erro ao carregar perfis' };
+            }
+            throw new Error(errorData.message || errorData.data?.message || 'Erro ao carregar perfis');
+        }
+
+        const responseData = await response.json();
+        const profiles = responseData.data || responseData || [];
+
+        // Criar modal
+        const modal = document.createElement('div');
+        modal.id = 'finance-profiles-modal';
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10002; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);';
+
+        const currentProfileId = window.currentFinanceProfileId || localStorage.getItem('finance_current_profile_id');
+
+        modal.innerHTML = `
+            <div style="background: var(--finance-card-dark, #16161a); border-radius: 24px; padding: 32px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <h2 style="color: var(--finance-text-primary, #f1f5f9); font-size: 1.5rem; font-weight: 700; margin: 0;">
+                        <i class="fas fa-layer-group" style="margin-right: 8px; color: var(--finance-indigo, #3b82f6);"></i>
+                        Perfis Financeiros
+                    </h2>
+                    <button onclick="document.getElementById('finance-profiles-modal').remove()" style="background: transparent; border: none; color: var(--finance-text-secondary, #64748b); font-size: 1.5rem; cursor: pointer; padding: 8px; transition: color 0.2s;" onmouseover="this.style.color='var(--finance-text-primary, #f1f5f9)'" onmouseout="this.style.color='var(--finance-text-secondary, #64748b)'">&times;</button>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
+                    ${profiles.map(profile => `
+                        <div onclick="switchFinanceProfile(${profile.id})" 
+                             style="display: flex; align-items: center; justify-content: space-between; padding: 16px; border-radius: 12px; border: 1px solid ${profile.id == currentProfileId ? 'rgba(59, 130, 246, 0.5)' : 'rgba(255,255,255,0.05)'}; background: ${profile.id == currentProfileId ? 'rgba(59, 130, 246, 0.1)' : 'transparent'}; cursor: pointer; transition: all 0.2s;"
+                             onmouseover="this.style.borderColor='rgba(59, 130, 246, 0.3)'; this.style.background='rgba(59, 130, 246, 0.05)'"
+                             onmouseout="this.style.borderColor='${profile.id == currentProfileId ? 'rgba(59, 130, 246, 0.5)' : 'rgba(255,255,255,0.05)'}'; this.style.background='${profile.id == currentProfileId ? 'rgba(59, 130, 246, 0.1)' : 'transparent'}'">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 40px; height: 40px; border-radius: 10px; background: ${profile.color || '#3b82f6'}20; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas ${profile.icon || 'fa-wallet'}" style="color: ${profile.color || '#3b82f6'}; font-size: 1.2rem;"></i>
+                                </div>
+                                <div>
+                                    <div style="color: var(--finance-text-primary, #f1f5f9); font-weight: 600; font-size: 0.95rem;">
+                                        ${profile.name} ${profile.is_primary ? '<span style="color: var(--finance-indigo, #3b82f6); font-size: 0.75rem;">(Principal)</span>' : ''}
+                                    </div>
+                                    ${profile.description ? `<div style="color: var(--finance-text-secondary, #64748b); font-size: 0.85rem; margin-top: 2px;">${profile.description}</div>` : ''}
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;" onclick="event.stopPropagation();">
+                                ${profile.id == currentProfileId ? '<i class="fas fa-check-circle" style="color: var(--finance-indigo, #3b82f6); font-size: 1.2rem;"></i>' : ''}
+                                <button type="button" onclick="event.stopPropagation(); deleteFinanceProfile(${profile.id}, '${(profile.name || '').replace(/'/g, "\\'")}');" style="padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(239,68,68,0.5); background: rgba(239,68,68,0.15); color: #ef4444; font-size: 0.8rem; font-weight: 600; cursor: pointer;" title="Excluir este perfil">Excluir</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button onclick="checkFinanceProfileLimitBeforeCreate()" style="flex: 1; padding: 14px; border-radius: 12px; border: 2px solid var(--finance-indigo, #3b82f6); background: rgba(59, 130, 246, 0.1); color: var(--finance-indigo, #3b82f6); cursor: pointer; font-weight: 700; transition: all 0.2s;" onmouseover="this.style.background='rgba(59, 130, 246, 0.2)'" onmouseout="this.style.background='rgba(59, 130, 246, 0.1)'">
+                        <i class="fas fa-plus" style="margin-right: 8px;"></i>
+                        Novo Perfil
+                    </button>
+                    <button onclick="document.getElementById('finance-profiles-modal').remove()" style="flex: 1; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: var(--finance-text-secondary, #64748b); cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.color='var(--finance-text-primary, #f1f5f9)'" onmouseout="this.style.color='var(--finance-text-secondary, #64748b)'">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Fechar ao clicar fora
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+
+        // Fechar com ESC
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                modal.remove();
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+
+    } catch (error) {
+        console.error('Erro ao carregar perfis:', error);
+        alert('Erro ao carregar perfis: ' + error.message);
+    }
+};
+
+window.switchFinanceProfile = async function (profileId) {
+    try {
+        // Salvar perfil atual
+        localStorage.setItem('finance_current_profile_id', profileId);
+        window.currentFinanceProfileId = profileId;
+
+        // Fechar modal
+        const modal = document.getElementById('finance-profiles-modal');
+        if (modal) modal.remove();
+
+        // Recarregar dashboard
+        if (window.initFinancePane) {
+            await window.initFinancePane();
+        }
+
+    } catch (error) {
+        console.error('Erro ao alternar perfil:', error);
+        alert('Erro ao alternar perfil: ' + error.message);
+    }
+};
+
+window.deleteFinanceProfile = async function (profileId, profileName) {
+    if (!confirm('Excluir o perfil "' + (profileName || '') + '"? As transações deste perfil permanecem, mas ele não aparecerá mais na lista. Não é possível excluir o único perfil.')) {
+        return;
+    }
+    try {
+        const res = await fetch(`${env.API_URL}/api/finance/profiles/${profileId}`, {
+            method: 'DELETE',
+            headers: env.HEADERS_AUTH
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.message || data.error?.message || 'Não foi possível excluir. Pode ser o único perfil.');
+            return;
+        }
+        const currentId = localStorage.getItem('finance_current_profile_id');
+        if (currentId === String(profileId)) {
+            localStorage.removeItem('finance_current_profile_id');
+            window.currentFinanceProfileId = null;
+        }
+        const modal = document.getElementById('finance-profiles-modal');
+        if (modal) modal.remove();
+        if (window.initFinancePane) await window.initFinancePane();
+        setTimeout(function () { if (window.showFinanceProfilesModal) window.showFinanceProfilesModal(); }, 400);
+    } catch (e) {
+        alert('Erro: ' + e.message);
+    }
+};
+
+window.checkFinanceProfileLimitBeforeCreate = async function () {
+    try {
+        // Verificar limite antes de mostrar modal de criação
+        const limitResponse = await fetch(`${env.API_URL}/api/finance/profiles/limit`, {
+            headers: env.HEADERS_AUTH
+        });
+
+        if (limitResponse.ok) {
+            const limitData = await limitResponse.json();
+            const limitInfo = limitData.data || {};
+
+            if (!limitInfo.canCreate) {
+                // Mostrar modal de upgrade
+                await showFinanceUpgradeModal(limitInfo);
+                return;
+            }
+        }
+
+        // Se pode criar, mostrar modal de criação
+        showCreateFinanceProfileModal();
+    } catch (error) {
+        console.error('Erro ao verificar limite:', error);
+        // Em caso de erro, permitir tentar criar (validação no backend)
+        showCreateFinanceProfileModal();
+    }
+};
+
+window.showCreateFinanceProfileModal = function () {
+    const modal = document.createElement('div');
+    modal.id = 'create-finance-profile-modal';
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10003; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);';
+
+    modal.innerHTML = `
+        <div style="background: var(--finance-card-dark, #16161a); border-radius: 24px; padding: 32px; max-width: 500px; width: 100%; border: 1px solid rgba(255,255,255,0.1);">
+            <h2 style="color: var(--finance-text-primary, #f1f5f9); font-size: 1.5rem; font-weight: 700; margin-bottom: 24px;">
+                <i class="fas fa-plus-circle" style="margin-right: 8px; color: var(--finance-indigo, #3b82f6);"></i>
+                Criar Novo Perfil
+            </h2>
+            
+            <form id="create-profile-form" onsubmit="event.preventDefault(); createFinanceProfile();">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; color: var(--finance-text-primary, #f1f5f9); margin-bottom: 8px; font-weight: 600;">Nome do Perfil</label>
+                    <input type="text" id="profile-name" required placeholder="Ex: Empresa, Família, Pessoal..." 
+                           style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: var(--finance-text-primary, #f1f5f9); font-size: 0.95rem;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; color: var(--finance-text-primary, #f1f5f9); margin-bottom: 8px; font-weight: 600;">Descrição (opcional)</label>
+                    <textarea id="profile-description" rows="2" placeholder="Descreva este perfil financeiro..."
+                              style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: var(--finance-text-primary, #f1f5f9); font-size: 0.95rem; resize: vertical;"></textarea>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; color: var(--finance-text-primary, #f1f5f9); margin-bottom: 8px; font-weight: 600;">Cor</label>
+                    <input type="color" id="profile-color" value="#3b82f6" 
+                           style="width: 100%; height: 50px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
+                </div>
+                
+                <div style="margin-bottom: 24px;">
+                    <label style="display: block; color: var(--finance-text-primary, #f1f5f9); margin-bottom: 8px; font-weight: 600;">Ícone</label>
+                    <select id="profile-icon" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: var(--finance-text-primary, #f1f5f9); font-size: 0.95rem;">
+                        <option value="fa-wallet">Carteira</option>
+                        <option value="fa-building">Empresa</option>
+                        <option value="fa-home">Casa</option>
+                        <option value="fa-users">Família</option>
+                        <option value="fa-briefcase">Trabalho</option>
+                        <option value="fa-piggy-bank">Poupança</option>
+                        <option value="fa-chart-line">Investimentos</option>
+                    </select>
+                </div>
+                
+                <div style="display: flex; gap: 12px;">
+                    <button type="button" onclick="document.getElementById('create-finance-profile-modal').remove()" 
+                            style="flex: 1; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: var(--finance-text-secondary, #64748b); cursor: pointer; font-weight: 600;">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            style="flex: 2; padding: 14px; border-radius: 12px; border: none; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; cursor: pointer; font-weight: 700;">
+                        Criar Perfil
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Fechar ao clicar fora
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+};
+
+window.createFinanceProfile = async function () {
+    try {
+        const name = document.getElementById('profile-name').value.trim();
+        const description = document.getElementById('profile-description').value.trim();
+        const color = document.getElementById('profile-color').value;
+        const icon = document.getElementById('profile-icon').value;
+
+        if (!name) {
+            alert('Por favor, informe um nome para o perfil');
+            return;
+        }
+
+        const response = await fetch(`${env.API_URL}/api/finance/profiles`, {
+            method: 'POST',
+            headers: {
+                ...env.HEADERS_AUTH,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name,
+                description: description || null,
+                color,
+                icon,
+                is_primary: false
+            })
+        });
+
+        if (!response.ok) {
+            let errorData;
+            try {
+                const responseText = await response.text();
+                errorData = JSON.parse(responseText);
+            } catch (e) {
+                errorData = { error: { message: 'Erro ao criar perfil' } };
+            }
+
+            // Verificar se é erro de limite
+            // O erro pode estar em errorData.error ou errorData diretamente
+            const errorObj = errorData.error || errorData;
+            const isLimitError = errorObj.code === 'FINANCE_PROFILE_LIMIT_REACHED' ||
+                errorObj.upgradeRequired === true;
+
+            if (isLimitError) {
+                // Extrair informações de limite
+                const limitInfo = {
+                    currentCount: errorObj.currentCount,
+                    limit: errorObj.limit,
+                    upgradeRequired: true
+                };
+
+                // Fechar modal de criação
+                const createModal = document.getElementById('create-finance-profile-modal');
+                if (createModal) createModal.remove();
+
+                // Mostrar modal de upgrade
+                await showFinanceUpgradeModal(limitInfo);
+                return;
+            }
+
+            // Extrair mensagem de erro de forma segura
+            let errorMessage = 'Erro ao criar perfil';
+            if (errorObj && typeof errorObj.message === 'string') {
+                errorMessage = errorObj.message;
+            } else if (errorData && typeof errorData.message === 'string') {
+                errorMessage = errorData.message;
+            } else if (typeof errorObj === 'string') {
+                errorMessage = errorObj;
+            }
+
+            alert('Erro ao criar perfil: ' + errorMessage);
+            // Não lançar erro aqui, apenas mostrar o alert
+            return;
+        }
+
+        // Fechar modal de criação
+        const createModal = document.getElementById('create-finance-profile-modal');
+        if (createModal) createModal.remove();
+
+        // Recarregar modal de perfis
+        const profilesModal = document.getElementById('finance-profiles-modal');
+        if (profilesModal) profilesModal.remove();
+
+        // Mostrar modal de perfis novamente com o novo perfil
+        await showFinanceProfilesModal();
+
+    } catch (error) {
+        console.error('Erro ao criar perfil:', error);
+        // Tratar erro de forma mais amigável
+        let errorMessage = 'Erro ao criar perfil';
+        if (error.message) {
+            if (typeof error.message === 'string') {
+                errorMessage = error.message;
+            } else if (typeof error.message === 'object') {
+                errorMessage = error.message.message || JSON.stringify(error.message);
+            }
+        } else if (typeof error === 'object') {
+            errorMessage = error.message || JSON.stringify(error);
+        }
+        alert('Erro ao criar perfil: ' + errorMessage);
+    }
+};
+
+window.showFinanceUpgradeModal = async function (limitInfo = null) {
+    try {
+        // Buscar informações de limite se não fornecidas
+        if (!limitInfo) {
+            const limitResponse = await fetch(`${env.API_URL}/api/finance/profiles/limit`, {
+                headers: env.HEADERS_AUTH
+            });
+            if (limitResponse.ok) {
+                const limitData = await limitResponse.json();
+                limitInfo = limitData.data || limitInfo;
+            }
+        }
+
+        // Buscar planos de upgrade
+        const plansResponse = await fetch(`${env.API_URL}/api/finance/upgrade-plans`, {
+            headers: env.HEADERS_AUTH
+        });
+
+        let upgradePlans = [];
+        if (plansResponse.ok) {
+            const plansData = await plansResponse.json();
+            upgradePlans = plansData.data || [];
+        }
+
+        // Criar modal de upgrade
+        const modal = document.createElement('div');
+        modal.id = 'finance-upgrade-modal';
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10004; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); overflow-y: auto;';
+
+        modal.innerHTML = `
+            <div style="background: var(--finance-card-dark, #16161a); border-radius: 24px; padding: 40px; max-width: 800px; width: 100%; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.8);">
+                <div style="text-align: center; margin-bottom: 32px;">
+                    <div style="width: 80px; height: 80px; border-radius: 20px; background: transparent; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                        <img src="/logo.png" alt="Conecta King" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                    </div>
+                    <h2 style="color: var(--finance-text-primary, #f1f5f9); font-size: 2rem; font-weight: 700; margin-bottom: 12px;">
+                        Upgrade Necessário
+                    </h2>
+                    <p style="color: var(--finance-text-secondary, #64748b); font-size: 1rem; line-height: 1.6;">
+                        Você atingiu o limite de ${limitInfo?.limit || 1} perfil${limitInfo?.limit > 1 ? 's' : ''} financeiro${limitInfo?.limit > 1 ? 's' : ''} do seu plano atual.<br>
+                        Faça upgrade para criar mais perfis e organizar melhor suas finanças!
+                    </p>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 32px;">
+                    ${upgradePlans.map(plan => {
+            const maxProfiles = plan.features?.max_finance_profiles || 1;
+            return `
+                            <div style="background: rgba(255,255,255,0.03); border: 2px solid rgba(59, 130, 246, 0.3); border-radius: 16px; padding: 24px; transition: all 0.3s; cursor: pointer;"
+                                 onmouseover="this.style.borderColor='rgba(59, 130, 246, 0.6)'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 10px 30px rgba(59, 130, 246, 0.2)'"
+                                 onmouseout="this.style.borderColor='rgba(59, 130, 246, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'"
+                                 onclick="selectUpgradePlan('${plan.plan_code}', ${plan.price}, '${plan.whatsapp_number || ''}', '${(plan.whatsapp_message || '').replace(/'/g, "\\'")}')">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+                                    <div>
+                                        <h3 style="color: var(--finance-text-primary, #f1f5f9); font-size: 1.25rem; font-weight: 700; margin-bottom: 4px;">
+                                            ${plan.plan_name}
+                                        </h3>
+                                        <p style="color: var(--finance-text-secondary, #64748b); font-size: 0.875rem;">
+                                            ${maxProfiles} perfil${maxProfiles > 1 ? 's' : ''} na Separação de pacotes
+                                        </p>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="color: var(--finance-indigo, #3b82f6); font-size: 1.75rem; font-weight: 700;">
+                                            R$ ${parseFloat(plan.price).toFixed(2).replace('.', ',')}
+                                        </div>
+                                        <div style="color: var(--finance-text-secondary, #64748b); font-size: 0.75rem;">
+                                            /mês
+                                        </div>
+                                    </div>
+                                </div>
+                                <p style="color: var(--finance-text-secondary, #64748b); font-size: 0.875rem; margin-bottom: 16px; line-height: 1.5;">
+                                    ${plan.description || ''}
+                                </p>
+                                <div style="display: flex; align-items: center; gap: 8px; color: var(--finance-indigo, #3b82f6); font-weight: 600; font-size: 0.9rem;">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Acesso a todos os módulos</span>
+                                </div>
+                            </div>
+                        `;
+        }).join('')}
+                </div>
+                
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button onclick="document.getElementById('finance-upgrade-modal').remove()" 
+                            style="padding: 14px 28px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: var(--finance-text-secondary, #64748b); cursor: pointer; font-weight: 600; transition: all 0.2s;"
+                            onmouseover="this.style.color='var(--finance-text-primary, #f1f5f9)'"
+                            onmouseout="this.style.color='var(--finance-text-secondary, #64748b)'">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Fechar ao clicar fora
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+
+        // Fechar com ESC
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                modal.remove();
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+
+    } catch (error) {
+        console.error('Erro ao mostrar modal de upgrade:', error);
+        alert('Erro ao carregar informações de upgrade: ' + error.message);
+    }
+};
+
+window.selectUpgradePlan = function (planCode, price, whatsappNumber, whatsappMessage) {
+    // Fechar modal de upgrade
+    const upgradeModal = document.getElementById('finance-upgrade-modal');
+    if (upgradeModal) upgradeModal.remove();
+
+    // Criar modal de confirmação com opção de WhatsApp
+    const confirmModal = document.createElement('div');
+    confirmModal.id = 'finance-upgrade-confirm-modal';
+    confirmModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10005; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px);';
+
+    // Usar mensagem personalizada se disponível, senão usar mensagem padrão
+    const defaultMsg = `Olá! Gostaria de fazer upgrade para o plano ${planCode} (R$ ${price.toFixed(2).replace('.', ',')}) para ter acesso a mais perfis na Separação de pacotes.`;
+    const whatsappMsg = encodeURIComponent(whatsappMessage || defaultMsg);
+    const whatsappUrl = whatsappNumber
+        ? `https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${whatsappMsg}`
+        : `https://wa.me/5511999999999?text=${whatsappMsg}`;
+
+    confirmModal.innerHTML = `
+        <div style="background: var(--finance-card-dark, #16161a); border-radius: 24px; padding: 40px; max-width: 500px; width: 100%; border: 1px solid rgba(255,255,255,0.1); text-align: center;">
+            <div style="width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; box-shadow: 0 10px 30px rgba(37, 211, 102, 0.4);">
+                <i class="fab fa-whatsapp" style="font-size: 2rem; color: white;"></i>
+            </div>
+            <h2 style="color: var(--finance-text-primary, #f1f5f9); font-size: 1.5rem; font-weight: 700; margin-bottom: 16px;">
+                Solicitar Upgrade
+            </h2>
+            <p style="color: var(--finance-text-secondary, #64748b); font-size: 1rem; margin-bottom: 32px; line-height: 1.6;">
+                Clique no botão abaixo para enviar uma mensagem no WhatsApp e solicitar o upgrade do seu plano.
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <a href="${whatsappUrl}" target="_blank" 
+                   style="display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px 24px; border-radius: 12px; border: none; background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: white; font-weight: 700; font-size: 1rem; text-decoration: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3);"
+                   onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(37, 211, 102, 0.4)'"
+                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 16px rgba(37, 211, 102, 0.3)'">
+                    <i class="fab fa-whatsapp" style="font-size: 1.25rem;"></i>
+                    Enviar para WhatsApp
+                </a>
+                <button onclick="document.getElementById('finance-upgrade-confirm-modal').remove()" 
+                        style="padding: 14px 24px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: var(--finance-text-secondary, #64748b); cursor: pointer; font-weight: 600;">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(confirmModal);
+
+    // Fechar ao clicar fora
+    confirmModal.addEventListener('click', (e) => {
+        if (e.target === confirmModal) {
+            confirmModal.remove();
+        }
+    });
+};
+
+window.showWhatsAppConfigModal = async function () {
+    try {
+        // Buscar configurações atuais
+        const response = await fetch(`${env.API_URL}/api/finance/whatsapp-config`, {
+            headers: env.HEADERS_AUTH
+        });
+
+        if (!response.ok) {
+            if (response.status === 403) {
+                alert('Acesso negado. Apenas administradores podem acessar esta configuração.');
+                return;
+            }
+            throw new Error('Erro ao carregar configurações');
+        }
+
+        const responseData = await response.json();
+        const configs = responseData.data || [];
+
+        // Criar modal
+        const modal = document.createElement('div');
+        modal.id = 'whatsapp-config-modal';
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10006; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); overflow-y: auto;';
+
+        modal.innerHTML = `
+            <div style="background: var(--finance-card-dark, #16161a); border-radius: 24px; padding: 40px; max-width: 800px; width: 100%; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.8);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+                    <h2 style="color: var(--finance-text-primary, #f1f5f9); font-size: 2rem; font-weight: 700; margin: 0;">
+                        <i class="fab fa-whatsapp" style="color: #25D366; margin-right: 12px;"></i>
+                        Configuração de WhatsApp
+                    </h2>
+                    <button onclick="document.getElementById('whatsapp-config-modal').remove()" style="background: transparent; border: none; color: var(--finance-text-secondary, #64748b); font-size: 1.5rem; cursor: pointer; padding: 8px; transition: color 0.2s;" onmouseover="this.style.color='var(--finance-text-primary, #f1f5f9)'" onmouseout="this.style.color='var(--finance-text-secondary, #64748b)'">&times;</button>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 24px;">
+                    ${configs.map(config => `
+                        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px;">
+                            <h3 style="color: var(--finance-text-primary, #f1f5f9); font-size: 1.25rem; font-weight: 700; margin-bottom: 20px;">
+                                ${config.plan_name}
+                            </h3>
+                            
+                            <form id="whatsapp-config-form-${config.plan_code}" onsubmit="event.preventDefault(); saveWhatsAppConfig('${config.plan_code}');" style="display: flex; flex-direction: column; gap: 16px;">
+                                <div>
+                                    <label style="display: block; color: var(--finance-text-secondary, #64748b); font-size: 0.875rem; font-weight: 600; margin-bottom: 8px;">Número do WhatsApp</label>
+                                    <input type="text" id="whatsapp-number-${config.plan_code}" value="${config.whatsapp_number || ''}" 
+                                           placeholder="5511999999999" 
+                                           style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: var(--finance-text-primary, #f1f5f9); font-size: 0.95rem;">
+                                </div>
+                                
+                                <div>
+                                    <label style="display: block; color: var(--finance-text-secondary, #64748b); font-size: 0.875rem; font-weight: 600; margin-bottom: 8px;">Mensagem Personalizada</label>
+                                    <textarea id="whatsapp-message-${config.plan_code}" rows="4" 
+                                              placeholder="Digite a mensagem que será enviada quando o usuário solicitar este plano..."
+                                              style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: var(--finance-text-primary, #f1f5f9); font-size: 0.95rem; resize: vertical; font-family: inherit;">${config.whatsapp_message || ''}</textarea>
+                                </div>
+                                
+                                <button type="submit" style="padding: 14px 24px; border-radius: 12px; border: none; background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: white; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(37, 211, 102, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 16px rgba(37, 211, 102, 0.3)'">
+                                    <i class="fas fa-save" style="margin-right: 8px;"></i>
+                                    Salvar Configuração
+                                </button>
+                            </form>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div style="display: flex; gap: 12px; justify-content: center; margin-top: 32px;">
+                    <button onclick="document.getElementById('whatsapp-config-modal').remove()" 
+                            style="padding: 14px 28px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: var(--finance-text-secondary, #64748b); cursor: pointer; font-weight: 600; transition: all 0.2s;"
+                            onmouseover="this.style.color='var(--finance-text-primary, #f1f5f9)'"
+                            onmouseout="this.style.color='var(--finance-text-secondary, #64748b)'">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Fechar ao clicar fora
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+
+        // Fechar com ESC
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                modal.remove();
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+
+    } catch (error) {
+        console.error('Erro ao mostrar modal de configuração:', error);
+        alert('Erro ao carregar configurações: ' + error.message);
+    }
+};
+
+window.saveWhatsAppConfig = async function (planCode) {
+    try {
+        const whatsappNumber = document.getElementById(`whatsapp-number-${planCode}`).value.trim();
+        const whatsappMessage = document.getElementById(`whatsapp-message-${planCode}`).value.trim();
+
+        if (!whatsappNumber || !whatsappMessage) {
+            alert('Por favor, preencha todos os campos.');
+            return;
+        }
+
+        const response = await fetch(`${env.API_URL}/api/finance/whatsapp-config`, {
+            method: 'PUT',
+            headers: {
+                ...env.HEADERS_AUTH,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                plan_code: planCode,
+                whatsapp_number: whatsappNumber,
+                whatsapp_message: whatsappMessage
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Erro ao salvar configuração' }));
+            throw new Error(errorData.message || 'Erro ao salvar configuração');
+        }
+
+        alert('Configuração salva com sucesso!');
+
+        // Recarregar modal para mostrar dados atualizados
+        const modal = document.getElementById('whatsapp-config-modal');
+        if (modal) modal.remove();
+        await showWhatsAppConfigModal();
+
+    } catch (error) {
+        console.error('Erro ao salvar configuração:', error);
+        alert('Erro ao salvar configuração: ' + error.message);
+    }
+};
+
+// Modal de escolha: Entrada ou Saída (estilo Gestão Financeira - azulado), depois abre o modal completo de lançamento
+window.showNovoLancamentoChoiceModal = function () {
+    const overlay = document.createElement('div');
+    overlay.id = 'novo-lancamento-choice-overlay';
+    overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 10, 12, 0.88); z-index: 10005; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(10px);';
+    overlay.innerHTML = `
+        <div style="background: var(--finance-card-dark, #16161a); border: 1px solid var(--finance-border); border-radius: 24px; padding: 32px; max-width: 520px; width: 100%; box-shadow: var(--finance-card-shadow);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div>
+                    <h2 style="color: var(--finance-text-primary, #f1f5f9); font-size: 1.35rem; font-weight: 800; margin: 0 0 4px 0; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-plus-circle" style="color: var(--finance-indigo, #3b82f6);"></i> Novo Lançamento Financeiro
+                    </h2>
+                    <p style="color: var(--finance-text-secondary, #64748b); font-size: 0.85rem; margin: 0;">Selecione o tipo de registro que deseja realizar:</p>
+                </div>
+                <button type="button" id="choice-close-x" style="background: none; border: none; color: var(--finance-text-secondary); font-size: 1.25rem; cursor: pointer; padding: 4px;"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+                <!-- Opção 1: Entrada / Receita Avulsa -->
+                <button type="button" id="choice-entrada" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 18px; background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 16px; color: #22c55e; cursor: pointer; transition: all 0.2s; text-align: left;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(34, 197, 94, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                    <span style="font-size: 1rem; font-weight: 700; color: var(--finance-text-primary);">Receita (Entrada)</span>
+                    <span style="font-size: 0.75rem; color: var(--finance-text-secondary); line-height: 1.3;">Entrada de dinheiro à vista ou pix no caixa</span>
+                </button>
+
+                <!-- Opção 2: Saída / Despesa -->
+                <button type="button" id="choice-saida" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 18px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 16px; color: #ef4444; cursor: pointer; transition: all 0.2s; text-align: left;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(239, 68, 68, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+                    <span style="font-size: 1rem; font-weight: 700; color: var(--finance-text-primary);">Despesa (Saída)</span>
+                    <span style="font-size: 0.75rem; color: var(--finance-text-secondary); line-height: 1.3;">Gasto do dia a dia, fixo ou no cartão</span>
+                </button>
+
+                <!-- Opção 3: Trabalho / A Receber -->
+                <button type="button" id="choice-trabalho" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 18px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 16px; color: #3b82f6; cursor: pointer; transition: all 0.2s; text-align: left;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(59, 130, 246, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <span style="font-size: 1rem; font-weight: 700; color: var(--finance-text-primary);">A Receber (Trabalho)</span>
+                    <span style="font-size: 0.75rem; color: var(--finance-text-secondary); line-height: 1.3;">Cliente com valor total, sinal e saldo a receber</span>
+                </button>
+
+                <!-- Opção 4: Conta a Pagar / Quem Eu Devo -->
+                <button type="button" id="choice-terceiro" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 18px; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 16px; color: #a855f7; cursor: pointer; transition: all 0.2s; text-align: left;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(168, 85, 247, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
+                        <i class="fas fa-hand-holding-usd"></i>
+                    </div>
+                    <span style="font-size: 1rem; font-weight: 700; color: var(--finance-text-primary);">A Pagar (Quem Devo)</span>
+                    <span style="font-size: 0.75rem; color: var(--finance-text-secondary); line-height: 1.3;">Parcelas futuras de cartão ou pessoas físicas</span>
+                </button>
+            </div>
+
+            <button type="button" id="choice-cancel" style="width: 100%; padding: 12px; background: transparent; border: 1px solid var(--finance-border); border-radius: 12px; color: var(--finance-text-secondary); font-size: 0.9rem; font-weight: 600; cursor: pointer;">Cancelar</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const bindTapChoice = (btnId, fn) => {
+        const el = overlay.querySelector(btnId);
+        if (!el) return;
+        let tTime = 0;
+        el.style.touchAction = 'manipulation';
+        el.style.webkitTapHighlightColor = 'transparent';
+        el.style.userSelect = 'none';
+        el.addEventListener('touchend', function (e) {
+            tTime = Date.now();
+            e.preventDefault();
+            fn();
+        }, { passive: false });
+        el.addEventListener('click', function () {
+            if (Date.now() - tTime < 350) return;
+            fn();
+        });
+    };
+
+    bindTapChoice('#choice-close-x', function () { overlay.remove(); });
+    bindTapChoice('#choice-cancel', function () { overlay.remove(); });
+
+    bindTapChoice('#choice-entrada', function () {
+        overlay.remove();
+        if (window.openAddTransactionModal) window.openAddTransactionModal('income');
+    });
+    bindTapChoice('#choice-saida', function () {
+        overlay.remove();
+        if (window.openAddTransactionModal) window.openAddTransactionModal('expense');
+    });
+    bindTapChoice('#choice-trabalho', function () {
+        overlay.remove();
+        if (window.switchUnifiedFinanceTab) window.switchUnifiedFinanceTab('trabalhos');
+        if (window._kingFinanceOpenModal) window._kingFinanceOpenModal('trabalho');
+    });
+    bindTapChoice('#choice-terceiro', function () {
+        overlay.remove();
+        if (window.switchUnifiedFinanceTab) window.switchUnifiedFinanceTab('terceiros');
+        if (window._kingFinanceOpenModal) window._kingFinanceOpenModal('terceiro');
+    });
+
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+    document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', esc); } });
+};
+
+// Zerar mês: exige senha para acessar a página de Gestão do mês
+window.showZerarMesModal = function () {
+    const monthIdx = typeof window.currentFinanceMonth === 'number' ? window.currentFinanceMonth : new Date().getMonth();
+    const year = typeof window.currentFinanceYear === 'number' ? window.currentFinanceYear : new Date().getFullYear();
+    const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const monthLabel = monthNames[monthIdx] + ' ' + year;
+    const modal = document.createElement('div');
+    modal.id = 'zerar-mes-modal';
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10006; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px);';
+    modal.innerHTML = `
+        <div style="background: var(--finance-card-dark, #16161a); border-radius: 24px; padding: 32px; max-width: 420px; width: 100%; border: 1px solid rgba(239,68,68,0.3); box-shadow: 0 20px 60px rgba(0,0,0,0.8);">
+            <h2 style="color: var(--finance-text-primary, #f1f5f9); font-size: 1.35rem; font-weight: 700; margin: 0 0 8px 0;">
+                <i class="fas fa-eraser" style="color: #ef4444; margin-right: 10px;"></i>Zerar mês
+            </h2>
+            <p style="color: var(--finance-text-secondary, #64748b); font-size: 0.9rem; margin-bottom: 20px;">Digite a senha para acessar a <strong>Gestão do mês</strong> (${monthLabel}). Lá você pode ver e excluir os lançamentos que quiser.</p>
+            <form id="zerar-mes-form" onsubmit="event.preventDefault(); confirmZerarMesAcesso();">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; color: var(--finance-text-secondary); font-size: 0.875rem; font-weight: 600; margin-bottom: 6px;">Senha</label>
+                    <input type="password" id="zerar-mes-password" placeholder="Digite a senha (padrão: 1212)" autocomplete="off"
+                           style="width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); color: var(--finance-text-primary); font-size: 1rem;">
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button type="button" onclick="document.getElementById('zerar-mes-modal').remove()" style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: var(--finance-text-secondary); font-weight: 600; cursor: pointer;">Cancelar</button>
+                    <button type="submit" style="flex: 1; padding: 12px; border-radius: 12px; border: none; background: #ef4444; color: white; font-weight: 700; cursor: pointer;">Acessar</button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    document.getElementById('zerar-mes-password').focus();
+};
+window.confirmZerarMesAcesso = async function () {
+    const pwd = document.getElementById('zerar-mes-password');
+    if (!pwd || !pwd.value.trim()) {
+        alert('Digite a senha para acessar.');
+        return;
+    }
+    const monthIdx = typeof window.currentFinanceMonth === 'number' ? window.currentFinanceMonth : new Date().getMonth();
+    const year = typeof window.currentFinanceYear === 'number' ? window.currentFinanceYear : new Date().getFullYear();
+    const month = monthIdx + 1;
+    try {
+        const res = await fetch(`${env.API_URL}/api/finance/zerar-senha/verify`, {
+            method: 'POST',
+            headers: { ...env.HEADERS_AUTH, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pwd.value.trim() })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.message || (data.error && data.error.message) || data.error || 'Senha incorreta.');
+            return;
+        }
+        document.getElementById('zerar-mes-modal')?.remove();
+        window.location.href = `/zerar-mes?month=${month}&year=${year}`;
+    } catch (e) {
+        alert('Erro de conexão: ' + e.message);
+    }
+};
+
+// Alterar senha de zerar
+window.showAlterarSenhaZerarModal = function () {
+    const modal = document.createElement('div');
+    modal.id = 'alterar-senha-zerar-modal';
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10006; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px);';
+    modal.innerHTML = `
+        <div style="background: var(--finance-card-dark, #16161a); border-radius: 24px; padding: 32px; max-width: 420px; width: 100%; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.8);">
+            <h2 style="color: var(--finance-text-primary, #f1f5f9); font-size: 1.35rem; font-weight: 700; margin: 0 0 20px 0;">
+                <i class="fas fa-key" style="color: var(--finance-indigo, #3b82f6); margin-right: 10px;"></i>Alterar senha de zerar mês
+            </h2>
+            <p style="color: var(--finance-text-secondary); font-size: 0.85rem; margin-bottom: 20px;">Senha usada para confirmar "Zerar mês". Mínimo 4 caracteres.</p>
+            <form id="alterar-senha-zerar-form" onsubmit="event.preventDefault(); confirmAlterarSenhaZerar();">
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; color: var(--finance-text-secondary); font-size: 0.875rem; font-weight: 600; margin-bottom: 6px;">Senha atual</label>
+                    <input type="password" id="alterar-senha-atual" placeholder="Senha atual" autocomplete="off"
+                           style="width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); color: var(--finance-text-primary); font-size: 1rem;">
+                </div>
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; color: var(--finance-text-secondary); font-size: 0.875rem; font-weight: 600; margin-bottom: 6px;">Nova senha</label>
+                    <input type="password" id="alterar-senha-nova" placeholder="Nova senha (mín. 4 caracteres)" autocomplete="off"
+                           style="width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); color: var(--finance-text-primary); font-size: 1rem;">
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button type="button" onclick="document.getElementById('alterar-senha-zerar-modal').remove()" style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: var(--finance-text-secondary); font-weight: 600; cursor: pointer;">Cancelar</button>
+                    <button type="submit" style="flex: 1; padding: 12px; border-radius: 12px; border: none; background: var(--finance-indigo, #3b82f6); color: white; font-weight: 700; cursor: pointer;">Alterar senha</button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    document.getElementById('alterar-senha-atual').focus();
+};
+window.confirmAlterarSenhaZerar = async function () {
+    const atual = document.getElementById('alterar-senha-atual');
+    const nova = document.getElementById('alterar-senha-nova');
+    if (!atual?.value?.trim() || !nova?.value?.trim()) {
+        alert('Preencha a senha atual e a nova senha.');
+        return;
+    }
+    if (nova.value.trim().length < 4) {
+        alert('A nova senha deve ter no mínimo 4 caracteres.');
+        return;
+    }
+    try {
+        const res = await fetch(`${env.API_URL}/api/finance/zerar-senha`, {
+            method: 'PUT',
+            headers: { ...env.HEADERS_AUTH, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ currentPassword: atual.value.trim(), newPassword: nova.value.trim() })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.message || data.error || 'Erro ao alterar senha.');
+            return;
+        }
+        document.getElementById('alterar-senha-zerar-modal')?.remove();
+        alert('Senha alterada com sucesso.');
+    } catch (e) {
+        alert('Erro de conexão: ' + e.message);
+    }
+};
+
+// Admin: ver senhas dos clientes (Gestão Financeira)
+window.showAdminVerSenhasModal = async function () {
+    try {
+        const res = await fetch(`${env.API_URL}/api/finance/admin/clientes-senhas`, { headers: env.HEADERS_AUTH });
+        if (!res.ok) {
+            if (res.status === 403) {
+                alert('Acesso negado. Apenas administradores.');
+                return;
+            }
+            throw new Error('Erro ao carregar lista');
+        }
+        const json = await res.json();
+        const list = json.data || json || [];
+        const modal = document.createElement('div');
+        modal.id = 'admin-senhas-modal';
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10006; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); overflow-y: auto;';
+        modal.innerHTML = `
+            <div style="background: var(--finance-card-dark, #16161a); border-radius: 24px; padding: 32px; max-width: 700px; width: 100%; border: 1px solid rgba(139,92,246,0.3); box-shadow: 0 20px 60px rgba(0,0,0,0.8);">
+                <h2 style="color: var(--finance-text-primary); font-size: 1.35rem; font-weight: 700; margin: 0 0 20px 0;">
+                    <i class="fas fa-list" style="color: #8b5cf6; margin-right: 10px;"></i>Senhas de zerar mês (Gestão Financeira)
+                </h2>
+                <p style="color: var(--finance-text-secondary); font-size: 0.85rem; margin-bottom: 20px;">Clientes com Gestão Financeira. Senhas personalizadas não são exibidas em claro — apenas se usam o padrão 1212 ou não.</p>
+                <div style="max-height: 400px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <th style="text-align: left; padding: 12px; color: var(--finance-text-secondary); font-size: 0.75rem; text-transform: uppercase;">Cliente</th>
+                                <th style="text-align: left; padding: 12px; color: var(--finance-text-secondary); font-size: 0.75rem; text-transform: uppercase;">E-mail</th>
+                                <th style="text-align: left; padding: 12px; color: var(--finance-text-secondary); font-size: 0.75rem; text-transform: uppercase;">Senha zerar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-senhas-tbody">
+                            ${list.length === 0 ? '<tr><td colspan="3" style="padding: 24px; text-align: center; color: var(--finance-text-secondary);">Nenhum cliente com Gestão Financeira ainda.</td></tr>' : list.map(r => `
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <td style="padding: 12px; color: var(--finance-text-primary);">${(r.full_name || '-').replace(/</g, '&lt;')}</td>
+                                <td style="padding: 12px; color: var(--finance-text-secondary); font-size: 0.9rem;">${(r.email || '-').replace(/</g, '&lt;')}</td>
+                                <td style="padding: 12px; color: #8b5cf6; font-weight: 600;">${(r.password_label || (r.uses_default_password !== false ? 'Padrão (1212)' : 'Personalizada')).replace(/</g, '&lt;')}</td>
+                            </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 24px; text-align: center;">
+                    <button type="button" onclick="document.getElementById('admin-senhas-modal').remove()" style="padding: 12px 28px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: var(--finance-text-secondary); font-weight: 600; cursor: pointer;">Fechar</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    } catch (e) {
+        console.error(e);
+        alert('Erro ao carregar lista: ' + e.message);
+    }
+};
+
+// Auto-inicializar imediatamente se o painel de finanças já estiver ativo e aguardando renderização
+try {
+    if (typeof document !== 'undefined') {
+        const checkAutoInit = function () {
+            const finPane = document.getElementById('finance-pane');
+            const finContent = document.getElementById('finance-content');
+            if (finPane && (finPane.classList.contains('active') || finPane.style.display === 'flex')) {
+                if (finContent && (finContent.children.length === 0 || finContent.innerHTML.includes('Carregando módulo financeiro...'))) {
+                    if (typeof window.initFinancePane === 'function') {
+                        window.initFinancePane();
+                    }
+                }
+            }
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', checkAutoInit);
+        } else {
+            checkAutoInit();
+        }
+        setTimeout(checkAutoInit, 100);
+    }
+} catch (_) { }
+
+})(typeof window !== 'undefined' ? window : this);
+
+// Gestão de Tema: Claro / Escuro (Persistente)
+window.toggleFinanceTheme = function () {
+    var cur = localStorage.getItem('ck_finance_theme') || localStorage.getItem('theme') || (document.body.classList.contains('light-theme') ? 'light' : 'dark');
+    var next = cur === 'light' ? 'dark' : 'light';
+    try {
+        localStorage.setItem('ck_finance_theme', next);
+        localStorage.setItem('theme', next);
+    } catch (e) {}
+    window.applyFinanceTheme(next);
+};
+
+window.applyFinanceTheme = function (theme) {
+    var t = theme || localStorage.getItem('ck_finance_theme') || localStorage.getItem('theme') || (document.body.classList.contains('light-theme') ? 'light' : 'dark');
+    var isLight = t === 'light';
+
+    if (typeof document !== 'undefined' && document.body) {
+        if (isLight) {
+            document.body.classList.add('light-theme');
+        } else {
+            document.body.classList.remove('light-theme');
+        }
+    }
+
+    var pane = document.getElementById('finance-content');
+    if (pane) {
+        pane.classList.remove('finance-theme-dark', 'finance-theme-light');
+        pane.classList.add('finance-theme-' + (isLight ? 'light' : 'dark'));
+    }
+
+    var btn = document.getElementById('finance-theme-toggle-btn');
+    if (btn) {
+        if (isLight) {
+            btn.innerHTML = '<i class="fas fa-moon" style="color: #6366f1;"></i> <span>Modo Dark</span>';
+            btn.setAttribute('title', 'Alternar para Modo Escuro');
+        } else {
+            btn.innerHTML = '<i class="fas fa-sun" style="color: #f59e0b;"></i> <span>Modo Claro</span>';
+            btn.setAttribute('title', 'Alternar para Modo Claro');
+        }
+    }
+
+    var activeTab = window._financeActiveTab || 'resumo';
+    document.querySelectorAll('.finance-unified-tab').forEach(function (tabBtn) {
+        var isActive = tabBtn.getAttribute('data-finance-tab') === activeTab;
+        tabBtn.classList.toggle('active', isActive);
+        tabBtn.style.background = isActive ? 'var(--finance-indigo)' : 'var(--finance-tab-inactive-bg)';
+        tabBtn.style.color = isActive ? 'var(--finance-tab-active-text, #ffffff)' : 'var(--finance-tab-inactive-text)';
+    });
+};
+
+// Inicialização imediata do tema na carga
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof window.applyFinanceTheme === 'function') window.applyFinanceTheme();
+        });
+    } else {
+        if (typeof window.applyFinanceTheme === 'function') window.applyFinanceTheme();
+    }
+}
+
+// Sincronização entre abas e mudanças externas no document.body
+if (typeof window !== 'undefined') {
+    window.addEventListener('storage', function (e) {
+        if (e.key === 'theme' || e.key === 'ck_finance_theme') {
+            if (typeof window.applyFinanceTheme === 'function') window.applyFinanceTheme(e.newValue);
+        }
+    });
+
+    if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined' && document.body) {
+        try {
+            var bodyThemeObs = new MutationObserver(function () {
+                var isBodyLight = document.body.classList.contains('light-theme');
+                var pane = document.getElementById('finance-content');
+                if (pane) {
+                    var paneHasLight = pane.classList.contains('finance-theme-light');
+                    if (isBodyLight !== paneHasLight) {
+                        window.applyFinanceTheme(isBodyLight ? 'light' : 'dark');
+                    }
+                }
+            });
+            bodyThemeObs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        } catch (_) {}
+    }
+}

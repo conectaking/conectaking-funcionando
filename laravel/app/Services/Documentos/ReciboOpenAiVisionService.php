@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
  */
 class ReciboOpenAiVisionService
 {
-    private const CHAT_URL = 'https://api.openai.com/v1/chat/completions';
+    private const CHAT_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 
     private const PEDAGIO_HINTS = [
         'P1', 'P3', 'P4', 'P11', 'ENTREVIAS', 'EIXOSP', 'VIAPAULISTA', 'VIA COLINAS',
@@ -38,7 +38,7 @@ PROMPT;
 
     public function apiKey(): string
     {
-        return trim((string) (env('OPENAI_API_KEY') ?: ''));
+        return trim((string) (env('GEMINI_API_KEY') ?: env('GOOGLE_AI_KEY') ?: env('OPENAI_API_KEY') ?: ''));
     }
 
     public function isAvailable(): bool
@@ -48,9 +48,9 @@ PROMPT;
 
     public function model(): string
     {
-        $m = trim((string) (env('RECIBO_OCR_AI_MODEL') ?: ''));
+        $m = trim((string) (env('RECIBO_OCR_AI_MODEL') ?: env('GEMINI_MODEL') ?: ''));
 
-        return $m !== '' ? $m : 'gpt-4o-mini';
+        return ($m !== '' && !str_starts_with($m, 'gpt-')) ? $m : 'gemini-3.5-flash';
     }
 
     /**

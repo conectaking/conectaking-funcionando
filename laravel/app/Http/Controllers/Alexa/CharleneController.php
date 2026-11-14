@@ -1287,30 +1287,38 @@ Ouça sempre com respeito e carinho a voz do seu papai Adrian King e da sua mam�
     }
 
     /**
-     * Chamada direta à OpenAI GPT-4o-mini
+     * Chamada direta ao Google Gemini Flash
      */
     private function callOpenAiChat(string $systemPrompt, string $userMessage, int $maxTokens = 350): ?string
     {
-        $apiKey = trim((string) (env('OPENAI_API_KEY') ?: ''));
+        $apiKey = trim((string) (env('GEMINI_API_KEY') ?: env('GOOGLE_AI_KEY') ?: env('OPENAI_API_KEY') ?: ''));
         if (!$apiKey) {
             return null;
         }
 
         try {
-            $res = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $apiKey,
-                'Content-Type' => 'application/json',
-            ])->timeout(7)->post('https://api.openai.com/v1/chat/completions', [
-                'model' => 'gpt-4o-mini',
-                'temperature' => 0.72,
-                'max_tokens' => $maxTokens,
-                'messages' => [
-                    ['role' => 'system', 'content' => $systemPrompt],
-                    ['role' => 'user', 'content' => $userMessage],
-                ],
-            ]);
-
-            return $res->json('choices.0.message.content');
+            $models = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.6-flash'];
+            foreach ($models as $model) {
+                $res = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $apiKey,
+                    'Content-Type' => 'application/json',
+                ])->timeout(8)->post('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', [
+                    'model' => $model,
+                    'temperature' => 0.72,
+                    'max_tokens' => max(800, $maxTokens),
+                    'messages' => [
+                        ['role' => 'system', 'content' => $systemPrompt],
+                        ['role' => 'user', 'content' => $userMessage],
+                    ],
+                ]);
+                if ($res->successful()) {
+                    $content = $res->json('choices.0.message.content');
+                    if (is_string($content) && trim($content) !== '') {
+                        return trim($content);
+                    }
+                }
+            }
+            return null;
         } catch (\Throwable $e) {
             Log::warning('alexa.ai.err', ['msg' => $e->getMessage()]);
             return null;

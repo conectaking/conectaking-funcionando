@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class KingSelectionAiService
 {
-    private const CHAT_URL = 'https://api.openai.com/v1/chat/completions';
+    private const CHAT_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 
     /**
      * @param  array<string,mixed>  $body
@@ -176,26 +176,33 @@ Não inventes nomes de pessoas. Podes mencionar de forma genérica "as fotos" ou
 
     private function chat(string $system, string $user, int $maxTokens): string
     {
-        $key = trim((string) (env('OPENAI_API_KEY') ?: ''));
+        $key = trim((string) (env('GEMINI_API_KEY') ?: env('GOOGLE_AI_KEY') ?: env('OPENAI_API_KEY') ?: ''));
         if ($key === '') {
-            throw new \RuntimeException('OPENAI_API_KEY não configurada no servidor.', 503);
+            throw new \RuntimeException('GEMINI_API_KEY não configurada no servidor.', 503);
         }
-        $res = Http::timeout(60)
-            ->withToken($key)
-            ->post(self::CHAT_URL, [
-                'model' => 'gpt-4o-mini',
-                'messages' => [
-                    ['role' => 'system', 'content' => $system],
-                    ['role' => 'user', 'content' => $user],
-                ],
-                'temperature' => 0.45,
-                'max_tokens' => $maxTokens,
-            ]);
-        if ($res->status() === 429) {
-            throw new \RuntimeException('Limite de uso da API OpenAI. Tente mais tarde.', 429);
+        $models = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash'];
+        $res = null;
+        foreach ($models as $model) {
+            $res = Http::timeout(60)
+                ->withToken($key)
+                ->post(self::CHAT_URL, [
+                    'model' => $model,
+                    'messages' => [
+                        ['role' => 'system', 'content' => $system],
+                        ['role' => 'user', 'content' => $user],
+                    ],
+                    'temperature' => 0.45,
+                    'max_tokens' => max(1200, $maxTokens),
+                ]);
+            if ($res->successful()) {
+                break;
+            }
         }
-        if (! $res->successful()) {
-            throw new \RuntimeException(mb_substr($res->body() ?: 'Falha na API OpenAI.', 0, 500), 502);
+        if ($res && $res->status() === 429) {
+            throw new \RuntimeException('Limite de uso da API Gemini. Tente mais tarde.', 429);
+        }
+        if (! $res || ! $res->successful()) {
+            throw new \RuntimeException(mb_substr(($res ? $res->body() : '') ?: 'Falha na API Gemini.', 0, 500), 502);
         }
         $content = data_get($res->json(), 'choices.0.message.content');
         if (! is_string($content) || trim($content) === '') {
