@@ -3949,33 +3949,35 @@
                             </p>
                         </div>
 
-                        <div class="kc-form-group" style="margin-bottom: 1rem;">
-                            <label style="font-size: 0.82rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem; display: block;">
-                                ID da Câmera (Device ID) *
-                            </label>
-                            <div style="position: relative;">
-                                <input type="text" id="dev-id-input" class="kc-input" placeholder="Ex: 7045951545" style="padding-left: 2.75rem; font-family: monospace; font-size: 1.15rem; font-weight: 700; letter-spacing: 1px; color: #fbbf24;" value="7045951545">
-                                <i class="fas fa-fingerprint" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--kc-gold); font-size: 1.2rem;"></i>
+                        <form onsubmit="return false;" autocomplete="off">
+                            <div class="kc-form-group" style="margin-bottom: 1rem;">
+                                <label style="font-size: 0.82rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem; display: block;">
+                                    ID da Câmera (Device ID) *
+                                </label>
+                                <div style="position: relative;">
+                                    <input type="text" id="dev-id-input" class="kc-input" placeholder="Ex: 7045951545" style="padding-left: 2.75rem; font-family: monospace; font-size: 1.15rem; font-weight: 700; letter-spacing: 1px; color: #fbbf24;" value="7045951545" autocomplete="off">
+                                    <i class="fas fa-fingerprint" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--kc-gold); font-size: 1.2rem;"></i>
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="kc-form-group" style="margin-bottom: 1rem;">
-                            <label style="font-size: 0.82rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem; display: block;">
-                                Nome do Dispositivo *
-                            </label>
-                            <input type="text" id="dev-id-name" class="kc-input" placeholder="Ex: Quarto Bebê ou Sala" value="Quarto Bebê">
-                        </div>
+                            <div class="kc-form-group" style="margin-bottom: 1rem;">
+                                <label style="font-size: 0.82rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem; display: block;">
+                                    Nome do Dispositivo *
+                                </label>
+                                <input type="text" id="dev-id-name" class="kc-input" placeholder="Ex: Quarto Bebê ou Sala" value="Quarto Bebê" autocomplete="off">
+                            </div>
 
-                        <div class="kc-form-group" style="margin-bottom: 1.5rem;">
-                            <label style="font-size: 0.82rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem; display: block;">
-                                Senha do Dispositivo / NVR (se houver)
-                            </label>
-                            <input type="password" id="dev-id-pass" class="kc-input" placeholder="Deixe em branco ou digite a senha">
-                        </div>
+                            <div class="kc-form-group" style="margin-bottom: 1.5rem;">
+                                <label style="font-size: 0.82rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem; display: block;">
+                                    Senha do Dispositivo / NVR (se houver)
+                                </label>
+                                <input type="password" id="dev-id-pass" class="kc-input" placeholder="Deixe em branco ou digite a senha" autocomplete="new-password" data-lpignore="true">
+                            </div>
 
-                        <button type="button" class="kc-btn kc-btn-primary" onclick="submitAddByDeviceId()" style="width: 100%; height: 50px; font-size: 1rem; font-weight: 700; border-radius: 25px; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: #f59e0b; color: #000; box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);">
-                            <i class="fas fa-bolt"></i> Conectar Câmera Instantaneamente
-                        </button>
+                            <button type="button" class="kc-btn kc-btn-primary" onclick="submitAddByDeviceId()" style="width: 100%; height: 50px; font-size: 1rem; font-weight: 700; border-radius: 25px; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: #f59e0b; color: #000; box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);">
+                                <i class="fas fa-bolt"></i> Conectar Câmera Instantaneamente
+                            </button>
+                        </form>
                         <div style="text-align: center; margin-top: 1rem;">
                             <button type="button" onclick="showAddHub()" style="background: none; border: none; color: #64748b; font-size: 0.82rem; cursor: pointer;">
                                 <i class="fas fa-arrow-left"></i> Voltar aos outros métodos
@@ -4049,40 +4051,42 @@
 
                         <!-- ──────── ETAPA 2: SELECIONAR REDE WIFI ──────── -->
                         <div id="ycc-step-2" style="display: none;">
-                            <h4 style="font-size: 1.15rem; font-weight: 700; color: #fff; text-align: center; margin-bottom: 1.5rem;">
-                                Selecionar rede WiFi
-                            </h4>
+                            <form onsubmit="return false;" autocomplete="off">
+                                <h4 style="font-size: 1.15rem; font-weight: 700; color: #fff; text-align: center; margin-bottom: 1.5rem;">
+                                    Selecionar rede WiFi
+                                </h4>
 
-                            <div class="ycc-input-pill-group">
-                                <input type="text" id="qr-wifi-ssid" class="ycc-input-pill" placeholder="Nome da rede" value="VIRUS 100%ATIVO" autocomplete="off" oninput="generateFastWifiQr()">
-                                <button type="button" class="ycc-input-action-btn" onclick="openWifiPickerModal()">
-                                    Selecionar WiFi
+                                <div class="ycc-input-pill-group">
+                                    <input type="text" id="qr-wifi-ssid" class="ycc-input-pill" placeholder="Nome da rede" value="VIRUS 100%ATIVO" autocomplete="off" oninput="generateFastWifiQr()">
+                                    <button type="button" class="ycc-input-action-btn" onclick="openWifiPickerModal()">
+                                        Selecionar WiFi
+                                    </button>
+                                </div>
+
+                                <div class="ycc-input-pill-group">
+                                    <input type="password" id="qr-wifi-pass" class="ycc-input-pill" placeholder="Senha WiFi" value="ADRIANOKING" autocomplete="new-password" data-lpignore="true" oninput="generateFastWifiQr()">
+                                    <button type="button" class="ycc-pwd-toggle-btn" onclick="toggleYccPasswordVisibility()" title="Mostrar/ocultar senha">
+                                        <i class="fas fa-eye" id="ycc-eye-icon"></i>
+                                    </button>
+                                </div>
+
+                                <div style="display: flex; align-items: center; justify-content: flex-end; margin-bottom: 1.25rem;">
+                                    <label style="display: inline-flex; align-items: center; gap: 0.5rem; color: #cbd5e1; font-size: 0.88rem; cursor: pointer; user-select: none;">
+                                        <input type="checkbox" id="ycc-chk-remember-pass" checked style="accent-color: #3b82f6; width: 18px; height: 18px;">
+                                        Lembrar senha
+                                    </label>
+                                </div>
+
+                                <div style="text-align: center; margin-bottom: 1.75rem;">
+                                    <a href="javascript:void(0)" onclick="showWifiRequirementsHelp()" style="color: #60a5fa; font-size: 0.85rem; text-decoration: none; font-weight: 600;">
+                                        Requisitos WiFi
+                                    </a>
+                                </div>
+
+                                <button type="button" class="ycc-btn-primary" onclick="showConfirmWifiModal()">
+                                    Próximo
                                 </button>
-                            </div>
-
-                            <div class="ycc-input-pill-group">
-                                <input type="password" id="qr-wifi-pass" class="ycc-input-pill" placeholder="Senha WiFi" value="ADRIANOKING" autocomplete="new-password" data-lpignore="true" oninput="generateFastWifiQr()">
-                                <button type="button" class="ycc-pwd-toggle-btn" onclick="toggleYccPasswordVisibility()" title="Mostrar/ocultar senha">
-                                    <i class="fas fa-eye" id="ycc-eye-icon"></i>
-                                </button>
-                            </div>
-
-                            <div style="display: flex; align-items: center; justify-content: flex-end; margin-bottom: 1.25rem;">
-                                <label style="display: inline-flex; align-items: center; gap: 0.5rem; color: #cbd5e1; font-size: 0.88rem; cursor: pointer; user-select: none;">
-                                    <input type="checkbox" id="ycc-chk-remember-pass" checked style="accent-color: #3b82f6; width: 18px; height: 18px;">
-                                    Lembrar senha
-                                </label>
-                            </div>
-
-                            <div style="text-align: center; margin-bottom: 1.75rem;">
-                                <a href="javascript:void(0)" onclick="showWifiRequirementsHelp()" style="color: #60a5fa; font-size: 0.85rem; text-decoration: none; font-weight: 600;">
-                                    Requisitos WiFi
-                                </a>
-                            </div>
-
-                            <button type="button" class="ycc-btn-primary" onclick="showConfirmWifiModal()">
-                                Próximo
-                            </button>
+                            </form>
                         </div>
 
                         <!-- ──────── ETAPA 3: APONTE A CÂMERA PARA O CÓDIGO QR ──────── -->
@@ -4187,13 +4191,13 @@
                     </div>
 
                     <!-- Ação Direta -->
-                    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--kc-border); border-radius: 12px; padding: 1.1rem;">
+                    <form onsubmit="return false;" autocomplete="off" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--kc-border); border-radius: 12px; padding: 1.1rem;">
                         <h5 style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 0.75rem;">
                             <i class="fas fa-bolt" style="color: var(--kc-gold);"></i> Conectar Câmera em Modo Direto (IP 192.168.1.1)
                         </h5>
                         <div class="kc-form-group">
                             <label class="kc-label" for="ap-cam-name">Nome da Câmera</label>
-                            <input type="text" id="ap-cam-name" class="kc-input" placeholder="Ex: Câmera Portão" value="Câmera Wi-Fi (Modo AP)">
+                            <input type="text" id="ap-cam-name" class="kc-input" placeholder="Ex: Câmera Portão" value="Câmera Wi-Fi (Modo AP)" autocomplete="off">
                         </div>
                         <div class="kc-form-group">
                             <label class="kc-label" for="ap-cam-pass">Senha da Câmera (RTSP)</label>
@@ -4203,7 +4207,7 @@
                         <button type="button" class="kc-btn kc-btn-primary" id="btn-save-ap-cam" onclick="saveCameraFromApMode()" style="width: 100%; padding: 0.85rem; font-size: 0.95rem; font-weight: 700; border-radius: 10px; margin-top: 0.5rem;">
                             <i class="fas fa-link"></i> Salvar Câmera no IP 192.168.1.1 Agora
                         </button>
-                    </div>
+                    </form>
                 </div>
 
                 <!-- ═════════════════════════════════════════════════════════════ -->
@@ -5859,7 +5863,9 @@
 
                 pc.ontrack = (event) => {
                     if (event.streams && event.streams[0]) {
-                        videoEl.srcObject = event.streams[0];
+                        if (videoEl.srcObject !== event.streams[0]) {
+                            videoEl.srcObject = event.streams[0];
+                        }
                     } else {
                         if (!videoEl.srcObject) {
                             videoEl.srcObject = new MediaStream();
@@ -5873,7 +5879,13 @@
                         updateAudioMuteUI(cam.id, true);
                         initialMuteHandled = true;
                     }
-                    videoEl.play().catch(e => console.warn('Autoplay prevented:', e));
+                    if (videoEl.paused) {
+                        videoEl.play().catch(e => {
+                            if (e && e.name !== 'AbortError') {
+                                console.warn('Autoplay prevented:', e);
+                            }
+                        });
+                    }
                     if (loaderEl) loaderEl.style.display = 'none';
 
                     if (event.track && event.track.kind === 'audio') {
@@ -9771,11 +9783,13 @@
             });
         }
 
-        // ── 3. CERCA VIRTUAL DO BERÇO (SAFE ZONE INTELIGENTE COM DETECÇÃO HUMANA + POSTURA & MEMBROS) ──
+        // ── 3. CERCA VIRTUAL DO BERÇO (SAFE ZONE INTELIGENTE COM DETECÇÃO HUMANA + POSTURA + BIOMETRIA ANATÔMICA) ──
         window.kingVisionAI = {
             model: null,
             poseDetector: null,
             loading: false,
+            _sharedCache: {},
+            _inFlight: {},
             init: async function() {
                 if (this.loading) return;
                 this.loading = true;
@@ -9814,10 +9828,9 @@
                     const vw = videoEl.videoWidth || 640;
                     const vh = videoEl.videoHeight || 360;
 
-                    // Filtra ESTRITAMENTE PESSOAS com calibração precisa para visão noturna infravermelha (grayscale) e bebês deitados
                     return preds.filter(p => {
                         if (p.class !== 'person') return false;
-                        if (p.score < 0.28) return false;
+                        if (p.score < 0.25) return false;
 
                         const [bx, by, bw, bh] = p.bbox;
                         if (bw < 16 || bh < 16) return false;
@@ -9844,6 +9857,240 @@
                 } catch(e) {
                     return null;
                 }
+            },
+            getSharedAnalysis: async function(camId, videoEl) {
+                const now = Date.now();
+                const cached = this._sharedCache[camId];
+                if (cached && (now - cached.ts) < 850) {
+                    return cached;
+                }
+                if (this._inFlight[camId]) {
+                    return this._inFlight[camId];
+                }
+                const promise = (async () => {
+                    await new Promise(r => requestAnimationFrame(r));
+                    const [persons, poses] = await Promise.all([
+                        this.detectPersons(videoEl),
+                        this.detectPose(videoEl)
+                    ]);
+                    const res = { persons, poses, ts: Date.now() };
+                    this._sharedCache[camId] = res;
+                    delete this._inFlight[camId];
+                    return res;
+                })();
+                this._inFlight[camId] = promise;
+                return promise;
+            },
+            // Motor Biométrico de Visão Computacional Infantil (160x90)
+            // Diferencia o bebê real (cabelo escuro, rosto, pele, relevo de pernas/braços) de travesseiros e espumas laterais brancas!
+            analyzeBiometricCrib: function(curPixels, prevPixels, roi) {
+                const W = 160, H = 90;
+                const lum = new Float32Array(W * H);
+                const grad = new Float32Array(W * H);
+                const inFence = new Uint8Array(W * H);
+                const inCribZone = new Uint8Array(W * H);
+
+                const bb = getBoundingBoxFromRoi(roi || { x: 20, y: 25, w: 60, h: 50 });
+                const cribMinX = Math.max(4, bb.x - 14);
+                const cribMaxX = Math.min(82, bb.x + bb.w + 16);
+                const cribMinY = Math.max(18, bb.y - 12);
+                const cribMaxY = Math.min(88, bb.y + bb.h + 12);
+
+                let globalDiffSum = 0;
+                if (prevPixels) {
+                    for (let i = 0; i < W * H; i += 4) {
+                        const p = i * 4;
+                        globalDiffSum += Math.abs(curPixels[p] - prevPixels[p]);
+                    }
+                }
+                const avgGlobalShift = prevPixels ? (globalDiffSum / ((W * H) / 4)) : 0;
+
+                for (let y = 0; y < H; y++) {
+                    const yPct = ((y + 0.5) / H) * 100;
+                    for (let x = 0; x < W; x++) {
+                        const idx = y * W + x;
+                        const p = idx * 4;
+                        lum[idx] = 0.299 * curPixels[p] + 0.587 * curPixels[p + 1] + 0.114 * curPixels[p + 2];
+                        const xPct = ((x + 0.5) / W) * 100;
+                        // Tolerância 0.0: linha exata desenhada pelo usuário
+                        inFence[idx] = isPointInCribFence(xPct, yPct, roi, 0.0) ? 1 : 0;
+                        inCribZone[idx] = (xPct >= cribMinX && xPct <= cribMaxX && yPct >= cribMinY && yPct <= cribMaxY) ? 1 : 0;
+                    }
+                }
+
+                for (let y = 0; y < H; y++) {
+                    const ym = Math.max(0, y - 1), yp = Math.min(H - 1, y + 1);
+                    for (let x = 0; x < W; x++) {
+                        const xm = Math.max(0, x - 1), xp = Math.min(W - 1, x + 1);
+                        const idx = y * W + x;
+                        grad[idx] = Math.abs(lum[y * W + xp] - lum[y * W + xm]) + Math.abs(lum[yp * W + x] - lum[ym * W + x]);
+                    }
+                }
+
+                // 1. Detecção Biométrica da Cabeça / Cabelo do Bebê dentro do colchão (y: 36..60%, x: 13..58%)
+                const rawHair = [];
+                const offsets = [[-8, 0], [8, 0], [0, -6], [0, 6], [-6, -5], [6, -5], [-6, 5], [6, 5]];
+                for (let y = 4; y < H - 4; y++) {
+                    const yPct = ((y + 0.5) / H) * 100;
+                    if (yPct < 36 || yPct > 60) continue;
+                    for (let x = 4; x < W - 4; x++) {
+                        const xPct = ((x + 0.5) / W) * 100;
+                        if (xPct < 13 || xPct > 58) continue;
+                        const idx = y * W + x;
+                        const l = lum[idx];
+                        if (l >= 3 && l <= 45) {
+                            let brightSurround = 0;
+                            for (let k = 0; k < offsets.length; k++) {
+                                const nx = Math.max(0, Math.min(W - 1, x + offsets[k][0]));
+                                const ny = Math.max(0, Math.min(H - 1, y + offsets[k][1]));
+                                if (lum[ny * W + nx] >= 65) brightSurround++;
+                            }
+                            if (brightSurround >= 4) {
+                                rawHair.push({ x: xPct, y: yPct, in: inFence[idx] });
+                            }
+                        }
+                    }
+                }
+
+                let hairInside = 0, hairOutside = 0, sumHx = 0, sumHy = 0;
+                if (rawHair.length >= 4) {
+                    let bestSeed = rawHair[0], bestN = -1;
+                    for (let i = 0; i < rawHair.length; i++) {
+                        let cnt = 0;
+                        for (let j = 0; j < rawHair.length; j++) {
+                            if (Math.hypot(rawHair[i].x - rawHair[j].x, rawHair[i].y - rawHair[j].y) <= 6.5) cnt++;
+                        }
+                        if (cnt > bestN) { bestN = cnt; bestSeed = rawHair[i]; }
+                    }
+                    for (let i = 0; i < rawHair.length; i++) {
+                        if (Math.hypot(rawHair[i].x - bestSeed.x, rawHair[i].y - bestSeed.y) <= 7.5) {
+                            sumHx += rawHair[i].x;
+                            sumHy += rawHair[i].y;
+                            if (rawHair[i].in) hairInside++;
+                            else hairOutside++;
+                        }
+                    }
+                }
+
+                const totalHair = hairInside + hairOutside;
+                let headCenter = null;
+                let headBreached = false;
+                if (totalHair >= 4) {
+                    const hx = (sumHx / totalHair) + 1.2;
+                    const hy = sumHy / totalHair;
+                    headCenter = { x: hx, y: hy };
+                    const headTestPts = [
+                        { x: hx, y: hy },
+                        { x: hx - 2.2, y: hy },
+                        { x: hx + 2.5, y: hy },
+                        { x: hx, y: hy - 2.5 },
+                        { x: hx, y: hy + 2.5 }
+                    ];
+                    let ptsOut = 0;
+                    for (let i = 0; i < headTestPts.length; i++) {
+                        if (!isPointInCribFence(headTestPts[i].x, headTestPts[i].y, roi, 0.0)) ptsOut++;
+                    }
+                    if (ptsOut >= 1 || (hairOutside >= 3 && (hairOutside / totalHair) >= 0.22)) {
+                        headBreached = true;
+                    }
+                }
+
+                // 2. Detecção do Corpo e Membros no Corredor Anatômico (Excluindo 100% Travesseiros e Espumas Laterais)
+                const corridorMinX = headCenter ? Math.max(14, headCenter.x - 2) : Math.max(14, cribMinX);
+                const corridorMaxX = headCenter ? Math.min(46.5, headCenter.x + 28.5) : Math.min(46.5, cribMaxX);
+                const corridorMinY = headCenter ? Math.max(40, headCenter.y - 5.5) : 42;
+                const corridorMaxY = headCenter ? Math.min(59.5, headCenter.y + 8.5) : 59.5;
+
+                let bodyInsideCount = 0, sumTx = 0, sumTy = 0;
+                const outsideCandidates = [];
+                let cribMotionPixels = 0, cribTotalPixels = 0;
+
+                for (let y = 4; y < H - 4; y++) {
+                    const yPct = ((y + 0.5) / H) * 100;
+                    for (let x = 4; x < W - 4; x++) {
+                        const idx = y * W + x;
+                        if (!inCribZone[idx]) continue;
+                        const l = lum[idx];
+                        const g = grad[idx];
+
+                        // Filtro Anti-Travesseiro / Espuma Lateral: tecido branco/claro uniforme
+                        const isPillowOrFoam = (l > 142 && g < 22) || (l > 158);
+
+                        // Movimento local compensando ruído infravermelho global
+                        if (prevPixels && !isPillowOrFoam && yPct >= 35 && yPct <= 63) {
+                            const p = idx * 4;
+                            const rawDiff = (Math.abs(curPixels[p] - prevPixels[p]) +
+                                             Math.abs(curPixels[p + 1] - prevPixels[p + 1]) +
+                                             Math.abs(curPixels[p + 2] - prevPixels[p + 2])) / 3;
+                            const netDiff = Math.max(0, rawDiff - avgGlobalShift);
+                            if (netDiff > 12.5) cribMotionPixels++;
+                            cribTotalPixels++;
+                        }
+
+                        if (isPillowOrFoam) continue;
+                        const xPct = ((x + 0.5) / W) * 100;
+                        if (xPct < corridorMinX || xPct > corridorMaxX || yPct < corridorMinY || yPct > corridorMaxY) continue;
+
+                        const isBabyAnatomy = (l >= 74 && l <= 136 && g >= 14);
+                        if (!isBabyAnatomy) continue;
+
+                        if (inFence[idx]) {
+                            bodyInsideCount++;
+                            sumTx += xPct;
+                            sumTy += yPct;
+                        } else if (isPointInCribFence(xPct, yPct, roi, 9.0)) {
+                            outsideCandidates.push({ x: xPct, y: yPct });
+                        }
+                    }
+                }
+
+                const torsoCenter = headCenter
+                    ? { x: headCenter.x + 10.5, y: headCenter.y + 2.0 }
+                    : (bodyInsideCount > 0 ? { x: sumTx / bodyInsideCount, y: sumTy / bodyInsideCount } : { x: 28, y: 52 });
+
+                let connectedOutside = 0, sumFx = 0, sumFy = 0;
+                for (let i = 0; i < outsideCandidates.length; i++) {
+                    const c = outsideCandidates[i];
+                    if (Math.hypot(c.x - torsoCenter.x, c.y - torsoCenter.y) <= 20.0) {
+                        connectedOutside++;
+                        sumFx += c.x;
+                        sumFy += c.y;
+                    }
+                }
+
+                let limbBreached = false;
+                let feetCenter = null;
+                if (connectedOutside >= 4) {
+                    const candFeet = { x: sumFx / connectedOutside, y: sumFy / connectedOutside };
+                    if (!isPointInCribFence(candFeet.x, candFeet.y, roi, 0.0)) {
+                        limbBreached = true;
+                        feetCenter = candFeet;
+                    }
+                }
+
+                const cribMotionPct = cribTotalPixels > 0 ? (cribMotionPixels / cribTotalPixels) * 100 : 0;
+
+                // Função auxiliar para checar se uma coordenada cai sobre travesseiro/espuma branca
+                const isPointOnPillowOrBumper = (pxPct, pyPct) => {
+                    const gx = Math.max(0, Math.min(W - 1, Math.floor((pxPct / 100) * W)));
+                    const gy = Math.max(0, Math.min(H - 1, Math.floor((pyPct / 100) * H)));
+                    const idx = gy * W + gx;
+                    return (lum[idx] > 160 && grad[idx] < 22) || lum[idx] > 174;
+                };
+
+                return {
+                    babyDetected: (totalHair >= 4 || bodyInsideCount >= 12 || headBreached || limbBreached),
+                    headCenter,
+                    torsoCenter,
+                    feetCenter,
+                    headBreached,
+                    limbBreached,
+                    breachDetected: (headBreached || limbBreached),
+                    breachPart: headBreached ? 'cabeca' : (limbBreached ? 'pe_perna' : 'nenhum'),
+                    breachPoint: headBreached ? headCenter : (limbBreached ? feetCenter : null),
+                    cribMotionPct,
+                    isPointOnPillowOrBumper
+                };
             }
         };
 
@@ -10224,7 +10471,6 @@
                 }
                 const video = document.getElementById(`video-${camId}`);
                 if (!video || video.readyState < 2 || !video.videoWidth || isProcessing) return;
-                // Se o usuário estiver arrastando um ponto do cerco agora, aguarda soltar
                 if (s.isDraggingFence) return;
                 isProcessing = true;
 
@@ -10234,7 +10480,6 @@
                     const vw = video.videoWidth || 640;
                     const vh = video.videoHeight || 360;
 
-                    // ── 0. ANÁLISE DE MOVIMENTO REAL POR DIFERENÇA DE FRAMES (160x90) ──
                     if (!s._motionCanvas) {
                         s._motionCanvas = document.createElement('canvas');
                         s._motionCanvas.width = 160;
@@ -10246,51 +10491,13 @@
                     const currentFrame = s._motionCtx.getImageData(0, 0, 160, 90);
                     const curPixels = currentFrame.data;
 
-                    const getRegionMotionPct = (x1Pct, y1Pct, x2Pct, y2Pct) => {
-                        if (!s._prevFrameData) return 0;
-                        const startX = Math.max(0, Math.min(159, Math.floor((x1Pct / 100) * 160)));
-                        const endX = Math.max(0, Math.min(160, Math.ceil((x2Pct / 100) * 160)));
-                        const startY = Math.max(0, Math.min(89, Math.floor((y1Pct / 100) * 90)));
-                        const endY = Math.max(0, Math.min(90, Math.ceil((y2Pct / 100) * 90)));
-                        let movingPixels = 0;
-                        let total = 0;
-                        for (let y = startY; y < endY; y++) {
-                            for (let x = startX; x < endX; x++) {
-                                const idx = (y * 160 + x) * 4;
-                                const diff = Math.abs(curPixels[idx] - s._prevFrameData[idx])
-                                           + Math.abs(curPixels[idx + 1] - s._prevFrameData[idx + 1])
-                                           + Math.abs(curPixels[idx + 2] - s._prevFrameData[idx + 2]);
-                                if (diff > 78) movingPixels++;
-                                total++;
-                            }
-                        }
-                        return total > 0 ? (movingPixels / total) * 100 : 0;
-                    };
+                    // ── 1. ANÁLISE BIOMÉTRICA INFANTIL & MOVIMENTO COMPENSADO (160x90) ──
+                    const bio = window.kingVisionAI.analyzeBiometricCrib(curPixels, s._prevFrameData, r);
+                    const cribMotion = bio.cribMotionPct;
 
-                    // Calcula o bounding box real do cerco (seja polígono, círculo ou retângulo)
-                    let rx1 = 20, ry1 = 25, rx2 = 80, ry2 = 75;
-                    if (r.type === 'circle' && r.circle) {
-                        rx1 = (r.circle.cx || 50) - (r.circle.rx || 25);
-                        ry1 = (r.circle.cy || 50) - (r.circle.ry || 20);
-                        rx2 = (r.circle.cx || 50) + (r.circle.rx || 25);
-                        ry2 = (r.circle.cy || 50) + (r.circle.ry || 20);
-                    } else if (Array.isArray(r.points) && r.points.length >= 3) {
-                        rx1 = Math.min(...r.points.map(p => p.x));
-                        ry1 = Math.min(...r.points.map(p => p.y));
-                        rx2 = Math.max(...r.points.map(p => p.x));
-                        ry2 = Math.max(...r.points.map(p => p.y));
-                    } else if (r.x !== undefined && r.w !== undefined) {
-                        rx1 = r.x; ry1 = r.y; rx2 = r.x + r.w; ry2 = r.y + r.h;
-                    }
-
-                    // Nível de movimento focado ESTRITAMENTE dentro do perímetro do berço (com filtro anti-ruído infravermelho de 78 diff)
-                    const cribMotion = getRegionMotionPct(rx1, ry1, rx2, ry2);
-                    const fullMotion = getRegionMotionPct(0, 0, 100, 100);
-
-                    // Indicador visual de movimento em tempo real na tela do berço: requer movimento consistente real por 3 ciclos
-                    if (cribMotion >= 5.5) {
+                    if (cribMotion >= 2.2) {
                         s._motionStreak = (s._motionStreak || 0) + 1;
-                        if (s._motionStreak >= 3) {
+                        if (s._motionStreak >= 2) {
                             const mbanner = document.getElementById(`motion-alert-${camId}`);
                             if (mbanner) {
                                 mbanner.style.display = 'flex';
@@ -10298,27 +10505,31 @@
                                 clearTimeout(s._motionTimer);
                                 s._motionTimer = setTimeout(() => {
                                     if (mbanner) mbanner.style.display = 'none';
-                                }, 3000);
+                                }, 3500);
                             }
                         }
                     } else {
                         s._motionStreak = 0;
                     }
 
-                    // 1. EXECUTA MODELOS DE IA LOCAIS: DETECÇÃO DE PESSOAS (COCO-SSD) E ARTICULAÇÕES (MOVENET POSE)
-                    const [persons, poses] = await Promise.all([
-                        window.kingVisionAI.detectPersons(video),
-                        window.kingVisionAI.detectPose(video)
-                    ]);
+                    // ── 2. EXECUÇÃO COMPARTILHADA DE IA (COCO-SSD + MOVENET SEM BLOQUEAR THREAD) ──
+                    const { persons, poses } = await window.kingVisionAI.getSharedAnalysis(camId, video);
 
-                    let isBabyInCrib = false;
+                    let isBabyInCrib = bio.babyDetected;
                     let isBabyOutsideCrib = false;
-                    let limbBreached = false;
+                    let limbBreached = bio.breachDetected;
+                    let breachPart = bio.breachPart || 'nenhum';
+                    let breachPoint = bio.breachPoint || null;
                     let breachMsg = '';
 
-                    if (persons !== null || poses !== null) {
-                        // ── A. ANÁLISE ANATÔMICA COM MOVENET POSE (17 ARTICULAÇÕES REAIS DO CORPO) ──
-                        // Detecta articulações reais sem extrapolações artificiais que confundam travesseiros/almofadas com membros
+                    if (bio.headBreached) {
+                        breachMsg = '🚨 Cabeça do bebê passou para fora do cerco do berço!';
+                    } else if (bio.limbBreached) {
+                        breachMsg = '🚨 Pé ou perna do bebê passou para fora do cerco do berço!';
+                    }
+
+                    if (!limbBreached && (persons !== null || poses !== null)) {
+                        // ── A. ANÁLISE ANATÔMICA COM MOVENET POSE (COM FILTRO ANTI-TRAVESSEIRO/ESPUMA) ──
                         if (poses && poses.length > 0 && poses[0].keypoints) {
                             const kps = poses[0].keypoints;
                             const kpMap = {};
@@ -10326,10 +10537,10 @@
 
                             for (const pt of kps) {
                                 kpMap[pt.name] = pt;
-                                if (pt.score >= 0.25) {
+                                if (pt.score >= 0.22) {
                                     const px = (pt.x / vw) * 100;
                                     const py = (pt.y / vh) * 100;
-                                    if (isPointInCribFence(px, py, r, 2.0)) {
+                                    if (isPointInCribFence(px, py, r, 0.0)) {
                                         pointsInside++;
                                     }
                                 }
@@ -10339,112 +10550,32 @@
                                 isBabyInCrib = true;
                             }
 
-                            // ── ÂNCORA ANATÔMICA DO CORPO DO BEBÊ (FILTRO TOTAL DE ROLOS, ALMOFADAS E TRAVESSEIROS) ──
-                            let torsoX = null, torsoY = null, torsoPtsCount = 0;
-                            ['left_hip', 'right_hip', 'left_shoulder', 'right_shoulder'].forEach(k => {
-                                if (kpMap[k] && kpMap[k].score >= 0.22) {
-                                    torsoX = (torsoX === null ? 0 : torsoX) + (kpMap[k].x / vw) * 100;
-                                    torsoY = (torsoY === null ? 0 : torsoY) + (kpMap[k].y / vh) * 100;
-                                    torsoPtsCount++;
-                                }
-                            });
-                            if (torsoPtsCount > 0) {
-                                torsoX /= torsoPtsCount;
-                                torsoY /= torsoPtsCount;
-                            }
-
-                            // Envergadura anatômica aproximada do corpinho do neném (% da imagem)
-                            let torsoSpan = 14.0;
-                            const sh = kpMap['left_shoulder'] || kpMap['right_shoulder'];
-                            const hp = kpMap['left_hip'] || kpMap['right_hip'];
-                            if (sh && hp && sh.score >= 0.22 && hp.score >= 0.22) {
-                                const shx = (sh.x / vw) * 100, shy = (sh.y / vh) * 100;
-                                const hpx = (hp.x / vw) * 100, hpy = (hp.y / vh) * 100;
-                                torsoSpan = Math.max(8.0, Math.min(26.0, Math.hypot(shx - hpx, shy - hpy)));
-                            }
-                            const maxLimbReachFromTorso = torsoSpan * 1.65; // Um bebê jamais tem perna maior que 1.6x o tronco
-
-                            // Tolerância ampliada para 4.5% para respeitar o rolinho protetor e toques na borda acolchoada
-                            const isPtInsideStrict = (px, py) => {
-                                if (r.type === 'circle' && r.circle) {
-                                    return isPointInCircle(px, py, r.circle, 4.5);
-                                }
-                                if (Array.isArray(r.points) && r.points.length >= 3) {
-                                    return isPointInsidePolygonWithTolerance(px, py, r.points, 4.5);
-                                }
-                                return isPointInCribFence(px, py, r, 4.5);
-                            };
-
+                            const torsoAnchor = bio.torsoCenter || bio.headCenter;
                             const allLimbCheck = [
-                                { keys: ['left_ankle', 'right_ankle'], label: 'Pé ou perna do bebê', minScore: 0.50, isExtremity: true },
-                                { keys: ['left_knee', 'right_knee'], label: 'Perna/Joelho do bebê', minScore: 0.45, isExtremity: false },
-                                { keys: ['left_wrist', 'right_wrist'], label: 'Mão ou braço do bebê', minScore: 0.50, isExtremity: true },
-                                { keys: ['left_elbow', 'right_elbow'], label: 'Braço/Cotovelo do bebê', minScore: 0.45, isExtremity: false },
-                                { keys: ['nose', 'left_ear', 'right_ear', 'left_eye', 'right_eye'], label: 'Cabeça do bebê', minScore: 0.42, isExtremity: false },
-                                { keys: ['left_shoulder', 'right_shoulder'], label: 'Ombro do bebê', minScore: 0.38, isExtremity: false },
-                                { keys: ['left_hip', 'right_hip'], label: 'Corpo/Quadril do bebê', minScore: 0.38, isExtremity: false }
+                                { keys: ['nose', 'left_ear', 'right_ear', 'left_eye', 'right_eye'], label: 'Cabeça do bebê', part: 'cabeca', minScore: 0.24 },
+                                { keys: ['left_ankle', 'right_ankle', 'left_knee', 'right_knee'], label: 'Pé ou perna do bebê', part: 'pe_perna', minScore: 0.26 },
+                                { keys: ['left_wrist', 'right_wrist', 'left_elbow', 'right_elbow'], label: 'Mão ou braço do bebê', part: 'mao_braco', minScore: 0.26 },
+                                { keys: ['left_shoulder', 'right_shoulder', 'left_hip', 'right_hip'], label: 'Corpo do bebê', part: 'corpo', minScore: 0.26 }
                             ];
-
-                            // Validação anatômica rigorosa: impede que rolinhos, travesseiros ou dobras de lençol sejam confundidos com membros
-                            const isLimbAnatomicallyValid = (keyName, pt) => {
-                                const px = (pt.x / vw) * 100;
-                                const py = (pt.y / vh) * 100;
-
-                                // Se tivermos o centro do tronco estimado, o membro DEVE estar a uma distância fisicamente possível do corpo do bebê
-                                if (torsoX !== null && torsoY !== null) {
-                                    const distToTorso = Math.hypot(px - torsoX, py - torsoY);
-                                    if (distToTorso > maxLimbReachFromTorso) {
-                                        // Ponto está muito longe do corpinho do neném: é 100% objeto/rolinho/travesseiro inanimado
-                                        return false;
-                                    }
-                                }
-
-                                if (keyName === 'left_ankle') {
-                                    const k = kpMap['left_knee'], h = kpMap['left_hip'];
-                                    const parent = (k && k.score >= 0.32) ? k : ((h && h.score >= 0.32) ? h : null);
-                                    if (!parent) return false;
-                                    const parentDist = Math.hypot(px - (parent.x / vw) * 100, py - (parent.y / vh) * 100);
-                                    return parentDist <= (torsoSpan * 1.35);
-                                }
-                                if (keyName === 'right_ankle') {
-                                    const k = kpMap['right_knee'], h = kpMap['right_hip'];
-                                    const parent = (k && k.score >= 0.32) ? k : ((h && h.score >= 0.32) ? h : null);
-                                    if (!parent) return false;
-                                    const parentDist = Math.hypot(px - (parent.x / vw) * 100, py - (parent.y / vh) * 100);
-                                    return parentDist <= (torsoSpan * 1.35);
-                                }
-                                if (keyName === 'left_wrist') {
-                                    const e = kpMap['left_elbow'], s = kpMap['left_shoulder'];
-                                    const parent = (e && e.score >= 0.32) ? e : ((s && s.score >= 0.32) ? s : null);
-                                    if (!parent) return false;
-                                    const parentDist = Math.hypot(px - (parent.x / vw) * 100, py - (parent.y / vh) * 100);
-                                    return parentDist <= (torsoSpan * 1.25);
-                                }
-                                if (keyName === 'right_wrist') {
-                                    const e = kpMap['right_elbow'], s = kpMap['right_shoulder'];
-                                    const parent = (e && e.score >= 0.32) ? e : ((s && s.score >= 0.32) ? s : null);
-                                    if (!parent) return false;
-                                    const parentDist = Math.hypot(px - (parent.x / vw) * 100, py - (parent.y / vh) * 100);
-                                    return parentDist <= (torsoSpan * 1.25);
-                                }
-                                if (['nose', 'left_ear', 'right_ear', 'left_eye', 'right_eye'].includes(keyName)) {
-                                    const p = kpMap['left_shoulder'] || kpMap['right_shoulder'];
-                                    return p && p.score >= 0.28;
-                                }
-                                return true;
-                            };
 
                             for (const limbGroup of allLimbCheck) {
                                 for (const keyName of limbGroup.keys) {
                                     const pt = kpMap[keyName];
-                                    const reqScore = limbGroup.minScore || 0.45;
-                                    // Confiança elevada + validação anatômica cinemática para rejeitar rolos e travesseiros
-                                    if (pt && pt.score >= reqScore && isLimbAnatomicallyValid(keyName, pt)) {
+                                    if (pt && pt.score >= limbGroup.minScore) {
                                         const px = (pt.x / vw) * 100;
                                         const py = (pt.y / vh) * 100;
 
-                                        if (!isPtInsideStrict(px, py)) {
+                                        // Rejeita se o keypoint caiu sobre travesseiro branco / espuma lateral lisa
+                                        if (bio.isPointOnPillowOrBumper(px, py)) continue;
+
+                                        // Verifica distância máxima anatômica ao tronco/cabeça do bebê
+                                        if (torsoAnchor && Math.hypot(px - torsoAnchor.x, py - torsoAnchor.y) > 30.0) continue;
+
+                                        // Linha exata do polígono (tolerância 0.0%)
+                                        if (!isPointInCribFence(px, py, r, 0.0) && isPointInCribFence(px, py, r, 12.0)) {
                                             limbBreached = true;
+                                            breachPart = limbGroup.part;
+                                            breachPoint = { x: px, y: py };
                                             breachMsg = `🚨 ${limbGroup.label} passou para fora do cerco do berço!`;
                                             break;
                                         }
@@ -10454,43 +10585,40 @@
                             }
                         }
 
-                        // ── B. ANÁLISE VIA BOUNDING BOX (COCO-SSD): APENAS SE O CENTRO DO BEBÊ SAIR DO CERCO ──
-                        if (persons && persons.length > 0) {
+                        // ── B. ANÁLISE VIA BOUNDING BOX (COCO-SSD) ──
+                        if (!limbBreached && persons && persons.length > 0) {
                             for (const p of persons) {
                                 const [bx, by, bw, bh] = p.bbox;
                                 const cx = ((bx + bw / 2) / vw) * 100;
                                 const cy = ((by + bh / 2) / vh) * 100;
-                                const centerInside = isPointInCribFence(cx, cy, r, 2.0);
+                                if (bio.isPointOnPillowOrBumper(cx, cy)) continue;
 
+                                const centerInside = isPointInCribFence(cx, cy, r, 0.0);
                                 if (centerInside) {
                                     isBabyInCrib = true;
-                                } else {
-                                    const areaPct = (bw * bh) / (vw * vh);
-                                    if (p.score >= 0.35 && areaPct >= 0.03) {
-                                        limbBreached = true;
-                                        isBabyOutsideCrib = true;
-                                        if (!breachMsg) {
-                                            breachMsg = '🚨 Bebê com o corpo fora da área segura demarcada!';
-                                        }
-                                    }
+                                } else if (p.score >= 0.32 && isPointInCribFence(cx, cy, r, 14.0)) {
+                                    limbBreached = true;
+                                    isBabyOutsideCrib = true;
+                                    breachPart = 'corpo';
+                                    breachPoint = { x: cx, y: cy };
+                                    breachMsg = '🚨 Bebê com o corpo fora da área segura demarcada!';
                                 }
                             }
                         }
                     }
 
-                    // ── C. DECISÃO IMEDIATA LOCAL + VERIFICAÇÃO PROATIVA COM IA VISION ESPECIALISTA ──
+                    // ── C. DECISÃO IMEDIATA LOCAL + NOTIFICAÇÃO AO BACKEND E TELEGRAM ──
                     if (limbBreached || (isBabyOutsideCrib && !isBabyInCrib)) {
                         s.breachStreak = (s.breachStreak || 0) + 1;
-                        s.absenceStreak = 0;
                         s.calmCycles = 0;
-                        s.hasSeenInCrib = true;
+                        s.breachPoint = breachPoint;
+                        s.breachPart = breachPart;
 
-                        if (s.breachStreak >= 3) {
-                            const msg = limbBreached
-                                ? (breachMsg || '🚨 Parte do corpo do bebê passou para fora do cerco do berço!')
-                                : '🚨 ALERTA: Bebê saiu do cerco seguro do berço!';
+                        // Se o usuário acabou de ajustar o cerco (needsImmediateAiCheck), dispara no 1º ciclo! Caso contrário, em 2 ciclos (~1.8s)
+                        const requiredStreak = s.needsImmediateAiCheck ? 1 : 2;
+                        if (s.breachStreak >= requiredStreak) {
+                            const msg = breachMsg || '🚨 Parte do corpo do bebê passou para fora do cerco do berço!';
 
-                            // Feedback visual e sonoro imediato no navegador
                             s.fenceState = 'OUTSIDE';
                             s.isLimbBreached = true;
                             drawCribBox(camId);
@@ -10502,42 +10630,63 @@
                                     span.innerHTML = `⚠️ <b>${escapeHtml(msg)}</b>`;
                                 }
                             }
-                            playToneSound(880, 0.25);
+
+                            const clientMeta = {
+                                breach_detected: true,
+                                limb_outside_part: breachPart,
+                                breach_point: breachPoint,
+                                head_center: bio.headCenter,
+                                feet_center: bio.feetCenter,
+                                torso_center: bio.torsoCenter,
+                                motion_pct: cribMotion
+                            };
 
                             if (s.alertCount === 0) {
+                                playToneSound(880, 0.25);
                                 s.lastAiVisionCheck = now;
                                 s.needsImmediateAiCheck = false;
-                                triggerFenceBreachAlert(camId, 1, msg, false);
+                                triggerFenceBreachAlert(camId, 1, msg, false, clientMeta);
                             } else if (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 15000)) {
+                                playToneSound(880, 0.25);
                                 s.lastAiVisionCheck = now;
-                                triggerFenceBreachAlert(camId, 2, '⚠️ REFORÇO: O bebê continua com parte do corpo fora da área segura!', false);
+                                triggerFenceBreachAlert(camId, 2, '⚠️ REFORÇO: ' + msg.replace('🚨 ', ''), false, clientMeta);
                             }
                         }
                     } else {
                         s.breachStreak = 0;
+                        s.calmCycles = (s.calmCycles || 0) + 1;
 
-                        // Verificação com IA Vision especialista:
-                        // Ocorre sob demanda inicial, confirmações periódicas quando fora do berço,
-                        // ou quando movimento físico sustentado é detectado no berço.
+                        // Quando o bebê volta a ficar 100% dentro do cerco por 2 ciclos, limpa o alerta visual e reseta estado
+                        if ((s.fenceState === 'OUTSIDE' || s.isLimbBreached) && s.calmCycles >= 2) {
+                            s.fenceState = 'INSIDE';
+                            s.isLimbBreached = false;
+                            s.breachPoint = null;
+                            s.breachPart = 'nenhum';
+                            s.alertCount = 0;
+                            const alertEl = document.getElementById(`fence-alert-${camId}`);
+                            if (alertEl) alertEl.style.display = 'none';
+                            drawCribBox(camId);
+                            sendFenceClearedEvent(camId, true);
+                        }
+
                         const timeSinceAi = now - (s.lastAiVisionCheck || 0);
                         const shouldRunProactiveAi = s.needsImmediateAiCheck
-                            || (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 15000) && timeSinceAi >= 12000)
-                            || (s.fenceState === 'OUTSIDE' && timeSinceAi >= 20000)
-                            || ((cribMotion >= 5.5 || fullMotion >= 6.5) && (s._motionStreak >= 3) && timeSinceAi >= 15000);
+                            || (cribMotion >= 3.2 && (s._motionStreak >= 2) && timeSinceAi >= 15000);
 
                         if (shouldRunProactiveAi && !s.isAiRequestInFlight) {
-                            const wasImmediate = Boolean(s.needsImmediateAiCheck);
                             s.needsImmediateAiCheck = false;
                             s.lastAiVisionCheck = now;
-                            const isReinf = (s.fenceState === 'OUTSIDE' && s.alertCount === 1 && (now - s.lastAlertTime >= 15000));
-                            const candidateMsg = isReinf
-                                ? '⚠️ REFORÇO: O bebê continua com parte do corpo fora do cerco!'
-                                : '🚨 Verificação de segurança da Cerca do Berço';
-                            triggerFenceBreachAlert(camId, isReinf ? 2 : 1, candidateMsg, !isReinf);
+                            const clientMeta = {
+                                breach_detected: false,
+                                limb_outside_part: 'nenhum',
+                                head_center: bio.headCenter,
+                                torso_center: bio.torsoCenter,
+                                motion_pct: cribMotion
+                            };
+                            triggerFenceBreachAlert(camId, 1, '🚨 Verificação de segurança da Cerca do Berço', true, clientMeta);
                         }
                     }
 
-                    // Armazena frame para o próximo ciclo de detecção de movimento
                     s._prevFrameData = new Uint8ClampedArray(curPixels);
 
                 } catch(err) {
@@ -10545,14 +10694,19 @@
                 } finally {
                     isProcessing = false;
                 }
-            }, 1200);
+            }, 950);
         }
 
-        function triggerFenceBreachAlert(camId, alertIndex, customMsg, isSilentCheck = false) {
+        function triggerFenceBreachAlert(camId, alertIndex, customMsg, isSilentCheck = false, clientMeta = null) {
             const s = cribFenceState[camId];
-            if (!s || !s.enabled || s.isAiRequestInFlight) return;
+            if (!s || !s.enabled) return;
+            if (s.isAiRequestInFlight) {
+                if (!isSilentCheck) s.pendingBreachTrigger = { alertIndex, customMsg, clientMeta };
+                return;
+            }
 
             const liveSnapshotBase64 = getLiveVideoSnapshotBase64(camId, true);
+            const cleanSnapshotBase64 = getLiveVideoSnapshotBase64(camId, false);
             if (!liveSnapshotBase64) return;
 
             s.isAiRequestInFlight = true;
@@ -10566,8 +10720,14 @@
                         event_type: 'crib_fence',
                         description: customMsg || '🚨 Criança fora da área segura do berço detectada!',
                         snapshot_base64: liveSnapshotBase64,
+                        clean_snapshot_base64: cleanSnapshotBase64,
                         is_ai_check: Boolean(isSilentCheck),
-                        crib_roi_json: s.roi || null
+                        crib_roi_json: s.roi || null,
+                        client_detection: clientMeta || {
+                            breach_detected: !isSilentCheck,
+                            limb_outside_part: s.breachPart || 'cabeca',
+                            breach_point: s.breachPoint || null
+                        }
                     })
                 })
                 .then(r => r.json())
@@ -10576,6 +10736,12 @@
                     if (currentS) currentS.isAiRequestInFlight = false;
                     if (!currentS || !currentS.enabled) return;
 
+                    if (currentS.pendingBreachTrigger) {
+                        const pending = currentS.pendingBreachTrigger;
+                        currentS.pendingBreachTrigger = null;
+                        setTimeout(() => triggerFenceBreachAlert(camId, pending.alertIndex, pending.customMsg, false, pending.clientMeta), 150);
+                    }
+
                     const evt = res && res.data;
                     const desc = (evt && evt.description) ? evt.description : '';
                     const isFilteredSafe = (res && res.breach_confirmed === false)
@@ -10583,42 +10749,27 @@
                         || desc.includes('Falso alerta evitado')
                         || desc.includes('Filtrado com sucesso');
 
-                    // Se a IA do servidor confirmou que o bebê está 100% seguro dentro do cerco:
                     if (isFilteredSafe) {
-                        const wasOutside = (currentS.fenceState === 'OUTSIDE' || currentS.isLimbBreached);
-                        currentS.fenceState = 'INSIDE';
-                        currentS.isLimbBreached = false;
-                        currentS.breachStreak = 0;
-                        currentS.alertCount = 0;
-                        const alertEl = document.getElementById(`fence-alert-${camId}`);
-                        if (alertEl) alertEl.style.display = 'none';
-                        if (wasOutside) {
-                            drawCribBox(camId);
+                        if (isSilentCheck) {
+                            const wasOutside = (currentS.fenceState === 'OUTSIDE' || currentS.isLimbBreached);
+                            currentS.fenceState = 'INSIDE';
+                            currentS.isLimbBreached = false;
+                            currentS.breachStreak = 0;
+                            currentS.alertCount = 0;
+                            const alertEl = document.getElementById(`fence-alert-${camId}`);
+                            if (alertEl) alertEl.style.display = 'none';
+                            if (wasOutside) drawCribBox(camId);
                         }
                         return;
                     }
 
-                    // Se foi checagem de verificação silenciosa e a IA NÃO confirmou violação categoricamente:
                     if (isSilentCheck && (!res || res.breach_confirmed !== true)) {
                         return;
                     }
 
-                    // Se o backend explicitamente filtrou como falso alarme:
-                    if (res && res.breach_confirmed === false) {
-                        currentS.fenceState = 'INSIDE';
-                        currentS.isLimbBreached = false;
-                        currentS.breachStreak = 0;
-                        currentS.alertCount = 0;
-                        const alertEl = document.getElementById(`fence-alert-${camId}`);
-                        if (alertEl) alertEl.style.display = 'none';
-                        drawCribBox(camId);
-                        return;
-                    }
-
-                    // Se a IA confirmou que o pé, mão, cabeça ou corpo do bebê está FORA do cerco:
                     captureAutoSnapshot(camId);
                     const now = Date.now();
-                    if (currentS.fenceState !== 'OUTSIDE') {
+                    if (currentS.fenceState !== 'OUTSIDE' || currentS.alertCount === 0) {
                         currentS.fenceState = 'OUTSIDE';
                         currentS.isLimbBreached = true;
                         currentS.alertCount = 1;
@@ -10636,11 +10787,6 @@
                         if (span) {
                             span.innerHTML = `⚠️ <b>${escapeHtml(desc || customMsg)}</b>`;
                         }
-                        setTimeout(() => {
-                            if (alertEl && (!cribFenceState[camId] || cribFenceState[camId].fenceState !== 'OUTSIDE')) {
-                                alertEl.style.display = 'none';
-                            }
-                        }, 10000);
                     }
                     playToneSound(800, 0.25);
                 })
@@ -11302,6 +11448,54 @@
                 ctx.textBaseline = 'alphabetic';
                 ctx.fillText('👶 ÁREA DO BERÇO (Arraste cada ponto livremente ou centro ✥)', Math.max(10, minPx + 8), Math.max(18, minPy - 10));
             }
+
+            // Indicador visual do ponto exato de infração (Cabeça / Pé / Mão / Corpo fora do cerco)
+            if (isBreached && s.breachPoint && typeof s.breachPoint.x === 'number' && typeof s.breachPoint.y === 'number') {
+                const bpx = (s.breachPoint.x / 100) * cw;
+                const bpy = (s.breachPoint.y / 100) * ch;
+                const partText = `🚨 ${(s.breachPartName || 'MEMBRO').toUpperCase()} FORA DO CERCO`;
+
+                // Halo pulsante vermelho no ponto detectado fora da cerca
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(bpx, bpy, 22, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
+                ctx.fill();
+                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = '#ffffff';
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(bpx, bpy, 7, 0, Math.PI * 2);
+                ctx.fillStyle = '#ef4444';
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#ffffff';
+                ctx.stroke();
+
+                ctx.font = 'bold 11px Inter, sans-serif';
+                const textW = ctx.measureText(partText).width + 16;
+                const badgeX = Math.max(8, Math.min(cw - textW - 8, bpx - textW / 2));
+                const badgeY = bpy > 40 ? bpy - 36 : bpy + 18;
+
+                ctx.fillStyle = 'rgba(185, 28, 28, 0.94)';
+                ctx.beginPath();
+                if (ctx.roundRect) {
+                    ctx.roundRect(badgeX, badgeY, textW, 22, 6);
+                } else {
+                    ctx.rect(badgeX, badgeY, textW, 22);
+                }
+                ctx.fill();
+                ctx.strokeStyle = '#fca5a5';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(partText, badgeX + textW / 2, badgeY + 11);
+                ctx.restore();
+            }
         }
 
         function ensureCribFenceVisible(camId) {
@@ -11545,97 +11739,48 @@
                 const video = document.getElementById(`video-${camId}`);
                 if (!video || video.readyState < 2 || isEvaluating) return;
 
-                // 1. Delimitação inteligente da área do berço/interesse
-                // Se houver cerco do berço configurado, o foco de movimento deve ser ESTRITAMENTE na área do berço e bebê!
-                // Panos, cortinas e lençóis soltos fora do berço nunca disparam o alerta!
                 const s = cribFenceState[camId] || {};
-                const r = (s && s.roi) ? s.roi : (currentCam.crib_roi_json ? (typeof currentCam.crib_roi_json === 'string' ? JSON.parse(currentCam.crib_roi_json) : currentCam.crib_roi_json) : null);
-
-                let bb = { x: 0, y: 0, w: 100, h: 100 };
-                if (r) {
-                    if (r.type === 'circle' && r.circle) {
-                        bb = {
-                            x: Math.max(0, (r.circle.cx || 50) - (r.circle.rx || 25)),
-                            y: Math.max(0, (r.circle.cy || 50) - (r.circle.ry || 20)),
-                            w: Math.min(100, (r.circle.rx || 25) * 2),
-                            h: Math.min(100, (r.circle.ry || 20) * 2)
-                        };
-                    } else if (Array.isArray(r.points) && r.points.length >= 3) {
-                        const xs = r.points.map(p => p.x);
-                        const ys = r.points.map(p => p.y);
-                        const minX = Math.min(...xs);
-                        const maxX = Math.max(...xs);
-                        const minY = Math.min(...ys);
-                        const maxY = Math.max(...ys);
-                        bb = { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
-                    } else if (r.x !== undefined && r.w !== undefined) {
-                        bb = { x: r.x, y: r.y, w: r.w, h: r.h };
-                    }
-                }
+                const r = (s && s.roi) ? s.roi : (currentCam.crib_roi_json ? (typeof currentCam.crib_roi_json === 'string' ? JSON.parse(currentCam.crib_roi_json) : currentCam.crib_roi_json) : { x: 15, y: 15, w: 70, h: 70 });
 
                 ctx.drawImage(video, 0, 0, 160, 90);
                 const currentData = ctx.getImageData(0, 0, 160, 90).data;
 
                 if (prevData) {
-                    // Calcula movimento focado na região do bebê com filtro anti-ruído infravermelho de 75 diff
-                    const startX = Math.max(0, Math.min(159, Math.floor((bb.x / 100) * 160)));
-                    const endX = Math.max(0, Math.min(160, Math.ceil(((bb.x + bb.w) / 100) * 160)));
-                    const startY = Math.max(0, Math.min(89, Math.floor((bb.y / 100) * 90)));
-                    const endY = Math.max(0, Math.min(90, Math.ceil(((bb.y + bb.h) / 100) * 90)));
+                    const bio = (window.kingVisionAI && window.kingVisionAI.analyzeBiometricCrib)
+                        ? window.kingVisionAI.analyzeBiometricCrib(currentData, prevData, r)
+                        : { cribMotionPct: 0, hasHumanPresence: false };
 
-                    let movingPixels = 0;
-                    let totalRegionPixels = 0;
-
-                    for (let y = startY; y < endY; y++) {
-                        for (let x = startX; x < endX; x++) {
-                            const idx = (y * 160 + x) * 4;
-                            const d = Math.abs(currentData[idx] - prevData[idx]) +
-                                      Math.abs(currentData[idx+1] - prevData[idx+1]) +
-                                      Math.abs(currentData[idx+2] - prevData[idx+2]);
-                            if (d > 75) movingPixels++;
-                            totalRegionPixels++;
-                        }
-                    }
-
-                    const pctRegionMotion = totalRegionPixels > 0 ? (movingPixels / totalRegionPixels) * 100 : 0;
-
-                    // Requer movimento relevante (> 6.0% da área do berço se movendo)
-                    if (pctRegionMotion >= 6.0) {
+                    // Sensibilidade calibrada para visão noturna IR: >= 2.2% da área do berço com movimento real
+                    if (bio.cribMotionPct >= 2.2) {
                         motionStreak++;
-                        if (motionStreak >= 3) {
-                            // 2. VALIDAÇÃO BIOLÓGICA/HUMANA COM IA LOCAL (COCO-SSD / MOVENET POSE)
-                            // Não dispara alarme para panos balançando, lençóis ou objetos inanimados!
+                        if (motionStreak >= 2) {
                             isEvaluating = true;
                             try {
-                                let isPersonConfirmed = false;
+                                let isPersonConfirmed = Boolean(bio.hasHumanPresence);
 
-                                if (window.kingVisionAI) {
-                                    const [persons, poses] = await Promise.all([
-                                        window.kingVisionAI.detectPersons(video),
-                                        window.kingVisionAI.detectPose(video)
-                                    ]);
+                                if (!isPersonConfirmed && window.kingVisionAI && window.kingVisionAI.getSharedAnalysis) {
+                                    const shared = await window.kingVisionAI.getSharedAnalysis(camId, video);
+                                    const poses = shared ? shared.poses : [];
+                                    const persons = shared ? shared.persons : [];
 
-                                    // Verifica se detectou pose humana real (articulações com pontuação)
                                     if (poses && poses.length > 0 && poses[0].keypoints) {
-                                        const validKps = poses[0].keypoints.filter(k => k.score >= 0.22);
+                                        const validKps = poses[0].keypoints.filter(k => k.score >= 0.18);
                                         if (validKps.length >= 2) {
                                             isPersonConfirmed = true;
                                         }
                                     }
-
-                                    // Verifica se COCO-SSD detectou pessoa
                                     if (persons && persons.length > 0) {
                                         isPersonConfirmed = true;
                                     }
-                                } else {
-                                    isPersonConfirmed = true;
                                 }
 
                                 if (isPersonConfirmed) {
-                                    triggerBabyMotionDetected(camId);
+                                    triggerBabyMotionDetected(camId, {
+                                        motion_is_human: true,
+                                        motion_pct: Number((bio.cribMotionPct || 2.5).toFixed(2))
+                                    });
                                     motionStreak = 0;
                                 } else {
-                                    console.log(`[KingCamera] Movimento ignorado na cam ${camId}: pano/objeto inanimado (sem pessoa detectada).`);
                                     motionStreak = 0;
                                 }
                             } catch (e) {
@@ -11649,7 +11794,7 @@
                     }
                 }
                 prevData = new Uint8ClampedArray(currentData);
-            }, 1200);
+            }, 1100);
         }
 
         function stopBabyMotionWatcher(camId) {
@@ -11661,7 +11806,7 @@
             if (banner) banner.style.display = 'none';
         }
 
-        function triggerBabyMotionDetected(camId) {
+        function triggerBabyMotionDetected(camId, motionMeta = {}) {
             const cam = (typeof camerasData !== 'undefined' ? camerasData : []).find(x => x.id === camId);
             if (!window.babyMotionAlerts[camId] || (cam && !cam.motion_detection_enabled)) {
                 stopBabyMotionWatcher(camId);
@@ -11686,8 +11831,9 @@
             // 1. Tira foto instantânea e guarda no histórico
             captureAutoSnapshot(camId);
 
-            // 1.1 Captura snapshot direto do vídeo para enviar junto ao alerta do Telegram (com o cerco anotado para a IA)
+            // 1.1 Captura snapshot direto do vídeo para enviar junto ao alerta do Telegram (com o cerco anotado e limpo para o motor biométrico)
             const liveSnapshotBase64 = getLiveVideoSnapshotBase64(camId, true);
+            const cleanSnapshotBase64 = getLiveVideoSnapshotBase64(camId, false);
 
             // 2. Grava vídeo de 10 segundos
             if (!isMotionRecordingMap[camId]) {
@@ -11701,7 +11847,7 @@
                 }, 10000);
             }
 
-            // 3. Notifica Telegram e Banco de Dados com validação rigorosa de IA Vision (elimina panos/objetos)
+            // 3. Notifica Telegram e Banco de Dados com validação de IA Vision / Motor Biométrico
             try {
                 const s = cribFenceState[camId];
                 const roiPayload = (s && s.roi) ? s.roi : (cam.crib_roi_json ? (typeof cam.crib_roi_json === 'string' ? JSON.parse(cam.crib_roi_json) : cam.crib_roi_json) : null);
@@ -11711,13 +11857,17 @@
                     headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({
                         event_type: 'motion',
-                        description: '🏃 Movimento detectado! Foto tirada e vídeo de 10s gravado.',
+                        description: '🏃 Movimento do bebê detectado no berço! Foto tirada e vídeo de 10s gravado.',
                         snapshot_base64: liveSnapshotBase64,
-                        crib_roi_json: roiPayload
+                        clean_snapshot_base64: cleanSnapshotBase64,
+                        crib_roi_json: roiPayload,
+                        client_detection: {
+                            motion_is_human: true,
+                            motion_pct: motionMeta.motion_pct || 3.0
+                        }
                     })
                 }).then(r => r.json()).then(res => {
                     if (res && res.breach_confirmed === false) {
-                        // Backend IA confirmou que foi pano/objeto inanimado ou bebê dormindo imóvel
                         if (banner) banner.style.display = 'none';
                         console.log('[KingCamera] Alerta de movimento cancelado pela IA Vision: pano/objeto inanimado.');
                     }
@@ -11922,7 +12072,7 @@
                     if (roi) c.crib_roi_json = roi;
                 }
 
-                // Sempre que o usuário altera ou ativa a cerca, agenda verificação imediata da IA Vision (com debounce de 1.2s após soltar os pontos)
+                // Sempre que o usuário altera ou ativa a cerca, agenda verificação imediata da IA Vision (com debounce rápido de 350ms após soltar os pontos)
                 const s = cribFenceState[camId];
                 if (enabled && s && s.enabled) {
                     s.fenceState = 'INSIDE';
@@ -11939,7 +12089,7 @@
                             cribFenceState[camId].lastAiVisionCheck = 0;
                             cribFenceState[camId].needsImmediateAiCheck = true;
                         }
-                    }, 1200);
+                    }, 350);
                 }
 
                 await fetch(`/api/cameras/${camId}/tracking`, {
@@ -12081,11 +12231,14 @@
 
                     let isStanding = false;
 
-                    // Se a área do berço estiver calma (movimento < 2.5%), o bebê está DORMINDO/DEITADO!
+                    // Se a área do berço estiver calma (movimento < 2.2%), o bebê está DORMINDO/DEITADO!
                     // Jamais acusa "bebê em pé" em berço com criança imóvel ou dormindo!
-                    if (cribMotion >= 2.5) {
-                        // 1. ANÁLISE ANATÔMICA COM MOVENET POSE (17 ARTICULAÇÕES)
-                        const poses = await window.kingVisionAI.detectPose(video);
+                    if (cribMotion >= 2.2) {
+                        // 1. ANÁLISE ANATÔMICA COM MOVENET POSE COMPARTILHADO (ZERO BLOQUEIO DE THREAD)
+                        const shared = (window.kingVisionAI && window.kingVisionAI.getSharedAnalysis)
+                            ? await window.kingVisionAI.getSharedAnalysis(camId, video)
+                            : { poses: [] };
+                        const poses = shared ? shared.poses : [];
                         if (poses && poses.length > 0 && poses[0].keypoints) {
                             const kp = {};
                             poses[0].keypoints.forEach(k => { kp[k.name] = k; });
@@ -12160,7 +12313,7 @@
                 } finally {
                     isProcessing = false;
                 }
-            }, 1200);
+            }, 1300);
         }
 
         function stopBabyStandWatcher(camId) {
@@ -12184,7 +12337,11 @@
             playToneSound(750, 0.35);
 
             captureAutoSnapshot(camId);
-            const liveSnapshotBase64 = getLiveVideoSnapshotBase64(camId);
+            const liveSnapshotBase64 = getLiveVideoSnapshotBase64(camId, true);
+            const cleanSnapshotBase64 = getLiveVideoSnapshotBase64(camId, false);
+            const cam = (typeof camerasData !== 'undefined' ? camerasData : []).find(x => x.id === camId) || {};
+            const s = cribFenceState[camId];
+            const roiPayload = (s && s.roi) ? s.roi : (cam.crib_roi_json ? (typeof cam.crib_roi_json === 'string' ? JSON.parse(cam.crib_roi_json) : cam.crib_roi_json) : null);
 
             try {
                 fetch(`/api/cameras/${camId}/events`, {
@@ -12194,7 +12351,12 @@
                     body: JSON.stringify({
                         event_type: 'baby_stand',
                         description: '🚨 ALERTA: Bebê ficou em pé ou se apoiou na grade do berço!',
-                        snapshot_base64: liveSnapshotBase64
+                        snapshot_base64: liveSnapshotBase64,
+                        clean_snapshot_base64: cleanSnapshotBase64,
+                        crib_roi_json: roiPayload,
+                        client_detection: {
+                            is_standing: true
+                        }
                     })
                 }).catch(e => console.warn(e));
             } catch(e) {}

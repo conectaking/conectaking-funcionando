@@ -1143,6 +1143,7 @@ class KingCameraController extends Controller
 
         // Extrai snapshot instantâneo em Base64 enviado diretamente pelo navegador se disponível
         $jpegBinary = null;
+        $cleanJpegBinary = null;
         $isClientAnnotated = false;
         if ($request->filled('snapshot_base64')) {
             $rawBase64 = preg_replace('#^data:image/\w+;base64,#i', '', (string) $request->input('snapshot_base64'));
@@ -1156,21 +1157,39 @@ class KingCameraController extends Controller
                 }
             }
         }
-
-        // Se não veio snapshot do navegador, busca do go2rtc (com fallback em cache)
-        if (!$jpegBinary && in_array($eventType, ['crib_fence', 'fence_breach', 'baby_stand', 'motion', 'baby_cry'], true)) {
-            $jpegBinary = $this->cameraService->getSnapshot($camera);
-            if ($jpegBinary && in_array($eventType, ['crib_fence', 'fence_breach'], true) && !empty($camera->crib_roi_json)) {
-                $jpegBinary = $this->aiVision->annotateJpegWithCribRoi($jpegBinary, $camera->crib_roi_json);
-                $isClientAnnotated = true;
+        if ($request->filled('clean_snapshot_base64')) {
+            $rawClean = preg_replace('#^data:image/\w+;base64,#i', '', (string) $request->input('clean_snapshot_base64'));
+            $decodedClean = base64_decode($rawClean);
+            if ($decodedClean && strlen($decodedClean) > 300) {
+                $cleanJpegBinary = $decodedClean;
+                \Illuminate\Support\Facades\Cache::put("cam_last_good_snap_{$camera->stream_id}", $cleanJpegBinary, 600);
             }
         }
 
+        // Se não veio snapshot do navegador, busca do go2rtc (com fallback em cache)
+        if (!$jpegBinary && in_array($eventType, ['crib_fence', 'fence_breach', 'baby_stand', 'motion', 'baby_cry'], true)) {
+            $rawSnap = $this->cameraService->getSnapshot($camera);
+            if ($rawSnap) {
+                $cleanJpegBinary = $cleanJpegBinary ?: $rawSnap;
+                $jpegBinary = $rawSnap;
+                if (in_array($eventType, ['crib_fence', 'fence_breach'], true) && !empty($camera->crib_roi_json)) {
+                    $jpegBinary = $this->aiVision->annotateJpegWithCribRoi($rawSnap, $camera->crib_roi_json);
+                    $isClientAnnotated = true;
+                }
+            }
+        }
+
+        $clientHints = is_array($request->input('client_detection')) ? $request->input('client_detection') : [];
+        if ($cleanJpegBinary) {
+            $clientHints['clean_jpeg_binary'] = $cleanJpegBinary;
+        }
+        $clientHints['description'] = $description;
+
         $shouldSend = true;
 
-        // ── VALIDAÇÃO E DETECÇÃO DE ALTA PRECISÃO COM IA VISION (OPENAI / GEMINI) ──
-        if ($jpegBinary && in_array($eventType, ['baby_stand', 'crib_fence', 'fence_breach', 'motion']) && $this->aiVision->isAvailable()) {
-            $aiAnalysis = $this->aiVision->analyzeBabySafetySnapshot($jpegBinary, $eventType, $camera->crib_roi_json, !$isClientAnnotated);
+        // ── VALIDAÇÃO E DETECÇÃO DE ALTA PRECISÃO COM IA VISION + MOTOR BIOMÉTRICO ──
+        if (($jpegBinary || !empty($clientHints)) && in_array($eventType, ['baby_stand', 'crib_fence', 'fence_breach', 'motion']) && $this->aiVision->isAvailable()) {
+            $aiAnalysis = $this->aiVision->analyzeBabySafetySnapshot($jpegBinary ?: '', $eventType, $camera->crib_roi_json, !$isClientAnnotated, $clientHints);
             if ($aiAnalysis['evaluated']) {
                 // Caso 0: Presença de Adulto/Cuidador (Pai ou Mãe) ajeitando o bebê
                 if ($aiAnalysis['adult_present']) {

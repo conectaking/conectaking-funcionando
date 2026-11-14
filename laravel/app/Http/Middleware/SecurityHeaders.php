@@ -34,7 +34,7 @@ class SecurityHeaders
         $path = trim($request->path(), '/');
         $cameraOk = $this->allowsCamera($path);
         $pp = $cameraOk
-            ? 'camera=(self), microphone=(), geolocation=()'
+            ? 'camera=(self), microphone=(self), geolocation=()'
             : 'camera=(), microphone=(), geolocation=()';
         $response->headers->set('Permissions-Policy', $pp, false);
 
@@ -50,8 +50,8 @@ class SecurityHeaders
             // Quando há nonce no script-src, o navegador IGNORA 'unsafe-inline' e bloqueia todos os onclick.
             $inlineHandlersPage = $this->usesInlineHandlers($path);
             $scriptSrc = $inlineHandlersPage
-                ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://cdn.tailwindcss.com"
-                : "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-{$nonce}' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://cdn.tailwindcss.com";
+                ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://cdn.tailwindcss.com https://static.cloudflareinsights.com"
+                : "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-{$nonce}' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://cdn.tailwindcss.com https://static.cloudflareinsights.com";
             $csp = implode('; ', [
                 "default-src 'self'",
                 "base-uri 'self'",
