@@ -290,14 +290,54 @@ Ouça sempre com respeito e carinho a voz do seu papai Adrian King e da sua mam�
 
     public function __construct()
     {
-        $this->storageDir = storage_path('app/public/sara/musicas');
+        $persistentShared = '/shared/uploads/sara/musicas';
+        if (is_dir('/shared/uploads')) {
+            $this->storageDir = $persistentShared;
+            if (!File::isDirectory($this->storageDir)) {
+                File::makeDirectory($this->storageDir, 0777, true, true);
+            }
+
+            // Garante pasta pai em storage/app/public/sara
+            $parentDir = storage_path('app/public/sara');
+            if (!File::isDirectory($parentDir)) {
+                File::makeDirectory($parentDir, 0777, true, true);
+            }
+
+            // Garante link simbólico storage/app/public/sara/musicas -> /shared/uploads/sara/musicas
+            $linkPath = storage_path('app/public/sara/musicas');
+            if (!is_link($linkPath)) {
+                if (File::isDirectory($linkPath)) {
+                    // Migra arquivos residuais se houver
+                    $files = File::allFiles($linkPath);
+                    foreach ($files as $f) {
+                        $rel = $f->getRelativePathname();
+                        $target = $this->storageDir . '/' . $rel;
+                        File::ensureDirectoryExists(dirname($target), 0777, true);
+                        if (!file_exists($target)) {
+                            @copy($f->getRealPath(), $target);
+                        }
+                    }
+                    @File::deleteDirectory($linkPath);
+                }
+                @symlink($this->storageDir, $linkPath);
+            }
+        } else {
+            $this->storageDir = storage_path('app/public/sara/musicas');
+            if (!File::isDirectory($this->storageDir)) {
+                File::makeDirectory($this->storageDir, 0777, true, true);
+            }
+        }
+
+        // Garante link simbólico public/storage -> storage/app/public
+        $publicStorage = public_path('storage');
+        if (!file_exists($publicStorage) && !is_link($publicStorage)) {
+            @symlink(storage_path('app/public'), $publicStorage);
+        }
+
         $this->baseUrl = rtrim(config('app.url') ?: 'https://www.conectaking.com.br', '/');
 
         // Cria a pasta raiz e as subpastas de categorias
-        if (!File::isDirectory($this->storageDir)) {
-            File::makeDirectory($this->storageDir, 0777, true, true);
-        }
-        foreach (['adoracao', 'dormir', 'animadas'] as $cat) {
+        foreach (['adoracao', 'dormir', 'animadas', 'geral'] as $cat) {
             $catDir = $this->storageDir . '/' . $cat;
             if (!File::isDirectory($catDir)) {
                 File::makeDirectory($catDir, 0777, true, true);
