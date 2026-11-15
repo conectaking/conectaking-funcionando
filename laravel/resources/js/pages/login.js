@@ -126,13 +126,18 @@ import '@css/pages/login-inline.css';
         }
 
         function getApiBase() {
-          // Mesma origem no domínio do produto; em localhost usa config.js
+          // Mesma origem no domínio do produto ou em localhost:8080 (Docker local)
           const host = String(window.location.hostname || '').toLowerCase();
           if (
             host.endsWith('conectaking.com.br') ||
             host === 'cnking.bio' ||
-            host === 'www.cnking.bio'
+            host === 'www.cnking.bio' ||
+            host === 'localhost' ||
+            host === '127.0.0.1'
           ) {
+            if ((host === 'localhost' || host === '127.0.0.1') && (window.location.port === '5500' || window.location.port === '5501')) {
+              return window.location.protocol + '//' + host + ':8080';
+            }
             return window.location.origin;
           }
           const base =
@@ -229,6 +234,7 @@ import '@css/pages/login-inline.css';
           if (data.success || data.token) {
             // Cookie HttpOnly vem no Set-Cookie — não guardar JWT no localStorage (XSS).
             try { localStorage.setItem('conectaKingSession', '1'); } catch (_) {}
+            try { localStorage.setItem('conectaKingLoginAt', String(Date.now())); } catch (_) {}
             try { localStorage.removeItem('conectaKingToken'); } catch (_) {}
             try { localStorage.removeItem('conectaKingRefreshToken'); } catch (_) {}
             try { localStorage.removeItem('refreshToken'); } catch (_) {}

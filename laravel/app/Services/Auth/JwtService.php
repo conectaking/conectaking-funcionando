@@ -40,13 +40,19 @@ class JwtService
             throw new UnexpectedValueException('Token expirado.');
         }
 
+        // Limite máximo de 6 horas conectado direto (desloga automaticamente após 6h)
+        $maxSessionSeconds = 6 * 3600;
+        if (isset($payload['iat']) && is_numeric($payload['iat']) && (time() - (int) $payload['iat']) >= $maxSessionSeconds) {
+            throw new UnexpectedValueException('Sessão expirada após 6 horas.');
+        }
+
         return $payload;
     }
 
     /**
      * @param  array<string,mixed>  $payload
      */
-    public function encode(array $payload, string $expiresIn = '14d'): string
+    public function encode(array $payload, string $expiresIn = '6h'): string
     {
         $secret = (string) env('JWT_SECRET', '');
         if ($secret === '') {

@@ -7,13 +7,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeToggleBtns = document.querySelectorAll('#theme-toggle');
     
 
-    const handleLogout = () => {
-        ['conectaKingToken', 'conectaKingUser', 'token', 'refreshToken', 'user', 'dashboard_last_pane'].forEach(k => {
-            try { localStorage.removeItem(k); } catch (e) {}
-            try { sessionStorage.removeItem(k); } catch (e) {}
+    const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+
+    const handleLogout = (e) => {
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        ['conectaKingToken', 'conectaKingUser', 'conectaKingSession', 'conectaKingLoginAt', 'token', 'refreshToken', 'user', 'dashboard_last_pane'].forEach(k => {
+            try { localStorage.removeItem(k); } catch (err) {}
+            try { sessionStorage.removeItem(k); } catch (err) {}
         });
-        window.location.href = '/';
+        window.location.href = '/logout?redirect=' + encodeURIComponent('/?logout=1');
     };
+
+    const enforceSixHourSessionLimit = () => {
+        try {
+            const loginAt = parseInt(localStorage.getItem('conectaKingLoginAt') || '0', 10);
+            if (loginAt > 0 && (Date.now() - loginAt) >= SIX_HOURS_MS) {
+                ['conectaKingToken', 'conectaKingUser', 'conectaKingSession', 'conectaKingLoginAt', 'token', 'refreshToken', 'user', 'dashboard_last_pane'].forEach(k => {
+                    try { localStorage.removeItem(k); } catch (err) {}
+                    try { sessionStorage.removeItem(k); } catch (err) {}
+                });
+                window.location.href = '/logout?redirect=' + encodeURIComponent('/login?session_expired=1');
+                return true;
+            }
+            if (!loginAt && localStorage.getItem('conectaKingSession') === '1') {
+                localStorage.setItem('conectaKingLoginAt', String(Date.now()));
+            }
+        } catch (err) {}
+        return false;
+    };
+    if (enforceSixHourSessionLimit()) return;
+    setInterval(enforceSixHourSessionLimit, 60000);
 
     const applyTheme = (theme) => {
         if (theme === 'light') {

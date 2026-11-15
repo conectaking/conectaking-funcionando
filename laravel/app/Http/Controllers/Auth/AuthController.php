@@ -42,10 +42,31 @@ class AuthController extends Controller
         $fromCookie = trim((string) ($request->cookie(self::REFRESH_COOKIE) ?: ''));
         $r = $this->auth->logout($fromBody !== null && $fromBody !== '' ? $fromBody : ($fromCookie !== '' ? $fromCookie : null));
 
+        // Revoga todos os refresh tokens do usuário atual se o token de acesso estiver presente
+        $rawToken = trim((string) ($request->cookie('token') ?: ''));
+        if ($rawToken !== '') {
+            try {
+                $payload = app(\App\Services\Auth\JwtService::class)->decode($rawToken);
+                $uid = (string) ($payload['userId'] ?? $payload['id'] ?? '');
+                if ($uid !== '' && \App\Support\SchemaMeta::hasTable('refresh_tokens')) {
+                    \Illuminate\Support\Facades\DB::delete('DELETE FROM refresh_tokens WHERE user_id = ?', [$uid]);
+                }
+            } catch (\Throwable) {
+            }
+        }
+
         if ($request->isMethod('GET') && ! $request->expectsJson()) {
-            $response = redirect('/login?logout=1')->header('X-Conecta-Engine', 'laravel');
+            $redirectTo = trim((string) $request->query('redirect', '/'));
+            if ($redirectTo === '' || ! str_starts_with($redirectTo, '/') || str_starts_with($redirectTo, '//')) {
+                $redirectTo = '/';
+            }
+            $response = redirect($redirectTo)
+                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                ->header('X-Conecta-Engine', 'laravel');
         } else {
-            $response = response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+            $response = response()->json($r['body'], $r['status'])
+                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                ->header('X-Conecta-Engine', 'laravel');
         }
 
         return $this->forgetAuthCookies($response, $request);
@@ -123,13 +144,16 @@ class AuthController extends Controller
     private function forgetAuthCookies(\Symfony\Component\HttpFoundation\Response $response, Request $request): \Symfony\Component\HttpFoundation\Response
     {
         $domain = AuthCookieDomain::forRequest($request);
-        $domains = array_unique(array_filter([$domain, '.conectaking.com.br', null]));
+        $domains = array_values(array_unique([$domain, '.conectaking.com.br', null], SORT_REGULAR));
 
         foreach ($domains as $d) {
-            $response->headers->setCookie(Cookie::create('token', '', 1, '/', $d, $request->isSecure(), true, false, Cookie::SAMESITE_LAX));
-            $response->headers->setCookie(Cookie::create(self::REFRESH_COOKIE, '', 1, '/', $d, $request->isSecure(), true, false, Cookie::SAMESITE_LAX));
-            $response->headers->setCookie(Cookie::create('ck_csrf', '', 1, '/', $d, $request->isSecure(), false, false, Cookie::SAMESITE_LAX));
-            $response->headers->setCookie(Cookie::create('conectaking-session', '', 1, '/', $d, $request->isSecure(), false, false, Cookie::SAMESITE_LAX));
+            foreach ([$request->isSecure(), false] as $sec) {
+                $response->headers->setCookie(Cookie::create('token', '', 1, '/', $d, $sec, true, false, Cookie::SAMESITE_LAX));
+                $response->headers->setCookie(Cookie::create('conectaKingToken', '', 1, '/', $d, $sec, false, false, Cookie::SAMESITE_LAX));
+                $response->headers->setCookie(Cookie::create(self::REFRESH_COOKIE, '', 1, '/', $d, $sec, true, false, Cookie::SAMESITE_LAX));
+                $response->headers->setCookie(Cookie::create('ck_csrf', '', 1, '/', $d, $sec, false, false, Cookie::SAMESITE_LAX));
+                $response->headers->setCookie(Cookie::create('conectaking-session', '', 1, '/', $d, $sec, false, false, Cookie::SAMESITE_LAX));
+            }
         }
 
         return $response;
@@ -167,12 +191,12 @@ class AuthController extends Controller
 
     private function tokenCookieMinutes(): int
     {
-        return $this->parseDurationMinutes((string) (env('JWT_EXPIRES_IN') ?: '24h'), 24 * 60);
+        return 6 * 60; // 6 horas conectado direto
     }
 
     private function refreshCookieMinutes(): int
     {
-        return $this->parseDurationMinutes((string) (env('JWT_REFRESH_EXPIRES_IN') ?: '30d'), 30 * 24 * 60);
+        return 6 * 60; // 6 horas conectado direto (desloga automaticamente após 6h)
     }
 
     private function parseDurationMinutes(string $raw, int $defaultMinutes): int

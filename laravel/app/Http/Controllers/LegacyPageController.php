@@ -44,23 +44,53 @@ class LegacyPageController extends Controller
                         'email' => (string) $user->email,
                         'isAdmin' => true,
                         'accountType' => $user->account_type ?? 'admin',
-                    ], '24h');
+                    ], '6h');
 
-                    // Emite cookie de 24h (1440 min) e redireciona limpando o parâmetro da barra de endereço
-                    $cookie = cookie('token', $token, 1440, '/', null, true, false, false, 'Lax');
+                    // Emite cookie de 6h (360 min) e redireciona limpando o parâmetro da barra de endereço
+                    $cookie = cookie('token', $token, 360, '/', \App\Support\AuthCookieDomain::forRequest($request), $request->isSecure(), true, false, 'Lax');
                     return redirect('/kingCamera')->withCookie($cookie);
                 }
             }
             // Não redirecionamos para /login — a própria página kingCamera carregará
-            // e solicitará a senha diária caso o cookie de 24h tenha expirado.
+            // e solicitará a senha diária caso o cookie de 6h tenha expirado.
+        }
+        if (in_array($name, ['dashboard', 'conta'], true)) {
+            $token = $request->cookie('token');
+            $validSession = false;
+            if (is_string($token) && $token !== '') {
+                try {
+                    $jwt = app(\App\Services\Auth\JwtService::class);
+                    $payload = $jwt->decode($token);
+                    $userId = $payload['userId'] ?? $payload['id'] ?? null;
+                    if (! empty($userId)) {
+                        $validSession = true;
+                    }
+                } catch (\Throwable) {
+                    $validSession = false;
+                }
+            }
+            if (! $validSession) {
+                $resp = redirect('/login?session_expired=1')
+                    ->header('Cache-Control', 'no-cache, no-store, must-revalidate');
+                $domain = \App\Support\AuthCookieDomain::forRequest($request);
+                foreach (array_values(array_unique([$domain, '.conectaking.com.br', null], SORT_REGULAR)) as $d) {
+                    $resp->withCookie(cookie('token', '', -2628000, '/', $d, $request->isSecure(), true, false, 'Lax'));
+                    $resp->withCookie(cookie('refresh_token', '', -2628000, '/', $d, $request->isSecure(), true, false, 'Lax'));
+                }
+                return $resp;
+            }
         }
         if ($name === 'login') {
             $isExplicitLogout = $request->query('logout') === '1' || $request->query('session_expired') === '1';
             $hasReturnUrl = $request->has('returnUrl') || $request->has('redirect');
 
             if ($isExplicitLogout) {
-                \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('token'));
-                \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('refresh_token'));
+                $domain = \App\Support\AuthCookieDomain::forRequest($request);
+                foreach (array_values(array_unique([$domain, '.conectaking.com.br', null], SORT_REGULAR)) as $d) {
+                    \Illuminate\Support\Facades\Cookie::queue(cookie('token', '', -2628000, '/', $d, $request->isSecure(), true, false, 'Lax'));
+                    \Illuminate\Support\Facades\Cookie::queue(cookie('conectaKingToken', '', -2628000, '/', $d, $request->isSecure(), false, false, 'Lax'));
+                    \Illuminate\Support\Facades\Cookie::queue(cookie('refresh_token', '', -2628000, '/', $d, $request->isSecure(), true, false, 'Lax'));
+                }
             } elseif (! $hasReturnUrl) {
                 // Só redireciona automaticamente se não veio de um redirect (para prevenir loop de redirecionamento)
                 $token = $request->cookie('token');
@@ -77,7 +107,11 @@ class LegacyPageController extends Controller
                         }
                     } catch (\Throwable) {
                         // Token inválido/expirado — limpa o cookie para evitar loops
-                        \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('token'));
+                        $domain = \App\Support\AuthCookieDomain::forRequest($request);
+                        foreach (array_values(array_unique([$domain, '.conectaking.com.br', null], SORT_REGULAR)) as $d) {
+                            \Illuminate\Support\Facades\Cookie::queue(cookie('token', '', -2628000, '/', $d, $request->isSecure(), true, false, 'Lax'));
+                            \Illuminate\Support\Facades\Cookie::queue(cookie('refresh_token', '', -2628000, '/', $d, $request->isSecure(), true, false, 'Lax'));
+                        }
                     }
                 }
             }

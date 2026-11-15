@@ -5835,6 +5835,8 @@
         }
 
         // Negociação WebRTC WHEP com go2rtc via Laravel proxy
+        const startCameraFeed = (cam) => startWebRtcStream(cam);
+        window.startCameraFeed = startCameraFeed;
         async function startWebRtcStream(cam) {
             const videoEl = document.getElementById(`video-${cam.id}`);
             const loaderEl = document.getElementById(`loader-${cam.id}`);

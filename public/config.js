@@ -70,6 +70,13 @@
         try {
             const params = new URLSearchParams(window.location.search || '');
             if ((params.get('api') || '').toLowerCase() === 'prod') return false;
+            if (typeof location !== 'undefined' && isLocalHost(String(location.hostname || '').toLowerCase())) {
+                try {
+                    localStorage.removeItem('useProductionApi');
+                    localStorage.setItem('useLocalApi', 'true');
+                } catch (e) {}
+                return true;
+            }
             if (localStorage.getItem('useProductionApi') === 'true') return false;
             // Dominio de producao / VPS: mesma origem, NAO marcar useLocalApi (usar mesma origem / :8080)
             if (isSelfHostedApi() && !isLocalHost(String(location.hostname || ''))) {

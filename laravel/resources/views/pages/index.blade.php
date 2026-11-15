@@ -1,5 +1,16 @@
 @php
-    $hasTokenCookie = request()->hasCookie('conectaKingToken') || request()->hasCookie('token') || request()->hasCookie('conectaking-session');
+    $hasTokenCookie = false;
+    $rawJwtCookie = request()->cookie('token') ?: request()->cookie('conectaKingToken');
+    if (is_string($rawJwtCookie) && $rawJwtCookie !== '' && request()->query('logout') !== '1') {
+        try {
+            $payload = app(\App\Services\Auth\JwtService::class)->decode($rawJwtCookie);
+            if (!empty($payload['userId']) || !empty($payload['id'])) {
+                $hasTokenCookie = true;
+            }
+        } catch (\Throwable $e) {
+            $hasTokenCookie = false;
+        }
+    }
 @endphp
 <!DOCTYPE html>
 <html class="dark" lang="pt-BR">
@@ -854,6 +865,23 @@
         ctaDuo.href = 'https://wa.me/5511988789417?text=Ol%C3%A1!%20Desejo%20contratar%20o%20Pacote%203%20DUO%20/%20SOCIEDADE%20(12x%20de%20R$%2049,90%20ou%20R$%20499%20PIX)';
       }
     }
+
+    // Limpa cache de sessão local caso o usuário tenha acabado de sair ou não tenha sessão ativa no servidor
+    (function () {
+      const hasValidServerSession = {{ $hasTokenCookie ? 'true' : 'false' }};
+      const params = new URLSearchParams(window.location.search);
+      if (!hasValidServerSession || params.get('logout') === '1') {
+        ['conectaKingToken', 'conectaKingUser', 'conectaKingSession', 'conectaKingLoginAt', 'token', 'refreshToken', 'user', 'dashboard_last_pane'].forEach(function (k) {
+          try { localStorage.removeItem(k); } catch (_) {}
+          try { sessionStorage.removeItem(k); } catch (_) {}
+        });
+        if (params.get('logout') === '1' && window.history && window.history.replaceState) {
+          params.delete('logout');
+          const cleanUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
+      }
+    })();
   </script>
 
 </body>

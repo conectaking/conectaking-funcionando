@@ -6,7 +6,7 @@
             return (window.location && window.location.origin) ? window.location.origin : 'https://www.conectaking.com.br';
         }
         function clearAuthLocal() {
-            var keys = ['token', 'conectaKingToken', 'refreshToken', 'user', 'conectaKingUser', 'dashboard_last_pane'];
+            var keys = ['token', 'conectaKingToken', 'conectaKingSession', 'conectaKingLoginAt', 'refreshToken', 'user', 'conectaKingUser', 'dashboard_last_pane'];
             keys.forEach(function (k) {
                 try { localStorage.removeItem(k); } catch (e) {}
                 try { sessionStorage.removeItem(k); } catch (e2) {}
@@ -18,7 +18,7 @@
             var base = apiBase();
             function go() {
                 clearAuthLocal();
-                window.location.href = '/';
+                window.location.href = '/logout?redirect=' + encodeURIComponent('/?logout=1');
             }
             if (rt) {
                 fetch(base + '/api/auth/logout', {

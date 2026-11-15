@@ -1031,14 +1031,14 @@ function _setupEventListenersBody() {
         if (link.id === 'logout-btn') {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                ['conectaKingToken', 'conectaKingUser', 'token', 'refreshToken', 'user', 'dashboard_last_pane'].forEach(k => {
+                ['conectaKingToken', 'conectaKingUser', 'conectaKingSession', 'conectaKingLoginAt', 'token', 'refreshToken', 'user', 'dashboard_last_pane'].forEach(k => {
                     try { localStorage.removeItem(k); } catch (err) {}
                     try { sessionStorage.removeItem(k); } catch (err) {}
                 });
                 if (typeof window.ckExitToLogin === 'function') {
                     window.ckExitToLogin();
                 } else {
-                    window.location.href = '/';
+                    window.location.href = '/logout?redirect=' + encodeURIComponent('/?logout=1');
                 }
             });
             return;

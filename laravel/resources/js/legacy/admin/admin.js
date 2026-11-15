@@ -757,9 +757,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            localStorage.clear();
-            window.location.href = '/';
+        logoutBtn.addEventListener('click', (e) => {
+            if (e && typeof e.preventDefault === 'function') e.preventDefault();
+            try { localStorage.clear(); } catch (_) {}
+            try { sessionStorage.clear(); } catch (_) {}
+            window.location.href = '/logout?redirect=' + encodeURIComponent('/?logout=1');
         });
     }
 
