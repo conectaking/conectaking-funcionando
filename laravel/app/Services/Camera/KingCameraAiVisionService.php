@@ -56,8 +56,9 @@ class KingCameraAiVisionService
             $cleanBinary = $clientHints['clean_jpeg_binary'];
         }
 
-        // 1. Tenta Google Gemini Vision se houver chave configurada
-        if ($this->getGeminiKey() !== '' && strlen($jpegBinary) >= 300) {
+        // 1. Tenta Google Gemini Vision se houver chave configurada e cota disponível
+        $isQuotaExhausted = (bool) \Illuminate\Support\Facades\Cache::get('gemini_quota_exhausted', false);
+        if (!$isQuotaExhausted && $this->getGeminiKey() !== '' && strlen($jpegBinary) >= 300) {
             try {
                 return $this->analyzeWithGemini($jpegBinary, $candidateEvent, $roi, $needsAnnotation, $cleanBinary, $clientHints);
             } catch (\Throwable $ge) {
@@ -665,35 +666,44 @@ PROMPT;
             $this->getGeminiModel(),
             'gemini-3.5-flash',
             'gemini-flash-latest',
-            'gemini-flash-lite-latest',
-            'gemini-3.5-flash-lite',
-            'gemini-pro-latest',
         ]));
 
         $lastError = 'Falha ao consultar Gemini Vision';
         foreach ($models as $model) {
             $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
 
-            $res = Http::timeout(9.0)
-                ->post($url, [
-                    'contents' => [
-                        [
-                            'parts' => [
-                                ['text' => $prompt],
-                                [
-                                    'inline_data' => [
-                                        'mime_type' => 'image/jpeg',
-                                        'data' => $base64
+            try {
+                $res = Http::timeout(3.5)
+                    ->post($url, [
+                        'contents' => [
+                            [
+                                'parts' => [
+                                    ['text' => $prompt],
+                                    [
+                                        'inline_data' => [
+                                            'mime_type' => 'image/jpeg',
+                                            'data' => $base64
+                                        ]
                                     ]
                                 ]
                             ]
+                        ],
+                        'generationConfig' => [
+                            'temperature' => 0.0,
+                            'response_mime_type' => 'application/json'
                         ]
-                    ],
-                    'generationConfig' => [
-                        'temperature' => 0.0,
-                        'response_mime_type' => 'application/json'
-                    ]
-                ]);
+                    ]);
+            } catch (\Throwable $te) {
+                $lastError = "Gemini ({$model}) timeout: " . $te->getMessage();
+                break; // Se deu timeout, aborta para não prender o servidor nem causar HTTP 500 no cliente
+            }
+
+            if ($res->status() === 429) {
+                // Se a cota do Free Tier foi excedida (429), pausa chamadas externas por 15 min e usa o motor biométrico local
+                \Illuminate\Support\Facades\Cache::put('gemini_quota_exhausted', true, now()->addMinutes(15));
+                $lastError = "Gemini ({$model}) Cota diária excedida (429).";
+                break;
+            }
 
             if (!$res->successful()) {
                 $lastError = "Gemini ({$model}) HTTP " . $res->status() . ": " . $res->body();

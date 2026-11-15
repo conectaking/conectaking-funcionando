@@ -12529,9 +12529,34 @@
             }
         }
 
+        let globalAudioCtx = null;
+        function getOrCreateAudioContext() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return null;
+                if (!globalAudioCtx) {
+                    globalAudioCtx = new AudioCtx();
+                }
+                return globalAudioCtx;
+            } catch(e) {
+                return null;
+            }
+        }
+
+        if (typeof document !== 'undefined') {
+            ['click', 'touchstart', 'pointerdown', 'keydown'].forEach(evt => {
+                document.addEventListener(evt, () => {
+                    if (globalAudioCtx && globalAudioCtx.state === 'suspended') {
+                        globalAudioCtx.resume().catch(() => {});
+                    }
+                }, { once: false, passive: true });
+            });
+        }
+
         function playToneSound(freq, duration) {
             try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const ctx = getOrCreateAudioContext();
+                if (!ctx || ctx.state === 'suspended') return;
                 const osc = ctx.createOscillator();
                 const g = ctx.createGain();
                 osc.frequency.value = freq;
