@@ -44,10 +44,11 @@ class LegacyPageController extends Controller
                         'email' => (string) $user->email,
                         'isAdmin' => true,
                         'accountType' => $user->account_type ?? 'admin',
-                    ], '6h');
+                        'app' => 'kingCamera',
+                    ], '24h');
 
-                    // Emite cookie de 6h (360 min) e redireciona limpando o parâmetro da barra de endereço
-                    $cookie = cookie('token', $token, 360, '/', \App\Support\AuthCookieDomain::forRequest($request), $request->isSecure(), true, false, 'Lax');
+                    // Emite cookie de 24h (1440 min) e redireciona limpando o parâmetro da barra de endereço
+                    $cookie = cookie('token', $token, 1440, '/', \App\Support\AuthCookieDomain::forRequest($request), $request->isSecure(), false, false, 'Lax');
                     return redirect('/kingCamera')->withCookie($cookie);
                 }
             }

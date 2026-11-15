@@ -5260,7 +5260,11 @@
         }
 
         // Modal Elegante de Desbloqueio Diário (24h) por Senha
+        let isPinModalOpen = false;
         function showPinUnlockModal() {
+            if (isPinModalOpen) return;
+            isPinModalOpen = true;
+
             if (typeof Swal === 'undefined') {
                 const pin = prompt('👑 King Câmera — Digite a senha diária de acesso:');
                 if (pin && pin.trim()) {
@@ -5269,28 +5273,35 @@
                         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                         body: JSON.stringify({ pin: pin.trim() })
                     }).then(r => r.json()).then(j => {
+                        isPinModalOpen = false;
                         if (j.success && j.token) {
-                            try { localStorage.setItem('token', j.token); } catch(e){}
+                            try {
+                                localStorage.setItem('token', j.token);
+                                sessionStorage.setItem('token', j.token);
+                            } catch(e){}
                             loadCameras();
                         } else {
                             alert(j.message || 'Senha incorreta.');
                         }
-                    });
+                    }).catch(() => { isPinModalOpen = false; });
+                } else {
+                    isPinModalOpen = false;
                 }
                 return;
             }
 
             Swal.fire({
                 title: '👑 King Câmera • Acesso 24h',
-                text: 'Digite a senha de segurança para liberar o monitoramento por 24 horas:',
-                input: 'password',
-                inputPlaceholder: 'Digite a senha (ex: King)',
-                inputAttributes: {
-                    autocapitalize: 'off',
-                    autocorrect: 'off',
-                    autocomplete: 'current-password',
-                    id: 'kcPinInput'
-                },
+                html: `
+                    <div style="font-size:0.92rem; color:#94a3b8; margin-bottom:1.15rem; line-height: 1.45;">
+                        Digite a senha de segurança para liberar o monitoramento contínuo por 24 horas:
+                    </div>
+                    <form id="kcPinForm" onsubmit="return false;" style="display:flex; justify-content:center; width:100%; margin:0;">
+                        <input type="password" id="kcPinInput" class="swal2-input" placeholder="Digite a senha (ex: King)"
+                               autocomplete="current-password" autocorrect="off" autocapitalize="off"
+                               style="margin: 0; width: 85%; font-size: 1.05rem; text-align: center; background: rgba(15,23,42,0.85); color: #f8fafc; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">
+                    </form>
+                `,
                 showCancelButton: false,
                 confirmButtonText: '🔓 Liberar Acesso 24h',
                 confirmButtonColor: '#f59e0b',
@@ -5299,8 +5310,22 @@
                 allowOutsideClick: false,
                 allowEscapeKey: false,
                 showLoaderOnConfirm: true,
-                preConfirm: async (pin) => {
-                    if (!pin || !pin.trim()) {
+                didOpen: () => {
+                    const inp = document.getElementById('kcPinInput');
+                    if (inp) {
+                        inp.focus();
+                        inp.addEventListener('keydown', (ev) => {
+                            if (ev.key === 'Enter') {
+                                ev.preventDefault();
+                                Swal.clickConfirm();
+                            }
+                        });
+                    }
+                },
+                preConfirm: async () => {
+                    const inp = document.getElementById('kcPinInput');
+                    const pin = inp ? inp.value.trim() : '';
+                    if (!pin) {
                         Swal.showValidationMessage('Por favor, digite a senha.');
                         return false;
                     }
@@ -5313,7 +5338,7 @@
                                 'Accept': 'application/json',
                                 ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {})
                             },
-                            body: JSON.stringify({ pin: pin.trim() })
+                            body: JSON.stringify({ pin: pin })
                         });
                         const json = await res.json();
                         if (!res.ok || !json.success) {
@@ -5323,6 +5348,7 @@
                         if (json.token) {
                             try {
                                 localStorage.setItem('token', json.token);
+                                sessionStorage.setItem('token', json.token);
                             } catch(e){}
                         }
                         return json;
@@ -5332,6 +5358,7 @@
                     }
                 }
             }).then((result) => {
+                isPinModalOpen = false;
                 if (result.isConfirmed) {
                     Swal.fire({
                         icon: 'success',
@@ -5357,6 +5384,7 @@
                 });
                 
                 if (res.status === 401) {
+                    try { localStorage.removeItem('token'); } catch(e){}
                     showPinUnlockModal();
                     return;
                 }
@@ -9997,11 +10025,11 @@
                     }
                 }
 
-                // 2. Detecção do Corpo e Membros no Corredor Anatômico (Excluindo 100% Travesseiros e Espumas Laterais)
-                const corridorMinX = headCenter ? Math.max(14, headCenter.x - 2) : Math.max(14, cribMinX);
-                const corridorMaxX = headCenter ? Math.min(46.5, headCenter.x + 28.5) : Math.min(46.5, cribMaxX);
-                const corridorMinY = headCenter ? Math.max(40, headCenter.y - 5.5) : 42;
-                const corridorMaxY = headCenter ? Math.min(59.5, headCenter.y + 8.5) : 59.5;
+                // 2. Detecção do Corpo e Membros no Perímetro do Berço
+                const corridorMinX = headCenter ? Math.max(5, headCenter.x - 15) : Math.max(5, cribMinX);
+                const corridorMaxX = headCenter ? Math.min(95, headCenter.x + 45) : Math.min(95, cribMaxX);
+                const corridorMinY = headCenter ? Math.max(5, headCenter.y - 25) : Math.max(5, cribMinY);
+                const corridorMaxY = headCenter ? Math.min(95, headCenter.y + 25) : Math.min(95, cribMaxY);
 
                 let bodyInsideCount = 0, sumTx = 0, sumTy = 0;
                 const outsideCandidates = [];
@@ -10552,12 +10580,11 @@
                                 isBabyInCrib = true;
                             }
 
-                            const torsoAnchor = bio.torsoCenter || bio.headCenter;
                             const allLimbCheck = [
-                                { keys: ['nose', 'left_ear', 'right_ear', 'left_eye', 'right_eye'], label: 'Cabeça do bebê', part: 'cabeca', minScore: 0.24 },
-                                { keys: ['left_ankle', 'right_ankle', 'left_knee', 'right_knee'], label: 'Pé ou perna do bebê', part: 'pe_perna', minScore: 0.26 },
-                                { keys: ['left_wrist', 'right_wrist', 'left_elbow', 'right_elbow'], label: 'Mão ou braço do bebê', part: 'mao_braco', minScore: 0.26 },
-                                { keys: ['left_shoulder', 'right_shoulder', 'left_hip', 'right_hip'], label: 'Corpo do bebê', part: 'corpo', minScore: 0.26 }
+                                { keys: ['nose', 'left_ear', 'right_ear', 'left_eye', 'right_eye'], label: 'Cabeça do bebê', part: 'cabeca', minScore: 0.20 },
+                                { keys: ['left_ankle', 'right_ankle', 'left_knee', 'right_knee'], label: 'Pé ou perna do bebê', part: 'pe_perna', minScore: 0.22 },
+                                { keys: ['left_wrist', 'right_wrist', 'left_elbow', 'right_elbow'], label: 'Mão ou braço do bebê', part: 'mao_braco', minScore: 0.22 },
+                                { keys: ['left_shoulder', 'right_shoulder', 'left_hip', 'right_hip'], label: 'Corpo do bebê', part: 'corpo', minScore: 0.24 }
                             ];
 
                             for (const limbGroup of allLimbCheck) {
@@ -10567,14 +10594,8 @@
                                         const px = (pt.x / vw) * 100;
                                         const py = (pt.y / vh) * 100;
 
-                                        // Rejeita se o keypoint caiu sobre travesseiro branco / espuma lateral lisa
-                                        if (bio.isPointOnPillowOrBumper(px, py)) continue;
-
-                                        // Verifica distância máxima anatômica ao tronco/cabeça do bebê
-                                        if (torsoAnchor && Math.hypot(px - torsoAnchor.x, py - torsoAnchor.y) > 30.0) continue;
-
-                                        // Linha exata do polígono (tolerância 0.0%)
-                                        if (!isPointInCribFence(px, py, r, 0.0) && isPointInCribFence(px, py, r, 12.0)) {
+                                        // Se o membro anatômico humano cruzou a cerca demarcada
+                                        if (!isPointInCribFence(px, py, r, 0.4)) {
                                             limbBreached = true;
                                             breachPart = limbGroup.part;
                                             breachPoint = { x: px, y: py };
@@ -12285,13 +12306,13 @@
                                         if (ankleY > hipY && hipY > headY) {
                                             const torsoHeight = Math.abs(hipY - headY);
                                             const legHeight = Math.abs(ankleY - hipY);
-                                            if (torsoHeight >= (vh * 0.15) && legHeight >= (vh * 0.10) && handsOnRail) {
+                                            if (torsoHeight >= (vh * 0.13) && (legHeight >= (vh * 0.08) || (ankleY - headY) >= (vh * 0.22))) {
                                                 verticalStandingSpan = true;
                                             }
                                         }
                                     }
 
-                                    if (handsOnRail || verticalStandingSpan) {
+                                    if ((handsOnRail && headPt.y <= (bb.y + bb.h * 0.55)) || verticalStandingSpan) {
                                         isStanding = true;
                                     }
                                 }
@@ -13000,13 +13021,20 @@
         // ─── SINCRONIZAÇÃO EM TEMPO REAL ENTRE DISPOSITIVOS (PC & CELULAR) ───
         let isSyncingDevices = false;
         async function syncCamerasDeviceState() {
-            if (isSyncingDevices || document.hidden) return;
+            if (isSyncingDevices || document.hidden || isPinModalOpen) return;
             isSyncingDevices = true;
             try {
                 const res = await fetch('/api/cameras', {
                     headers: getAuthHeaders({ 'Accept': 'application/json' }),
                     credentials: 'include'
                 });
+                if (res.status === 401) {
+                    try { localStorage.removeItem('token'); } catch(e){}
+                    if (!isPinModalOpen) {
+                        showPinUnlockModal();
+                    }
+                    return;
+                }
                 if (!res.ok) return;
                 const json = await res.json();
                 const list = (json && json.data) ? json.data : (Array.isArray(json) ? json : []);

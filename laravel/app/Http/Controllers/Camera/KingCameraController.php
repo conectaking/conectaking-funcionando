@@ -1117,10 +1117,19 @@ class KingCameraController extends Controller
             ]);
         }
         if (in_array($eventType, ['crib_fence', 'fence_breach']) && ! $camera->crib_fence_enabled) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Cerca do berço está desativada para esta câmera.',
-            ]);
+            // Se o evento foi disparado pelo monitor com ROI ou detecção ativa, sincroniza e ativa a cerca
+            if ($request->has('crib_roi_json') || $request->has('client_detection')) {
+                $camera->crib_fence_enabled = true;
+                if ($request->has('crib_roi_json') && !empty($request->input('crib_roi_json'))) {
+                    $camera->crib_roi_json = $request->input('crib_roi_json');
+                }
+                $camera->save();
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cerca do berço está desativada para esta câmera.',
+                ]);
+            }
         }
 
         // Quando a criança retorna à área segura do berço: limpa o estado de alerta
@@ -1306,15 +1315,28 @@ class KingCameraController extends Controller
                     }
                 }
             } else {
-                // Se a IA Vision não pôde avaliar (quota OpenAI esgotada, timeout ou offline)
-                // CANCELA o alarme de cerca para impedir falsos positivos causados por rolinhos, travesseiros ou ruído
-                if (in_array($eventType, ['crib_fence', 'fence_breach', 'baby_stand', 'motion']) || $isAiCheck || str_contains($description, 'Verificação')) {
-                    $breachConfirmed = false;
-                    $shouldSend = false;
-                    $description = 'Cerca do berço: Bebê seguro no berço. (Alerta cancelado preventivamente para evitar falso positivo de rolo/travesseiro).';
-                } else {
+                // Se a IA Vision em nuvem falhou ou timeout, valida através do motor de pose MoveNet local
+                $clientBreach = !empty($clientHints['breach_detected']);
+                $clientStanding = ($eventType === 'baby_stand') && !empty($clientHints['is_standing']);
+                if ($clientBreach || $clientStanding) {
                     $breachConfirmed = true;
                     $shouldSend = true;
+                    $part = (string) ($clientHints['limb_outside_part'] ?? 'corpo');
+                    if ($clientStanding) {
+                        $description = '🚨 ALERTA: Bebê em pé no berço! (Confirmado pelo sensor de postura)';
+                    } else {
+                        $partDesc = match ($part) {
+                            'cabeca' => 'Cabeça do bebê passou para fora do cerco do berço!',
+                            'pe_perna' => 'Pé ou perna do bebê passou para fora do cerco do berço!',
+                            'mao_braco' => 'Mão ou braço do bebê passou para fora do cerco do berço!',
+                            default => 'Parte do corpo do bebê passou para fora do cerco do berço!'
+                        };
+                        $description = '🚨 ' . $partDesc;
+                    }
+                } else {
+                    $breachConfirmed = false;
+                    $shouldSend = false;
+                    $description = 'Cerca do berço: Bebê seguro no berço.';
                 }
             }
         }
@@ -1483,9 +1505,10 @@ class KingCameraController extends Controller
             'email' => (string) $user->email,
             'isAdmin' => true,
             'accountType' => $user->account_type ?? 'admin',
+            'app' => 'kingCamera',
         ], '24h');
 
-        $cookie = cookie('token', $token, 1440, '/', null, true, false, false, 'Lax');
+        $cookie = cookie('token', $token, 1440, '/', \App\Support\AuthCookieDomain::forRequest($request), $request->isSecure(), false, false, 'Lax');
 
         return response()->json([
             'success' => true,

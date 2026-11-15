@@ -174,18 +174,32 @@ class KingCameraAiVisionService
             }
         }
 
-        // 1. LOCALIZA A CABEÇA / CABELO DO BEBÊ DENTRO DO COLCHÃO DO BERÇO
-        // O cabelo do bebê em IR é um agrupamento compacto escuro (lum 3..45) dentro do colchão (y: 36..60%),
-        // cercado pelo colchão/pele mais clara (lum >= 65) e sem saturação de cor de overlay.
+        // 1. LOCALIZA A CABEÇA / CABELO DO BEBÊ DENTRO DO PERÍMETRO DO BERÇO
+        // Se o cliente (MoveNet) já identificou o centro da cabeça com IA Pose, prioriza-o
         $rawHairCandidates = [];
+        if (!empty($clientHints['head_center']) && is_array($clientHints['head_center']) && isset($clientHints['head_center']['x'], $clientHints['head_center']['y'])) {
+            $chx = (float) $clientHints['head_center']['x'];
+            $chy = (float) $clientHints['head_center']['y'];
+            $headInside = $hasValidRoi ? $this->isPointInRoi($chx, $chy, $roi, 0.0) : true;
+            $rawHairCandidates[] = ['x' => $chx, 'y' => $chy, 'in' => $headInside, 'lum' => 25.0];
+            $rawHairCandidates[] = ['x' => $chx - 1.0, 'y' => $chy, 'in' => $headInside, 'lum' => 25.0];
+            $rawHairCandidates[] = ['x' => $chx + 1.0, 'y' => $chy, 'in' => $headInside, 'lum' => 25.0];
+            $rawHairCandidates[] = ['x' => $chx, 'y' => $chy - 1.0, 'in' => $headInside, 'lum' => 25.0];
+        }
+
+        $minScanY = max(5.0, $cribMinY - 10.0);
+        $maxScanY = min(95.0, $cribMaxY + 10.0);
+        $minScanX = max(5.0, $cribMinX - 10.0);
+        $maxScanX = min(95.0, $cribMaxX + 10.0);
+
         for ($y = 4; $y < $H - 4; $y++) {
             $yPct = (($y + 0.5) / $H) * 100.0;
-            if ($yPct < 36.0 || $yPct > 60.0) {
+            if ($yPct < $minScanY || $yPct > $maxScanY) {
                 continue;
             }
             for ($x = 4; $x < $W - 4; $x++) {
                 $xPct = (($x + 0.5) / $W) * 100.0;
-                if ($xPct < 13.0 || $xPct > 58.0 || $isOverlay[$y][$x]) {
+                if ($xPct < $minScanX || $xPct > $maxScanX || $isOverlay[$y][$x]) {
                     continue;
                 }
                 $l = $lum[$y][$x];
@@ -292,10 +306,10 @@ class KingCameraAiVisionService
         // Se a cabeça foi localizada em (hx, hy), o tronco e as pernas do bebê estendem-se ao longo do corredor
         // do colchão (y dentro de hy - 5.5% .. hy + 8.5%, x de hx - 2% até hx + 28.5%), ignorando 100% as espumas laterais
         // (y < 36% ou y > 61%), a ponta vazia do colchão (x > 46%) e o travesseiro externo abaixo do berço (y > 65%).
-        $corridorMinX = $headCenter ? max(14.0, $headCenter['x'] - 2.0) : max(14.0, $cribMinX);
-        $corridorMaxX = $headCenter ? min(46.5, $headCenter['x'] + 28.5) : min(46.5, $cribMaxX);
-        $corridorMinY = $headCenter ? max(40.0, $headCenter['y'] - 5.5) : 42.0;
-        $corridorMaxY = $headCenter ? min(59.5, $headCenter['y'] + 8.5) : 59.5;
+        $corridorMinX = $headCenter ? max(5.0, $headCenter['x'] - 15.0) : max(5.0, $cribMinX);
+        $corridorMaxX = $headCenter ? min(95.0, $headCenter['x'] + 45.0) : min(95.0, $cribMaxX);
+        $corridorMinY = $headCenter ? max(5.0, $headCenter['y'] - 25.0) : max(5.0, $cribMinY);
+        $corridorMaxY = $headCenter ? min(95.0, $headCenter['y'] + 25.0) : min(95.0, $cribMaxY);
 
         $bodyInsidePixels = [];
         $bodyOutsidePixels = [];
@@ -387,12 +401,10 @@ class KingCameraAiVisionService
             $ptLum = $lum[$gy][$gx] ?? 128.0;
             $ptGrad = $grad[$gy][$gx] ?? 15.0;
 
-            // Só rejeita o ponto do cliente se for claramente um travesseiro/espuma branca lisa (lum > 162 e grad < 18)
-            // ou se o ponto estiver matematicamente dentro do polígono
+            // Confirma infração se o ponto estiver fora do polígono seguro demarcado
             $isPointInsidePolygon = $hasValidRoi ? $this->isPointInRoi($cpx, $cpy, $roi, 0.0) : false;
-            $isPointWhitePillow = ($ptLum > 162.0 && $ptGrad < 18.0);
 
-            if (!$isPointInsidePolygon && !$isPointWhitePillow) {
+            if (!$isPointInsidePolygon) {
                 if ($clientPart === 'cabeca') {
                     $headIsOutside = true;
                     $headCenter = ['x' => round($cpx, 1), 'y' => round($cpy, 1)];
@@ -652,8 +664,10 @@ PROMPT;
         $models = array_values(array_unique([
             $this->getGeminiModel(),
             'gemini-3.5-flash',
+            'gemini-flash-latest',
+            'gemini-flash-lite-latest',
             'gemini-3.5-flash-lite',
-            'gemini-3.6-flash',
+            'gemini-pro-latest',
         ]));
 
         $lastError = 'Falha ao consultar Gemini Vision';

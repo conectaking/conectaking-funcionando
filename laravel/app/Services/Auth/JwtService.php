@@ -40,10 +40,11 @@ class JwtService
             throw new UnexpectedValueException('Token expirado.');
         }
 
-        // Limite máximo de 6 horas conectado direto (desloga automaticamente após 6h)
-        $maxSessionSeconds = 6 * 3600;
+        // Limite máximo de sessão conectada direto (painel: 6h; kingCamera: 24h contínuas)
+        $isKingCamera = ($payload['app'] ?? '') === 'kingCamera';
+        $maxSessionSeconds = $isKingCamera ? (24 * 3600) : (6 * 3600);
         if (isset($payload['iat']) && is_numeric($payload['iat']) && (time() - (int) $payload['iat']) >= $maxSessionSeconds) {
-            throw new UnexpectedValueException('Sessão expirada após 6 horas.');
+            throw new UnexpectedValueException('Sessão expirada após ' . ($isKingCamera ? '24 horas' : '6 horas') . '.');
         }
 
         return $payload;
